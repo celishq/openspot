@@ -107,7 +107,7 @@ extension SpotsModel {
         }
         return [
             .any { [self] key in
-                guard drag != nil || resize != nil || carry != nil else { return nil }
+                guard gesture != nil || carry != nil else { return nil }
                 if key.name == "escape" {
                     cancelDrag()
                     cancelResize()

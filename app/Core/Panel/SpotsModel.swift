@@ -298,11 +298,12 @@ public final class SpotsModel {
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
     var shakes: [String: Int] = [:]
-    public internal(set) var drag: SpotDrag?
+    public internal(set) var gesture: SpotGesture?
+    public var drag: SpotDrag? { gesture?.drag }
+    public var resize: SpotResize? { gesture?.resize }
     public let lift = SpotLift()
     public internal(set) var landing: String?
     public internal(set) var carry: SpotCarry?
-    public internal(set) var resize: SpotResize?
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     @ObservationIgnored var dragTarget: GridCell?
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0

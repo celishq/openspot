@@ -1,12 +1,13 @@
 import Foundation
 
-public struct SpotResize: Sendable {
+public struct SpotResize: Equatable, Sendable {
     public let id: String
     public let index: Int
     public let start: SpotSize
     public var size: SpotSize
     let grid: GridLayout
-    private let layouts: [(size: SpotSize, places: [SpotPlacement])]
+    public let choices: [SpotSize]
+    private let layouts: [SpotSize: [SpotPlacement]]
 
     public init(id: String, index: Int, placements: [SpotPlacement], choices: [SpotSize], grid: GridLayout) {
         self.id = id
@@ -15,20 +16,23 @@ public struct SpotResize: Sendable {
         start = placement.size
         size = placement.size
         self.grid = grid
-        var layouts: [(size: SpotSize, places: [SpotPlacement])] = [(placement.size, placements)]
+        var layouts = [placement.size: placements]
+        var sizes = [placement.size]
         for choice in choices where choice != placement.size {
             guard let places = grid.moved(index, to: placement.cell, size: choice, in: placements) else { continue }
-            layouts.append((choice, places))
+            layouts[choice] = places
+            sizes.append(choice)
         }
         self.layouts = layouts
+        self.choices = sizes
     }
 
-    public var choices: [SpotSize] {
-        layouts.map(\.size)
+    var layout: [SpotPlacement] {
+        layout(of: size)
     }
 
     public func layout(of size: SpotSize) -> [SpotPlacement] {
-        layouts.first { $0.size == size }?.places ?? []
+        layouts[size] ?? []
     }
 
     public func placement(of size: SpotSize) -> SpotPlacement? {
@@ -41,7 +45,7 @@ public struct SpotResize: Sendable {
     }
 
     public func nearest(to point: CGPoint) -> SpotSize {
-        layouts.min { lhs, rhs in distance(from: point, to: lhs.size) < distance(from: point, to: rhs.size) }?.size ?? start
+        choices.min { distance(from: point, to: $0) < distance(from: point, to: $1) } ?? start
     }
 
     private func distance(from point: CGPoint, to size: SpotSize) -> CGFloat {

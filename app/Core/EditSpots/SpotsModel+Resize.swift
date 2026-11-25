@@ -5,16 +5,17 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, drag == nil else { return }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            resize = SpotResize(id: id, index: index, placements: placements, choices: sizes(of: visible[index]), grid: columns.layout)
+            gesture = .size(SpotResize(id: id, index: index, placements: placements, choices: sizes(of: visible[index]), grid: columns.layout))
             resizeGrip = grip
             selected = index
         }
         pointerMove = translation
-        guard let resize else { return }
+        guard var resize else { return }
         let target = resize.nearest(to: resize.corner(movedBy: translation))
         guard target != resize.size else { return }
+        resize.size = target
         change(.edit) {
-            self.resize?.size = target
+            gesture = .size(resize)
             updateVisible()
         }
     }
@@ -34,7 +35,7 @@ extension SpotsModel {
             guard let resize else { return }
             pointerMove = nil
             guard resize.size != resize.start else { return cancelResize() }
-            saveLayout(resize.layout(of: resize.size), selecting: resize.id, ending: { self.resize = nil }, landed: { self.endKeyEditing() })
+            saveLayout(resize.layout(of: resize.size), selecting: resize.id, ending: { gesture = nil }, landed: { self.endKeyEditing() })
         }
     }
 
@@ -42,7 +43,7 @@ extension SpotsModel {
         guard resize != nil else { return }
         pointerMove = nil
         change(.edit) {
-            resize = nil
+            gesture = nil
             updateVisible()
         }
         endKeyEditing()

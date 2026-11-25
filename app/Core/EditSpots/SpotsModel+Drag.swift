@@ -10,7 +10,7 @@ extension SpotsModel {
             stopDragWait()
             tip = nil
             change(.edit) {
-                drag = lifted
+                gesture = .move(lifted)
                 carry = SpotCarry(entry: entry, size: lifted.start)
                 selected = start
             }
@@ -51,7 +51,7 @@ extension SpotsModel {
             stopDragWait()
             pointerMove = nil
             saveLayout(landed.layout, selecting: drag.id, ending: {
-                self.drag = nil
+                gesture = nil
                 landing = drag.id
             }, landed: { self.endLanding(of: drag.id) })
         }
@@ -62,7 +62,7 @@ extension SpotsModel {
         stopDragWait()
         pointerMove = nil
         change(.edit, {
-            self.drag = nil
+            gesture = nil
             landing = drag.id
             updateVisible()
             selected = drag.index
@@ -101,7 +101,7 @@ extension SpotsModel {
         dragTarget = nil
         guard let next = drag?.moved(to: target) else { return }
         change(.edit) {
-            drag = next
+            gesture = .move(next)
             updateVisible()
         }
     }
@@ -115,8 +115,7 @@ extension SpotsModel {
     func dropGesture() {
         stopDragWait()
         pointerMove = nil
-        if drag != nil { drag = nil }
-        if resize != nil { resize = nil }
+        if gesture != nil { gesture = nil }
         if carry != nil { carry = nil }
         if landing != nil { landing = nil }
         if lift.offset != .zero { lift.offset = .zero }

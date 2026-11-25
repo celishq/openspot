@@ -113,12 +113,10 @@ extension SpotsModel {
             ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: columns)) }
             : next.map { GridSpot(size: $0.role == .answer && $0.size != .strip ? $0.size : columns.row, cell: nil) }
         let top = fieldRoom
-        if isGrid, drag != nil || resize != nil {
+        if isGrid, let gesture {
             let shown = Set(visible.map(\.id))
-            let grid = drag?.grid ?? resize?.grid
-            if grid == columns.layout, next.filter({ shown.contains($0.id) }) == visible,
-               let held = drag?.layout ?? resize.map({ $0.layout(of: $0.size) }) {
-                lay(held, top: top)
+            if gesture.grid == columns.layout, next.filter({ shown.contains($0.id) }) == visible {
+                lay(gesture.layout, top: top)
                 return
             }
             dropGesture()

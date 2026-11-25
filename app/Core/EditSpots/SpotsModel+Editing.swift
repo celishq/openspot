@@ -47,12 +47,12 @@ extension SpotsModel {
         guard key.isCommand, isCommandHeld else { return }
         isCommandSpoiled = true
         guard editsByKey, isEditing else { return }
-        if drag != nil || resize != nil { dropGesture() }
+        if gesture != nil { dropGesture() }
         endEditing(moving: false)
     }
 
     func endKeyEditing() {
-        guard editsByKey, !isCommandHeld, isEditing, drag == nil, resize == nil, landing == nil else { return }
+        guard editsByKey, !isCommandHeld, isEditing, gesture == nil, landing == nil else { return }
         endEditing()
     }
 
@@ -92,10 +92,9 @@ extension SpotsModel {
             change(moving ? .edit : nil) {
                 isEditing = false
                 tip = nil
-                drag = nil
+                gesture = nil
                 landing = nil
                 carry = nil
-                resize = nil
                 pointerMove = nil
                 if lift.offset != .zero { lift.offset = .zero }
                 selected = 0
