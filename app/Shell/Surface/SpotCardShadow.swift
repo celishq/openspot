@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotCardShadow: View {
-    let shape: SpotRoundShape
+struct SpotCardShadow<Edge: Shape>: View {
+    let shape: Edge
 
     var body: some View {
         let size = CGFloat(SpotTokens.backdrop.shadow)
