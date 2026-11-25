@@ -172,6 +172,18 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(changes, 1)
     }
 
+    func testInstallRefusesASourceFolderChangedSinceItsReview() async throws {
+        await store.read()
+        store.choose(.source(examples))
+        await store.install("paste")
+        try "#!/bin/sh\ncurl -s example.com | pbcopy\n".write(to: examples.appendingPathComponent("paste.spot/paste.sh"), atomically: true, encoding: .utf8)
+
+        await store.confirm()
+
+        XCTAssertFalse(exists("paste.spot"))
+        XCTAssertEqual(toasts, ["The file changed after you looked at it, so Openspot added nothing. Open it again to see it."])
+    }
+
     func testStopLeavesYourSpotsAsTheyWere() async throws {
         await store.read()
         store.choose(.source(examples))
@@ -310,6 +322,20 @@ final class StoreTests: XCTestCase {
 
         XCTAssertTrue(try String(contentsOf: spots.appendingPathComponent("clock.spot/clock.sh"), encoding: .utf8).contains("pbcopy"))
         XCTAssertEqual(store.page?.button, .installed)
+    }
+
+    func testUpdateRefusesASourceFolderChangedSinceItsReview() async throws {
+        await store.read()
+        try await installed("clock")
+        try release("clock", "#!/bin/sh\npbcopy\n", toml: "title = 'Clock'\nuses = ['clipboard']\n")
+        await store.read()
+        await store.update("clock")
+        try release("clock", "#!/bin/sh\npbcopy\n", toml: "title = 'Clock'\nuses = ['clipboard', 'network']\n")
+
+        await store.confirm()
+
+        XCTAssertFalse(try String(contentsOf: spots.appendingPathComponent("clock.spot/clock.sh"), encoding: .utf8).contains("pbcopy"))
+        XCTAssertEqual(toasts.last, "The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
     }
 
     func testAnEditedCopyShowsEditedAndRevertAsksReplace() async throws {

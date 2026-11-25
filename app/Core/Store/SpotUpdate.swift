@@ -24,7 +24,7 @@ public struct SpotUpdate: Sendable {
         return (.update, version)
     }
 
-    public func run(_ id: String?, isConfirmed: Bool) async throws -> String {
+    public func run(_ id: String?, isConfirmed: Bool, reviewed: String? = nil) async throws -> String {
         guard let id else { return try await all(isConfirmed: isConfirmed) }
         let entry = try entry(id)
         let name = name(of: entry)
@@ -36,11 +36,11 @@ public struct SpotUpdate: Sendable {
         case .current:
             return "\(name) is up to date.\n"
         case .update:
-            return try await take(entry, named: name, isConfirmed: isConfirmed, command: "openspot store update \(id) --yes")
+            return try await take(entry, named: name, isConfirmed: isConfirmed, command: "openspot store update \(id) --yes", reviewed: reviewed)
         }
     }
 
-    public func revert(_ id: String, isConfirmed: Bool) async throws -> String {
+    public func revert(_ id: String, isConfirmed: Bool, reviewed: String? = nil) async throws -> String {
         let entry = try entry(id)
         let name = name(of: entry)
         guard Self.state(of: entry, in: spots, lock: lock)?.state == .edited else { return "\(name) has no edit to revert.\n" }
@@ -49,7 +49,7 @@ public struct SpotUpdate: Sendable {
             throw SpotError.failed(1, "Openspot cannot find the store of \(name), so it kept your edit.")
         }
         _ = try await lock.add(
-            origin, to: spots, isConfirmed: isConfirmed, replaces: [path], naming: path, updating: "openspot store revert \(id) --yes", discard: trash
+            origin, to: spots, isConfirmed: isConfirmed, replaces: [path], reviewed: reviewed, naming: path, updating: "openspot store revert \(id) --yes", discard: trash
         )
         return "Reverted \(name) to its version of \(try day(of: source)). Your edited copy is in the Trash.\n"
     }
@@ -63,6 +63,10 @@ public struct SpotUpdate: Sendable {
         )
         let added = review.uses.filter { !entry.uses.contains($0) }
         return (added.isEmpty ? [] : ["Uses \(added.map(\.rawValue).joined(separator: ", "))"]) + review.canDo.filter { !entry.canDo.contains($0) }
+    }
+
+    public func readSourceHash(_ id: String) throws -> String? {
+        try lock.origin(of: try entry(id)).find().map { try SpotVersion.hash(of: $0) }
     }
 
     public func name(of id: String) throws -> String {
@@ -89,11 +93,11 @@ public struct SpotUpdate: Sendable {
         return said.isEmpty ? "Each spot is up to date.\n" : said
     }
 
-    private func take(_ entry: SpotLock.Entry, named name: String, isConfirmed: Bool, command: String) async throws -> String {
+    private func take(_ entry: SpotLock.Entry, named name: String, isConfirmed: Bool, command: String, reviewed: String? = nil) async throws -> String {
         let origin = lock.origin(of: entry)
         guard let source = origin.find(), let path = entry.paths.first else { return "" }
         _ = try await lock.add(
-            origin, to: spots, isConfirmed: isConfirmed, naming: path, updating: command, discard: trash
+            origin, to: spots, isConfirmed: isConfirmed, reviewed: reviewed, naming: path, updating: command, discard: trash
         )
         return "Updated \(name) to its version of \(try day(of: source)).\n"
     }

@@ -107,8 +107,10 @@ public struct SpotCatalog: Sendable {
             }
             return nil
         }
+        let expecting = try found.source.readPackage()
         return SpotInstall(
-            id: id, name: found.name, source: found.folder, origin: found.source.origin(of: found.folder), expecting: try found.source.readPackage(), spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
+            id: id, name: found.name, source: found.folder, origin: found.source.origin(of: found.folder), expecting: expecting,
+            reviewed: expecting == nil ? try SpotVersion.hash(of: found.folder) : nil, spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
         )
     }
 

@@ -55,6 +55,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     private static let name = "spots.lock"
+    private static let changed = SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
     private static let lockPause: Duration = .milliseconds(20)
 
     public let url: URL
@@ -83,6 +84,7 @@ public struct SpotLock: Equatable, Sendable {
         isConfirmed: Bool = false,
         replaces: [String] = [],
         expecting: SpotPackage? = nil,
+        reviewed: String? = nil,
         naming: String? = nil,
         asking: String? = nil,
         updating: String? = nil,
@@ -93,9 +95,8 @@ public struct SpotLock: Equatable, Sendable {
             var facts: Facts?
             let command = updating ?? "openspot spot add \(source.text) --yes"
             let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, naming: naming, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
-                if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
-                    throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
-                }
+                if let expecting, try SpotPackage(paths: paths, in: work) != expecting { throw Self.changed }
+                if let reviewed, try paths.first.map({ try SpotVersion.hash(of: work.appendingPathComponent($0)) }) != reviewed { throw Self.changed }
                 let new = try Self.facts(of: paths, in: work)
                 if old == nil, !isConfirmed {
                     let confirm = asking ?? "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."

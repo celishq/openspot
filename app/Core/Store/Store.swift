@@ -115,7 +115,7 @@ public final class Store {
 
     public func update(_ id: String) async {
         let update = SpotUpdate(places: places, clock: clock)
-        switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id)) }) {
+        switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id), reviewed: update.readSourceHash(id)) }) {
         case .success(let change): ask = .update(change)
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
         }
@@ -123,7 +123,7 @@ public final class Store {
 
     public func revert(_ id: String) async {
         let update = SpotUpdate(places: places, clock: clock)
-        switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id)) }) {
+        switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id), reviewed: update.readSourceHash(id)) }) {
         case .success(let change): ask = .revert(change)
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
         }
@@ -141,10 +141,10 @@ public final class Store {
             await act { try await review.install.run(review.clash, isConfirmed: true) }
         case .update(let change):
             self.ask = nil
-            await act { try await update.run(change.id, isConfirmed: true) }
+            await act { try await update.run(change.id, isConfirmed: true, reviewed: change.reviewed) }
         case .revert(let change):
             self.ask = nil
-            await act { try await update.revert(change.id, isConfirmed: true) }
+            await act { try await update.revert(change.id, isConfirmed: true, reviewed: change.reviewed) }
         }
     }
 
