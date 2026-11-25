@@ -236,6 +236,15 @@ extension SpotsModel {
         }
     }
 
+    public func keep(secret value: String, key: String, of spot: String) async -> String? {
+        if value.count < SecretStore.shortest {
+            return "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value."
+        }
+        if let failure = await Self.keep(value, key: key, of: spot, in: files.secrets) { return failure }
+        configChanged(.value(spot: spot, caller: nil), to: kept)
+        return nil
+    }
+
     private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""

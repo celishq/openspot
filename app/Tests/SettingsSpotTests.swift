@@ -138,6 +138,14 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertNotNil(records(text)["theme:Openspot"])
     }
 
+    func testSayShowsWhatTheViewWasTold() async throws {
+        let effects = try recordEffects()
+
+        _ = try await send("say", "Openspot didn't keep this secret.")
+
+        XCTAssertEqual(effects(), ["toast Openspot didn't keep this secret."])
+    }
+
     func testUnknownWordsFail() async throws {
         do {
             _ = try await send("gone")

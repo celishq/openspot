@@ -1168,7 +1168,7 @@ struct SpotView: View {
                 SecureField((pending[row.id] ?? row.value).isEmpty ? "Not set" : "Set", text: draft(row, blank: true))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 220)
-                    .onSubmit { set(row, drafts[row.id] ?? "") }
+                    .onSubmit { keep(row) }
                     .onKeyPress(.delete) {
                         guard (drafts[row.id] ?? "").isEmpty, !(pending[row.id] ?? row.value).isEmpty else { return .ignored }
                         pending[row.id] = ""
@@ -1450,6 +1450,20 @@ struct SpotView: View {
         default: page = .access
         }
         if target == nil, page.section != .spots, page.section != .access, rest?.contains("/") == true { target = rest }
+    }
+
+    /// Keeps the typed secret of a row through Openspot itself, so it never passes through a script.
+    private func keep(_ row: Row) {
+        guard let value = drafts[row.id], !value.isEmpty else { return }
+        drafts[row.id] = nil
+        guard let secrets = spot.secrets else { return send("say", SpotSecrets.missing) }
+        Task {
+            if let failure = await secrets.keep(value, key: row.key, of: row.spot) {
+                send("say", failure)
+            } else {
+                pending[row.id] = "set"
+            }
+        }
     }
 
     private func set(_ row: Row, _ value: String) {

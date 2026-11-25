@@ -119,4 +119,15 @@ final class SettingsEntryTests: PanelCase {
         try await wait("the Settings window") { self.host.windows == [self.settingsID] }
     }
 
+    func testASecretTypedInSettingsIsKeptAndAShortOneIsNot() async throws {
+        try script("weather", toml: "title = 'Weather'\n[settings]\ntoken = 'secret'", "printf 'item=a\\ntitle=A\\n'")
+        await model.reload()
+
+        let short = await model.keep(secret: "abc", key: "token", of: "weather")
+        let kept = await model.keep(secret: "tok-123456", key: "token", of: "weather")
+
+        XCTAssertEqual(short, "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
+        XCTAssertNil(kept)
+        XCTAssertEqual(try model.files.secrets.read()["weather"]?["token"], "tok-123456")
+    }
 }

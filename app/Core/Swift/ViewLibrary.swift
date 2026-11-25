@@ -113,7 +113,43 @@ public struct ViewLibrary: Sendable {
             public subscript(index: Int) -> SpotItem { SpotItem(fields: fields[index]) }
         }
 
+        public struct SpotSecrets {
+            let links: [String: Any]
+
+            public func keep(_ value: String, key: String, of spot: String) async -> String? {
+                guard let keep = links["keep"] as? (String, String, String) async -> String? else { return Self.missing }
+                return await keep(value, key, spot)
+            }
+
+            public func words() async -> (words: [String], failure: String?) {
+                guard let words = links["words"] as? () async -> ([String], String?) else { return ([], Self.missing) }
+                let (shown, failure) = await words()
+                return (shown, failure)
+            }
+
+            public func choices(at places: [Int]) -> [[String]] {
+                (links["choices"] as? ([Int]) -> [[String]])?(places) ?? []
+            }
+
+            public func confirm(_ places: [Int], _ words: [String]) async -> String? {
+                guard let confirm = links["confirm"] as? ([Int], [String]) async -> String? else { return Self.missing }
+                return await confirm(places, words)
+            }
+
+            public func signIn(_ phrase: String) async -> String? {
+                guard let signIn = links["signIn"] as? (String) async -> String? else { return Self.missing }
+                return await signIn(phrase)
+            }
+
+            public func line(of phrase: String) -> [String: String] {
+                (links["line"] as? (String) -> [String: String])?(phrase) ?? [:]
+            }
+
+            static let missing = "Only a spot of Openspot itself can do this."
+        }
+
         public struct SpotInput {
+            public let secrets: SpotSecrets?
             public let size: CGSize
             public let card: SpotCard?
             public let inset: CGFloat
@@ -151,6 +187,7 @@ public struct ViewLibrary: Sendable {
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
+                secrets = (card["secrets"] as? [String: Any]).map(SpotSecrets.init(links:))
                 items = SpotItems(fields: card["items"] as? [[String]] ?? [])
                 isShown = card["isShown"] as? Bool ?? true
                 selection = card["selection"] as? String
