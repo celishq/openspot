@@ -50,6 +50,7 @@ final class InlineScript: @unchecked Sendable {
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
+    private let clock: RunClock
     private let env: SpotEnv
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
@@ -65,7 +66,7 @@ final class InlineScript: @unchecked Sendable {
     private var context: JSContext?
     private var thrown: JSValue?
 
-    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, env: SpotEnv? = nil, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, env: SpotEnv? = nil, clock: RunClock = RunClock(), spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.sandbox = careful.map(Sandbox.init)
         url = spot.url
         name = spot.id
@@ -78,6 +79,7 @@ final class InlineScript: @unchecked Sendable {
         self.limit = limit
         self.idle = idle
         self.spent = spent
+        self.clock = clock
         self.env = env ?? SpotEnv(spot: spot, cache: .standard(environment: base), isCareful: careful != nil)
         self.callers = callers
         caller = callers?.issue(for: spot)
@@ -158,7 +160,7 @@ final class InlineScript: @unchecked Sendable {
                 call.finish(.dropped)
                 continue
             }
-            let start = Self.threadTime()
+            let start = clock.threadTime()
             deadline = call.limit.map { .now() + $0 } ?? .distantFuture
             condition.withLock { running = call }
             autoreleasepool {
@@ -170,7 +172,7 @@ final class InlineScript: @unchecked Sendable {
                 }
             }
             condition.withLock { running = nil }
-            spent(Self.threadTime() - start)
+            spent(clock.threadTime() - start)
         }
     }
 
@@ -182,9 +184,9 @@ final class InlineScript: @unchecked Sendable {
     private func slice(_ token: Int, _ work: () -> Void) {
         guard let held = waiting[token] else { return }
         arm(limit - held.spent)
-        let start = Self.threadTime()
+        let start = clock.threadTime()
         work()
-        let used = Self.threadTime() - start
+        let used = clock.threadTime() - start
         waiting[token]?.spent += used
         do {
             try rethrow()
@@ -208,9 +210,9 @@ final class InlineScript: @unchecked Sendable {
             guard !isEnded else { return }
             settles.append { [self] in
                 deadline = waiting[token]?.call.limit.map { .now() + $0 } ?? .distantFuture
-                let start = Self.threadTime()
+                let start = clock.threadTime()
                 slice(token, work)
-                spent(Self.threadTime() - start)
+                spent(clock.threadTime() - start)
             }
             condition.signal()
         }
@@ -224,17 +226,6 @@ final class InlineScript: @unchecked Sendable {
             return running
         }
         call?.finish(.failed(SpotError.timedOut))
-    }
-
-    private static func threadTime() -> TimeInterval {
-        var info = thread_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { thread_info(pthread_mach_thread_np(pthread_self()), thread_flavor_t(THREAD_BASIC_INFO), $0, &count) }
-        }
-        guard result == KERN_SUCCESS else { return 0 }
-        let user = Double(info.user_time.seconds) + Double(info.user_time.microseconds) / 1_000_000
-        return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
     private func run(_ call: InlineCall) throws -> String? {

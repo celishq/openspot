@@ -1,3 +1,4 @@
+import Synchronization
 import XCTest
 @testable import OpenspotCore
 
@@ -220,16 +221,21 @@ final class InlineHandlersTests: SpotRunsCase {
     }
 
     func testTheTimeAHandlerRunsAddsUpAcrossItsAwaits() async throws {
-        shortLimit()
+        let base = clock.value
+        let read = Mutex(0.0)
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.2, clock: RunClock(now: base.now, sleep: base.sleep, after: base.after, threadTime: {
+            read.withLock { time in
+                time += 0.03
+                return time
+            }
+        }), stopPause: 0.2)
+        takeCalls()
         try script("ticker", toml: "[actions.tick]", log: "ticker-log", "")
         try inline("spinner", toml: "[actions.spin]\n[bindings]\nticker = { spot = 'ticker' }", """
         export default {
           async spin(input, env) {
-            for (let i = 0; i < 8; i++) {
-              const end = Date.now() + 100
-              while (Date.now() < end) {}
-              await env.ticker.tick()
-            }
+            for (let i = 0; i < 12; i++) { await env.ticker.tick() }
             return "text=a\\n"
           },
         }
@@ -239,7 +245,7 @@ final class InlineHandlersTests: SpotRunsCase {
 
         guard case .failed(let error) = outcome else { return XCTFail("the handler ran past its limit") }
         XCTAssertEqual(error as? SpotError, .timedOut)
-        XCTAssertLessThan(log("ticker-log").count, 8)
+        XCTAssertLessThan(log("ticker-log").count, 12)
     }
 
     func testAHandlerThatAwaitsAPromiseThatNothingSettlesFailsAtTheIdleTimeAndLetsGoOfTheThread() async throws {

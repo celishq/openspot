@@ -41,7 +41,7 @@ final class InlineMode: ScriptMode {
         asking.open(call, in: run)
         runs.script(of: run.spot).send(inline)
         let wait = { (deadline: DispatchTime) in
-            if DispatchTime.now() < deadline { self.runs.frameWaits += 1 }
+            self.runs.noteFrameWait(until: deadline)
             let outcome = inline.wait(until: deadline) { outcome in
                 Task { @MainActor in self.take(outcome, of: call) }
             }

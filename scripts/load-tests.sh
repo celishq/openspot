@@ -15,12 +15,12 @@ trap 'kill $(jobs -p) 2>/dev/null' EXIT
 passed=0
 for run in $(seq "$runs"); do
   if xcodebuild $project -test-timeouts-enabled YES -default-test-execution-time-allowance 120 \
-    -maximum-test-execution-time-allowance 300 $only test-without-building >"$out/$run.log" 2>&1; then
+    -maximum-test-execution-time-allowance 300 -resultBundlePath "$out/$run.xcresult" $only test-without-building >"$out/$run.log" 2>&1; then
     passed=$((passed + 1))
     echo "run $run passed"
   else
     echo "run $run failed:"
-    grep -E "^Test case '.*' failed" "$out/$run.log" | sed -E "s/^Test case '([^']*)'.*/  \1/" | sort -u
+    xcrun xcresulttool get test-results tests --path "$out/$run.xcresult" | python3 -I scripts/failures.py
   fi
 done
 echo "$passed of $runs runs passed beside $(sysctl -n hw.ncpu) busy cores; logs in $out"

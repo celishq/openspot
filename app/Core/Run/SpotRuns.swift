@@ -86,6 +86,7 @@ public final class SpotRuns {
     @ObservationIgnored private let log: CallLog?
     @ObservationIgnored public var onCall: ((CallLog.Record) -> Void)?
     @ObservationIgnored var frameWaits = 0
+    @ObservationIgnored var frameDeadline: DispatchTime?
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
     @ObservationIgnored let environment: [String: String]

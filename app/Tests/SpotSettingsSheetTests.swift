@@ -20,7 +20,7 @@ final class SpotSettingsSheetTests: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, swift: SwiftProgram(cache: folder.appendingPathComponent("swift", isDirectory: true))))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
     }
 
