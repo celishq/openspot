@@ -26,12 +26,21 @@ struct SpotAttachmentPreview: View {
         .frame(width: SpotFieldView.rect.width, height: SpotTokens.attachmentValueRoom(lines: SpotTokens.previewLines), alignment: .top)
     }
 
+    @ViewBuilder
     private func words(of preview: AttachmentPreview) -> some View {
-        HStack(alignment: .top, spacing: SpotTokens.attachmentPictureGap) {
-            if let picture = preview.picture { SpotPreviewPicture(picture: picture) }
-            lines(of: preview)
+        if let face = preview.face {
+            NodeTree(tree: face.tree, pictureTimes: [:])
+                .environment(\.spotNode, NodeContext(variants: Style.Variant.card(.strip)))
+                .frame(width: SpotTokens.attachmentValueWidth, height: SpotTokens.attachmentFaceHeight, alignment: .topLeading)
+                .clipped()
+                .accessibilityElement(children: .combine)
+        } else {
+            HStack(alignment: .top, spacing: SpotTokens.attachmentPictureGap) {
+                if let picture = preview.picture { SpotPreviewPicture(picture: picture) }
+                lines(of: preview)
+            }
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
     }
 
     private func lines(of preview: AttachmentPreview) -> some View {

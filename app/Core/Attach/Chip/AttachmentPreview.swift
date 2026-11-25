@@ -22,9 +22,11 @@ public struct AttachmentPreview: Hashable, Sendable {
     public let symbol: String
     public let lines: Int
     public let picture: Picture?
+    public let face: AttachmentFace?
 
     public init(_ value: AttachmentValue) {
         symbol = value.kind.captionSymbol
+        face = value.face
         switch value.payload {
         case .url(let url):
             text = value.title ?? url
@@ -39,7 +41,7 @@ public struct AttachmentPreview: Hashable, Sendable {
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }
         picture = Self.picture(of: value)
-        lines = SpotTokens.attachmentValueLines(of: text, besidePicture: picture != nil)
+        lines = face == nil ? SpotTokens.attachmentValueLines(of: text, besidePicture: picture != nil) : SpotTokens.previewLines
     }
 
     private static func picture(of value: AttachmentValue) -> Picture? {
@@ -64,6 +66,7 @@ public struct AttachmentPreview: Hashable, Sendable {
         self.caption = caption
         self.symbol = symbol
         picture = nil
+        face = nil
         lines = SpotTokens.attachmentValueLines(of: text)
     }
 }

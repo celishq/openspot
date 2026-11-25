@@ -17,6 +17,7 @@ public struct AttachmentValue: Equatable, Sendable {
     public let title: String?
     public let app: String?
     public let icon: Icon?
+    public internal(set) var face: AttachmentFace?
     let wholeCopy: ClipboardCopy?
 
     public init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil) {

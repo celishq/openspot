@@ -810,6 +810,7 @@
 		B89AFE319AF037DA1EA66361 /* PlaygroundCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A8A529120533FFABD7824F /* PlaygroundCalls.swift */; };
 		B8E17CF1F501562EEBE736EC /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70009486AB59B320D3B9046 /* Event.swift */; };
 		B96843D9910208DC05A7EF1C /* DropKinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1E7B061C0A80D88C3C8819 /* DropKinds.swift */; };
+		B96E8AFD6D2A148088AFADD2 /* AttachmentFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F5DEB19F64D26F33E991B4 /* AttachmentFace.swift */; };
 		B97129763388BC38EC210A5B /* SpotFloatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80C1E926FC7BB5C6B6247A9 /* SpotFloatTests.swift */; };
 		BA3E94F68D89A6D6355FFC47 /* FlowNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6874F3FD42490B6605A87999 /* FlowNavigationTests.swift */; };
 		BA7AD4B280766D48932AF186 /* ShelfExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45CAF1E356EB763F6FDA572B /* ShelfExampleTests.swift */; };
@@ -1446,6 +1447,7 @@
 		33791879EC21CC93C2E7487E /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		337DC76ADF7BCB6CC31D7EE0 /* CronLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CronLine.swift; sourceTree = "<group>"; };
 		33B4946F18A73EDC281BCDBC /* SpotCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCheck.swift; sourceTree = "<group>"; };
+		33F5DEB19F64D26F33E991B4 /* AttachmentFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentFace.swift; sourceTree = "<group>"; };
 		343B74F47009E908B1316B6B /* SpotBackdropBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBackdropBlur.swift; sourceTree = "<group>"; };
 		344B4D81ADE4C8F2D324AE25 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		345D82DAD27C18BC9DBD8741 /* SpotRun+Frames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRun+Frames.swift"; sourceTree = "<group>"; };
@@ -2669,6 +2671,7 @@
 			isa = PBXGroup;
 			children = (
 				9CC1254D6D859935F24229C6 /* AttachmentChip.swift */,
+				33F5DEB19F64D26F33E991B4 /* AttachmentFace.swift */,
 				0F73C02502299A509A427DA9 /* AttachmentLayout.swift */,
 				1FA6C9B11F13326D3B63A0BB /* AttachmentPreview.swift */,
 				36E2DDE48B835BAF8B3E7F92 /* AttachmentStack.swift */,
@@ -4703,6 +4706,7 @@
 				06550B6B95E7CD7A92945A61 /* AskingCalls.swift in Sources */,
 				C6C619CACAB2D6D6974AF558 /* AttachmentCall.swift in Sources */,
 				03DBF3AAF5D7FA206C5CBA75 /* AttachmentChip.swift in Sources */,
+				B96E8AFD6D2A148088AFADD2 /* AttachmentFace.swift in Sources */,
 				58CE69E34EBAA1071DB3432F /* AttachmentLayout.swift in Sources */,
 				5E78B7C99714E4FA91427F8B /* AttachmentPick.swift in Sources */,
 				95F44D352BAA5275AC5512D2 /* AttachmentPreview.swift in Sources */,

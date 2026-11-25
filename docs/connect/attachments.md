@@ -131,6 +131,15 @@ esac
   `app=`, the bundle ID of the app whose icon the chip shows, and `icon=`, which takes what `icon` in `spot.toml`
   takes. With none of these, it takes them on stdin, as `openspot browser tab` prints them, and adds nothing when stdin
   holds no value.
+- After the value, on stdin, more blocks draw its preview under the field in place of its title, as a
+  [strip card](../show/the-card.md) draws them. They take `text`, `number`, `series`, `picture` and `icon` blocks and a
+  first block of the frame's own keys, such as `class`, in the room of two lines. A block of any other kind fails with
+  exit code 2:
+
+  ```text
+  printf 'url=%s\ntitle=%s\n\ntext=host\ntitle=%s\ndetail=%s\n' "$url" "$title" "$title" "$host" | openspot attachment add
+  ```
+
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
 - `openspot browser tab` and `openspot selection read` read what people work on inside Openspot. A source needs
