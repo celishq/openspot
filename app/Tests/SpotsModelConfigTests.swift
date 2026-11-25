@@ -23,6 +23,21 @@ final class SpotsModelConfigTests: PanelCase {
         await model.reload()
     }
 
+    func testAnAllowedUseReachesTheLoadedSpot() async throws {
+        let lock = model.files.lock
+        try FileManager.default.createDirectory(at: lock.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try #"[{"source":"/x/a","paths":["a.spot"],"uses":[],"canDo":[]}]"#.write(to: lock.url, atomically: true, encoding: .utf8)
+        takeCalls()
+        let api = try XCTUnwrap(model.runs.api)
+        let arguments = ["spot", "allow", "a", "clipboard"]
+        let request = CommandRequest.test(arguments, in: model.files.environment)
+
+        let answer = await api.work(for: request, input: { "" })?()
+
+        XCTAssertEqual(answer?.code, 0, answer?.errors ?? "")
+        XCTAssertEqual(model.runs.sheets["a"]?.spot.uses, [.clipboard])
+    }
+
     func testASectionThatAChangeDoesNotNameIsNotLost() async throws {
         try model.files.config.change { $0.show(.left, true) }
 

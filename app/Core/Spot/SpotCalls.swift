@@ -62,6 +62,16 @@ struct SpotCalls {
         }
     }
 
+    func allow(_ word: String?, for id: String) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            guard let word else { throw SpotError.fault("`openspot spot allow` needs a use for now, such as `openspot spot allow \(id) clipboard`.") }
+            guard let use = try SpotUse.set([word], of: id).first else { return "" }
+            let answer = try await places.lock.allow(use, for: id)
+            await app?.spotsChanged()
+            return answer
+        }
+    }
+
     func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
@@ -107,7 +117,7 @@ struct SpotCalls {
             let spots = places.readSpots()
             let found: Spot?
             do {
-                found = try spots.scan().scripts.first { $0.id == id }
+                found = try spots.scan().allowing((try? places.lock.entries()) ?? []).scripts.first { $0.id == id }
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }

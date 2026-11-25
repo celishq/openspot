@@ -47,6 +47,19 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
+    public func allowing(_ entries: [SpotLock.Entry]) -> ScanResult {
+        var scan = self
+        scan.files = files.map { file in
+            SpotFile(id: file.id, spots: file.spots.map { spot in
+                guard !spot.isBuiltIn, spot.host == nil, let entry = entries.first(where: { $0.holds(spot.id) }) else { return spot }
+                var spot = spot
+                spot.uses.formUnion(entry.uses)
+                return spot
+            })
+        }
+        return scan
+    }
+
     public mutating func addSettings(in config: ConfigFile, secrets: SecretStore, read: Config? = nil, defaults: SpotArrangement = SpotArrangement()) {
         let read = read ?? config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { spot in

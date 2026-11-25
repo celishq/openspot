@@ -35,6 +35,53 @@ final class SpotAddTests: XCTestCase {
         try SpotsFolder(url: spots).scan().spots.map(\.id)
     }
 
+    private func tea() async throws {
+        let folder = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tea.sh"))
+        let added = try await answer(["spot", "add", "sources/tea"])
+        XCTAssertEqual(added.code, 0, added.errors)
+    }
+
+    func testAllowRecordsTheUseInSpotsLockAndTheScanGivesItToTheSpot() async throws {
+        try await tea()
+
+        let answer = try await answer(["spot", "allow", "tea", "clipboard"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "Allowed tea to use clipboard.\n")
+        let entries = try SpotLock.standard(environment: environment).entries()
+        XCTAssertEqual(entries.map(\.uses), [[.clipboard]])
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().allowing(entries).scripts.map(\.uses), [[.clipboard]])
+    }
+
+    func testAnUpdateKeepsAnAllowedUseOutOfWhatItAdds() async throws {
+        try await tea()
+        _ = try await answer(["spot", "allow", "tea", "clipboard"])
+        try "uses = ['clipboard']\n".write(to: root.appendingPathComponent("sources/tea/spot.toml"), atomically: true, encoding: .utf8)
+
+        let update = try await answer(["spot", "add", "sources/tea"])
+
+        XCTAssertEqual(update.code, 0, update.errors)
+    }
+
+    func testAllowOfASpotThatSpotAddDidNotAddSaysToDeclareTheUse() async throws {
+        let answer = try await answer(["spot", "allow", "mint", "clipboard"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.errors, "`openspot spot add` did not add mint, so spots.lock holds no record of it. Add `clipboard` to `uses` in its spot.toml.\n")
+    }
+
+    func testAllowNamesAnUnknownUseAndAsksForOneWhenNoneIsNamed() async throws {
+        let unknown = try await answer(["spot", "allow", "tea", "camera"])
+        let none = try await answer(["spot", "allow", "tea"])
+
+        XCTAssertEqual(unknown.code, 1)
+        XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment or read\n")
+        XCTAssertEqual(none.code, 1)
+        XCTAssertEqual(none.errors, "`openspot spot allow` needs a use for now, such as `openspot spot allow tea clipboard`.\n")
+    }
+
     func testAGitRepositoryIsClonedIntoAFolderOfItsOwnWithNoGitFolder() async throws {
         let repo = try repo()
 

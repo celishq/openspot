@@ -102,6 +102,16 @@ final class SpotUsesTests: SpotRunsCase {
         return (log("done").last ?? "", (try? String(contentsOfFile: path("errors"), encoding: .utf8)) ?? "")
     }
 
+    func testASpotCannotAllowAUse() async throws {
+        try caller(toml: "uses = ['spots']", "spot allow script clipboard")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Script cannot allow a use. Only you can, with `openspot spot allow` in Terminal.\n")
+    }
+
     func testASpotOfThePersonThatNamesTheAccountUseCannotPublish() async throws {
         try caller(toml: "uses = ['account']", "store publish script")
         let found = try scanned()

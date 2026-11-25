@@ -111,9 +111,24 @@ public struct SpotLock: Equatable, Sendable {
                 facts = new
             }
             let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
-            try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
+            try record(entry)
             return old == nil ? entry.addedLine : entry.updatedLine
         }
+    }
+
+    public func allow(_ use: SpotUse, for id: String) async throws -> String {
+        try await locked {
+            guard let entry = try entries().first(where: { $0.holds(id) }) else {
+                throw SpotError.fault("`openspot spot add` did not add \(id), so spots.lock holds no record of it. Add `\(use.rawValue)` to `uses` in its spot.toml.")
+            }
+            let uses = SpotUse.allCases.filter { entry.uses.contains($0) || $0 == use }
+            try record(Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: entry.hash, uses: uses, canDo: entry.canDo, address: entry.address, key: entry.key))
+            return "Allowed \(entry.name) to use \(use.rawValue).\n"
+        }
+    }
+
+    private func record(_ entry: Entry) throws {
+        try write(try entries().filter { Set($0.paths).isDisjoint(with: entry.paths) && $0.source != entry.source } + [entry])
     }
 
     public func restore(to folder: URL, isConfirmed: Bool = false) async throws -> CommandAnswer {
