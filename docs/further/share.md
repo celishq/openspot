@@ -56,7 +56,7 @@ openspot spot share ports
 ```
 
 Openspot signs a release of your spot with your account, and copies `Ports.spot` to the clipboard. Paste it into a
-message. The first time, Openspot opens Account, so you can make one.
+message. The first time, Openspot opens Account in Settings, so you can make one.
 
 - The release goes into `releases.jsonl` in your folder. Each share of changed files adds the next version, and a share
   with no change adds none. Don't edit the file: Openspot refuses a spot whose files don't match its last release.

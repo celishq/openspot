@@ -40,7 +40,7 @@ Each key of the top level, before the first table.
 ## Uses
 
 Each use lets your spot run some `openspot` commands. People see your uses when they add your spot. A command whose use
-is missing still runs, and people see a message about it once a day. In Careful mode, it fails.
+is missing fails, and Openspot tells people once a day.
 
 | Use         | Lets your spot                                                                       |
 | ----------- | ------------------------------------------------------------------------------------ |
@@ -53,11 +53,12 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `timer`     | Add, list and remove its timers.                                                     |
 | `attachment` | Put a value in the panel's field when the panel opens or Tab picks its chip; see [Attach what people work on](../connect/attachments.md). |
 | `read`      | Read what people work on: the front tab, the files selected in Finder and the selected text. |
-| `network`   | Reach the network in Careful mode, such as with `env.fetch`.                          |
-| `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
+| `network`   | Reach the network, such as with `env.fetch`.                                         |
+| `files`     | Write outside its data folder. No command needs it.                                  |
 
 A program of the Mac, such as `open <url>`, isn't an `openspot` command, so it needs no use. [Uses](../../TRUST.md#uses)
-lists each command that needs one, and [Careful mode](../../TRUST.md#careful-mode) says what it stops.
+lists each command that needs one, [What macOS gives Openspot](../../TRUST.md#what-macos-gives-openspot) the access of
+macOS that each command needs, and [The sandbox](../../TRUST.md#the-sandbox) what `network` and `files` hold.
 
 ## Types
 
@@ -90,7 +91,7 @@ Each setting, input, output and value of an event takes one of these types.
 | `options`     | [text]   | The values of a `choice`.                            |
 
 A setting can't take a name that Openspot keeps for people: `icon`, `enabled`, `menubar`, `open`, `float`, any
-`key.<action>`, or a name of Openspot's own settings, such as `careful`.
+`key.<action>`, `window`, or a name of Openspot's own settings, such as `slow`.
 
 ## [actions.\<id\>]
 

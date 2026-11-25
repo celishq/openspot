@@ -60,8 +60,8 @@ the data alone. Removing the spot keeps the data too.
 
 Don't keep data in the spot's own folder, since an update can replace it.
 
-In Careful mode, a setting people can turn on, your spot can write only to its data folder and the temp folders. Add
-`files` to `uses` in `spot.toml` to write anywhere else. People see that use when they add your spot.
+Your spot can write only to its data folder and the temp folders. Add `files` to `uses` in `spot.toml` to write
+anywhere else. People see that use when they add your spot.
 
 ## Next
 

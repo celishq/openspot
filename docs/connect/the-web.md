@@ -44,10 +44,9 @@ you fetch in [a cache](../remember/cache.md), and fetch it in the cache's filler
 
 A shell spot uses `curl`, and a Swift spot `URLSession`.
 
-## Careful mode
+## Name the network
 
-`network` in `uses` tells people that your spot reaches the web. In Careful mode, a fetch of a spot without it fails
-with `refused`.
+`network` in `uses` tells people that your spot reaches the web. A fetch of a spot without it fails with `refused`.
 
 ## Next
 
