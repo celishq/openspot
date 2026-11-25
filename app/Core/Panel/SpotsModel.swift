@@ -68,6 +68,7 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutTop: CGFloat = 0
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
+    @ObservationIgnored var holdsRows = false
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
     @ObservationIgnored var content = GridContent.cards
@@ -604,8 +605,12 @@ public final class SpotsModel {
         case .toast(let note): toast(note, of: note.kind == .failure ? "" : id)
         case .dropToast(let toast): toasts.drop(toast, of: id)
         case .listChange:
-            markFound(id)
-            if mayMove(id) { updateVisible() }
+            asOnePress {
+                markFound(id)
+                if mayMove(id) { updateVisible() }
+            }
+        case .answered:
+            if holdsRows { asOnePress { updateVisible() } }
         case .parts:
             if id == openSheetID { recordAskedField() }
         case .frame(let frame):
