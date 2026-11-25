@@ -15,6 +15,7 @@ public final class SheetOpening {
     private var motionSerial = 0
     private var held: (id: String, start: () -> Void)?
     private var pause: Task<Void, Never>?
+    var clock = RunClock()
 
     public init(answerPause: TimeInterval = MotionTokens.answerPause, motionLength: TimeInterval? = nil) {
         self.answerPause = answerPause
@@ -34,8 +35,8 @@ public final class SheetOpening {
     func holdMotion(of id: String, limited: Bool, start: @escaping () -> Void) {
         pause?.cancel()
         held = (id, start)
-        pause = limited ? Task { [weak self, answerPause] in
-            try? await Task.sleep(for: .seconds(answerPause))
+        pause = limited ? Task { [weak self, answerPause, sleep = clock.sleep] in
+            try? await sleep(.seconds(answerPause), nil)
             guard !Task.isCancelled else { return }
             self?.startMotion(of: id)
         } : nil
@@ -74,8 +75,8 @@ public final class SheetOpening {
     private func endMotionLater() {
         motionSerial += 1
         let serial = motionSerial
-        Task { [weak self, motionLength] in
-            try? await Task.sleep(for: .seconds(motionLength))
+        Task { [weak self, motionLength, sleep = clock.sleep] in
+            try? await sleep(.seconds(motionLength), nil)
             guard let self, motionSerial == serial else { return }
             moving = nil
         }

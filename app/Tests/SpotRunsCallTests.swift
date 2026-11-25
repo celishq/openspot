@@ -4,13 +4,17 @@ import XCTest
 @MainActor
 final class SpotRunsCallTests: SpotRunsCase {
     func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
-        runs = SpotRuns(showLimit: 0.3)
+        let limit = FakeClock()
+        runs = SpotRuns(showLimit: 0.3, clock: limit.value)
         try script(toml: "[on]\n\"panel.open\" = true", "sleep 30")
         let sheet = try sheet()
         var failures: [String] = []
         sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.show()
+        try await wait("the limit of the read") { limit.hasTimer(for: 0.3) }
+        XCTAssertNil(sheet.failure)
+        limit.advance(by: 0.3)
 
         try await wait("the time limit") { sheet.failure != nil }
         XCTAssertEqual(sheet.failure, "Script took too long, so Openspot stopped it.")

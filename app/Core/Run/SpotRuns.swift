@@ -133,6 +133,7 @@ public final class SpotRuns {
         self.showLimit = showLimit
         self.attachLimit = attachLimit
         self.opening = opening
+        opening.clock = clock
         self.clock = clock
         now = clock.now
         clockWatch = DueWatch(clock: clock)

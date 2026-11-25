@@ -6,6 +6,7 @@ import XCTest
 final class SpotRunTests: XCTestCase {
     private var folder: URL!
     private var runs: [SpotRuns] = []
+    private let clock = FakeClock()
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-sheet-\(UUID().uuidString)")
@@ -22,9 +23,15 @@ final class SpotRunTests: XCTestCase {
         let url = folder.spotFile(name)
         let typed = searches ? "[ \"$1\" = sheet.text ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.value=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.alt=//p' | head -1)\n" : ""
         try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "stay = true" : "")
-        let made = SpotRuns()
+        let made = SpotRuns(clock: clock.value)
         runs.append(made)
         return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, triggers: triggers ?? (mode.stays ? Manifest.Triggers() : Manifest.Triggers(events: [searches ? EventName.sheetText : EventName.sheetOpen])), mode: mode))
+    }
+
+    private func passTextPause() async throws {
+        let pause = Double(SpotRun.textPause.components.seconds) + Double(SpotRun.textPause.components.attoseconds) / 1e18
+        try await wait("the pause after the text") { self.clock.isSleeping(for: pause) }
+        clock.advance(by: pause)
     }
 
     private func path(_ name: String) -> String {
@@ -40,7 +47,7 @@ final class SpotRunTests: XCTestCase {
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        let made = SpotRuns(opening: SheetOpening(answerPause: pause))
+        let made = SpotRuns(opening: SheetOpening(answerPause: pause), clock: clock.value)
         runs.append(made)
         return made.sheet(for: Spot(id: "held", name: "held", url: url, kind: .list, triggers: .sheet))
     }
@@ -61,6 +68,9 @@ final class SpotRunTests: XCTestCase {
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }
+        try await wait("the answer pause") { self.clock.isSleeping(for: 0.02) }
+        XCTAssertFalse(isOpened)
+        clock.advance(by: 0.02)
 
         try await wait("the open") { isOpened }
         XCTAssertNil(sheet.panel)
@@ -167,7 +177,7 @@ final class SpotRunTests: XCTestCase {
         defer { SheetHeader.shared = kept }
         let url = folder.spotFile("script")
         try "#!/bin/sh\nprintf 'item=a\\ntitle=A\\n'\n".writeScript(to: url)
-        let made = SpotRuns()
+        let made = SpotRuns(clock: clock.value)
         runs.append(made)
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}
@@ -193,7 +203,7 @@ final class SpotRunTests: XCTestCase {
         if [ "$(cat '\(path("n"))')" = 1 ]; then printf 'frame=\\nclass=gap-part\\n\\nfield=find\\ntype=search\\n\\nnumber=a\\nvalue=1\\n\\nitems=list\\n\\nitem=b\\nparent=list\\ntitle=B\\n'
         else printf 'frame=\\nclass=gap-part\\n\\nnumber=a\\nvalue=2\\n'; fi
         """.writeScript(to: url)
-        let made = SpotRuns()
+        let made = SpotRuns(clock: clock.value)
         runs.append(made)
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}
@@ -530,6 +540,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["show:"] }
 
         sheet.search("rep")
+        try await passTextPause()
 
         try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["sheet.text:rep"] }
     }
@@ -556,6 +567,7 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
         try await wait("the first value") { !sheet.isShowing && sheet.reading.value?.title == "1" }
         sheet.search("x")
+        try await passTextPause()
         try await wait("the rows of the text") { sheet.list.shown.map(\.title) == ["Ax"] && !sheet.isShowing }
         sheet.close()
 
@@ -572,6 +584,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the first answer") { sheet.list.shown.map(\.title) == [":"] }
 
         sheet.search("сафари")
+        try await passTextPause()
 
         try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["сафари:safari"] }
     }
@@ -593,6 +606,7 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
         sheet.search("rep")
+        try await passTextPause()
         try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["rep"] }
         sheet.close()
 
@@ -731,7 +745,7 @@ final class SpotRunTests: XCTestCase {
         defer { SheetHeader.shared = kept }
         let url = folder.spotFile("script")
         try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nitems=list\\nclass=grid grid-cols-3\\n\\nfield=find\\ntype=search\\n\\nitem=a\\nparent=list\\ntitle=A\\n'\n".writeScript(to: url)
-        let made = SpotRuns()
+        let made = SpotRuns(clock: clock.value)
         runs.append(made)
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}

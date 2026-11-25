@@ -3,7 +3,22 @@ import JavaScriptCore
 
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
-        var answer = CommandAnswer()
+        private let lock = NSLock()
+        private var given: CommandAnswer?
+        private var isEnded = false
+
+        func give(_ answer: CommandAnswer?) -> Bool {
+            lock.withLock {
+                guard !isEnded else { return false }
+                isEnded = true
+                given = answer
+                return true
+            }
+        }
+
+        var answer: CommandAnswer? {
+            lock.withLock { given }
+        }
     }
 
     private final class Held: @unchecked Sendable {
@@ -62,7 +77,7 @@ final class InlineScript: @unchecked Sendable {
     private var isOverTime = false
     private var isOverdue = false
     private var running: InlineCall?
-    private var deadline = DispatchTime.now()
+    private var deadline: Date?
     private var context: JSContext?
     private var thrown: JSValue?
 
@@ -161,7 +176,7 @@ final class InlineScript: @unchecked Sendable {
                 continue
             }
             let start = clock.threadTime()
-            deadline = call.limit.map { .now() + $0 } ?? .distantFuture
+            deadline = call.limit.map { clock.now().addingTimeInterval($0) }
             condition.withLock { running = call }
             autoreleasepool {
                 do {
@@ -209,7 +224,7 @@ final class InlineScript: @unchecked Sendable {
         condition.withLock {
             guard !isEnded else { return }
             settles.append { [self] in
-                deadline = waiting[token]?.call.limit.map { .now() + $0 } ?? .distantFuture
+                deadline = waiting[token]?.call.limit.map { clock.now().addingTimeInterval($0) }
                 let start = clock.threadTime()
                 slice(token, work)
                 spent(clock.threadTime() - start)
@@ -425,15 +440,18 @@ final class InlineScript: @unchecked Sendable {
         let box = Box()
         let done = DispatchSemaphore(value: 0)
         let task = Task.detached(priority: .userInitiated) {
-            box.answer = await work()
-            done.signal()
+            if box.give(await work()) { done.signal() }
         }
-        guard done.wait(timeout: deadline) == .success else {
+        if let deadline {
+            clock.after(deadline.timeIntervalSince(clock.now())) { if box.give(nil) { done.signal() } }
+        }
+        done.wait()
+        guard let answer = box.answer else {
             task.cancel()
             timeOut()
             return Self.late
         }
-        return box.answer
+        return answer
     }
 
     private static func answer(of child: ScriptProcess) async -> CommandAnswer {
