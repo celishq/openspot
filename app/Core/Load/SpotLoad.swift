@@ -68,6 +68,10 @@ public struct SpotLoad: Sendable {
         Set(entries.filter { $0.origin == .own }.map(\.id))
     }
 
+    var coreIDs: Set<String> {
+        Set(entries.filter { $0.origin == .core }.map(\.id)).subtracting(ownIDs)
+    }
+
     public var coreChoices: [Spot] {
         let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
         return ScanResult(files: files, refused: []).spots.filter { $0.triggers.every == nil }

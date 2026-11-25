@@ -15,16 +15,13 @@ struct PromptCalls {
     func change(_ id: String, words: String, failure: String?) -> CommandAPI.Work {
         CommandAnswer.work { [mac, places, runs] in
             let folder = places.readSpots()
+            guard !folder.isCore(id: id) else { throw SpotError.failed(1, SpotsFolder.uneditable(id)) }
             guard let spot = try folder.scan().scripts.first(where: { $0.id == id }), !spot.isBuiltIn else {
                 throw SpotError.failed(1, "Openspot cannot find \(id). Check its ID with `openspot spot list`.")
             }
             let prompt = Self.prompt(in: folder.url, mac: mac)
-            let core = spot.url.deletingLastPathComponent()
-            let copy = folder.url.appendingPathComponent(core.lastPathComponent, isDirectory: true)
-            let file = folder.isCore(spot) ? copy.appendingPathComponent(spot.url.lastPathComponent) : spot.url
             let evidence = await SpotEvidence.read(of: id, runs: runs, stats: places.stats, app: prompt.app)
-            let change = prompt.changing(file, wish: words.isEmpty ? nil : words, failure: failure, evidence: evidence)
-            return folder.isCore(spot) ? "\(prompt.copying(core, to: copy))\n\(change)" : change
+            return prompt.changing(spot.url, wish: words.isEmpty ? nil : words, failure: failure, evidence: evidence)
         }
     }
 

@@ -89,6 +89,18 @@ public struct SpotsFolder: Sendable {
         core == nil ? [] : KeptScan.shared.load(self).coreChoices
     }
 
+    public func isCore(id: String) -> Bool {
+        core != nil && KeptScan.shared.load(self).coreIDs.contains(id)
+    }
+
+    static func unremovable(_ id: String) -> String {
+        "`\(id)` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Edit Spots."
+    }
+
+    static func uneditable(_ id: String) -> String {
+        "`\(id)` comes with Openspot, so it cannot be edited. Run `openspot spot new <name>` to make a spot of your own."
+    }
+
     public static func coreID(of spot: Spot) -> String {
         SpotID(file: spot.url).name
     }

@@ -718,7 +718,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
     }
 
-    func testACoreSpotTurnedOnByTheConfigTurnsOffByTheMinus() async throws {
+    func testTheMinusTakesACoreSpotOffTheGridAndKeepsItOn() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try model.files.config.turn("timer", on: true)
         await model.reload()
@@ -727,7 +727,8 @@ final class SpotsModelDragTests: XCTestCase {
         model.turnOff("timer")
 
         XCTAssertFalse(order.contains("timer"))
-        XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
+        XCTAssertEqual(try model.files.config.read().arrangement.isOnGrid(of: "timer"), false)
+        XCTAssertTrue(model.entries.contains { $0.id == "timer" })
     }
 
     func testACardReleasedOverTheStoresWindowTurnsItsSpotOff() {

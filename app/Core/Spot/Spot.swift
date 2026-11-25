@@ -204,7 +204,7 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    public func editSheet(of owner: Spot, isOwn: Bool) -> Spot? {
+    public func editSheet(of owner: Spot) -> Spot? {
         guard self.editsSpots, self.isBuiltIn else { return nil }
         var spot = Spot(
             id: OwnedSheet.edit.id(of: owner.id),
@@ -222,7 +222,7 @@ public struct Spot: Equatable, Sendable {
             uses: self.uses
         )
         spot.isBuiltIn = true
-        spot.editedFile = isOwn ? owner.url : nil
+        spot.editedFile = owner.url
         return spot
     }
 

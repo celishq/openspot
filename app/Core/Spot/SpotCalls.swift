@@ -55,6 +55,7 @@ struct SpotCalls {
 
     func remove(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [places, app, secrets] in
+            try Self.refuseCore(id, .delete, in: places)
             let removed = try places.lock.remove(id, from: places.spots.url).name
             try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
@@ -80,10 +81,16 @@ struct SpotCalls {
 
     func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }
-        return CommandAnswer.work {
+        return CommandAnswer.work { [places] in
+            try Self.refuseCore(id, act, in: places)
             guard await app.act(act, on: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
+    }
+
+    private static func refuseCore(_ id: String, _ act: CardAct, in places: AppPlaces) throws {
+        guard [.edit, .prompt, .delete].contains(act), places.readSpots().isCore(id: id) else { return }
+        throw SpotError.failed(1, act == .delete ? SpotsFolder.unremovable(id) : SpotsFolder.uneditable(id))
     }
 
     func editGrid() -> CommandAPI.Work {

@@ -82,8 +82,8 @@ extension SpotsModel {
     @discardableResult
     public func openEdit(of entry: Entry) -> Bool {
         let spot = entry.spot
-        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn,
-              let sheet = runs.editSheet(of: spot, isOwn: !folder.isCore(spot))
+        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn, !folder.isCore(spot),
+              let sheet = runs.editSheet(of: spot)
         else { return false }
         pushFirst(sheet.spot.id, moving: true)
         return true

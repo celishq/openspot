@@ -70,7 +70,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot settings <id>`                      | Opens the Settings of a spot, as Settings in its ⌘K menu does.                                  |
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
-| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
+| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot. A spot that comes with Openspot refuses it, and `spot edit`, `spot delete`, `spot remove` and `prompt change` too. |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
 | `openspot spot delete <id>`                        | Moves a spot to the Trash.                                                                      |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |

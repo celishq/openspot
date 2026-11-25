@@ -206,8 +206,8 @@ public final class SpotRuns {
     }
 
     @discardableResult
-    public func editSheet(of spot: Spot, isOwn: Bool) -> SpotRun? {
-        editor?.editSheet(of: spot, isOwn: isOwn).map(sheet(for:))
+    public func editSheet(of spot: Spot) -> SpotRun? {
+        editor?.editSheet(of: spot).map(sheet(for:))
     }
 
     func willOpen(_ sheet: SpotRun) {

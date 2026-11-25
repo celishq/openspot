@@ -42,7 +42,7 @@ edits = "spots"
 | `OPENSPOT_CONFIG`       | a variable  | The folder of the config.                                                                      |
 | `OPENSPOT_SPOTS`        | a variable  | The spots folder, when it isn't `spots` in the config folder.                                  |
 | `OPENSPOT_EDIT`         | a variable  | In the Edit sheet: the id of the spot it changes.                                              |
-| `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot, when the person owns it.                             |
+| `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot.                                                      |
 | `OPENSPOT_EDIT_FAILURE` | a variable  | In the Edit sheet: the last failure of that spot.                                              |
 
 The spots of the app share one folder. `[scripts.<name>]` in its `spot.toml` describes the script `<name>`, with the

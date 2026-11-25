@@ -8,6 +8,8 @@ extension SpotsModel {
     public func act(_ act: CardAct, on id: String) -> Bool {
         guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
         switch act {
+        case .edit where folder.isCore(entry.spot), .prompt where folder.isCore(entry.spot):
+            toast(.failure("\(entry.state.title) comes with Openspot, so it cannot be edited. Make a spot of your own with New spot."))
         case .settings:
             if !isShown { host.show() }
             if !openSettings(of: entry) { toast(.failure("\(entry.state.title) has nothing to set.")) }

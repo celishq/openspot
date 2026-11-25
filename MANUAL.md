@@ -14,9 +14,9 @@ Every spot answers the same keys, so you learn them once.
 | `⌘K`       | Opens the menu of all actions.                                                |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
-- The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Turn off or
-  Delete.
+- The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Delete.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
+- A spot that comes with Openspot is always on, and has no Edit and no Delete. Its − in Edit Spots takes it off the grid.
 
 ## Change a spot's Settings
 

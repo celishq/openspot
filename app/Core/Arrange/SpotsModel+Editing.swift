@@ -64,8 +64,18 @@ extension SpotsModel {
     public func turnOff(_ id: String) {
         asOnePress {
             guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
-            turn(entry.spot, on: false)
+            if folder.isCore(entry.spot) { takeOffGrid(entry.spot) } else { turn(entry.spot, on: false) }
         }
+    }
+
+    private func takeOffGrid(_ spot: Spot) {
+        let next: KeptConfig
+        do {
+            next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: spot.id) }
+        } catch {
+            return toast(.failure("\(spot.name) stays on the grid. \(Self.reason(error))"))
+        }
+        change(.edit) { reload(patching: nil, to: next) }
     }
 
     @discardableResult
