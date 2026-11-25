@@ -80,14 +80,14 @@ final class StoreTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
         await store.read()
 
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         XCTAssertEqual(marks, ["clock installed", "paste"])
     }
 
     func testTheSearchKeepsOnlyTheCardsOfThePlaceThatMatch() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         store.search("tells")
 
@@ -104,7 +104,7 @@ final class StoreTests: XCTestCase {
         let found = await store.show("clock", search: nil)
 
         XCTAssertTrue(found)
-        XCTAssertEqual(store.place, .source(examples))
+        XCTAssertEqual(store.place, .source(.builtIn(examples)))
         let page = try XCTUnwrap(store.page)
         XCTAssertEqual(page.id, "clock")
         XCTAssertEqual(page.from, "From Openspot")
@@ -119,7 +119,7 @@ final class StoreTests: XCTestCase {
 
         XCTAssertTrue(found)
         XCTAssertEqual(store.query, "paste")
-        XCTAssertEqual(store.place, .source(examples))
+        XCTAssertEqual(store.place, .source(.builtIn(examples)))
         XCTAssertEqual(marks, ["paste"])
     }
 
@@ -132,7 +132,7 @@ final class StoreTests: XCTestCase {
 
     func testTheTrustLinesOfAPageNameWhatTheSpotUses() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         await store.open("paste")
 
@@ -153,7 +153,7 @@ final class StoreTests: XCTestCase {
 
     func testInstallOpensTheReviewAndCopiesNothingUntilItsYes() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         await store.install("paste")
 
@@ -174,7 +174,7 @@ final class StoreTests: XCTestCase {
 
     func testInstallRefusesASourceFolderChangedSinceItsReview() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
         await store.install("paste")
         try "#!/bin/sh\ncurl -s example.com | pbcopy\n".write(to: examples.appendingPathComponent("paste.spot/paste.sh"), atomically: true, encoding: .utf8)
 
@@ -186,7 +186,7 @@ final class StoreTests: XCTestCase {
 
     func testStopLeavesYourSpotsAsTheyWere() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
         await store.install("paste")
 
         store.dismissAsk()
@@ -197,7 +197,7 @@ final class StoreTests: XCTestCase {
 
     func testTheListOfMySpotsHoldsASpotRightAfterItsInstall() async throws {
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         try await installed("clock")
         store.choose(.mine)
@@ -208,7 +208,7 @@ final class StoreTests: XCTestCase {
     func testASameIDInstallAsksFirstAndKeepBothGivesANewID() async throws {
         try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'My clock'")
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         await store.install("clock")
         guard case .clash(let asked)? = store.ask else { return XCTFail("No question: \(String(describing: store.ask))") }
@@ -236,7 +236,7 @@ final class StoreTests: XCTestCase {
     func testASpotWithSampleDataOffersTryOnItsPage() async throws {
         try "text=Stand-up\n".write(to: examples.appendingPathComponent("clock.spot/sample.frame"), atomically: true, encoding: .utf8)
         await store.read()
-        store.choose(.source(examples))
+        store.choose(.source(.builtIn(examples)))
 
         await store.open("clock")
         let sampled = try XCTUnwrap(store.page)
@@ -254,7 +254,7 @@ final class StoreTests: XCTestCase {
         let isShown = await store.show(file: file)
 
         XCTAssertTrue(isShown)
-        XCTAssertEqual(store.place, .source(file))
+        XCTAssertEqual(store.place.source?.url, file)
         XCTAssertEqual(store.sources.last?.name, "Cups.spot")
         let page = try XCTUnwrap(store.page)
         XCTAssertEqual(page.id, "cups")
@@ -365,7 +365,7 @@ final class StoreTests: XCTestCase {
         await store.addSource(friends)
 
         XCTAssertEqual(places.config.read().stores.map(\.url.path), [friends.path])
-        XCTAssertEqual(store.place, .source(friends))
+        XCTAssertEqual(store.place, .source(StoreSource(url: friends)))
         XCTAssertEqual(marks, ["ports"])
         await store.removeSource(friends)
         XCTAssertEqual(places.config.read().stores, [])

@@ -13,14 +13,14 @@ enum SpotStorePicture {
         Task { @MainActor in
             await store.read()
             if let place {
-                guard let chosen = store.placesInOrder.first(where: { name(of: $0, in: store) == place }) else {
+                guard let chosen = store.placesInOrder.first(where: { name(of: $0) == place }) else {
                     fail("The Store has no place \(place). Name My spots or a source, such as Openspot.")
                 }
                 store.choose(chosen)
             }
             if let spot {
                 await store.open(spot)
-                guard store.page != nil else { fail("\(name(of: store.place, in: store)) has no spot \(spot).") }
+                guard store.page != nil else { fail("\(name(of: store.place)) has no spot \(spot).") }
             }
             if let review {
                 await store.install(review)
@@ -32,9 +32,8 @@ enum SpotStorePicture {
         exit(0)
     }
 
-    private static func name(of place: StorePlace, in store: Store) -> String {
-        guard case .source(let url) = place else { return "My spots" }
-        return store.sources.first { $0.url == url }?.name ?? url.lastPathComponent
+    private static func name(of place: StorePlace) -> String {
+        place.source?.name ?? "My spots"
     }
 
     private static func fail(_ reason: String) -> Never {

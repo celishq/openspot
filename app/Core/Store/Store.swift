@@ -29,7 +29,7 @@ public final class Store {
     }
 
     public var placesInOrder: [StorePlace] {
-        [.mine] + sources.map { .source($0.url) }
+        [.mine] + sources.map { .source($0) }
     }
 
     public func read() async {
@@ -69,9 +69,9 @@ public final class Store {
         case .success(let source):
             opened = source
             await read()
-            guard let id = shelves[.source(source.url)]?.first?.id else { return false }
+            guard let id = shelves[.source(source)]?.first?.id else { return false }
             query = ""
-            choose(.source(source.url))
+            choose(.source(source))
             refilter()
             await open(id)
             return page?.id == id
@@ -94,7 +94,7 @@ public final class Store {
 
     public func open(_ id: String) async {
         opening = id
-        let next = await Self.page(id, at: place, places, opened: opened, now: clock.now())
+        let next = await Self.page(id, at: place, places, now: clock.now())
         guard opening == id else { return }
         opening = nil
         page = next
@@ -156,7 +156,7 @@ public final class Store {
         let config = places.config
         await act { try StoreSource.add(url, to: config) }
         let added = StoreSource(url: url).url
-        if sources.contains(where: { $0.url == added }) { choose(.source(added)) }
+        if let source = sources.first(where: { $0.url == added }) { choose(.source(source)) }
     }
 
     public func removeSource(_ url: URL) async {
@@ -206,7 +206,7 @@ public final class Store {
         let had = Set(mine.map(\.id))
         var cards: [StorePlace: [StoreCard]] = [.mine: mine]
         for source in sources {
-            cards[.source(source.url)] = source.spots().compactMap { file in
+            cards[.source(source)] = source.spots().compactMap { file in
                 file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil) }
             }.sorted { $0.spot.comesBefore($1.spot) }
         }
@@ -214,7 +214,7 @@ public final class Store {
     }
 
     @concurrent
-    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, opened: StoreSource?, now: Date) async -> StorePage? {
+    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, now: Date) async -> StorePage? {
         let config = places.config.read()
         let folder = places.spots
         let own = catalog(places, config, sources: []).items.first { $0.id == id && $0.isAdded }
@@ -230,9 +230,8 @@ public final class Store {
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
                 trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
             )
-        case .source(let url):
-            guard let source = (StoreSource.all(builtIn: places.examples, config: config) + [opened].compactMap { $0 }).first(where: { $0.url == url }),
-                  let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
+        case .source(let source):
+            guard let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
             let spotFolder = spot.url.deletingLastPathComponent()
             let review = try? ReviewSpot(
                 spot: SpotPackage(paths: [spotFolder.lastPathComponent], in: spotFolder.deletingLastPathComponent()), folder: folder.url, core: folder.core, canAdd: false
@@ -262,7 +261,7 @@ public final class Store {
         Result {
             let config = places.config.read()
             let sources = sources(in: places, config: config, opened: opened)
-            let chosen: StoreSource? = if case .source(let url) = place { sources.first { $0.url == url } } else { nil }
+            let chosen = place.source
             guard let install = try catalog(places, config, sources: sources).install(id, in: places, from: chosen) else { return nil }
             let source = chosen ?? sources.first { $0.fetch(id) != nil }
             return StoreReview(

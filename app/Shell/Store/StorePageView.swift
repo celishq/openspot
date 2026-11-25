@@ -8,8 +8,7 @@ struct StorePageView: View {
     @State private var isTrying = false
 
     private var placeName: String {
-        guard case .source(let url) = store.place else { return "My spots" }
-        return store.sources.first { $0.url == url }?.name ?? "Sources"
+        store.place.source?.name ?? "My spots"
     }
 
     private var line: String {

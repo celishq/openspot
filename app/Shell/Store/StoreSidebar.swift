@@ -15,7 +15,7 @@ struct StoreSidebar: View {
                 .padding(.top, SpotTokens.storeHeadingGap)
             ForEach(store.sources, id: \.self) { source in
                 StoreSidebarRow(
-                    store: store, place: .source(source.url), symbol: source.symbol, title: source.name,
+                    store: store, place: .source(source), symbol: source.symbol, title: source.name,
                     isMissing: store.missing.contains(source.url.path)
                 )
                 .contextMenu {

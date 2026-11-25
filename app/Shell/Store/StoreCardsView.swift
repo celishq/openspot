@@ -5,8 +5,7 @@ struct StoreCardsView: View {
     let store: Store
 
     private var source: StoreSource? {
-        guard case .source(let url) = store.place else { return nil }
-        return store.sources.first { $0.url == url }
+        store.place.source
     }
 
     var body: some View {
