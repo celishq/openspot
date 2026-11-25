@@ -120,8 +120,8 @@ extension SpotRun {
         press(picking(item), closes: closes)
     }
 
-    public func pick(_ item: SpotItem, closes: Bool = false, then answered: @escaping @MainActor (CallAnswer) -> Void) {
-        press(picking(item), closes: closes, then: answered)
+    public func pick(_ item: SpotItem, then answered: @escaping @MainActor (CallAnswer) -> Void) {
+        press(picking(item), closes: false, then: answered)
     }
 
     public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
@@ -144,8 +144,8 @@ extension SpotRun {
         await answer(toPress: acting(action, item: item), closes: closes)
     }
 
-    public func answer(to action: CommandAction, item: SpotItem?, closes: Bool = false, then answered: @escaping @MainActor (CallAnswer) -> Void) {
-        press(acting(action, item: item), closes: closes, then: answered)
+    public func answer(to action: CommandAction, item: SpotItem?, then answered: @escaping @MainActor (CallAnswer) -> Void) {
+        press(acting(action, item: item), closes: false, then: answered)
     }
 
     private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {

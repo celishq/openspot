@@ -192,7 +192,7 @@ final class ItemsTests: PanelCase {
         try await wait("the close") { self.host.dismissals == 1 }
     }
 
-    func testAPickKeepsThePanelOpenUntilItsCallEndsWithNoView() async throws {
+    func testAPickClosesThePanelAtThePressWhileItsCallRuns() async throws {
         let gate = folder.appendingPathComponent("gate").path
         let started = folder.appendingPathComponent("started").path
         try script("slow", toml: "title = 'Slow'", """
@@ -208,11 +208,35 @@ final class ItemsTests: PanelCase {
         try await wait("the row") { self.model.openItems?.shown.map(\.run) == ["milk"] }
 
         model.runSelectedItem()
-        try await wait("the press") { FileManager.default.fileExists(atPath: started) }
-        XCTAssertEqual(host.dismissals, 0)
-        FileManager.default.createFile(atPath: gate, contents: Data())
 
-        try await wait("the close") { self.host.dismissals == 1 }
+        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the press") { FileManager.default.fileExists(atPath: started) }
+        let sheet = try XCTUnwrap(model.runs.sheets["slow"])
+        XCTAssertTrue(sheet.calls.contains(where: \.isAct))
+        FileManager.default.createFile(atPath: gate, contents: Data())
+        try await wait("the end of the press") { sheet.calls.isEmpty }
+        XCTAssertEqual(host.dismissals, 1)
+        XCTAssertFalse(model.isShown)
+    }
+
+    func testAPickWhoseCallFailsAfterThePanelClosedSaysWhyInAToast() async throws {
+        try script("broken", toml: "title = 'Broken'", """
+        case "$1" in
+          show) printf 'item=milk\\ntitle=Milk\\n' ;;
+          press) echo 'The milk is gone.' >&2; exit 1 ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("broken")
+        try await wait("the row") { self.model.openItems?.shown.map(\.run) == ["milk"] }
+
+        model.runSelectedItem()
+
+        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the toast") { self.host.notes.contains { $0.contains("The milk is gone.") } }
+        XCTAssertFalse(model.isShown)
     }
 
     func testAPickWithCloseFalseKeepsThePanelOpen() async throws {

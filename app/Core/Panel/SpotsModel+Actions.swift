@@ -128,9 +128,15 @@ extension SpotsModel {
             sheets[target.entry.id]?.run(action, item: target.item)
             return
         }
-        sheet.answer(to: action, item: target.item, closes: closes) { [weak self] answer in
-            guard case .form(let form) = answer, let self, isShown else { return }
-            show(.form(form), of: action, on: target, prefill: "")
+        let wasShown = isShown
+        if closes, isShown { host.dismiss() }
+        sheet.answer(to: action, item: target.item) { [weak self] answer in
+            guard case .form(let form) = answer, let self else { return }
+            if !closes, isShown {
+                show(.form(form), of: action, on: target, prefill: "")
+            } else if closes, wasShown {
+                afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: action, on: target, prefill: "") }
+            }
         }
     }
 

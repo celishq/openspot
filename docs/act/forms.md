@@ -92,9 +92,9 @@ option=green
 title=Green
 ```
 
-The form opens with the values filled in. When you press Return, Openspot runs the same word again, with each value as
-`input.<id>`, here `input.name`, `input.pinned` and `input.color`, and the row as `input.item`. To tell the two runs
-apart, check whether `input.name` is there.
+The form opens with the values filled in, and a press that closed the panel opens it again at the form. When you press
+Return, Openspot runs the same word again, with each value as `input.<id>`, here `input.name`, `input.pinned` and
+`input.color`, and the row as `input.item`. To tell the two runs apart, check whether `input.name` is there.
 
 If a value is wrong, print `error=` and a message. The form stays open and shows it.
 

@@ -76,17 +76,18 @@ final class TriggerPanelTests: PanelCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testAPressThatReturnsAViewKeepsThePanel() async throws {
+    func testAPressThatReturnsAViewClosesThePanelAtThePress() async throws {
         try writeSnooze(answer: "frame=\\n\\ntext=done\\ntitle=Picked\\n")
         try await openSheet()
 
         model.runSelectedItem()
 
+        XCTAssertEqual(host.dismissals, 1)
         try await pressEnded(1)
-        XCTAssertEqual(host.dismissals, 0)
+        XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testAButtonOfAListThatReturnsNothingClosesThePanelOnceItsCallEnds() async throws {
+    func testAButtonOfAListThatReturnsNothingClosesThePanelAtThePress() async throws {
         let calls = folder.appendingPathComponent("calls")
         try script("list", toml: "[on]\n\"sheet.open\" = true", """
         case "$1" in
@@ -103,8 +104,8 @@ final class TriggerPanelTests: PanelCase {
 
         model.run(go, on: (try XCTUnwrap(model.openEntry), nil))
 
-        try await wait("the close") { self.host.dismissals == 1 }
-        XCTAssertEqual(try String(contentsOf: calls, encoding: .utf8), "go\n")
+        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the call") { (try? String(contentsOf: calls, encoding: .utf8)) == "go\n" }
     }
 
     func testAButtonOfAFrameThatReturnsNothingClosesThePanelOnceItsCallEnds() async throws {

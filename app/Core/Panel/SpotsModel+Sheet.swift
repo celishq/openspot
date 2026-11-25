@@ -382,18 +382,19 @@ extension SpotsModel {
             if let action {
                 perform(action, on: (entry, item))
             } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
-                if closes { closingPick = (item, entry) }
-                sheet.pick(item, closes: closes) { [weak self] answer in
-                    guard let self else { return }
-                    switch answer {
-                    case .form, .stopped: if closingPick?.item == item { closingPick = nil }
-                    default: break
-                    }
-                    guard case .form(let form) = answer else { return }
+                let wasShown = isShown
+                if closes {
+                    closingPick = (item, entry)
+                    if isShown { host.dismiss() } else { finishPick() }
+                }
+                sheet.pick(item) { [weak self] answer in
+                    guard let self, case .form(let form) = answer else { return }
+                    if closingPick?.item == item { closingPick = nil }
                     let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
                     switch place {
                     case .window: toast(.failure("\(item.title) asks with a form, which a window does not show yet."))
                     case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
+                    case .panel where closes: if wasShown { afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") } }
                     case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
                     }
                 }

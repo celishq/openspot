@@ -536,6 +536,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.runItem(item)
 
+        XCTAssertEqual(host.dismissals, 1)
         try await wait("the form") { model.form != nil }
         XCTAssertTrue(model.isShown)
         model.setFormValue("45", for: "minutes")
@@ -573,7 +574,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the name and the item") { (try? String(contentsOfFile: given, encoding: .utf8)) == "Pear a " }
     }
 
-    func testAButtonThatClosesButAnswersWithAFormKeepsThePanelAndAsks() async throws {
+    func testAButtonThatClosesButAnswersWithAFormOpensThePanelAgainAtTheForm() async throws {
         try script("list", toml: "[on]\n\"sheet.open\" = true", """
         case "$1" in
           editor) printf 'frame=\\ntype=form\\ntitle=Editor\\n\\nfield=name\\ntitle=Name\\n' ;;
@@ -589,8 +590,9 @@ final class SpotsModelTests: XCTestCase {
 
         model.run(editor, on: (try XCTUnwrap(model.openEntry), nil))
 
+        XCTAssertEqual(host.dismissals, 1)
         try await wait("the form") { model.form?.action.id == "editor" }
-        XCTAssertEqual(host.dismissals, 0)
+        XCTAssertTrue(model.isShown)
     }
 
     func testAButtonWhoseActionLacksARequiredInputOpensItsDrawnFormTitledByTheButton() async throws {

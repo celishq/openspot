@@ -73,7 +73,8 @@ Each button shows in the row's `⌘K` menu, with its `title` and its `shortcut`.
 
 ### Close or stay
 
-After a press, the panel closes. That's right for Open and Show in Finder, since you leave for another app.
+After a press, the panel closes at once, while your script runs. That's right for Open and Show in Finder, since you
+leave for another app. If the script fails, a toast says why. If it prints a form, the panel opens again at the form.
 
 Move to Trash has `close=false`, so the panel stays open. Openspot runs `downloads.sh show` again, and the file is
 gone from the list.
