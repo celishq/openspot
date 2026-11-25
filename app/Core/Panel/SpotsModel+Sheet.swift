@@ -132,21 +132,21 @@ extension SpotsModel {
     }
 
     func leavingSheet(_ id: String?) -> ClosingSheet? {
-        guard let held = closingSheet, held.id == id, transition.phase == .closing else { return nil }
+        guard transition.phase == .closing, let held = closingSheet, held.id == id else { return nil }
         return held
     }
 
     func present(_ id: String, moving: Bool) {
-        closingSheet = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
         asOnePress {
-            closingSheet = moving ? openSheetID.flatMap { id in
-                sheets[id].map { ClosingSheet(id: id, page: SheetPage(run: $0, rect: $0.sheetRect, query: searchText), entry: sheetEntry(id), card: SpotSheetCard.of(id, in: self)) }
+            let closing = moving ? openSheetID.flatMap { id in
+                sheets[id].map { ClosingSheet(id: id, page: SheetPage(run: $0, rect: $0.sheetRect, query: searchText), entry: sheetEntry(id)) }
             } : nil
+            if closing != closingSheet { closingSheet = closing }
             pendingAsk = nil
             keys.status = nil
             askedAnswer = nil
@@ -254,10 +254,7 @@ extension SpotsModel {
                 }
             }
             if isInstall, transition.phase == .closed { hideFieldDrop() }
-            if transition.phase == .closed {
-                endReview()
-                closingSheet = nil
-            }
+            if transition.phase == .closed { endReview() }
         }
     }
 

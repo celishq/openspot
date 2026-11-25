@@ -151,6 +151,7 @@ public final class SpotsModel {
         didSet {
             if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             holdBackdropSheet()
+            if transition.phase != .closing, closingSheet != nil { closingSheet = nil }
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
