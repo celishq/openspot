@@ -37,12 +37,6 @@ final class SpotRunTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
-    private func ends() throws -> () -> Int {
-        var count = 0
-        try XCTUnwrap(runs.last).onCall = { _ in count += 1 }
-        return { count }
-    }
-
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
@@ -336,7 +330,7 @@ final class SpotRunTests: XCTestCase {
 
     func testAClosedSheetDoesNotOpenWhenItsAnswerComes() async throws {
         let sheet = try holding("printf 'item=a\\ntitle=A\\n'", pause: 30)
-        let ends = try ends()
+        let ends = try XCTUnwrap(runs.last).endedCalls()
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }

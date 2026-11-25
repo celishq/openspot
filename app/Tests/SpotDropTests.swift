@@ -56,12 +56,6 @@ final class SpotDropTests: XCTestCase {
         "n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
     }
 
-    private func ends() -> () -> Int {
-        var count = 0
-        runs.onCall = { _ in count += 1 }
-        return { count }
-    }
-
     private func command(drop: [String]) -> Spot {
         Spot(id: "a", name: "A", url: folder, triggers: Manifest.Triggers(drop: DropKinds(drop)))
     }
@@ -360,7 +354,7 @@ final class SpotDropTests: XCTestCase {
     func testQuittingDropsAWaitingDrop() async throws {
         let sheet = try await busySheet()
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
-        let ends = ends()
+        let ends = runs.endedCalls()
 
         runs.quit()
         try await wait("the end of the work") { ends() == 1 }

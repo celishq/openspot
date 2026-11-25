@@ -10,12 +10,6 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
     }
 
-    private func ends() -> () -> Int {
-        var count = 0
-        runs.onCall = { _ in count += 1 }
-        return { count }
-    }
-
     private func answering() throws {
         try inline(toml: "[on]\nsearch = '^[0-9]'", """
         export default {
@@ -111,7 +105,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testANewerTextDropsTheAnswerOfASlowOlderOne() async throws {
         try answering()
         let sheet = try sheet()
-        let ends = ends()
+        let ends = runs.endedCalls()
 
         sheet.answer("12")
         sheet.answer("123")

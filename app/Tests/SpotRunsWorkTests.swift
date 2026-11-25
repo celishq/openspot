@@ -13,12 +13,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
         FileManager.default.createFile(atPath: path(name), contents: nil)
     }
 
-    private func ends() -> () -> Int {
-        var count = 0
-        runs.onCall = { _ in count += 1 }
-        return { count }
-    }
-
     func testAReadTellsNoReaderOfTheWorkOfItsCard() async throws {
         try script(toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ntitle=Same\\n'")
         let sheet = try sheet()
@@ -203,7 +197,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAStoppedCallLeavesNothingOnTheSpotOrInTheMenuBar() async throws {
         try script(toml: "title = 'Encode'", Self.progress)
         let sheet = try sheet()
-        let ends = ends()
+        let ends = runs.endedCalls()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
@@ -551,7 +545,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAQuitStopsAToggleAndItGoesBack() async throws {
         try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sed -n 's/^input\\.value=//p' > '\(path("value"))'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
-        let ends = ends()
+        let ends = runs.endedCalls()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }
         sheet.pressCard()

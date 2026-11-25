@@ -801,6 +801,7 @@
 		B7486925845C31588D4A276B /* SpotSpringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B6703F74B3E6754AD510EB /* SpotSpringTests.swift */; };
 		B750B401DC836D3D57F2B2A6 /* FileKinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978E97D13A57A4BCC1EC2AFC /* FileKinds.swift */; };
 		B7846103D56D6C3377A70D40 /* MainSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FF1CDA08F2F90750760F1A /* MainSearch.swift */; };
+		B827417CD3A6F1CBB61C5241 /* SpotRuns+EndedCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25035535137407F19EE4A8FF /* SpotRuns+EndedCalls.swift */; };
 		B845279EF8267BE06A2BA3C3 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04BEF46B4A79B0040258B67 /* Store.swift */; };
 		B878A178446D29066EC79E18 /* RemindersCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B42253BE45EADD77DC39CCC /* RemindersCalls.swift */; };
 		B89AFE319AF037DA1EA66361 /* PlaygroundCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A8A529120533FFABD7824F /* PlaygroundCalls.swift */; };
@@ -1376,6 +1377,7 @@
 		24BAAC7014CA50EA7277EE18 /* URL+SpotFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URL+SpotFile.swift"; sourceTree = "<group>"; };
 		24BC5E71EB213B0F998BE5FB /* Manifest+Binding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Manifest+Binding.swift"; sourceTree = "<group>"; };
 		24F1F7CF0E026D2B12F2FD8D /* Manifest+Parameter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Manifest+Parameter.swift"; sourceTree = "<group>"; };
+		25035535137407F19EE4A8FF /* SpotRuns+EndedCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+EndedCalls.swift"; sourceTree = "<group>"; };
 		256D772AA4EA8AD4E777C7EC /* MetricSpotsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricSpotsTests.swift; sourceTree = "<group>"; };
 		259F05606A45352D1D8B5700 /* OpenspotClient */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotClient; sourceTree = BUILT_PRODUCTS_DIR; };
 		25A0E74FA35CDC8DC5A78829 /* SpotSettingsSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSettingsSheetTests.swift; sourceTree = "<group>"; };
@@ -3321,6 +3323,7 @@
 				CF558F71CAA7F5F134492A9C /* SpotResizeTests.swift */,
 				A94132FC2B2705CEE940D0E7 /* SpotRun+Forms.swift */,
 				42F1108D35FF7EEB2828B2AF /* SpotRun+Paths.swift */,
+				25035535137407F19EE4A8FF /* SpotRuns+EndedCalls.swift */,
 				72638E1D79E36A1B4B4F9038 /* SpotRunsCallTests.swift */,
 				2A78CD5EDF1BFFA52E0B36DF /* SpotRunsCase.swift */,
 				DD185DC9EA26F1015F708A8F /* SpotRunsFrameTests.swift */,
@@ -5731,6 +5734,7 @@
 				79C990EF81336B51E4CF6FFF /* SpotRun+Paths.swift in Sources */,
 				504EC5672FCEEDB117EF953B /* SpotRunStateTests.swift in Sources */,
 				9AFFCD32DD15224FB3E9C04A /* SpotRunTests.swift in Sources */,
+				B827417CD3A6F1CBB61C5241 /* SpotRuns+EndedCalls.swift in Sources */,
 				433CF6740190BC31E3E431E6 /* SpotRunsCallTests.swift in Sources */,
 				A067BD9ACE1B744B43D68043 /* SpotRunsCase.swift in Sources */,
 				95C1F39365169D5EF49AEA1C /* SpotRunsFrameTests.swift in Sources */,
