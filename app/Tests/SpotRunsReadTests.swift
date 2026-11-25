@@ -149,7 +149,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.open(onReady: {})
-        try await wait("the first read") { self.log("reasons") == ["sheet.open show"] && !sheet.isShowing }
+        try await wait("the first read") { self.log("reasons") == ["sheet.open show"] && sheet.list.search == .script }
         sheet.search("k")
 
         try await pass(0.3, on: clock)
@@ -160,7 +160,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "[on]\n\"sheet.open\" = true\n\"sheet.text\" = true", "\(TestSpot.event)\n[ \"$ev\" = sheet.text ] && printf '%s\\n' \"$in\" >> '\(path("stdin"))'\nprintf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=hello\\n'")
         let sheet = try sheet()
         sheet.open(onReady: {})
-        try await wait("the sheet") { sheet.panel?.inputs == [.init(key: "note", value: "hello")] && !sheet.isShowing }
+        try await wait("the sheet") { sheet.panel?.inputs == [.init(key: "note", value: "hello")] && sheet.list.search == .script }
 
         sheet.search("k")
 

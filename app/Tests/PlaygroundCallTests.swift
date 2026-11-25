@@ -10,7 +10,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.open(onReady: {})
-        try await wait("the read") { calls.count == 1 }
+        try await wait("the read") { calls.count == 1 && sheet.list.search == .script }
         sheet.search("rep")
         try await pass(0.3, on: clock)
         try await wait("the search") { calls.count == 2 }

@@ -132,7 +132,7 @@ final class TriggerCallsTests: SpotRunsCase {
     func testATextTypedInTheSheetGetsEachFormOfItAsAlt() async throws {
         let sheet = try spot("\"sheet.text\" = true", view: "show|sheet.text")
         sheet.open {}
-        try await wait("the show") { self.calls == ["show|"] }
+        try await wait("the show") { self.calls == ["show|"] && sheet.list.search == .script }
 
         sheet.search("ыфа")
 

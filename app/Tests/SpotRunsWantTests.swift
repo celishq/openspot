@@ -198,7 +198,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script(toml: "[on]\n\"sheet.open\" = true\n\"sheet.text\" = true", "\(TestSpot.event)\nprintf 'item=a\\ntitle=%s\\n' \"${val:-none}\"")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
+        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] && sheet.list.search == .script }
 
         for text in ["r", "re", "rep"] {
             sheet.search(text)
@@ -218,7 +218,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
+        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] && sheet.list.search == .script }
 
         sheet.search("slow")
         try await pass(0.3, on: clock)

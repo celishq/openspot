@@ -13,10 +13,4 @@ extension SpotRuns {
         let deadline = DispatchTime.now() + frameWait
         waits.forEach { $0(deadline) }
     }
-
-    func noteFrameWait(until deadline: DispatchTime) {
-        guard deadline != frameDeadline else { return }
-        frameDeadline = deadline
-        frameWaits += 1
-    }
 }

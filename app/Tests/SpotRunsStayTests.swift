@@ -366,7 +366,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 && sheet.list.search == .script }
 
         sheet.search("rep")
 
