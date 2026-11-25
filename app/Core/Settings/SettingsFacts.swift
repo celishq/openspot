@@ -44,6 +44,11 @@ public struct SettingsFacts: Equatable, Sendable {
         }
     }
 
+    public struct StandingGroup: Identifiable, Equatable, Sendable {
+        public let id: String
+        public let standings: [SpotStanding]
+    }
+
     public struct RowGroup: Identifiable, Equatable, Sendable {
         public let id: String
         public let rows: [SettingRow]
@@ -63,6 +68,8 @@ public struct SettingsFacts: Equatable, Sendable {
     public private(set) var needed: [AccessList.Entry] = []
     public private(set) var unneeded: [AccessList.Entry] = []
     public private(set) var keyGroups: [RowGroup] = []
+    public private(set) var unsetKeys: [RowGroup] = []
+    public private(set) var spotGroups: [StandingGroup] = []
     public private(set) var standings: [SpotStanding] = []
     public private(set) var rows: [SettingRow] = []
     public private(set) var looks: [Look] = []
@@ -83,6 +90,11 @@ public struct SettingsFacts: Equatable, Sendable {
         standings = (loaded + core.map(\.standing).filter(\.isOff))
             .filter { !$0.id.hasPrefix(ReservedSetting.appSpot + "/") && seen.insert($0.id).inserted }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        spotGroups = [
+            StandingGroup(id: "Needs Attention", standings: standings.filter(\.lacks)),
+            StandingGroup(id: "On", standings: standings.filter { !$0.lacks && !$0.isOff }),
+            StandingGroup(id: "Turned Off", standings: standings.filter { !$0.lacks && $0.isOff })
+        ].filter { !$0.standings.isEmpty }
         standingWords = standings.map { Self.fold($0.title + " " + $0.detail) }
         self.rows = rows
         rowWords = rows.map { Self.fold($0.title + " " + ($0.detail ?? "")) }
@@ -96,7 +108,12 @@ public struct SettingsFacts: Equatable, Sendable {
         clashes = clashing.map(Clash.init)
         self.clashing = Set(clashing.flatMap { $0.map(\.item) })
         let keys = rows.filter { $0.kind == .key }
-        keyGroups = keys.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.map { name in RowGroup(id: name, rows: keys.filter { $0.name == name }) }
+        keyGroups = Self.byName(keys.filter { !($0.value ?? "").isEmpty })
+        unsetKeys = Self.byName(keys.filter { ($0.value ?? "").isEmpty })
+    }
+
+    private static func byName(_ rows: [SettingRow]) -> [RowGroup] {
+        rows.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.map { name in RowGroup(id: name, rows: rows.filter { $0.name == name }) }
     }
 
     public var waiting: [SpotStanding] {

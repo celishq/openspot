@@ -8,10 +8,7 @@ struct SettingsView: View {
     @State var isAboutShown = false
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
-    @State private var isTitleShown = false
-    @State private var isScrolled = false
-    @State private var barHeight: CGFloat = 0
-    @Environment(\.colorScheme) var scheme
+    @State private var scroll = SettingsScroll()
 
     static let top = "settings-top"
 
@@ -41,28 +38,10 @@ struct SettingsView: View {
                 }
             }
             .scrollEdgeEffectStyle(.soft, for: .top)
-            .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { _, isPast in
-                withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
-            })
-            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { _, isPast in
-                withAnimation(SpotMotion.fade(isShown: isPast)) { isScrolled = isPast }
-            })
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { _, height in barHeight = height })
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(.bar)
-                    .mask {
-                        VStack(spacing: 0) {
-                            Rectangle()
-                            LinearGradient(colors: SpotTheme.settingsBarFade, startPoint: .top, endPoint: .bottom)
-                                .frame(height: SpotTokens.settingsBarFade)
-                        }
-                    }
-                    .frame(height: barHeight + SpotTokens.settingsBarFade)
-                    .offset(y: -barHeight)
-                    .opacity(isScrolled ? 1 : MotionTokens.hiddenOpacity)
-                    .allowsHitTesting(false)
-            }
+            .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { [scroll] _, isPast in scroll.show(title: isPast) })
+            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { [scroll] _, isPast in scroll.show(bar: isPast) })
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { [scroll] _, height in scroll.take(barHeight: height) })
+            .overlay(alignment: .top) { SettingsScrollBar(scroll: scroll) }
             .onChange(of: book.recording == nil) { _, isIdle in HotKey.pause(!isIdle) }
             .onDisappear { HotKey.pause(false) }
         }
@@ -79,11 +58,7 @@ struct SettingsView: View {
                     .help("Forward")
             }
             ToolbarItem(placement: .navigation) {
-                Text(book.title)
-                    .font(SpotType.settingsPageTitle)
-                    .lineLimit(1)
-                    .opacity(isTitleShown ? 1 : MotionTokens.hiddenOpacity)
-                    .allowsHitTesting(isTitleShown)
+                SettingsToolbarTitle(scroll: scroll, title: book.title)
             }
             .sharedBackgroundVisibility(.hidden)
         }
@@ -101,7 +76,7 @@ struct SettingsView: View {
 
     private var sidebar: some View {
         List(selection: chosen) {
-            ForEach(SettingsPage.Section.allCases) { section in
+            ForEach(SettingsPage.Section.allCases.filter { $0 != .account }) { section in
                 let count = section == .access ? facts.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
@@ -119,6 +94,32 @@ struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
+        .tint(SpotTheme.settingsSelection)
+        .safeAreaInset(edge: .bottom) { accountRow }
+    }
+
+    private var accountRow: some View {
+        let isChosen = book.query.isEmpty && book.page.section == .account
+        let account = facts.account
+        return HStack(spacing: SpotTokens.settingsGroupGap) {
+            SettingsTile(symbol: SettingsPage.Section.account.symbol, color: SpotTheme.settings(.account), side: SpotTokens.settingsAccountTile)
+            VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
+                Text(account?.handle.map { "@\($0)" } ?? "Account")
+                    .lineLimit(1)
+                Text(account?.isSignedIn == true ? "Your key and backup" : "Sign in to publish")
+                    .font(SpotType.settingsLine)
+                    .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.primary)
+        .padding(SpotTokens.settingsAccountPadding)
+        .background(isChosen ? SpotTheme.settingsSelection : Color.clear, in: SpotRoundShape(radius: SpotTokens.settingsAccountCorner))
+        .contentShape(Rectangle())
+        .onTapGesture { book.go(.account) }
+        .accessibilityAddTraits(.isButton)
+        .padding(SpotTokens.settingsAccountInset)
     }
 
     private var chosen: Binding<SettingsPage.Section?> {
