@@ -11,6 +11,7 @@ public struct SpotSheetCard {
     @MainActor
     public static func of(_ sheetID: String?, in model: SpotsModel) -> SpotSheetCard? {
         guard let sheetID else { return nil }
+        if let held = model.leavingSheet(sheetID) { return held.card }
         let owner = OwnedSheet.owner(of: sheetID)?.spot ?? sheetID
         let visible = model.visible
         let source = sheetID == model.transition.id ? model.transition.page?.source : nil

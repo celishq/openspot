@@ -161,20 +161,41 @@ final class PressTests: PanelCase {
         XCTAssertEqual(takes, [1, 1])
     }
 
-    func testASheetThatClosesWhileALoadTakesItsSpotAwayIsCutOnceTheListIsWhole() async throws {
+    func testASheetThatClosesWhileALoadTakesItsSpotAwayKeepsItsLookToTheEndOfItsMotion() async throws {
         try await openList()
         host.heldEnds = []
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-        XCTAssertEqual(model.transition.phase, .closing)
+        let card = SpotSheetCard.of("list", in: model)?.placement
         try FileManager.default.removeItem(at: spots.spotFile("list"))
 
         await model.reload()
 
-        XCTAssertNil(model.transition.id)
         XCTAssertNil(model.card(id: "list"))
+        XCTAssertEqual(model.transition.phase, .closing)
+        XCTAssertEqual(model.sheetEntry("list")?.state.title, "List")
+        XCTAssertEqual(SpotSheetCard.of("list", in: model)?.placement, card)
         XCTAssertEqual(host.disagreements, 0)
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
         ends.forEach { $0() }
+        XCTAssertEqual(model.transition.phase, .closed)
+        XCTAssertNil(model.sheetEntry("list"))
+    }
+
+    func testASearchDuringTheCloseOfASheetLeavesItsCardWhereTheCloseFoundIt() async throws {
+        try await openList()
+        host.heldEnds = []
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        let card = SpotSheetCard.of("list", in: model)?.placement
+        XCTAssertNotNil(card)
+
+        model.search("zzz")
+
+        XCTAssertFalse(model.visible.contains { $0.id == "list" })
+        XCTAssertEqual(SpotSheetCard.of("list", in: model)?.placement, card)
+        let ends = host.heldEnds ?? []
+        host.heldEnds = nil
+        ends.forEach { $0() }
+        XCTAssertNil(SpotSheetCard.of("list", in: model))
     }
 }

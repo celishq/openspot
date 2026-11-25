@@ -56,6 +56,7 @@ extension SpotsModel {
 
     public func sheetEntry(_ id: String?) -> Entry? {
         guard let id else { return nil }
+        if let held = leavingSheet(id) { return held.entry }
         if let entry = entry(id) { return entry }
         guard OwnedSheet.owner(of: id) != nil, let run = sheets[id] else { return nil }
         return Entry(spot: run.spot, run: run)
@@ -130,15 +131,22 @@ extension SpotsModel {
         present(id, moving: moving)
     }
 
+    func leavingSheet(_ id: String?) -> ClosingSheet? {
+        guard let held = closingSheet, held.id == id, transition.phase == .closing else { return nil }
+        return held
+    }
+
     func present(_ id: String, moving: Bool) {
-        closingPage = nil
+        closingSheet = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
         asOnePress {
-            closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
+            closingSheet = moving ? openSheetID.flatMap { id in
+                sheets[id].map { ClosingSheet(id: id, page: SheetPage(run: $0, rect: $0.sheetRect, query: searchText), entry: sheetEntry(id), card: SpotSheetCard.of(id, in: self)) }
+            } : nil
             pendingAsk = nil
             keys.status = nil
             askedAnswer = nil
@@ -252,7 +260,7 @@ extension SpotsModel {
             if isInstall, transition.phase == .closed { hideFieldDrop() }
             if transition.phase == .closed {
                 endReview()
-                closingPage = nil
+                closingSheet = nil
             }
         }
     }
