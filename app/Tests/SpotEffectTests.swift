@@ -14,7 +14,7 @@ final class SpotEffectTests: PanelCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
     private func path(_ name: String) -> String {
@@ -26,8 +26,8 @@ final class SpotEffectTests: PanelCase {
     }
 
     private func writeFlow(show: String = "") throws {
-        let buttons = ["next", "root", "back", "close", "saved", "pick", "late", "other"].map { "button=\($0)\\ntitle=\($0)\\nscope=spot\\n\\n" }.joined()
-        try script("flow", toml: "title = 'Flow'\npages = ['*']", """
+        let buttons = ["next", "root", "back", "close", "saved", "pick", "late", "other", "upload", "wrong", "drop"].map { "button=\($0)\\ntitle=\($0)\\nscope=spot\\n\\n" }.joined()
+        try script("flow", toml: "title = 'Flow'\npages = ['*']\n\n[actions.again]", """
         os='\(client.path)'
         codes='\(path("codes"))'
         in=$(cat)
@@ -40,6 +40,9 @@ final class SpotEffectTests: PanelCase {
           close) "$os" route close ;;
           saved) "$os" toast Saved ;;
           pick) "$os" select c ;;
+          upload) "$os" toast --id up --action again Uploading ;;
+          wrong) "$os" toast --id up --action nothing Uploading ;;
+          drop) "$os" toast --remove up ;;
           late) trap '"$os" toast Late; echo "late $?" >> "$codes"; exit 0' TERM; echo up >> "$codes"; sleep 30 & wait ;;
         esac
         echo "$1 $?" >> "$codes"
@@ -52,7 +55,7 @@ final class SpotEffectTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.frameActions.count == 8 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.frameActions.contains { $0.id == "drop" } == true }
     }
 
     private func press(_ id: String, in spot: String = "flow") throws {
@@ -206,5 +209,65 @@ final class SpotEffectTests: PanelCase {
 
         XCTAssertEqual(back.code, 1)
         XCTAssertEqual(back.errors, "The panel shows no sheet. Open a spot, then run `openspot route back` again.\n")
+    }
+
+    func testAToastCarriesItsIdAndActionWithItsSpot() async throws {
+        try await openFlow()
+
+        let code = try await pressed("upload")
+
+        XCTAssertEqual(code, "upload 0")
+        XCTAssertEqual(host.toasts.map(\.spot), ["flow"])
+        XCTAssertEqual(host.toasts.first?.note.id, "up")
+        XCTAssertEqual(host.toasts.first?.note.action, "again")
+    }
+
+    func testAToastThatNamesAnActionTheSpotLacksFails() async throws {
+        try await openFlow()
+
+        let code = try await pressed("wrong")
+
+        XCTAssertEqual(code, "wrong 2")
+        XCTAssertEqual(host.toasts.count, 0)
+    }
+
+    func testToastRemoveTakesTheToastOfTheSpotAway() async throws {
+        try await openFlow()
+        _ = try await pressed("upload")
+        XCTAssertEqual(model.toasts.queue.map(\.id), [ToastID(spot: "flow", name: .given("up"))])
+
+        let code = try await pressed("drop")
+
+        XCTAssertEqual(code, "drop 0")
+        XCTAssertTrue(model.toasts.queue.isEmpty)
+    }
+
+    func testAPressOnAToastRunsItsAction() async throws {
+        try await openFlow()
+        _ = try await pressed("upload")
+        let note = try XCTUnwrap(host.toasts.first)
+
+        model.press(note.note, of: note.spot)
+
+        try await wait("the action") { self.log("codes").contains("again 0") }
+    }
+
+    func testAClickOnAFailureWithAFixOpensItsLink() async throws {
+        let link = try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security"))
+        model.toast(.failure("Openspot cannot paste.", fix: .url(link)))
+
+        model.toasts.press(try XCTUnwrap(model.toasts.queue.first).id)
+
+        XCTAssertEqual(host.opened, [link])
+    }
+
+    func testAToastDrawsAViewWithAHeadThatItsFlagsOverride() async throws {
+        try await openFlow()
+
+        let toast = try await call(["toast", "--id", "backup", "--view", "toast=old\nclass=flex-col\n\ntext=words\ntitle=Backup\n", "Backup"])
+
+        XCTAssertEqual(toast.code, 0)
+        XCTAssertEqual(host.toasts.first?.note.id, "backup")
+        XCTAssertEqual(host.toasts.first?.note.tree?.children, ["words"])
     }
 }

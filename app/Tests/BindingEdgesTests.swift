@@ -170,7 +170,7 @@ final class BindingEdgesTests: SpotRunsCase {
         printf 'out.said=%s\\n' "$('\(client.path)' run picker.pick when="$w" --out until)"
         """)
         _ = try scanned()
-        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]), app: FakeRunningApp(), runs: runs)
         runs.api = api
 
         let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "run", "asker", "go", "when=now"], folder: folder.path), input: { "" }))
@@ -189,7 +189,7 @@ final class BindingEdgesTests: SpotRunsCase {
         printf 'said=%s %s\\n' "$1" "$(cat | tr '\\n' ' ')"
         """)
         _ = try scanned()
-        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]), app: FakeRunningApp(), runs: runs)
         let answer = { (words: [String]) in
             try await XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "run", "counter"] + words, folder: self.folder.path), input: { "" }))()
         }
@@ -213,7 +213,7 @@ final class BindingEdgesTests: SpotRunsCase {
         _ = try scanned()
         let places = AppPlaces.test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path])
         _ = try places.config.change { $0.set(setting: "size", of: "noter", to: "3") }
-        let api = CommandAPI(mac: Mac(), places: places, app: FakeRunningApp(), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: places, app: FakeRunningApp(), runs: runs)
         runs.api = api
 
         let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "run", "noter", "go"], folder: folder.path), input: { "" }))

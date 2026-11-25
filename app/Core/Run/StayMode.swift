@@ -206,7 +206,7 @@ final class StayMode: ScriptMode {
         let request = call.request
         records[id] = record
         call.made.halt = { [weak script] in script?.send(text: Message.stopEvent(id: id)) }
-        if case .ask = request.purpose { askReason = request.event?.name }
+        if case .ask = request.purpose { askReason = request.event?.name } else if let event = request.event { askReason = event.name }
         caller?.call = call
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
@@ -254,7 +254,7 @@ final class StayMode: ScriptMode {
 
     private func noteReason() {
         guard let caller else { return }
-        let asks = records.values.contains { $0.ask != nil }
+        let asks = records.values.contains { $0.ask != nil || !$0.isDropped && $0.call.request.event != nil }
         caller.reason = asks && !holdsScript ? askReason : nil
     }
 
@@ -428,6 +428,6 @@ final class StayMode: ScriptMode {
         givenUp = .some(stamp)
         let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
         runs.usage.failed(run.spot, fault: text, at: time)
-        run.onReport(.failure(text))
+        run.onReport(.toast(.failure(text)))
     }
 }

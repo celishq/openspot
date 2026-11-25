@@ -66,9 +66,14 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func begin() {
+        if action == "selectall" {
+            let trace = SpotSelectAllTrace(model: model, panel: panel) { self.finish(with: $0) }
+            return trace.run()
+        }
         if action == "pixels" { return shotsFolder.map(shootPixels) ?? finish(with: "no shots folder\n") }
         if action == "panel" { return beginOpens() }
         if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
+        if action == "attach" { return shotsFolder.map(shootAttachments) ?? finish(with: "no shots folder\n") }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
         if action == "menu" { return beginMenus() }
@@ -87,7 +92,7 @@ final class SpotMotionProbe: NSObject {
             return press(target.id, left: presses)
         }
         if action == "searchask" {
-            model.searchText = searchText
+            model.search(searchText)
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 if let index = self.model.visible.firstIndex(where: { $0.item?.run == self.row }) { self.model.selected = index }
                 self.start = CACurrentMediaTime()
@@ -277,8 +282,8 @@ final class SpotMotionProbe: NSObject {
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
             }),
             (nil, 1, { self.model.closeMenu() }),
-            ("search", 1.5, { self.model.searchText = "ro" }),
-            (nil, 1, { self.model.searchText = "" }),
+            ("search", 1.5, { self.model.search("ro") }),
+            (nil, 1, { self.model.search("") }),
             ("edit", 1.5, { self.model.beginEditing() }),
             ("tip", 1, { self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") } }),
             (nil, 1.5, {
@@ -298,7 +303,7 @@ final class SpotMotionProbe: NSObject {
                 self.model.cancelForm()
                 self.model.closeSheet(moving: false)
             }),
-            ("toast", 1, { self.model.host.confirm("Saved to the shelf") })
+            ("toast", 1, { self.model.toast("Saved to the shelf") })
         ]
         func next(_ left: ArraySlice<(name: String?, wait: Double, act: () -> Void)>) {
             guard let step = left.first else { return finish(with: "shots\n") }
@@ -323,7 +328,7 @@ final class SpotMotionProbe: NSObject {
 
     private func shootTyping(into folder: String) {
         panel.makeKeyAndOrderFront(nil)
-        model.searchText = searchText
+        model.search(searchText)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/search.png")
             self.saveSharp(to: "\(folder)/search-focused.png")
@@ -335,11 +340,25 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
+    private func shootAttachments(into folder: String) {
+        panel.makeKeyAndOrderFront(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.shootChip(1, into: folder) }
+    }
+
+    private func shootChip(_ number: Int, into folder: String) {
+        guard number <= model.attachments.chips.count else { return finish(with: "shots\n") }
+        _ = model.handleKey(ActionKey(name: "tab"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.save(to: "\(folder)/attach-\(number).png")
+            self.shootChip(number + 1, into: folder)
+        }
+    }
+
     private func shootResults(into folder: String) {
         _ = model.stepBack()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             let word = self.model.visible.first?.state.title.split(separator: " ").first.map(String.init) ?? "a"
-            self.model.searchText = word
+            self.model.search(word)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -369,7 +388,7 @@ final class SpotMotionProbe: NSObject {
             return finish(with: "no card to resize\n")
         }
         let id = model.visible[card].id
-        let grid = model.gridOrigin
+        let grid = SpotTokens.gridOrigin()
         let end = CGPoint(x: grid.x + model.placements[card].rect.maxX, y: grid.y + model.placements[card].rect.maxY)
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
@@ -461,13 +480,13 @@ final class SpotMotionProbe: NSObject {
 
     private func search(left: Int) {
         guard left > 0 else {
-            model.searchText = searchText
+            model.search(searchText)
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 let shown = self.model.visible.map { "\($0.state.title) · \($0.state.subtitle ?? "")" }
                 self.finish(with: self.report() + "shows:\n" + shown.joined(separator: "\n") + "\n")
             }
         }
-        model.searchText = String(searchText.prefix((presses - left) % (searchText.count + 1)))
+        model.search(String(searchText.prefix((presses - left) % (searchText.count + 1))))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
@@ -488,7 +507,7 @@ final class SpotMotionProbe: NSObject {
         guard left > 0 else { return end() }
         let word = "smile"
         let length = left % (word.count + 1)
-        model.searchText = String(word.prefix(length))
+        model.search(String(word.prefix(length)))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.type(left: left - 1) }
     }
 
@@ -510,7 +529,7 @@ final class SpotMotionProbe: NSObject {
         } else if key == "settings" {
             model.openSettings()
         } else if key.hasPrefix("text:") {
-            model.searchText = String(key.dropFirst(5))
+            model.search(String(key.dropFirst(5)))
         } else if key.hasPrefix("part:") {
             let id = String(key.dropFirst(5))
             if let part = model.openSheet?.panel?.parts.first(where: { $0.id == id }) { model.pressPart(part) }
@@ -574,7 +593,7 @@ final class SpotMotionProbe: NSObject {
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
             CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.cell / 2),
-            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
+            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotPlacement.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shotsFolder { return shoot(id, stops: stops, into: shotsFolder) }
@@ -642,7 +661,7 @@ final class SpotMotionProbe: NSObject {
         let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
         var log: [String] = []
         func note() {
-            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
+            log.append("drag \(model.drag.map { "\($0.id) at \($0.cell.row) \($0.cell.column)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
         }
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {

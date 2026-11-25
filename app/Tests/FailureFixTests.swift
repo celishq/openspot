@@ -24,13 +24,13 @@ final class FailureFixTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let api = CommandAPI(mac: Mac(windows: Refusing()), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(windows: Refusing()), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
             switch report {
-            case .failure(let text): told.append((text, nil))
-            case .failureWithFix(let text, let fix): told.append((text, fix))
+            case .toast(let note) where note.kind == .failure:
+                if case .url(let fix) = note.fix { told.append((note.words, fix)) } else { told.append((note.words, nil)) }
             default: break
             }
         }

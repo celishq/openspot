@@ -110,19 +110,37 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "Openspot is not running.")], text)
     }
 
+    func testEnvToastPassesItsOptionsBeforeItsWords() async throws {
+        let tools = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\nprintf '%s|' \"$@\" >&2\nexit 2\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try inline("toaster", toml: "[actions.go]\noutputs.said = 'text'", """
+        export default {
+          async go(input, env) {
+            try { await env.toast("Uploading", { id: "up", action: "go" }) } catch (error) { return { said: error.message } }
+          },
+        }
+        """)
+        let bare = SpotRuns(environment: TestEnvironment.values.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new })
+        defer { bare.quit() }
+
+        let text = try await bare.answer(of: try spot("toaster"), "go", limit: 60)
+
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "toast|--id|up|--action|go|Uploading|")], text)
+    }
+
     func testEnvHoldsEachCommandThatNeedsNoUseAndNoCommandOfAnUndeclaredUse() async throws {
         try inline("summer", toml: "[actions.sum]\noutputs.sum = 'text'\noutputs.kinds = 'text'", """
         export default {
           async sum(input, env) {
-            const solved = await env.calc.solve("2+3")
-            return { sum: solved.split("\\n")[0], kinds: `${typeof env.toast} ${typeof env.clipboard}` }
+            const solved = await env.version()
+            return { sum: solved, kinds: `${typeof env.toast} ${typeof env.clipboard}` }
           },
         }
         """)
 
         let text = try await runs.answer(of: try spot("summer"), "sum", limit: 60)
 
-        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "item=5"), .init(key: "kinds", value: "function undefined")], text)
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown")), .init(key: "kinds", value: "function undefined")], text)
     }
 
     func testTheMainSearchAndAPressCallTheHandlersOfAnInlineSpot() async throws {

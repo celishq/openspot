@@ -26,56 +26,57 @@ final class CalculatorSpotTests: SampleSpotsCase {
         XCTAssertFalse(calculator.isFound)
     }
 
-    func testAnAnswerIsALargeCardOfTheAnswerOverAFaintSumWhosePickCopiesThePlainValue() async throws {
-        try await withPrivateHome { home in
-            try "item=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+    private let rates = #"{"date":"2026-11-10","usd":{"usd":1,"eur":0.8973,"uah":45.4772}}"#
 
-            let answers = try await self.calculator.search("1000+234.5", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
+    func testAnAnswerIsALargeCardOfTheSumOverTheAnswerThatFillsIt() async throws {
+        try await withPrivateHome { _ in
+            let answers = try await self.calculator.search("1000+234", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
-            XCTAssertEqual(answers.map(\.run), ["1234.5"])
+            XCTAssertEqual(answers.map(\.run), ["1234"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5"])
-            XCTAssertEqual(answers.first?.card?.face.parts.last?.number?.text, "1,234.5")
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.id), ["sum", "answer"])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234", nil])
+            XCTAssertEqual(answers.first?.card?.face.node("answer")?.style.grows, true)
             XCTAssertEqual(answers.first?.openTitle, "Copy")
-            XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
         }
     }
 
-    func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRatesAndItsSymbolFaint() async throws {
-        try await withPrivateHome { home in
-            try "item=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
-
-            let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
-
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
-            XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
-        }
+    private func keep(_ value: String, as name: String, in home: URL) throws {
+        let spot = try calculator
+        try SpotCache.standard(environment: ["HOME": home.path]).keep(value, as: name, of: spot.dataName ?? spot.id)
     }
 
-    func testATimeInAnotherZoneKeepsTheZoneItWasReadIn() async throws {
+    func testACurrencyReadsTheKeptRatesAndShowsItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try "item=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
-
-            let answers = try await self.calculator.search("3pm tokyo in berlin", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
-
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "Wed 3:00 PM · Tokyo")
-        }
-    }
-
-    func testAnAnswerFromOldRatesIsACardWhoseSumWarnsWithTheAgeOfItsRates() async throws {
-        try await withPrivateHome { home in
-            try "item=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try self.keep(self.rates, as: "rates", in: home)
 
             let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title.map { $0.hasPrefix("15 USD in EUR · rates of") }, true)
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.contains(where: \.isUnit), true)
         }
     }
 
-    func testNoRatesShowARowThatSaysHowToGetThem() async throws {
+    func testATimeInAnotherZoneKeepsTheZoneItWasReadIn() async throws {
+        try await withPrivateHome { _ in
+            let answers = try await self.calculator.search("3pm tokyo in berlin", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
+
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title.map { $0.hasSuffix("· Tokyo") }, true)
+        }
+    }
+
+    func testNoKeptRatesShowARowThatTheyAreComing() async throws {
+        try await withPrivateHome { _ in
+            let rows = try await self.calculator.search("15 usd in eur", timeout: 60).items
+
+            XCTAssertEqual(rows.map(\.title), ["Getting exchange rates"])
+        }
+    }
+
+    func testAFailureOfTheRatesShowsARowThatSaysHowToGetThem() async throws {
         try await withPrivateHome { home in
-            try "status=offline\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try self.keep("offline", as: "rates-failure", in: home)
 
             let rows = try await self.calculator.search("15 usd in eur", timeout: 60).items
 
@@ -86,7 +87,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testADeadSourceShowsARowThatSaysWhatStillWorks() async throws {
         try await withPrivateHome { home in
-            try "status=unavailable\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try self.keep("unavailable", as: "rates-failure", in: home)
 
             let rows = try await self.calculator.search("15 usd in eur", timeout: 60).items
 
@@ -109,38 +110,57 @@ final class CalculatorSpotTests: SampleSpotsCase {
     }
 
     @MainActor
-    func testAKeyShowsTheRowOfASumWithin4Milliseconds() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
+    private func panel(in folder: URL, defaults: UserDefaults, fetch: Fetch? = nil, frameWait: DispatchTimeInterval = .milliseconds(2)) async throws -> SpotsModel {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
         let source = try calculator.url.deletingLastPathComponent()
         try FileManager.default.copyItem(at: source, to: spots.appendingPathComponent(source.lastPathComponent))
-        let suite = "openspot-calc-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
         let host = FakeHost()
         let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
-        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2))
-        defer { model.quit() }
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2, frameWait: frameWait, cache: SpotCache(folder: folder.appendingPathComponent("cache"))))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs, rates: .offline)
+        if let fetch { model.runs.fetch = fetch }
+        model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs)
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.searchText = "2+2"
-        for _ in 0..<6000 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
+        return model
+    }
 
-        var times: [Duration] = []
-        for _ in 0..<5 {
-            model.searchText = ""
-            let start = ContinuousClock.now
-            model.searchText = "12*(3+4)"
-            if model.visible.first?.id == "calculator\n84" { times.append(ContinuousClock.now - start) }
-            for _ in 0..<6000 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
-        }
+    @MainActor
+    func testAKeyShowsTheRowOfASumInItsOwnTurn() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let suite = "openspot-calc-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = try await panel(in: folder, defaults: defaults, frameWait: .seconds(10))
+        defer { model.quit() }
+        model.search("2+2")
+        try await wait("the loaded calculator") { model.visible.first?.id == "calculator\n4" }
+        model.search("")
 
-        XCTAssertLessThan(try XCTUnwrap(times.min(), "no key showed its rows in its own turn"), .milliseconds(4), "\(times)")
+        model.search("12*(3+4)")
+
+        XCTAssertEqual(model.visible.first?.id, "calculator\n84")
+    }
+
+    @MainActor
+    func testACurrencyShowsTheLoadingRowUntilItsRatesComeThenItsAnswer() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json"
+        FakeWeb.answers.withLock { $0[source] = .init(status: 200, body: Data(rates.utf8), headers: [:]) }
+        let suite = "openspot-calc-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = try await panel(in: folder, defaults: defaults, fetch: Fetch(configuration: FakeWeb.configuration, wait: 30))
+        defer { model.quit() }
+
+        model.search("15 usd in eur")
+
+        try await wait("the answer from the fetched rates") { model.visible.first?.id == "calculator\n13.46" }
+        XCTAssertEqual(FakeWeb.asked.withLock { $0.filter { $0.url?.absoluteString == source }.count }, 1)
     }
 }
 

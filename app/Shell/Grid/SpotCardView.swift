@@ -35,7 +35,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .overlay(alignment: .topLeading) { if entry.isNew { SpotCornerMark(face: .word("New"), corner: .leading, size: size).accessibilityLabel("New spot") } }
             .contentShape(shape(of: .hit))
-            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
@@ -190,7 +190,7 @@ private struct CardRing: ViewModifier {
     let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openSheetID == nil))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.marksMenu(ofCard: index)))
     }
 }
 

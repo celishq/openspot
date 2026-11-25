@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state first-launch examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -17,6 +17,7 @@ verify:
 	sh scripts/check-windows.sh
 	sh scripts/check-tokens.sh
 	sh scripts/check-tools.sh
+	sh scripts/check-presses.sh
 	sh scripts/spot-tests.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' $(TEST_LIMITS) test
@@ -50,6 +51,12 @@ spots:
 	mkdir -p $(HOME)/.config/openspot/spots
 	for spot in spots/*.spot; do [ "$$spot" = spots/openspot.spot ] || ln -sfn "$(CURDIR)/$$spot" $(HOME)/.config/openspot/spots/; done
 
+attachment-demo:
+	sh scripts/attachment-demo.sh
+
+toast-demo:
+	sh scripts/toast-demo.sh
+
 dev-state:
 	rm -rf .temp/openspot
 	mkdir -p .temp/openspot/spots
@@ -57,7 +64,7 @@ dev-state:
 	rm -rf .temp/openspot/spots/openspot.spot
 
 first-launch:
-	pkill -f '/Debug/Openspot.app/Contents/MacOS/Openspot' || true
+	pkill -f '/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly' || true
 	$(MAKE) dev-state EMPTY=1
 
 examples:

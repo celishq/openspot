@@ -81,7 +81,6 @@ class SampleSpotsCase: XCTestCase {
     static func fakeOpenspot(in folder: URL) -> String {
         """
         case "$1 $2" in
-          'calc solve') printf '%s\\n' "$3" >> '\(folder.path)/calc-asked'; cat '\(folder.path)/calc-answer' 2>/dev/null ;;
           'clipboard copy') cat > '\(folder.path)/clipboard' ;;
           'clipboard read') cat '\(folder.path)/clipboard' 2>/dev/null ;;
           'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;;

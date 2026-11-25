@@ -87,7 +87,7 @@ final class WireTests: SpotRunsCase {
         let file = folder.appendingPathComponent("a.txt")
         try "a".write(to: file, atomically: true, encoding: .utf8)
 
-        let drop = try await sent("drop", by: sheet) { XCTAssertTrue(sheet.drop([file.path, file.path])) }
+        let drop = try await sent("drop", by: sheet) { XCTAssertTrue(sheet.drop(paths: [file.path, file.path])) }
 
         XCTAssertEqual(drop, "args=drop\ninput.file=\(file.path)\ninput.file=\(file.path)\nsetting.city=Paris")
     }

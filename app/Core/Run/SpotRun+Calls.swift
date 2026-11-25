@@ -25,7 +25,7 @@ extension SpotRun {
         case .act(let act):
             act.first?.end(.stopped)
             fail(error)
-            act.ended?()
+            act.ended?(.failed(error))
         case .ask:
             break
         }
@@ -90,7 +90,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query, isStopped: Self.isStop(end))
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }
@@ -99,6 +99,11 @@ extension SpotRun {
         guard case .ended = end, !call.hasAnswer, case .ask(let ask) = call.request.purpose else { return }
         call.hasAnswer = true
         await takeAnswer((call.pushed ?? call.lastHead)?.withoutEffects() ?? .empty, frame: "", to: ask)
+    }
+
+    private static func isStop(_ end: ScriptCall.End) -> Bool {
+        if case .stopped = end { return true }
+        return false
     }
 
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
@@ -116,7 +121,7 @@ extension SpotRun {
         log(call, end, errors: errors)
         switch call.request.purpose {
         case .ask(.answer(let query)):
-            takeAnswers([], to: query)
+            takeAnswers([], to: query, isStopped: true)
         case .ask:
             break
         case .act(let act):
@@ -186,14 +191,14 @@ extension SpotRun {
             answered = nil
             if let undo = act.undo { state = undo }
             let item = Self.item(of: call.request.message)
-            fail(error, item: item)
-            if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
+            fail(error, tells: act.tells, item: item)
+            if act.tells, runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
         default:
             break
         }
         callEnded(call.made)
-        if case .act(let act) = purpose { act.ended?() }
+        if case .act(let act) = purpose { act.ended?(end) }
         showAgainIfAsked()
     }
 

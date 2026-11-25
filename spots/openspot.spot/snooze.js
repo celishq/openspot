@@ -138,8 +138,9 @@ function hours(route, now, choices) {
   return blocks
 }
 
-/** Shows the sheet or a page of Pick Date; pick shows the sheet under the title of what is snoozed; a press of a tile,
- * or of a part of a picked day, gives its moment or `someday` as `until`. */
+/** Shows the sheet or a page of Pick Date; pick shows the sheet under the title of what is snoozed; at gives the moment
+ * of a tile as `until` with no sheet; a press of a tile, or of a part of a picked day, gives its moment or `someday` as
+ * `until`. */
 export default {
   async show({ route = "" }, env) {
     const now = new Date()
@@ -149,6 +150,11 @@ export default {
   },
   async pick({ title }, env) {
     return sheet(new Date(), choices(env.settings), title)
+  },
+  async at({ tile }, env) {
+    const moment = times(new Date(), choices(env.settings))[tile]
+    if (!moment) throw new Error(`Snooze has no tile ${tile}. Use hour, later, evening, tomorrow, weekend, week or month.`)
+    return { until: iso(moment) }
   },
   async press({ item }, env) {
     if (!item || item.startsWith("date")) return

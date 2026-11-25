@@ -1,7 +1,7 @@
 [scripts.actions]
 title = "Card actions"
 icon = "ellipsis.circle"
-detail = "Share, set, edit, change the icon of, delete or turn off a spot"
+detail = "Share, set, edit, rearrange, change the icon of, delete or turn off a spot"
 uses = ["spots"]
 
 [scripts.actions.bindings]
@@ -23,6 +23,11 @@ title = "Edit"
 shortcut = "cmd+e"
 close = false
 offers = ["actions mine, core"]
+
+[scripts.actions.actions.rearrange]
+title = "Rearrange"
+close = false
+offers = ["actions"]
 
 [scripts.actions.actions.icon]
 title = "Change Icon"
@@ -154,6 +159,17 @@ pages = ["prompt:*"]
 [scripts.themes.on]
 "sheet.open" = true
 
+[scripts.attachments]
+title = "Attachments"
+icon = "rectangle.on.rectangle"
+detail = "Choose what the panel hands to spots"
+keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
+uses = ["spots", "read"]
+edits = "attachments"
+
+[scripts.attachments.on]
+"sheet.open" = true
+
 [scripts.updates]
 title = "Updates"
 icon = "arrow.triangle.2.circlepath"
@@ -189,6 +205,10 @@ pages = ["date", "date/*"]
 [scripts.snooze.actions.pick]
 inputs.title = { type = "text", description = "What the time is for, as the title of the sheet" }
 outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset, or someday" }
+
+[scripts.snooze.actions.at]
+inputs.tile = { type = "text", required = true, description = "A tile with a moment, such as tomorrow, weekend or week" }
+outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset" }
 
 [scripts.snooze.settings]
 morning = { type = "choice", title = "Morning", icon = "sunrise", options = ["6:00", "7:00", "8:00", "9:00", "10:00"] }

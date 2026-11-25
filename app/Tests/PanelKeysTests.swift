@@ -66,39 +66,38 @@ final class PanelKeysTests: PanelCase {
         try await wait("the grid") { self.model.mode == .grid }
     }
 
-    func testTheCardsMoveOnlyWhileTheGridShowsInFront() async throws {
+    func testTheCardsPlayOnlyWhileTheGridShowsInFront() async throws {
         try await showGrid()
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
         try select("weather")
 
         XCTAssertTrue(model.handleKey(actions))
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
 
         model.beginEditing()
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         model.endEditing()
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
 
         model.isShown = false
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         model.isShown = true
 
         try await openList()
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
     }
 
-    func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
-        await model.reload()
+    func testAModeChangeBetweenTwoModesThatHoldTheCardsStillTellsNoReaderThatTheCardsPlay() async throws {
+        try await openList()
+        XCTAssertFalse(model.cardsPlay)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.cardsPlay } onChange: { changed = true }
 
-        model.query = "zzz"
+        model.mode = .form
 
-        try await wait("the hint of the slash") { self.model.hint.hasPrefix("Type / and a spot's name to run it with text") }
-        model.query = "lis"
-        try await wait("the list found") { !self.model.visible.isEmpty }
-        XCTAssertFalse(model.hint.contains("Type /"))
+        XCTAssertFalse(changed)
     }
 
     func testAKeyAddedInOneRowShowsInTheHint() async throws {
@@ -106,10 +105,10 @@ final class PanelKeysTests: PanelCase {
         model.beginEditing()
         let rows = model.keyRows(of: .edit)
 
-        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   ⇧ Arrows Move   Esc Done")
         XCTAssertEqual(model.hint, KeyRow.hint(of: rows))
         let added = rows + [KeyRow("x", words: "Extra") { _ in true }]
-        XCTAssertEqual(KeyRow.hint(of: added), "S Size   H Hide   ⇧ Arrows Move   Esc Done   X Extra")
+        XCTAssertEqual(KeyRow.hint(of: added), "S Size   ⇧ Arrows Move   Esc Done   X Extra")
     }
 
     func testOnTheGridEscClearsTheSearchThenHidesAndTabGoesToTheText() async throws {

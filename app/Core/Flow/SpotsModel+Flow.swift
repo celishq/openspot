@@ -6,6 +6,10 @@ extension SpotsModel {
         open(FlowSheet(spot: id))
     }
 
+    public func openWorking(_ id: String) {
+        asOnePress { _ = open(id) }
+    }
+
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard entry(page.spot) != nil else { return false }
@@ -39,7 +43,7 @@ extension SpotsModel {
             return true
         }
         if let route = sheet.route, !spot.takes(route: route) {
-            host.notify("\(spot.name) takes no page \(route). Add \(route) to the pages of its spot.toml")
+            toast(.failure("\(spot.name) takes no page \(route). Add \(route) to the pages of its spot.toml"))
             return true
         }
         let moves = isShown
@@ -92,16 +96,20 @@ extension SpotsModel {
 
     @discardableResult
     public func back(steps: Int = 1) -> Bool {
-        guard openSheetID != nil, let page = flow.back(steps: steps) else { return false }
-        show(page, moving: isShown)
-        return true
+        asOnePress {
+            guard openSheetID != nil, let page = flow.back(steps: steps) else { return false }
+            show(page, moving: isShown)
+            return true
+        }
     }
 
     @discardableResult
     public func forward(steps: Int = 1) -> Bool {
-        guard openSheetID != nil, let page = flow.forward(steps: steps) else { return false }
-        show(page, moving: isShown)
-        return true
+        asOnePress {
+            guard openSheetID != nil, let page = flow.forward(steps: steps) else { return false }
+            show(page, moving: isShown)
+            return true
+        }
     }
 
     func move(_ move: FlowMove, in id: String) {

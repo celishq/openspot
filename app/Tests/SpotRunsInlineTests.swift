@@ -23,6 +23,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAFastInlineSpotAnswersInTheTurnOfTheText() async throws {
+        runs(frameWait: .seconds(10))
         try answering()
         let sheet = try sheet()
         sheet.answer("1")
@@ -114,12 +115,12 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
-        runs.api = CommandAPI(mac: Mac(), places: .test(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(), runs: runs)
         try inline(toml: "[on]\nsearch = '^[0-9]'", """
         export default {
           search({ text }) {
-            const answer = openspot.call(["calc", "solve", text])
-            return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
+            const answer = openspot.call(["version"])
+            return `item=${text}\ntitle=${answer.stdout.trim()}\ndetail=${answer.code}\n`
           },
         }
         """)
@@ -127,7 +128,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         sheet.answer("2+2")
 
-        try await wait("the answer of the API") { sheet.answers.map(\.run) == ["4"] }
+        try await wait("the answer of the API") { sheet.answers.map(\.run) == ["2+2"] }
+        XCTAssertEqual(sheet.answers.first?.title, Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown")
         XCTAssertEqual(sheet.answers.first?.subtitle, "0")
     }
 
@@ -264,7 +266,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     private func callingSpot() throws -> Spot {
-        try inline(toml: "", "const solve = () => openspot.call([\"calc\", \"solve\", \"1\"]).stdout\nexport default { save: solve, show: solve }")
+        try inline(toml: "", "const solve = () => openspot.call([\"version\"]).stdout\nexport default { save: solve, show: solve }")
         return try XCTUnwrap(try scanned().scripts.first)
     }
 
@@ -299,7 +301,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(toml: "", """
         export default {
           show({ event }) {
-            if (event === "sheet.open") openspot.call(["calc", "solve", "1"])
+            if (event === "sheet.open") openspot.call(["version"])
             return "item=a\\ntitle=A\\n"
           },
         }

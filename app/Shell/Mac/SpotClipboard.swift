@@ -3,10 +3,8 @@ import ApplicationServices
 import OpenspotCore
 
 struct SpotClipboard: MacClipboard {
+    static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     private static let vKey: CGKeyCode = 9
-    private static let nKey: CGKeyCode = 45
-    private static let returnKey: CGKeyCode = 36
-    private static let settle: TimeInterval = 0.3
 
     func copy(file url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { throw SpotError.fault("Openspot cannot find \(url.lastPathComponent).") }
@@ -22,30 +20,31 @@ struct SpotClipboard: MacClipboard {
         NSPasteboard.general.string(forType: .string) ?? ""
     }
 
-    func paste(opening: Bool, sending: Bool) throws {
-        guard SpotAccessibility.ask() else {
-            throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", SpotAccessibility.settings)
-        }
-        if opening {
-            Self.press(Self.commandCode(of: "n") ?? Self.nKey, flags: .maskCommand)
-            Thread.sleep(forTimeInterval: Self.settle)
-        }
-        Self.press(Self.commandCode(of: "v") ?? Self.vKey, flags: .maskCommand)
-        if sending {
-            Thread.sleep(forTimeInterval: Self.settle)
-            Self.press(Self.returnKey, flags: [])
-        }
+    func types() -> Set<String> {
+        Set(NSPasteboard.general.types?.map(\.rawValue) ?? [])
     }
 
-    private static func commandCode(of character: Character) -> CGKeyCode? {
-        let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: character) } }
-        return Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)
+    func files() -> [URL] {
+        NSPasteboard.general.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
     }
 
-    private static func press(_ code: CGKeyCode, flags: CGEventFlags) {
+    func count() -> Int {
+        NSPasteboard.general.changeCount
+    }
+
+    func image() -> Data? {
+        NSPasteboard.general.data(forType: .png) ?? NSPasteboard.general.data(forType: .tiff)
+    }
+
+    func paste() throws {
+        guard AXIsProcessTrusted() else {
+            throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", URL(string: Self.accessibility)!)
+        }
+        let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: "v") } }
+        let code = (Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)) ?? Self.vKey
         for isDown in [true, false] {
             let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: isDown)
-            event?.flags = flags
+            event?.flags = .maskCommand
             event?.post(tap: .cghidEventTap)
         }
     }

@@ -76,4 +76,41 @@ final class PanelViewReadsTests: XCTestCase {
         XCTAssertEqual(model.transition.phase, .closing)
         XCTAssertEqual(model.cardScroll, 60)
     }
+
+    private func showTwoCards() async throws -> (list: Int, other: Int) {
+        try TestSpot(toml: "", body: "printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'").write(to: spots.spotFile("list"))
+        try TestSpot(toml: "", body: "true").write(to: spots.spotFile("other"))
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let list = try XCTUnwrap(model.visible.firstIndex { $0.id == "list" })
+        let other = try XCTUnwrap(model.visible.firstIndex { $0.id == "other" })
+        model.selected = list
+        return (list, other)
+    }
+
+    func testASheetThatOpensAndClosesTellsNoReaderOfWhatTheRingAndFocusOfAnotherCardRead() async throws {
+        let cards = try await showTwoCards()
+        XCTAssertTrue(model.marksMenu(ofCard: cards.list))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = (model.marksMenu(ofCard: cards.other), model.focus(ofCard: cards.other)) } onChange: { changed = true }
+
+        model.press("list")
+        try await wait("the open list") { model.transition.phase == .open && model.openSheetID == "list" }
+        XCTAssertFalse(model.marksMenu(ofCard: cards.list))
+        model.closeSheet(moving: false)
+
+        XCTAssertFalse(changed)
+    }
+
+    func testASheetThatOpensTellsTheReaderOfTheSelectedCardsMenuMark() async throws {
+        let cards = try await showTwoCards()
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.marksMenu(ofCard: cards.list) } onChange: { changed = true }
+
+        model.press("list")
+        try await wait("the open list") { model.transition.phase == .open && model.openSheetID == "list" }
+
+        XCTAssertTrue(changed)
+    }
 }

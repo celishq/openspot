@@ -6,6 +6,12 @@ uses = ["network", "clipboard"]
 inputs.url = { type = "text", description = "example.com or ~/Downloads" }
 inputs.title = "text"
 
+[actions.add]
+title = "Add to Links"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true, description = "The link to keep" }
+inputs.title = "text"
+
 [on]
 "panel.open" = true
 search = true

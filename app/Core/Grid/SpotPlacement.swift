@@ -1,30 +1,30 @@
 import Foundation
 
 public struct SpotPlacement: Equatable, Sendable {
-    public enum Group: Equatable, Sendable {
-        case grid, shelf
-    }
-
     public let index: Int
     public let row: Int
     public let column: Int
     public let size: SpotSize
-    public let group: Group?
+    let drop: CGFloat
 
-    public init(index: Int, row: Int, column: Int, size: SpotSize, group: Group? = nil) {
+    public init(index: Int, row: Int, column: Int, size: SpotSize, drop: CGFloat = 0) {
         self.index = index
         self.row = row
         self.column = column
         self.size = size
-        self.group = group
+        self.drop = drop
     }
 
-    public var top: CGFloat {
-        switch group {
-        case nil: 0
-        case .grid: SpotTokens.groupTitleBand
-        case .shelf: 2 * SpotTokens.groupTitleBand
-        }
+    public var cell: GridCell {
+        GridCell(row: row, column: column)
+    }
+
+    func dropped(by points: CGFloat) -> SpotPlacement {
+        points == 0 ? self : SpotPlacement(index: index, row: row, column: column, size: size, drop: drop + points)
+    }
+
+    func reindexed(_ next: Int) -> SpotPlacement {
+        SpotPlacement(index: next, row: row, column: column, size: size, drop: drop)
     }
 
     public func direction(awayFrom open: SpotPlacement) -> (columns: Int, rows: Int) {
@@ -37,9 +37,13 @@ public struct SpotPlacement: Equatable, Sendable {
     public var rect: CGRect {
         CGRect(
             x: CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: CGFloat(row) * (SpotTokens.cell + SpotTokens.rowGap) + top,
+            y: CGFloat(row) * (SpotTokens.cell + SpotTokens.rowGap) + drop,
             width: SpotTokens.width(columns: size.columns),
             height: SpotTokens.height(rows: size.rows)
         )
+    }
+
+    public static func height(of placements: [SpotPlacement]) -> CGFloat {
+        placements.map(\.rect.maxY).max() ?? 0
     }
 }

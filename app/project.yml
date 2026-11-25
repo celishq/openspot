@@ -67,8 +67,8 @@ targets:
     info:
       path: Shell/Info.plist
       properties:
-        CFBundleName: Openspot
-        CFBundleDisplayName: Openspot
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: $(PRODUCT_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "26.0"
@@ -79,11 +79,11 @@ targets:
         SUAutomaticallyUpdate: true
         SUVerifyUpdateBeforeExtraction: true
         OpenspotDevState: $(OPENSPOT_DEV_STATE)
-        NSAppleEventsUsageDescription: Openspot runs your spots, and a spot can ask another app to act, such as to paste.
-        NSMicrophoneUsageDescription: Openspot records the microphone when a spot records the screen with your voice, or when you dictate.
-        NSCameraUsageDescription: Openspot records the camera when a spot records the screen with your camera.
-        NSCalendarsFullAccessUsageDescription: Openspot shows and adds your events when a spot that you use asks for them.
-        NSRemindersFullAccessUsageDescription: Openspot shows, adds and ticks your reminders when a spot that you use asks for them.
+        NSAppleEventsUsageDescription: $(PRODUCT_NAME) runs your spots, and a spot can ask another app to act, such as to paste.
+        NSMicrophoneUsageDescription: $(PRODUCT_NAME) records the microphone when a spot records the screen with your voice, or when you dictate.
+        NSCameraUsageDescription: $(PRODUCT_NAME) records the camera when a spot records the screen with your camera.
+        NSCalendarsFullAccessUsageDescription: $(PRODUCT_NAME) shows and adds your events when a spot that you use asks for them.
+        NSRemindersFullAccessUsageDescription: $(PRODUCT_NAME) shows, adds and ticks your reminders when a spot that you use asks for them.
         CFBundleDocumentTypes:
           - CFBundleTypeName: Openspot spot
             CFBundleTypeRole: Viewer
@@ -186,6 +186,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
+          PRODUCT_NAME: Openspot Nightly
+          EXECUTABLE_NAME: OpenspotNightly
           PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.dev
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconNightly
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) OPENSPOT_TOOLS
@@ -251,6 +253,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: Shell/Surface/SpotSpring.swift
+      - path: Shell/Surface/SpotMotion.swift
       - path: Core/Run/InlineScript.js
         buildPhase: resources
     dependencies:

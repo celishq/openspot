@@ -12,11 +12,11 @@ struct SpotSheetFrame: ViewModifier {
     var arrowBox: CGSize = .zero
     var step = SheetStep()
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotGrid) private var grid
 
     func body(content: Content) -> some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
-        let width = panels.frame.width
+        let width = grid.panelWidth
         ZStack(alignment: .topLeading) {
             SpotSurface(rect: rect, radius: radius, glass: step.glass, marks: step.marks, markRoom: step.room ?? sheetRect)
             ZStack(alignment: .topLeading) {

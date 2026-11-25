@@ -39,7 +39,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(spot.kind, .list)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .strip)
         XCTAssertTrue(spot.isOnGrid)
-        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
+        XCTAssertEqual(SpotChoices().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
     func testTheSheetIsOnlyAFieldToDescribeTheSpotThenTheAgentWhereItWorksCopyPromptAndMake() async throws {

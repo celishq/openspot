@@ -9,6 +9,7 @@ public struct Mac: Sendable {
     public var translation: (any MacTranslation)?
     public var events: (any MacEvents)?
     public var power: (any MacPower)?
+    public var reads: (any MacReads)?
     public var login: @Sendable () -> LoginItem?
     public var link: @Sendable () -> CommandLink?
     public var pickColor: (@MainActor @Sendable () async -> HexColor?)?
@@ -17,6 +18,7 @@ public struct Mac: Sendable {
     public var pages: URL?
     public var theme: URL?
     public var openText: (@MainActor @Sendable (URL) async -> Void)?
+    public var locale: @Sendable () -> Locale
 
     public init(
         calendar: (any MacCalendar)? = nil,
@@ -27,6 +29,7 @@ public struct Mac: Sendable {
         translation: (any MacTranslation)? = nil,
         events: (any MacEvents)? = nil,
         power: (any MacPower)? = nil,
+        reads: (any MacReads)? = nil,
         login: @escaping @Sendable () -> LoginItem? = { nil },
         link: @escaping @Sendable () -> CommandLink? = { nil },
         pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
@@ -34,8 +37,10 @@ public struct Mac: Sendable {
         guide: URL? = Bundle.main.url(forResource: "DOCS", withExtension: "md"),
         pages: URL? = Bundle.main.url(forResource: "Help", withExtension: nil),
         theme: URL? = ThemeFolder.builtInURL,
-        openText: (@MainActor @Sendable (URL) async -> Void)? = nil
+        openText: (@MainActor @Sendable (URL) async -> Void)? = nil,
+        locale: @escaping @Sendable () -> Locale = { .autoupdatingCurrent }
     ) {
+        self.locale = locale
         self.calendar = calendar
         self.reminders = reminders
         self.clipboard = clipboard
@@ -44,6 +49,7 @@ public struct Mac: Sendable {
         self.translation = translation
         self.events = events
         self.power = power
+        self.reads = reads
         self.login = login
         self.link = link
         self.pickColor = pickColor

@@ -137,7 +137,7 @@ final class GlobalKeyTests: XCTestCase {
         let key = GlobalKey(spot: "windows", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+option+left")))
         try file.set("panel-key", to: "option+space")
         try file.write(keys: [key])
-        var arrangement = SpotArrangement()
+        var arrangement = SpotChoices()
         arrangement.set(isOnGrid: false, of: "apps")
 
         try file.write(arrangement)

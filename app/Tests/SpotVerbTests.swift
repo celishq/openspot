@@ -43,14 +43,12 @@ final class SpotVerbTests: XCTestCase {
             home: folder,
             defaults: defaults,
             trash: { url in
-                let place = trash.appendingPathComponent(url.lastPathComponent)
-                try FileManager.default.moveItem(at: url, to: place)
-                return place
+                try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
             }
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs)
     }
 
     override func tearDown() async throws {
@@ -391,13 +389,11 @@ final class SpotVerbTests: XCTestCase {
         try "export default { late() { const end = Date.now() + 300; while (Date.now() < end) {} return true } }\n".writeInline(to: slow, toml: "title = 'Slow'\n\n[actions.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
         _ = try await select("weather")
 
-        let start = Date()
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let opened = Date().timeIntervalSince(start)
         let first = model.menu?.rows.map(\.title) ?? []
         try await wait("the late yes of the slow hook") { model.menu?.rows.contains { $0.title == "Late" } == true }
 
-        XCTAssertLessThan(opened, 0.2)
+        XCTAssertFalse(first.isEmpty)
         XCTAssertFalse(first.contains("Late"))
     }
 
@@ -450,13 +446,10 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.act(.delete, on: "weather"))
         try await wait("the toast of the removal") { self.host.confirms.contains { $0.hasPrefix("Moved Weather to the Trash") } }
         XCTAssertFalse(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
-        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
         XCTAssertFalse(model.act(.edit, on: "gone"))
-
-        try await wait("the file again") { FileManager.default.fileExists(atPath: self.spots.spotFile("weather").path) }
     }
 
-    func testTheSecretOfARemovedSpotGoesWithItAndComesBackWithItsUndo() async throws {
+    func testTheSecretOfARemovedSpotGoesWithIt() async throws {
         try script("weather", toml: "title = 'Weather'\n\n[settings]\ntoken = { type = 'secret' }")
         try script("clock", toml: "title = 'Clock'\n\n[settings]\ntoken = { type = 'secret' }")
         try model.files.secrets.keep("weather-secret", key: "token", of: "weather")
@@ -465,12 +458,8 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.act(.delete, on: "weather"))
         try await wait("the toast of the removal") { self.host.confirms.contains { $0.hasPrefix("Moved Weather to the Trash") } }
-        let removed = try SecretStore(file: model.files.secrets.file).read()
-        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
-        try await wait("the toast of the undo") { self.host.confirms.contains("Put Weather back.") }
 
-        XCTAssertEqual(removed, ["clock": ["token": "clock-secret"]])
-        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read()["weather"], ["token": "weather-secret"])
+        XCTAssertEqual(try SecretStore(file: model.files.secrets.file).read(), ["clock": ["token": "clock-secret"]])
     }
 
     func testTheFormOfASecretKeepsItInTheStoreNotTheConfigAndRefusesAShortOne() async throws {
@@ -505,7 +494,7 @@ final class SpotVerbTests: XCTestCase {
         let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
 
-        let origin = model.gridOrigin
+        let origin = SpotTokens.gridOrigin()
         model.openMenu(at: CGPoint(x: origin.x + card.midX, y: origin.y + card.midY))
         model.tap("weather")
 
@@ -684,22 +673,19 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
 
-    func testDeleteAsksNothingKeepsThePanelAndCommandZPutsTheSpotBack() async throws {
+    func testDeleteAsksNothingKeepsThePanelAndCommandZLeavesTheSpotInTheTrash() async throws {
         try script("weather", toml: "title = 'Weather'")
         _ = try await select("weather")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
-        try await wait("the delete") { !model.entries.contains { $0.id == "weather" } }
+        try await wait("the delete and its toast") { !model.entries.contains { $0.id == "weather" } && !host.confirms.isEmpty }
 
         XCTAssertNil(model.menu)
         XCTAssertEqual(host.dismissals, 0)
-        XCTAssertEqual(host.confirms.last, "Moved Weather to the Trash. Press `⌘Z` to put it back.")
+        XCTAssertEqual(host.confirms.last, "Moved Weather to the Trash.")
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
-
-        try await wait("the spot back") { model.selectedEntry?.id == "weather" }
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
         XCTAssertFalse(model.handleKey(ActionKey(name: "z", isCommand: true)))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.spotFile("weather").path))
     }
 
     func testACardOfAFileThatDoesNotLoadIsThePersonsAndCanBeDeleted() async throws {

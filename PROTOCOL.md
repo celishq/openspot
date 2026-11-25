@@ -24,6 +24,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 
 - [Settings people choose](docs/remember/settings.md)
 - [Keep your own data](docs/remember/data.md)
+- [Keep a copy that goes old](docs/remember/cache.md)
 
 ## React
 
@@ -35,6 +36,8 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 
 - [Use the Mac: clipboard, screen, timers](docs/connect/the-mac.md)
 - [Use another spot](docs/connect/other-spots.md)
+- [Attach what people work on](docs/connect/attachments.md)
+- [Fetch from the web](docs/connect/the-web.md)
 
 ## Go further
 

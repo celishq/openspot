@@ -104,7 +104,7 @@ private struct SheetContentView: View {
                     }
                 }
             }
-            .morph(progress, opacity: { [morph, firstRow] in min(morph.shown(firstRow, at: $0), SheetMorph.sheetLook(at: $0)) })
+            .morph(progress, opacity: { [morph, firstRow, isOpen] in min(morph.edgeOpacity(of: firstRow, at: $0), SheetMorph.contentOpacity(at: $0, isOpen: isOpen)) })
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -122,7 +122,7 @@ private struct SheetContentView: View {
                         words(title: cardState?.title, subtitle: cardState.map(\.subtitle) ?? state.subtitle)
                             .environment(\.spotIsOnSolid, showsFill)
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
-                            .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
+                            .morph(progress, opacity: { [morph] in morph.sourceOpacity(at: $0) })
                     }
                     words(subtitle: state.subtitle)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
@@ -167,7 +167,7 @@ private struct SheetContentView: View {
 
     private var sheetWordsOpacity: (Double) -> Double {
         if hasCardLook { return { _ in 1 } }
-        return SheetMorph.sheetLook(at:)
+        return { [isOpen] in SheetMorph.contentOpacity(at: $0, isOpen: isOpen) }
     }
 
     private var sheetWordsWidth: CGFloat {
@@ -187,13 +187,13 @@ private struct SheetContentView: View {
         }
         if let closeShift {
             button
-                .morph(progress, offset: { SheetMorph.place(onCard: CGSize(width: closeShift, height: 0), at: $0) }, opacity: SheetMorph.sheetLook(at:))
+                .morph(progress, offset: { SheetMorph.place(onCard: CGSize(width: closeShift, height: 0), at: $0) }, opacity: { [isOpen] in SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
         } else if hasCardLook {
             button
         } else {
             let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyph, y: SpotTokens.padding, width: SpotTokens.glyph, height: SpotTokens.glyph)
             button
-                .morph(progress, opacity: { [morph] in min(morph.growth(of: place, at: $0), morph.headerLook(at: $0)) })
+                .morph(progress, opacity: { [morph] in min(morph.middleOpacity(of: place, at: $0), morph.headerOpacity(at: $0)) })
         }
     }
 
@@ -203,10 +203,10 @@ private struct SheetContentView: View {
             if glyphDiffersOnCard {
                 SpotGlyph(entry: entry, showsDisc: !(isSmallCard || showsFill))
                     .environment(\.spotIsOnSolid, showsFill)
-                    .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
+                    .morph(progress, opacity: { [morph] in morph.sourceOpacity(at: $0) })
             }
         }
-        .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) }, opacity: { [morph] in morph.headerLook(at: $0) })
+        .morph(progress, offset: { [smallCardShift] in SheetMorph.place(onCard: CGSize(width: smallCardShift, height: 0), at: $0) }, opacity: { [morph] in morph.headerOpacity(at: $0) })
     }
 
     @ViewBuilder

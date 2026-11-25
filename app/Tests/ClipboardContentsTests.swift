@@ -1,0 +1,24 @@
+import XCTest
+@testable import OpenspotCore
+
+final class ClipboardContentsTests: XCTestCase {
+    private let file = URL(fileURLWithPath: "/a/shot.png")
+
+    func testFilesCopiedInFinderAreFilesThoughTheyAlsoHoldANameAndAnIcon() {
+        XCTAssertEqual(ClipboardContents(types: ["public.file-url", "public.utf8-plain-text", "public.tiff"], files: [file]), .files([file]))
+    }
+
+    func testTextWithAPictureOfItIsText() {
+        XCTAssertEqual(ClipboardContents(types: ["public.utf8-plain-text", "public.tiff", "com.apple.flat-rtfd"], files: []), .text)
+    }
+
+    func testAnImageIsItsPngOrElseItsTiff() {
+        XCTAssertEqual(ClipboardContents(types: ["public.tiff", "public.png"], files: []), .image("png"))
+        XCTAssertEqual(ClipboardContents(types: ["public.tiff", "public.html"], files: []), .image("tiff"))
+    }
+
+    func testAConcealedCopyIsNothing() {
+        XCTAssertEqual(ClipboardContents(types: ["org.nspasteboard.ConcealedType", "public.utf8-plain-text"], files: []), ClipboardContents.none)
+        XCTAssertEqual(ClipboardContents(types: ["com.apple.webarchive"], files: []), ClipboardContents.none)
+    }
+}

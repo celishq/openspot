@@ -488,7 +488,7 @@ final class SwiftProgramTests: XCTestCase {
         var isReady = false
         var failures: [String] = []
         sheet.onReport = { report in
-            if case .failure(let text) = report { failures.append(text) }
+            if case .toast(let note) = report, note.kind == .failure, note.fix == nil { failures.append(note.words) }
         }
 
         runs.panelOpened()

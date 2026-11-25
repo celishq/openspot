@@ -27,6 +27,22 @@ final class SpotIconStore {
         drawing.qualityOfService = .userInteractive
     }
 
+    func cachedNative(_ path: String, pixels: Int) -> CGImage? {
+        bitmaps.object(forKey: "native:\(pixels):\(path)" as NSString)?.image
+    }
+
+    func native(_ path: String, pixels: Int) async -> CGImage? {
+        if let image = cachedNative(path, pixels: pixels) { return image }
+        let image = await withCheckedContinuation { continuation in
+            drawing.addOperation {
+                var rect = NSRect(x: 0, y: 0, width: pixels, height: pixels)
+                continuation.resume(returning: NSWorkspace.shared.icon(forFile: path).cgImage(forProposedRect: &rect, context: nil, hints: nil))
+            }
+        }
+        if let image { bitmaps.setObject(Bitmap(image), forKey: "native:\(pixels):\(path)" as NSString, cost: image.bytesPerRow * image.height) }
+        return image
+    }
+
     func cached(_ icon: FileIcon) -> CGImage? {
         bitmaps.object(forKey: Self.name(of: icon))?.image
     }

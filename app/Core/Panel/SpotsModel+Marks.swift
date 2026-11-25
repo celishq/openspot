@@ -10,7 +10,7 @@ extension SpotsModel {
             unmarking.remove(id)
             switch next {
             case .success(let next): change(isShown && openSheetID == nil ? .edit : nil) { configChanged(.spots([id]), to: next) }
-            case .failure(let error): host.notify("Openspot could not save the spots. \(Self.reason(error))")
+            case .failure(let error): toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
             }
         }
     }

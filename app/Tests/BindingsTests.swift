@@ -28,8 +28,9 @@ final class BindingsTests: SpotRunsCase {
 
     private func press() async throws {
         _ = try scanned()
-        try XCTUnwrap(runs.sheets["asker"]).pressCard()
-        try await wait("the end of the run") { self.log("done").count == 1 }
+        let asker = try XCTUnwrap(runs.sheets["asker"])
+        asker.pressCard()
+        try await wait("the end of the run") { self.log("done").count == 1 && asker.calls.isEmpty }
     }
 
     func testABindingIsReadAndAWrongOneFailsTheLoadWithALineThatNamesIt() throws {

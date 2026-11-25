@@ -4,6 +4,7 @@ need app scripts
 found=$(grep -rnE --include='*.swift' '\.(spring|easeIn|easeOut|easeInOut|linear|smooth|snappy|bouncy|timingCurve)\(|\.(smooth|snappy|bouncy|linear|easeIn|easeOut|easeInOut)([^A-Za-z(]|$)|\.delay\(|LinearKeyframe|SpringKeyframe|CubicKeyframe|NSAnimationContext|CABasicAnimation|CASpringAnimation' \
   app scripts \
   | grep -v '^app/Shell/Surface/SpotMotion.swift:' \
+  | grep -v '^app/Shell/Surface/SpotSpring.swift:' \
   | grep -v '^app/Core/Theme/MotionTokens.swift:' \
   | grep -v 'progressViewStyle(.linear)')
 if [ -n "$found" ]; then

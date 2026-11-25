@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFieldView: View {
-    static var rect: CGRect { CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.cell) }
+    static var rect: CGRect { SpotTokens.fieldRect(room: 0) }
 
     let model: SpotsModel
     let isOpen: Bool
@@ -11,32 +11,51 @@ struct SpotFieldView: View {
     let showsField: Bool
     let surfaceIsOut: Bool
     var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
+    var isGlass = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            searchField
-                .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
-                .allowsHitTesting(showsField && !model.isEditing)
-            promptLayer
-                .modifier(SpotFaded())
-                .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
-            editHeader
-                .modifier(SpotFaded())
-                .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
-                .allowsHitTesting(model.isEditing)
+            if isGlass {
+                glass
+                    .modifier(FieldPlace(isShown: model.isShown))
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
+            } else {
+                searchField
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
+                    .allowsHitTesting(showsField && !model.isEditing)
+                promptLayer
+                    .modifier(SpotFaded())
+                    .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
+                editHeader
+                    .modifier(SpotFaded())
+                    .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(model.isEditing)
+            }
         }
         .modifier(FieldDim(isDim: model.dimsField))
         .modifier(SpotMenuDim(model: model, index: nil))
-        .background(SpotFieldFocus(model: model, isFocused: $isFocused))
+        .background { if !isGlass { SpotFieldFocus(model: model, isFocused: $isFocused) } }
+    }
+
+    private var place: CGRect {
+        isInSheet ? Self.sheetRow(top: model.fieldTop) : gridPlace
+    }
+
+    private var gridPlace: CGRect {
+        SpotTokens.fieldRect(room: model.fieldRoom)
+    }
+
+    private var glass: some View {
+        SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1)
+            .morph(progress, opacity: glassLook)
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+        let place = place
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
                 .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
@@ -44,12 +63,22 @@ struct SpotFieldView: View {
                 SpotFieldPrompt.glyph
                     .offset(x: glyphLeft, y: top)
                 searchText
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                 SpotSlashMark(model: model)
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
+                if !isInSheet {
+                    SpotAttachmentPreview(model: model)
+                        .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
+                        .offset(x: Self.rect.minX, y: Self.rect.maxY)
+                    SpotAttachmentStack(model: model)
+                        .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.cell, alignment: .trailing)
+                        .offset(x: Self.attachmentLeft, y: top)
+                }
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
@@ -67,10 +96,7 @@ struct SpotFieldView: View {
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.glassInk)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .animation(SpotMotion.fade(isShown: model.isShown)) {
-            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: UnitPoint.center.x, y: Self.rect.midY / SpotTokens.panelHeight))
-        }
+        .modifier(FieldPlace(isShown: model.isShown))
     }
 
     private var editHeader: some View {
@@ -79,12 +105,12 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            SpotRoundButton(icon: .symbol("sidebar.left"), label: "Left Panel", look: model.panels[.left] ? .strong : .plain) {
-                model.show(.left, !model.panels[.left])
+            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
+                ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
             }
-            SpotRoundButton(icon: .symbol("sidebar.right"), label: "Right Panel", look: model.panels[.right] ? .strong : .plain) {
-                model.show(.right, !model.panels[.right])
-            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
             SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
@@ -110,12 +136,20 @@ struct SpotFieldView: View {
     static var sheetRadius: CGFloat { SurfaceEdge.sheet.inner().radius }
     static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
 
+    private var textWidth: CGFloat {
+        isInSheet ? Self.fieldTextWidth : Self.attachmentLeft - SpotTokens.attachmentGap - fieldTextLeft
+    }
+
+    static var attachmentLeft: CGFloat {
+        rect.maxX - SpotTokens.attachmentEdge - SpotTokens.attachmentStack(count: AttachmentStack.pile)
+    }
+
     private var fieldTextLeft: CGFloat {
         isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyph + SpotTokens.fieldTextGap
     }
 
     private var searchText: some View {
-            SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
+            SpotSearchText(model: model, sheetWord: isOpen ? sheetWord : nil)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
@@ -133,7 +167,7 @@ struct SpotFieldView: View {
             .frame(height: SpotTokens.cell)
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-            .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+            .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
             .modifier(SpotShownFade(
                 isShown: model.isShown,
                 hiddenScale: MotionTokens.hiddenScale,
@@ -143,9 +177,10 @@ struct SpotFieldView: View {
     }
 
     private var promptWords: some View {
-        SpotFieldPrompt(word: sheetWord, progress: progress)
+        FieldPrompt(model: model, word: sheetWord, progress: progress)
             .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
+        .modifier(SpotAttachmentCover(model: model))
     }
 
     private var sheetWord: String {
@@ -161,16 +196,33 @@ struct SpotFieldView: View {
         guard let morph = sheet?.morph else { return { _ in 1 } }
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
-        let rest = SpotTokens.halo + (SpotTokens.cell - line) / 2
+        let field = gridPlace
+        let rest = field.minY + (SpotTokens.cell - line) / 2
         let drop = model.fieldTop.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
         return { progress in
-            let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
-            return morph.crossing(of: words, header: header, at: progress)
+            let words = CGRect(x: field.minX, y: rest + drop * CGFloat(progress), width: field.width, height: line)
+            return morph.wordsOpacity(of: words, header: header, at: progress)
         }
     }
 
     private var sheetShape: SpotSurfaceShape? {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.cardRadius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
+    }
+
+    private var glassLook: (Double) -> Double {
+        guard let morph = sheet?.morph else { return { _ in 1 } }
+        let rest = gridPlace
+        let row = Self.sheetRow(top: model.fieldTop)
+        return { progress in
+            let t = CGFloat(progress)
+            let field = CGRect(
+                x: rest.minX + (row.minX - rest.minX) * t,
+                y: rest.minY + (row.minY - rest.minY) * t,
+                width: rest.width + (row.width - rest.width) * t,
+                height: rest.height + (row.height - rest.height) * t
+            )
+            return morph.fieldGlassOpacity(of: field, at: progress)
+        }
     }
 
     @ViewBuilder
@@ -186,6 +238,28 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
+}
+
+private struct FieldPlace: ViewModifier {
+    let isShown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .animation(SpotMotion.fade(isShown: isShown)) {
+                $0.scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: UnitPoint.center.x, y: SpotFieldView.rect.midY / SpotTokens.panelHeight))
+            }
+    }
+}
+
+private struct FieldPrompt: View {
+    let model: SpotsModel
+    let word: String
+    let progress: Double
+
+    var body: some View {
+        SpotFieldPrompt(word: word, progress: progress, grid: model.promptWord)
+    }
 }
 
 private struct FieldDim: ViewModifier {

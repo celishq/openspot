@@ -7,7 +7,9 @@ struct SpotBackdropTint: NSViewRepresentable {
         private let shape = CALayer()
         private var color: Color
         private var area: CGRect
-        private var drawn: SpotBackdropFade?
+        private var isMoving = false
+        private let mask = SpotBackdropMask()
+        private var drawn: (fade: SpotBackdropFade, isMoving: Bool)?
 
         init(color: Color, area: CGRect) {
             self.color = color
@@ -40,34 +42,37 @@ struct SpotBackdropTint: NSViewRepresentable {
             nil
         }
 
-        func take(color next: Color, area nextArea: CGRect) {
+        func take(color next: Color, area nextArea: CGRect, isMoving moving: Bool) {
             if next != color {
                 color = next
                 needsDisplay = true
             }
-            guard nextArea != area else { return }
+            guard nextArea != area || moving != isMoving else { return }
             area = nextArea
+            isMoving = moving
             applyFade()
         }
 
         private func applyFade() {
             let fade = SpotBackdropFade(fade: .current(blur: nil), area: area, size: bounds.size)
-            guard fade != drawn else { return }
+            guard fade != drawn?.fade || isMoving != drawn?.isMoving else { return }
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
             shape.frame = bounds
-            shape.contents = fade.image()
-            drawn = fade
+            shape.contents = mask.image(of: fade, isMoving: isMoving)
+            drawn = (fade, isMoving)
         }
     }
 
     let color: Color
     let area: CGRect
+    let isMoving: Bool
 
-    init(color: Color, fadingIn area: CGRect) {
+    init(color: Color, fadingIn area: CGRect, isMoving: Bool) {
         self.color = color
         self.area = area
+        self.isMoving = isMoving
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
@@ -79,6 +84,6 @@ struct SpotBackdropTint: NSViewRepresentable {
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
-        surface.take(color: color, area: area)
+        surface.take(color: color, area: area, isMoving: isMoving)
     }
 }

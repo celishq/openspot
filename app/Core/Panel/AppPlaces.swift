@@ -4,7 +4,7 @@ public struct AppPlaces: Sendable {
     public let environment: [String: String]
     public let home: URL
     nonisolated(unsafe) public let defaults: UserDefaults
-    public let trash: @Sendable (URL) throws -> URL
+    public let trash: @Sendable (URL) throws -> Void
     public let kinds: @Sendable ([String]) -> FileKinds
     public let defaultConfig: URL?
     public let account: AccountStore
@@ -21,7 +21,7 @@ public struct AppPlaces: Sendable {
         environment: [String: String],
         home: URL,
         defaults: UserDefaults,
-        trash: @escaping @Sendable (URL) throws -> URL = AppPlaces.systemTrash,
+        trash: @escaping @Sendable (URL) throws -> Void = AppPlaces.systemTrash,
         kinds: @escaping @Sendable ([String]) -> FileKinds = { FileKinds.Disk().read($0) },
         defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml"),
         disk: any ConfigDisk = LocalDisk()
@@ -44,18 +44,16 @@ public struct AppPlaces: Sendable {
         lock = .standard(environment: environment, home: home)
     }
 
-    public static func systemTrash(_ url: URL) throws -> URL {
-        var place: NSURL?
-        try FileManager.default.trashItem(at: url, resultingItemURL: &place)
-        return (place as URL?) ?? url
+    public static func systemTrash(_ url: URL) throws {
+        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
     }
 
     public static var standard: AppPlaces {
         AppPlaces(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
     }
 
-    public func readDefaultArrangement() -> SpotArrangement {
-        guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotArrangement() }
+    public func readDefaultArrangement() -> SpotChoices {
+        guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotChoices() }
         return Config(text: text).arrangement
     }
 
@@ -77,6 +75,10 @@ public struct AppPlaces: Sendable {
 
     public var schedule: URL {
         configFolder.appendingPathComponent("schedule.json")
+    }
+
+    var clipboard: URL {
+        configFolder.appendingPathComponent("Clipboard", isDirectory: true)
     }
 
     public var stats: URL {

@@ -52,15 +52,6 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "list", "--tone"])?.value as? CallFault, .unknown(["emoji", "list", "--tone"]))
     }
 
-    func testCalcSolvesTheWordsAfterItsVerbAlsoInARead() {
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "2*(3+4)"])?.value as? CalcCall, .solve("2*(3+4)"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "5", "km", "in", "mi"])?.value as? CalcCall, .solve("5 km in mi"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "1+1"], environment: [:], reason: "search")?.value as? CalcCall, .solve("1+1"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve"])?.value as? CallFault, .unknown(["calc", "solve"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "2+2"])?.value as? CallFault, .unknown(["calc", "2+2"]))
-        XCTAssertTrue(CommandLineCall.usage.contains("openspot calc solve <words>..."))
-    }
-
     func testSymbolsTakeNoOptions() {
         XCTAssertEqual(CommandLineCall(arguments: ["symbols", "list"])?.value as? SymbolsCall, .rows)
         XCTAssertEqual(CommandLineCall(arguments: ["symbols", "--tone", "dark"])?.value as? CallFault, .unknown(["symbols", "--tone", "dark"]))
@@ -132,10 +123,9 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "/a"])?.value as? CheckCall, .folder("/a", form: .frame))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "pick"])?.value as? ColorCall, .pick)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"])?.value as? ClipboardCall, .copy("/a b.mov"))
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"])?.value as? ClipboardCall, .paste(opening: false, sending: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste", "--send", "--new"])?.value as? ClipboardCall, .paste(opening: true, sending: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"])?.value as? ClipboardCall, .paste)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy"])?.value as? ClipboardCall, .copy(nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"])?.value as? ClipboardCall, .read)
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"])?.value as? ClipboardCall, .read(within: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "languages"])?.value as? TranslateCall, .languages)
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "text"])?.value as? TranslateCall, .text(from: nil, to: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "text", "--from", "ru", "--to", "en"])?.value as? TranslateCall, .text(from: "ru", to: "en"))
@@ -218,7 +208,7 @@ final class CommandLineCallTests: XCTestCase {
             XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read, reason: "panel.open")?.value as? CallFault, .refused("\(act), so it cannot run in a show. Run it from a pick or an action."), arguments.joined(separator: " "))
             XCTAssertNotEqual(CommandLineCall(arguments: arguments, environment: ["OPENSPOT_ID": "tools"])?.value as? CallFault, .refused("\(act), so it cannot run in a show. Run it from a pick or an action."))
         }
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read, reason: "panel.open")?.value as? ClipboardCall, .read)
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read, reason: "panel.open")?.value as? ClipboardCall, .read(within: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"], environment: read, reason: "panel.open")?.value as? WindowCall, .frame)
         XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/tmp"], environment: read, reason: "panel.open")?.value as? SettingCall, .set(spot: "tools", key: "folder", value: "/tmp"))
     }

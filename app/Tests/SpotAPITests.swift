@@ -33,13 +33,13 @@ final class SpotAPITests: XCTestCase {
 
     private func answer(_ arguments: [String], host: Mac = Mac(), app: (any RunningApp)? = nil, reason: String? = nil) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment, reason: reason))
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), app: app ?? self.app, rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), app: app ?? self.app).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 
     private func appWork(_ arguments: [String]) throws -> CommandAPI.Work? {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        return CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" })
+        return CommandAPI(mac: Mac(), places: .test(environment)).work(for: call, request: .test(arguments, in: environment), input: { "" })
     }
 
     private func json(_ arguments: [String]) async throws -> [[String: Any]] {
@@ -86,6 +86,15 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(spots.map { $0["own"] as? Bool }, [false, true, false])
         XCTAssertEqual(spots.last?["detail"] as? String, "Open app")
         XCTAssertEqual(spots.last?["icon"] as? String, "star")
+    }
+
+    func testTheCoreListNamesTheUsesOfEachSpot() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "uses = ['attachment', 'clipboard']")
+
+        let spots = try await json(["spot", "list", "--core", "--json"])
+
+        XCTAssertEqual(spots.map { $0["uses"] as? [String] }, [[], ["attachment", "clipboard"]])
     }
 
     func testOnAndOffTurnCoreSpotsAndTellTheApp() async throws {

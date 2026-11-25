@@ -50,7 +50,9 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
-| `network`   | Reach the network in Careful mode. No command needs it.                              |
+| `attachment` | Put a value in the panel's field when the panel opens or Tab picks its chip; see [Attach what people work on](../connect/attachments.md). |
+| `read`      | Read what people work on: the front tab, the files selected in Finder and the selected text. |
+| `network`   | Reach the network in Careful mode, such as with `env.fetch`.                          |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 
 A program of the Mac, such as `open <url>`, isn't an `openspot` command, so it needs no use. [Uses](../../TRUST.md#uses)
@@ -98,6 +100,7 @@ One table for each thing your spot does by name. Openspot runs `<script> <id>` w
 | `title`          | text              | The words people run it by. With none, it runs only from a button, a view, a timer or another spot. |
 | `icon`           | text              | Its icon.                                              |
 | `confirm`        | text              | The words that ask people to press a second time.      |
+| `offers`         | [text]            | `["attachments"]`: it shows only as a row for a chip, not in the search, the `⌘K` menu or the keys. See [Offer an action](../connect/attachments.md#offer-an-action). |
 | `inputs.<name>`  | a type or a table | A value it takes.                                      |
 | `outputs.<name>` | a type or a table | A value it gives back, as an `out.<name>=` line.       |
 
@@ -114,6 +117,7 @@ An input, an output or a value of an event takes a type alone, such as `url = "u
 | `default`     | its type | none    | The value it gets when it's given none. Not for a list. |
 | `description` | text     | none    | What it is. A form shows it as the placeholder.    |
 | `options`     | [text]   | none    | The values of a `choice`.                          |
+| `pattern`     | text     | none    | A regular expression that each value must match. Only for a `url` or a `text`. |
 
 ## [bindings]
 
@@ -137,7 +141,9 @@ When Openspot runs your spot by itself.
 | `schedule`            | [text]          | `schedule`                        | At each cron line, such as `"0 9 * * 1-5"`, shown or not. |
 | `command`             | [text]          | `command`                         | When people type `/<word>` in the panel's search.        |
 | `search`              | `true` or regex | `show`, or `search`               | `true` adds your items to the panel's search. A regex runs `search` for each text that matches. |
-| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`. |
+| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`, or hand it a file chip with Tab. A [chip](../connect/attachments.md#how-it-takes-it) of a `url` or a `text` goes to an action. |
+| `"attachment.pick"`   | regex or `"browsers"` | `attachment.pick`           | In a source, when Tab first picks its chip in an open of the panel over an app whose bundle ID matches, or with `"browsers"` over any browser that Openspot reads; see [Attach what people work on](../connect/attachments.md). |
+| `"cache.<name>"`      | an age          | `cache.<name>`                    | When a read of the cache `<name>` finds it missing or older than the age, such as `"1d"`; see [Keep a copy that goes old](../remember/cache.md). |
 
 A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only when the event's value matches.
 
@@ -145,7 +151,7 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 
 | Event              | Runs    | Its `value`                      | Comes                                                     |
 | ------------------ | ------- | -------------------------------- | --------------------------------------------------------- |
-| `panel.open`       | `show`  | none                             | Each time the panel opens, and once when Openspot starts. |
+| `panel.open`       | `show`  | the bundle ID of the front app   | Each time the panel opens, and once when Openspot starts. |
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |

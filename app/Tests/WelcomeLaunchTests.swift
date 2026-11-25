@@ -30,7 +30,7 @@ final class WelcomeLaunchTests: XCTestCase {
         host = FakeHost()
         model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: base, stopPause: 0.2))
         host.model = model
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs))
     }
 
     override func tearDown() async throws {

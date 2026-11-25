@@ -6,7 +6,6 @@ import SwiftUI
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
     let place = SpotsWindowPlace()
-    private var appliedRight: CGFloat = 0
     private var pressWatch: Task<Void, Never>?
     private var tap = ModifierTap()
     private var swipe = FlowSwipe()
@@ -15,6 +14,17 @@ final class SpotsPanel: NSPanel {
     private var screenBackdrop: SpotScreenBackdrop?
 
     override var canBecomeKey: Bool { true }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey else { return super.performKeyEquivalent(with: event) }
+        if key == ActionKey(name: "v", isCommand: true), model?.isShown == true, model?.pasteSpot() == true { return true }
+        if super.performKeyEquivalent(with: event) { return true }
+        guard isKeyWindow, firstResponder is NSText, let item = EditMenu.item(of: key), let action = item.action,
+              let target = NSApp.target(forAction: action, to: nil, from: item) as? NSResponder,
+              (target as? NSUserInterfaceValidations)?.validateUserInterfaceItem(item) ?? true
+        else { return false }
+        return NSApp.sendAction(action, to: target, from: item)
+    }
 
     func warm(then done: @escaping () -> Void) {
         model?.isWarming = true
@@ -45,7 +55,7 @@ final class SpotsPanel: NSPanel {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : SpotFrontWindow.frame(of: app)
-        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
+        let center = NSSize(width: frame.width - place.left, height: frame.height)
         guard let origin = ScreenPlace(screens: screens).origin(of: center, window: window, pointer: NSEvent.mouseLocation) else { return }
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
@@ -80,23 +90,8 @@ final class SpotsPanel: NSPanel {
 
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements))
+        let height = model.gridHeight
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
-    }
-
-    private func followSides() {
-        guard let model else { return }
-        let panels = withObservationTracking { model.panels } onChange: { [weak self] in
-            Task { @MainActor in self?.followSides() }
-        }
-        let grown = (left: panels.leftExtent - place.left, right: panels.rightExtent - appliedRight)
-        guard grown.left != 0 || grown.right != 0 else { return }
-        let widened = { (frame: NSRect) in
-            NSRect(x: frame.minX - grown.left, y: frame.minY, width: frame.width + grown.left + grown.right, height: frame.height)
-        }
-        place.left = panels.leftExtent
-        appliedRight = panels.rightExtent
-        resize(to: widened(frame))
     }
 
     private func resize(to frame: NSRect) {
@@ -109,11 +104,8 @@ final class SpotsPanel: NSPanel {
     }
 
     func layOut() {
-        guard let model else { return }
-        place.left = model.panels.leftExtent
-        appliedRight = model.panels.rightExtent
-        let width = SpotTokens.panelWidth + place.left + appliedRight
-        resize(to: NSRect(x: frame.minX, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
+        let width = SpotTokens.panelWidth
+        resize(to: NSRect(x: frame.midX - width / 2, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
         takeBackdrop()
     }
 
@@ -283,15 +275,6 @@ final class SpotsPanel: NSPanel {
         }
     }
 
-    private func watchPaste(model: SpotsModel) {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
-            let isTaken = MainActor.assumeIsolated {
-                event.keyModifiers == .command && event.actionKey?.name == "v" && model?.isShown == true && model?.pasteSpot() == true
-            }
-            return isTaken ? nil : event
-        }
-    }
-
     private static let plainCursors: Void = {
         typealias Draw = @convention(c) (NSView, Selector) -> Void
         let selector = #selector(NSView.updateLayer)
@@ -327,11 +310,9 @@ final class SpotsPanel: NSPanel {
         let hosting = NSHostingView(rootView: SpotsWindowView(model: model, place: panel.place))
         hosting.sizingOptions = []
         panel.contentView = hosting
-        panel.watchPaste(model: model)
         panel.watchFrontApp(model: model)
         panel.watchInputSource(model: model)
         panel.center()
-        panel.followSides()
         panel.takeBackdrop()
         return panel
     }

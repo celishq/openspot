@@ -15,7 +15,7 @@ public final class SpotRuns {
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
-            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(dragged) }.keys)
+            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.takes(AttachmentValue(files: dragged)) }.keys)
             if takers != dragTakers { dragTakers = takers }
         }
     }
@@ -26,6 +26,7 @@ public final class SpotRuns {
     @ObservationIgnored public var layoutMoves: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
+    let attachLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
     public nonisolated let usage: StatsLog
@@ -39,11 +40,13 @@ public final class SpotRuns {
     public nonisolated let callers: SpotCallers
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored public var fetch = Fetch()
+    public nonisolated let cache: SpotCache
     @ObservationIgnored let stopPause: TimeInterval
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
-    @ObservationIgnored var clipboardSeen: Int?
+    @ObservationIgnored var seenCopy: SeenCopy?
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
     @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?
@@ -104,6 +107,7 @@ public final class SpotRuns {
     public init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         showLimit: TimeInterval = 10,
+        attachLimit: TimeInterval = 3,
         opening: SheetOpening = SheetOpening(),
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
@@ -119,9 +123,11 @@ public final class SpotRuns {
         timers: URL? = nil,
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
-        callers: SpotCallers = SpotCallers()
+        callers: SpotCallers = SpotCallers(),
+        cache: SpotCache? = nil
     ) {
         self.environment = environment
+        self.cache = cache ?? .standard(environment: environment)
         self.callers = callers
         self.log = log
         self.swift = swift
@@ -132,6 +138,7 @@ public final class SpotRuns {
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
+        self.attachLimit = attachLimit
         self.opening = opening
         self.clock = clock
         now = clock.now
@@ -269,6 +276,7 @@ public final class SpotRuns {
     public func panelClosed() {
         isPanelOpen = false
         sheets.values.forEach { $0.leftPlace() }
+        sheets.values.filter(\.spot.isSource).forEach { $0.stopShows() }
         updateClock()
     }
 
@@ -434,7 +442,7 @@ public final class SpotRuns {
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, SpotCaller) {
         let caller = callers.issue(for: spot)
-        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
+        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment, clock: clock)
         track(script, of: spot.id, caller: caller)
         let frames = script.start()
         keep(script)
@@ -444,7 +452,7 @@ public final class SpotRuns {
     func process(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables given: [String: String], call: OpenCall?) -> ScriptMode.Frames {
         let caller = callers.issue(for: spot, reason: reason, keepsFix: true)
         caller.call = call
-        let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables(of: spot, given: given), careful: isCareful ? spot.uses : nil, base: environment)
+        let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables(of: spot, given: given), careful: isCareful ? spot.uses : nil, base: environment, clock: clock)
         track(process, of: spot.id, caller: caller)
         process.fix = { caller.takeFix() }
         let stream = process.start()

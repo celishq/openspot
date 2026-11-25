@@ -20,7 +20,7 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertEqual(host.layOuts, [roomy.layout])
         XCTAssertEqual(model.sheets["list"]?.sheetRect.height, sheet.height + 14)
         XCTAssertGreaterThan(model.gridHeight, grid)
-        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements)))
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: SpotPlacement.height(of: model.placements)))
     }
 
     func testAReloadOfTheSizesScrollsTheGridToTheTop() async throws {
@@ -61,7 +61,7 @@ final class ThemeReloadTests: PanelCase {
         host.dismiss()
         let hover = Theme(text: "[dark]\nfill = 0.2\n")
         nonisolated(unsafe) var told = false
-        withObservationTracking { _ = (model.gridHeight, model.placements, model.groupBands, model.sheets["list"]?.sheetRect) } onChange: { told = true }
+        withObservationTracking { _ = (model.gridHeight, model.placements, model.sheets["list"]?.sheetRect) } onChange: { told = true }
 
         model.take(hover)
 

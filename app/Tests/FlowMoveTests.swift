@@ -10,7 +10,7 @@ final class FlowMoveTests: PanelCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
     func openFlowSpot() async throws {
@@ -123,12 +123,12 @@ final class FlowMoveTests: PanelCase {
 
         try await wait("the close") { self.model.openSheetID == nil }
         XCTAssertNil(model.sheets["flow"]?.route)
-        XCTAssertEqual(model.closingPage?.route, "n0")
-        XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
+        XCTAssertEqual(model.closingSheet?.page.route, "n0")
+        XCTAssertEqual(model.closingSheet?.page.list.all.map(\.title), ["Page n0"])
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
         ends.forEach { $0() }
-        XCTAssertNil(model.closingPage)
+        XCTAssertNil(model.closingSheet)
     }
 
     func testCloseFromAPageGoesBackToTheSpotThatPushedItInOneStep() async throws {

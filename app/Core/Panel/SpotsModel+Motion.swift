@@ -2,7 +2,7 @@ import Foundation
 
 extension SpotsModel {
     public func toggleSlowMotion() {
-        host.confirm(MotionTokens.toggleSlowMotion() ? "Slow motion on" : "Slow motion off")
+        toast(ToastNote(words: MotionTokens.toggleSlowMotion() ? "Slow motion on" : "Slow motion off"))
     }
 
     public func slowMotion(_ isOn: Bool?) -> Bool {

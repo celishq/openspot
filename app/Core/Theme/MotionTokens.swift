@@ -31,6 +31,10 @@ public enum MotionTokens {
     public static let keycapLegendScale = 0.7
     public static let shrinkCurve = (x1: 0.2, y1: 0.1, x2: 0.2, y2: 1.0)
 
+    public static let visibleTravel = 0.5
+    public static var longestTravel: Double { hypot(SpotTokens.layout.panelWidth, SpotTokens.layout.panelHeight) }
+    public static var restFraction: Double { visibleTravel / longestTravel }
+
     public static var growSettle: Double { SpotTokens.layout.motion.settle * slow }
     public static let answerPause = 0.15
 
@@ -45,6 +49,7 @@ public enum MotionTokens {
     public static let shineEnd = 1.5
     public static let shineHalf = 0.5
     public static let contentStart = 0.2
+    public static let contentSoftness = 4.0
 
     public static let hiddenScale = 1.04
     public static var pressedScale: Double { SpotTokens.layout.motion.pressedScale }

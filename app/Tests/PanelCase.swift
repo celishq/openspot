@@ -13,6 +13,10 @@ class PanelCase: XCTestCase {
         0.2
     }
 
+    var motionLength: TimeInterval? {
+        nil
+    }
+
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-panel-case-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -25,18 +29,19 @@ class PanelCase: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(opening: SheetOpening(motionLength: motionLength), stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 
     override func tearDown() async throws {
         model.quit()
+        SpotTokens.take(SpotTokens.layout.with(columns: SpotTokens.columns))
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
 
     func takeCalls() {
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
     var spots: URL {

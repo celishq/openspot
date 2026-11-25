@@ -22,7 +22,7 @@ struct SpotWorkChip: View {
                 .frame(minWidth: SpotTokens.workChipSide, minHeight: SpotTokens.workChipSide)
                 .background(SpotTheme.ink.opacity(SpotTheme.control), in: Capsule())
                 .contentShape(Capsule())
-                .onTapGesture { model.open(work.id) }
+                .onTapGesture { model.openWorking(work.id) }
                 .help(all.map { $0.call.title ?? "Working…" }.joined(separator: "\n"))
                 .accessibilityLabel(work.call.title ?? "Working…")
                 .accessibilityAddTraits(.isButton)

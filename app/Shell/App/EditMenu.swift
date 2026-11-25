@@ -1,4 +1,5 @@
 import AppKit
+import OpenspotCore
 
 @MainActor
 enum EditMenu {
@@ -16,5 +17,15 @@ enum EditMenu {
         editItem.submenu = edit
         main.addItem(editItem)
         NSApp.mainMenu = main
+    }
+
+    static func item(of key: ActionKey) -> NSMenuItem? {
+        guard key.isCommand else { return nil }
+        let items = NSApp.mainMenu?.items.compactMap(\.submenu).flatMap(\.items) ?? []
+        return items.first { item in
+            let typed = item.keyEquivalent
+            return !typed.isEmpty && item.keyEquivalentModifierMask == .command
+                && key == ActionKey(name: typed.lowercased(), isCommand: true, isShift: typed != typed.lowercased())
+        }
     }
 }
