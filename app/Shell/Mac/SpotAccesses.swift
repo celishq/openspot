@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import AVFoundation
 import CoreGraphics
@@ -19,6 +20,34 @@ struct SpotAccesses: MacAccesses {
         case .input: Self.input()
         case .helper: Self.helper()
         }
+    }
+
+    func ask(for access: MacAccess) async {
+        let isUnasked = await status(of: access) == .unasked
+        switch access {
+        case .accessibility:
+            _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        case .screen:
+            _ = CGRequestScreenCaptureAccess()
+            await Self.open(access)
+        case .calendars where isUnasked:
+            _ = try? await EKEventStore().requestFullAccessToEvents()
+        case .reminders where isUnasked:
+            _ = try? await EKEventStore().requestFullAccessToReminders()
+        case .camera where isUnasked:
+            _ = await AVCaptureDevice.requestAccess(for: .video)
+        case .microphone where isUnasked:
+            _ = await AVCaptureDevice.requestAccess(for: .audio)
+        case .input where isUnasked:
+            _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+        default:
+            await Self.open(access)
+        }
+    }
+
+    @MainActor
+    private static func open(_ access: MacAccess) {
+        if let pane = access.pane { NSWorkspace.shared.open(pane) }
     }
 
     private static func status(of entity: EKEntityType) -> ReadAccess {

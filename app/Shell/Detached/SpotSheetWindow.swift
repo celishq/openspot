@@ -25,6 +25,12 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         makeKeyAndOrderFront(nil)
     }
 
+    func focus() {
+        guard isPresent else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        makeKey()
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard isPresent else { return }
         isPresent = false
