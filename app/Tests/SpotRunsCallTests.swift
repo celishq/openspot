@@ -109,7 +109,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
         runs.quit()
-        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        runs = SpotRuns(motionLength: 30, stopPause: 0.2)
         try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
@@ -125,7 +125,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
-        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        runs = SpotRuns(motionLength: 30, stopPause: 0.2)
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
@@ -141,7 +141,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testASheetOfPartsWithNoRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
-        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        runs = SpotRuns(motionLength: 30, stopPause: 0.2)
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
@@ -159,7 +159,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
         runs.quit()
-        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        runs = SpotRuns(motionLength: 30, stopPause: 0.2)
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         let ends = runs.endedCalls()

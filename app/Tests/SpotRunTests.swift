@@ -40,7 +40,7 @@ final class SpotRunTests: XCTestCase {
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        let made = SpotRuns(opening: SheetOpening(answerPause: pause), clock: clock.value)
+        let made = SpotRuns(answerPause: pause, clock: clock.value)
         runs.append(made)
         return made.sheet(for: Spot(id: "held", name: "held", url: url, kind: .list, triggers: .sheet))
     }

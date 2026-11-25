@@ -101,7 +101,8 @@ public final class SpotRuns {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         showLimit: TimeInterval = 10,
         attachLimit: TimeInterval = 3,
-        opening: SheetOpening = SheetOpening(),
+        answerPause: TimeInterval = MotionTokens.answerPause,
+        motionLength: TimeInterval? = nil,
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
         clipboardPause: Duration = .milliseconds(500),
@@ -130,8 +131,7 @@ public final class SpotRuns {
         self.frameWait = frameWait
         self.showLimit = showLimit
         self.attachLimit = attachLimit
-        self.opening = opening
-        opening.clock = clock
+        opening = SheetOpening(answerPause: answerPause, motionLength: motionLength, clock: clock)
         self.clock = clock
         now = clock.now
         clockWatch = DueWatch(clock: clock)

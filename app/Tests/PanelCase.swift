@@ -29,7 +29,7 @@ class PanelCase: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(opening: SheetOpening(motionLength: motionLength), stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(motionLength: motionLength, stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 

@@ -15,10 +15,11 @@ public final class SheetOpening {
     private var motionSerial = 0
     private var held: (id: String, start: () -> Void)?
     private var pause: Task<Void, Never>?
-    var clock = RunClock()
+    private let clock: RunClock
 
-    public init(answerPause: TimeInterval = MotionTokens.answerPause, motionLength: TimeInterval? = nil) {
+    public init(answerPause: TimeInterval = MotionTokens.answerPause, motionLength: TimeInterval? = nil, clock: RunClock = RunClock()) {
         self.answerPause = answerPause
+        self.clock = clock
         fixedLength = motionLength
     }
 
