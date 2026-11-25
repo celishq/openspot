@@ -189,6 +189,8 @@ extension SpotTokens {
     public static let playgroundTextIdeal: CGFloat = 440
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
+    public static let settingsWindowSize = CGSize(width: 880, height: 620)
+    public static let settingsWindowMinSize = CGSize(width: 680, height: 460)
 
     public static let builtIn = Theme.Layout()
     public static let windowFooterGap: CGFloat = builtIn.space.columnGap

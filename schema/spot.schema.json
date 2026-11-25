@@ -212,6 +212,11 @@
         },
         "views" : {
           "$ref" : "#/$defs/texts"
+        },
+        "window" : {
+          "enum" : [
+            "settings"
+          ]
         }
       },
       "type" : "object"
@@ -364,6 +369,11 @@
     },
     "views" : {
       "$ref" : "#/$defs/texts"
+    },
+    "window" : {
+      "enum" : [
+        "settings"
+      ]
     }
   },
   "title" : "spot.toml",

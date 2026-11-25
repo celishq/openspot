@@ -2,8 +2,9 @@ import Foundation
 
 extension SpotsModel {
     @discardableResult
-    public func open(_ id: String) -> Bool {
-        open(FlowSheet(spot: id))
+    public func open(_ id: String, at destination: String? = nil) -> Bool {
+        if let destination { sheets[id]?.destination = destination }
+        return open(FlowSheet(spot: id))
     }
 
     @discardableResult

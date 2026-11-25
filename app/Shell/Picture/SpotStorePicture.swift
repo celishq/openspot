@@ -20,14 +20,13 @@ enum SpotStorePicture {
             model.openWindow(entry.id)
             for view in entry.spot.views.values { await SpotViews.shared.load(view) }
             await model.waitForShows()
-            draw(model: model, id: entry.id, to: path)
+            draw(model: model, id: entry.id, size: entry.spot.window?.size ?? SpotTokens.windowSize, to: path)
         }
         NSApplication.shared.run()
         exit(0)
     }
 
-    private static func draw(model: SpotsModel, id: String, to path: String) {
-        let size = SpotTokens.windowSize
+    private static func draw(model: SpotsModel, id: String, size: CGSize, to path: String) {
         let whole = CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin)
         let seed = URL(fileURLWithPath: path).lastPathComponent
         let edge = SpotRoundShape(.window)
