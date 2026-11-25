@@ -2,7 +2,7 @@ import XCTest
 
 final class CheckScriptTests: XCTestCase {
     private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "shapes", "tools"]
-    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes", "shapes", "test-clocks", "core-timers"]
+    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes", "shapes", "test-clocks", "core-timers", "test-speeds"]
 
     private static let breaches: [(check: String, file: String, text: String)] = [
         ("core", "app/Core/Panel.swift", "@preconcurrency import AppKit\n"),
@@ -17,6 +17,7 @@ final class CheckScriptTests: XCTestCase {
         ("tests", "app/Tests/PanelTests.swift", "let found = try await ScriptProcess.output(url: URL(fileURLWithPath: \"/usr/bin/pg" + "rep\"), arguments: [\"-f\", path])\n"),
         ("tests", "app/Tests/PanelTests.swift", "private func started() -> Bool {\n    FileManager.default.file" + "Exists(atPath: path)\n}\n"),
         ("tests", "app/Tests/PanelTests.swift", "var isDone: Bool { FileManager.default.file" + "Exists(atPath: path) }\n"),
+        ("tests", "app/Tests/PanelTests.swift", "XCTAssertGreaterThan(usage.cost." + "cpu, 0.1)\n"),
         ("tests", "app/Tests/PanelTests.swift", "let count = proc_list" + "allpids(nil, 0)\n"),
         ("tests", "app/Tests/PanelTests.swift", "try await wait(\"the pid\") { (try? String(contentsOf: file, encoding: .utf8)) " + "!= nil }\n"),
         ("core", "app/Core/Panel.swift", "DispatchQueue.main.async" + "After(deadline: .now()) {}\n"),

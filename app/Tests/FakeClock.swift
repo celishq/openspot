@@ -20,6 +20,7 @@ final class FakeClock {
         var time = Date(timeIntervalSince1970: 1000)
         var timers: [Timer] = []
         var made = 0
+        var thread: TimeInterval = 0
     }
 
     private final class Shared: Sendable {
@@ -35,9 +36,21 @@ final class FakeClock {
     private var sleeps: [Sleep] = []
     private var count = 0
     private let isReal: Bool
+    private let threadStep: TimeInterval?
 
-    init(isReal: Bool = false) {
+    init(isReal: Bool = false, threadStep: TimeInterval? = nil) {
         self.isReal = isReal
+        self.threadStep = threadStep
+    }
+
+    private var threadTime: @Sendable () -> TimeInterval {
+        guard let step = threadStep else { return RunClock.cpuOfThread }
+        return { [shared] in
+            shared.withLock { state in
+                state.thread += step
+                return state.thread
+            }
+        }
     }
 
     nonisolated var time: Date {
@@ -45,7 +58,8 @@ final class FakeClock {
     }
 
     var value: RunClock {
-        RunClock(now: { [shared] in shared.withLock { $0.time } }, sleep: { duration, tolerance in
+        let threadTime = threadTime
+        return RunClock(now: { [shared] in shared.withLock { $0.time } }, sleep: { duration, tolerance in
             self.tolerances.append(tolerance)
             try await self.sleep(duration)
         }, after: { [shared, isReal] seconds, work in
@@ -55,7 +69,7 @@ final class FakeClock {
                 return shared.made
             }
             if isReal { DispatchQueue.global().asyncAfter(deadline: .now() + max(0, seconds)) { Self.fire(id, in: shared) } }
-        })
+        }, threadTime: threadTime)
     }
 
     var sleepCount: Int {

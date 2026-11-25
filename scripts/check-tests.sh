@@ -29,4 +29,6 @@ grep -rEo --include='*.swift' 'Task\.sleep|setenv\(' app/Tests | grep -v '^app/T
 compare test-pauses "$found" "A test pauses with Task.sleep or changes the environment of the whole process; wait for a fact with wait(_:until:), and give a process its environment as a value:" || exit 1
 grep -rEo --include='*.swift' 'Date\(\)\.timeIntervalSince|ContinuousClock\.now|Task\.yield' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '()' >"$found"
 compare test-clocks "$found" "A test reads the wall clock or counts yields; move a FakeClock, or wait for a fact with wait(_:until:):" || exit 1
+grep -rEn --include='*.swift' 'XCTAssert(GreaterThan|LessThan)(OrEqual)?\(.*(\.cpu|CPUTIME).*, [0-9.]*[1-9]' app/Tests | cut -d: -f1 | sed 's/$/	cpu bound/' >"$found"
+compare test-speeds "$found" "A test bounds a CPU time by a number, which a faster or busier Mac crosses; give the run a thread clock with FakeClock(threadStep:):" || exit 1
 echo "Tests check passed."

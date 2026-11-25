@@ -231,9 +231,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertEqual(items.last?.isOn, true)
     }
 
-    private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {
+    private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil, clock: FakeClock? = nil) {
         runs.quit()
-        runs = SpotRuns(showLimit: limit, clock: clock.value, stopPause: 0.2, inlineIdle: idle, frameWait: frameWait, log: log)
+        runs = SpotRuns(showLimit: limit, clock: (clock ?? self.clock).value, stopPause: 0.2, inlineIdle: idle, frameWait: frameWait, log: log)
     }
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
@@ -366,16 +366,17 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(toml: "", "export default { show() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'item=a\\n' } }")
+        runs(clock: FakeClock(isReal: true, threadStep: 0.25))
+        try inline(toml: "", "export default { show() { return 'item=a\\n' } }")
         let sheet = try sheet()
         sheet.open {}
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
-        XCTAssertGreaterThan(runs.usage.counts["script"]?.cost.cpu ?? 0, 0.1)
+        XCTAssertGreaterThan(runs.usage.counts["script"]?.cost.cpu ?? 0, 0)
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(toml: "", "export default { show() { const end = Date.now() + 2000; while (Date.now() < end) {} } }")
+        try inline(toml: "", "export default { show() { while (true) {} } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {

@@ -1,6 +1,5 @@
 app/Tests/BigPasteTests.swift	Date.timeIntervalSince
 app/Tests/BigPasteTests.swift	Date.timeIntervalSince
-app/Tests/InlineHandlersTests.swift	Date.timeIntervalSince
 app/Tests/InlineWaitsTests.swift	Date.timeIntervalSince
 app/Tests/InlineWaitsTests.swift	Date.timeIntervalSince
 app/Tests/ItemListTests.swift	Date.timeIntervalSince

@@ -1,4 +1,3 @@
-import Synchronization
 import XCTest
 @testable import OpenspotCore
 
@@ -195,41 +194,32 @@ final class InlineHandlersTests: SpotRunsCase {
         takeCalls()
     }
 
-    private func outcome(of id: String, _ handler: String) async throws -> (outcome: InlineCall.Outcome, seconds: TimeInterval) {
+    private func outcome(of id: String, _ handler: String) async throws -> InlineCall.Outcome {
         let script = runs.script(of: try spot(id))
         defer { script.end() }
         let call = InlineCall(arguments: [handler])
-        let started = Date()
         script.send(call)
-        let outcome = await call.outcome()
-        return (outcome, Date().timeIntervalSince(started))
+        return await call.outcome()
     }
 
     func testAHandlerThatRunsPastItsLimitAfterAnAwaitIsStopped() async throws {
         shortLimit()
         try inline("spinner", toml: "[actions.spin]", """
         export default {
-          async spin() { await null; const end = Date.now() + 2000; while (Date.now() < end) {} return "text=a\\n" },
+          async spin() { await null; while (true) {} },
         }
         """)
 
-        let (outcome, seconds) = try await outcome(of: "spinner", "spin")
+        let outcome = try await outcome(of: "spinner", "spin")
 
         guard case .failed(let error) = outcome else { return XCTFail("the loop was not stopped") }
         XCTAssertEqual(error as? SpotError, .timedOut)
-        XCTAssertLessThan(seconds, 1.5)
     }
 
     func testTheTimeAHandlerRunsAddsUpAcrossItsAwaits() async throws {
-        let base = clock.value
-        let read = Mutex(0.0)
+        let thread = FakeClock(isReal: true, threadStep: 0.03)
         runs.quit()
-        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.2, clock: RunClock(now: base.now, sleep: base.sleep, after: base.after, threadTime: {
-            read.withLock { time in
-                time += 0.03
-                return time
-            }
-        }), stopPause: 0.2)
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.2, clock: thread.value, stopPause: 0.2)
         takeCalls()
         try script("ticker", toml: "[actions.tick]", log: "ticker-log", "")
         try inline("spinner", toml: "[actions.spin]\n[bindings]\nticker = { spot = 'ticker' }", """
@@ -241,7 +231,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let (outcome, _) = try await outcome(of: "spinner", "spin")
+        let outcome = try await outcome(of: "spinner", "spin")
 
         guard case .failed(let error) = outcome else { return XCTFail("the handler ran past its limit") }
         XCTAssertEqual(error as? SpotError, .timedOut)
