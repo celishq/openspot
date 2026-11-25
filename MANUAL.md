@@ -22,8 +22,9 @@ Every spot answers the same keys, so you learn them once.
 
 Each spot has its own Settings, which open when you press `⌘` Return on its card.
 
-1. Press `⌘` Return on a card. Its Settings list its keys first: Open, the key of each action with a title, and Float.
-2. Look further down. Each setting of the spot follows, set or Not set.
+1. Press `⌘` Return on a card. Its Settings list the spot's own settings first, each with its value, its default, or Not
+   set.
+2. Look further down. Its keys follow: Open, the key of each action with a title, and Float.
 3. Look at the end. Show in the menu bar and Open in a window come last.
 
 - A key row records a key on Return, and `⌘⌫` removes it. A key is a shortcut such as `ctrl+option+k`, a shake, or a

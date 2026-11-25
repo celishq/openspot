@@ -24,6 +24,32 @@ final class PanelAskTests: PanelCase {
         XCTAssertNil(model.form)
     }
 
+    func testThePanelHoldsItsFocusWhileAPickerAsksAndTakesItBackAfter() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let takes = host.focusTakes
+
+        let held = await model.holdingFocus { self.model.holdsFocus }
+
+        XCTAssertTrue(held)
+        XCTAssertFalse(model.holdsFocus)
+        XCTAssertEqual(host.focusTakes, takes + 1)
+    }
+
+    func testASettingThatItsSpotChangesLeavesThePanelOpen() async throws {
+        try script("editor", toml: "title = 'Editor'\n[settings]\neditor = { type = 'text' }", "touch '\(called.path)'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        XCTAssertTrue(model.changeSetting("editor", of: "editor"))
+
+        try await wait("the call") { FileManager.default.fileExists(atPath: self.called.path) }
+        try await wait("the answer") { self.model.pendingAsk == nil }
+        XCTAssertEqual(host.dismissals, 0)
+    }
+
     func testASettingWithOptionsIsAChoiceThatOpenspotKeepsWithNoCall() async throws {
         try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "[ \"$1\" = show ] || touch '\(called.path)'")
         await model.reload()

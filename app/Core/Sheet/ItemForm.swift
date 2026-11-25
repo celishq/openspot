@@ -42,6 +42,14 @@ public struct ItemForm: Equatable, Sendable {
             self.picks = picks
             self.range = range
         }
+
+        public var takesFocus: Bool {
+            type == .text || type == .secret || type == .multiline
+        }
+
+        public var isStop: Bool {
+            takesFocus || type == .choice || type == .switch
+        }
     }
 
     public let title: String

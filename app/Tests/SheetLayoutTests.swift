@@ -29,6 +29,8 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertTrue(SpotTokens.rowsFit(rows: 3))
         XCTAssertFalse(SpotTokens.rowsFit(rows: 3, in: three - 1))
         XCTAssertEqual(SpotTokens.sheetRect(rows: 3).height, SpotTokens.sheetRowsTop + three + SpotTokens.padding)
+        XCTAssertLessThan(SpotTokens.sectionRow, SpotTokens.listRow)
+        XCTAssertEqual(SpotTokens.sheetRect(rows: 3, sections: 1).height, SpotTokens.sheetRect(rows: 3).height - SpotTokens.listRow + SpotTokens.sectionRow)
     }
 
     func testASheetWithRowsKeepsNoRoomOverItsPartsForAPlacedSearch() throws {

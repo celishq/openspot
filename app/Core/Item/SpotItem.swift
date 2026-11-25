@@ -27,13 +27,15 @@ public struct SpotItem: Equatable, Sendable {
         pin != nil
     }
     public let openTitle: String?
+    public let openWait: String?
+    public let chosen: String?
     public let staysOnPick: Bool
     public let move: FlowMove?
     public let section: String?
     public let number: NumberReading?
     public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, openWait: String? = nil, chosen: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -52,6 +54,8 @@ public struct SpotItem: Equatable, Sendable {
         self.card = card
         self.pin = pin
         self.openTitle = openTitle
+        self.openWait = openWait
+        self.chosen = chosen
         self.staysOnPick = staysOnPick
         self.move = move
         self.section = section
@@ -87,6 +91,8 @@ public struct SpotItem: Equatable, Sendable {
             fields: Self.fields(of: block),
             pin: block.value(ItemKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(ItemKey.openTitle),
+            openWait: block.value(ItemKey.openWait),
+            chosen: block.value(ItemKey.chosen),
             staysOnPick: block.flag(ItemKey.close) == false,
             move: FlowMove(item: block),
             section: section,

@@ -353,7 +353,7 @@ extension SpotsModel {
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         asOnePress {
             if action == nil, !item.records, entry.spot.holdsSettings, let settings = entry.spot.settingsSheet, let key = settings.field(of: item.run) {
-                _ = changeSetting(key, of: settings.spot)
+                if !offerSettingMenu(key, of: settings.spot) { _ = changeSetting(key, of: settings.spot) }
                 return
             }
             if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
@@ -383,19 +383,22 @@ extension SpotsModel {
                 perform(action, on: (entry, item))
             } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
                 if closes { closingPick = (item, entry) }
+                let search = item.pin == .top && !place.isDetached ? openItems?.query ?? "" : ""
+                let wait = startWaiting(CommandAction(id: ScriptEntry.press.name, title: item.title, wait: item.openWait).openWords)
                 Task { [weak self] in
-                    let answer = await sheet.answer(toPick: item, closes: closes)
+                    let answer = await sheet.answer(toPick: item, closes: closes, search: search)
                     guard let self else { return }
+                    endWaiting(wait)
                     switch answer {
                     case .form, .stopped: if closingPick?.item == item { closingPick = nil }
                     default: break
                     }
                     guard case .form(let form) = answer else { return }
-                    let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
+                    let press = CommandAction(id: ScriptEntry.press.name, title: item.title, wait: item.openWait)
                     switch place {
                     case .window: toast(.failure("\(item.title) asks with a form, which a window does not show yet."))
                     case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
-                    case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
+                    case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: search) }
                     }
                 }
             } else {

@@ -128,8 +128,11 @@ extension SpotsModel {
             sheets[target.entry.id]?.run(action, item: target.item)
             return
         }
+        let wait = startWaiting(action.openWords)
         Task { [weak self] in
-            guard case .form(let form) = await sheet.answer(to: action, item: target.item, closes: closes), let self, isShown else { return }
+            let answer = await sheet.answer(to: action, item: target.item, closes: closes)
+            self?.endWaiting(wait)
+            guard case .form(let form) = answer, let self, isShown else { return }
             show(.form(form), of: action, on: target, prefill: "")
         }
     }
@@ -158,7 +161,7 @@ extension SpotsModel {
             closeMenu()
             let opensSheet = openSheetID != id
             if opensSheet { pushFirst(id, moving: isShown) }
-            self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet)
+            self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet, tookSearch: !prefill.isEmpty)
         case .shown where target.entry.spot.kind.opensSheet:
             if openSheetID != id { pushFirst(id, moving: isShown) }
         case .shown, .done:
@@ -185,21 +188,71 @@ extension SpotsModel {
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
-        let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
+        let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .stay)
         ask(action, on: (entry, nil), whileShown: true) { try await sheet.change(action) }
         return true
     }
 
+    func offerSettingMenu(_ key: String, of id: String) -> Bool {
+        guard let field = entry(id)?.spot.settings.first(where: { $0.id == key && !$0.isSecret && !$0.options.isEmpty }) else { return false }
+        let value = runs.settings[id]?[key] ?? field.defaultValue
+        let offered = field.options.filter { $0 != value } + field.options.filter { $0 == value }
+        settingMenu = SettingMenu(spot: id, key: key, options: offered.map { SpotPart.Option(id: $0, title: $0) }, value: value, serial: (settingMenu?.serial ?? 0) + 1)
+        return true
+    }
+
+    public func chooseSetting(_ value: String, in menu: SettingMenu) {
+        do {
+            let next = try files.config.change { $0.set(setting: menu.key, of: menu.spot, to: value) }
+            configChanged(.value(spot: menu.spot, caller: nil), to: next)
+        } catch {
+            toast(.failure("Openspot didn't keep \(value). \(Self.reason(error))"))
+        }
+    }
+
     public func chooseFormOption(_ item: SpotItem) {
         asOnePress {
-            form?.draft.choose(item.run)
-            submitForm()
+            if form?.draft.picking != nil {
+                takeFormPick(item.run)
+            } else {
+                form?.draft.choose(item.run)
+                submitForm()
+            }
+        }
+    }
+
+    func takeFormPick(_ id: String? = nil) {
+        guard var draft = form?.draft, let field = draft.pickedField else { return }
+        if let id { draft.choose(id) }
+        if let id = draft.choices?.selectedItem?.run, field.picks == nil, field.options.first(where: { $0.id == id })?.sends == true {
+            draft.endPicking()
+            if draft != form?.draft { form?.draft = draft }
+            return sendFormOption(id, of: field.name)
+        }
+        _ = draft.takePick()
+        if draft != form?.draft { form?.draft = draft }
+    }
+
+    public func sendFormOption(_ id: String, of name: String) {
+        guard let form else { return }
+        asOnePress {
+            if let missing = form.draft.missing { return toast(.failure("Enter a value for \(missing.label).")) }
+            var draft = form.draft
+            draft.set(id, for: name)
+            send(form, draft)
         }
     }
 
     public func setFormValue(_ text: String, for name: String) {
         asOnePress {
             form?.draft.set(text, for: name)
+        }
+    }
+
+    public func focusFormField(_ name: String?) {
+        guard let draft = form?.draft, draft.focusing(name) != draft.focus else { return }
+        asOnePress {
+            form?.draft.focus(on: name)
         }
     }
 
@@ -214,11 +267,10 @@ extension SpotsModel {
 
     public func submitForm() {
         guard let form else { return }
-        if let missing = form.draft.missing {
-            toast(.failure("Enter a value for \(missing.label)."))
-            return
+        asOnePress {
+            if let missing = form.draft.missing { return toast(.failure("Enter a value for \(missing.label).")) }
+            send(form, form.draft)
         }
-        send(form, form.draft)
     }
 
     private func keepOption(_ key: String, _ form: FormSession, _ draft: FormDraft) {
@@ -264,11 +316,14 @@ extension SpotsModel {
     func send(_ form: FormSession, _ draft: FormDraft) {
         if case .secret(let key) = form.action.kind { return keepSecret(key, form, draft) }
         if case .option(let key) = form.action.kind { return keepOption(key, form, draft) }
+        let wait = startWaiting(form.action.sendWords)
         Task {
+            defer { endWaiting(wait) }
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
                     self.form = nil
+                    if form.tookSearch, openSheet?.query.isEmpty == false { openSheet?.search("") }
                     if form.action.after == .close, isShown { host.dismiss() }
                 case .form(let next)? where self.form?.id == form.id:
                     let kept = FormDraft(form: next, after: self.form?.draft ?? draft)
@@ -280,5 +335,29 @@ extension SpotsModel {
                 toast(.failure("\(form.action.title) failed. \(Self.reason(error))"))
             }
         }
+    }
+}
+
+extension SpotsModel {
+    static let waitPause: Duration = .milliseconds(300)
+
+    func startWaiting(_ words: String) -> UUID {
+        let id = UUID()
+        waits[id] = words
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.waitPause, tolerance: .milliseconds(50))
+            guard let self, let words = self.waits[id] else { return }
+            self.shownWait = id
+            let hint = HintWords(words)
+            if self.waiting != hint { self.waiting = hint }
+        }
+        return id
+    }
+
+    func endWaiting(_ id: UUID) {
+        waits[id] = nil
+        guard shownWait == id else { return }
+        shownWait = nil
+        if waiting != nil { waiting = nil }
     }
 }

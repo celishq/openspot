@@ -8,6 +8,10 @@ public enum FolderCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        { [pick = context.mac.pickFolder] in CommandAnswer(output: await pick?().map { $0.path + "\n" } ?? "") }
+        { [pick = context.mac.pickFolder, app = context.app] in
+            guard let pick else { return CommandAnswer(output: "") }
+            let folder = if let app { await app.pickFolder(pick) } else { await pick() }
+            return CommandAnswer(output: folder.map { $0.path + "\n" } ?? "")
+        }
     }
 }

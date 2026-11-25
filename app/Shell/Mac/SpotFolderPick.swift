@@ -18,7 +18,7 @@ enum SpotFolderPick {
         } onCancel: {
             Task { @MainActor in shown.cancel(nil) }
         }
-        previous?.activate()
+        if !NSApp.windows.contains(where: { $0 is SpotsPanel && $0.isVisible }) { previous?.activate() }
         return response == .OK ? window.url : nil
     }
 }

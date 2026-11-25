@@ -214,11 +214,11 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    public static let button = BlockKind(name: "button", presses: true)
+    public static let button = BlockKind(name: "button", keys: ["wait"], presses: true)
 
     public static let items = BlockKind(name: "items")
 
-    public static let option = BlockKind(name: "option")
+    public static let option = BlockKind(name: "option", keys: ["send", "remove"])
 
     public static let box = BlockKind(name: "box")
 

@@ -120,7 +120,14 @@ final class ItemsTests: PanelCase {
         try await open("items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\nitem=mouse\nparent=nearby\ntitle=Mouse\n\nitem=keyboard\nparent=nearby\ntitle=Keyboard\n")
 
         let sheet = try XCTUnwrap(model.sheets["items"])
-        XCTAssertEqual(sheet.sheetRect, SpotTokens.sheetRect(rows: 3, top: sheet.top))
+        XCTAssertEqual(sheet.sheetRect, SpotTokens.sheetRect(rows: 3, sections: 1, top: sheet.top))
+    }
+
+    func testAButtonInsideTheListIsAnActOfTheRowsAndNotAPartOfTheSheet() {
+        let output = Frame(text: "items=items\n\nitem=a\nparent=items\ntitle=A\n\nbutton=edit\nparent=items\ntitle=Edit\nshortcut=cmd+e\n\nbutton=new\ntitle=New\n")
+
+        XCTAssertEqual(output.actions.map(\.id), ["edit"])
+        XCTAssertEqual(output.parts.map(\.id), ["new"])
     }
 
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {

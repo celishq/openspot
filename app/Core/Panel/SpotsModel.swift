@@ -11,6 +11,7 @@ public final class SpotsModel {
         public let action: CommandAction
         public let item: SpotItem?
         public let openedSheet: Bool
+        public var tookSearch = false
     }
 
     public typealias Target = (entry: Entry, item: SpotItem?)
@@ -266,10 +267,12 @@ public final class SpotsModel {
     @ObservationIgnored var pressDepth = 0
     public var form: FormSession? {
         didSet {
-            let rect = form.map { SpotTokens.formRect($0.draft.form) }
+            let rect = form.map { $0.draft.pickedField.map { [draft = $0.draft] field in SpotTokens.choiceRect(options: draft.options[field.name]?.count ?? field.options.count) } ?? SpotTokens.formRect($0.draft.form) }
             if rect != formRect { formRect = rect }
             let hasChoices = form?.draft.choices != nil
             if hasChoices != formHasChoices { formHasChoices = hasChoices }
+            let pickWord = form?.draft.pickedField?.label
+            if pickWord != formPickWord { formPickWord = pickWord }
             let isMultiple = form?.draft.isMultiple == true
             if isMultiple != formIsMultiple { formIsMultiple = isMultiple }
             let hint = HintWords(KeyRow.hint(of: formRows))
@@ -280,9 +283,14 @@ public final class SpotsModel {
     public private(set) var formRect: CGRect?
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
+    public private(set) var formPickWord: String?
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
+    @ObservationIgnored var waits: [UUID: String] = [:]
+    @ObservationIgnored var shownWait: UUID?
+    public internal(set) var waiting: HintWords?
     @ObservationIgnored var askedWindows: Set<String> = []
+    public internal(set) var settingMenu: SettingMenu?
     public internal(set) var editing: EditSession? {
         didSet {
             guard isEditing != (oldValue != nil) else { return }
@@ -590,11 +598,15 @@ public final class SpotsModel {
     }
 
     public func allows(_ reason: String) async -> Bool {
+        await holdingFocus { await self.host.allows(reason) }
+    }
+
+    public func holdingFocus<Value>(_ work: () async -> Value) async -> Value {
         isAsking = true
-        let allowed = await host.allows(reason)
+        let value = await work()
         isAsking = false
         if isShown { host.takeFocus() }
-        return allowed
+        return value
     }
 
     public func quit() {

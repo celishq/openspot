@@ -8,8 +8,8 @@ struct SpotHintLine: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            hint(model.gridHint, isShown: !surfaceIsOut)
-            hint(sheetWords, isShown: surfaceIsOut)
+            hint(model.waiting ?? model.gridHint, isWorking: model.waiting != nil, isShown: !surfaceIsOut)
+            hint(model.waiting ?? sheetWords, isWorking: model.waiting != nil, isShown: surfaceIsOut)
         }
         .modifier(FootOffset(foot: foot, motion: motion, inset: SpotTokens.halo + SpotTokens.hintPillHeight))
         .onAppear { model.followHint() }
@@ -20,10 +20,10 @@ struct SpotHintLine: View {
         return surfaceIsOut && motion.progress == 0 ? PanelFoot(closed: foot.open, open: foot.open) : foot
     }
 
-    private func hint(_ words: HintWords, isShown: Bool) -> some View {
+    private func hint(_ words: HintWords, isWorking: Bool, isShown: Bool) -> some View {
         ZStack {
-            ForEach([words], id: \.self) { words in
-                SpotHint(words: words, activeKey: model.isMenuOpen ? ActionMenu.key : nil, onPress: model.pressHint)
+            ForEach([HintCopy(words: words, isWorking: isWorking)], id: \.self) { copy in
+                SpotHint(words: copy.words, activeKey: model.isMenuOpen ? ActionMenu.key : nil, isWorking: copy.isWorking, onPress: model.pressHint)
                     .transition(.opacity)
             }
         }
@@ -35,4 +35,9 @@ struct SpotHintLine: View {
     private var sheetWords: HintWords {
         model.formRect == nil ? model.sheetHint : model.formHint
     }
+}
+
+private struct HintCopy: Hashable {
+    let words: HintWords
+    let isWorking: Bool
 }

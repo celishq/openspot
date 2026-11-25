@@ -75,7 +75,11 @@ private struct SheetContentView: View {
                         draft: form,
                         onValue: { model.setFormValue($0, for: $1) },
                         onChoose: { model.chooseFormOption($0) },
-                        selection: { [model] in model.form?.draft.choices?.selected ?? 0 }
+                        selection: { [model] in model.form?.draft.choices?.selected ?? 0 },
+                        focused: form.focus,
+                        onFocus: { model.focusFormField($0) },
+                        onSave: { model.submitForm() },
+                        onSend: { model.sendFormOption($0, of: $1) }
                     )
                 } else {
                     if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }

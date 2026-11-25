@@ -103,4 +103,8 @@ struct SpotRunningApp: RunningApp {
         await model.allows(reason)
     }
 
+    func pickFolder(_ pick: @escaping @MainActor @Sendable () async -> URL?) async -> URL? {
+        await model.holdingFocus { await pick() }
+    }
+
 }

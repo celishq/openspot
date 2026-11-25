@@ -53,6 +53,15 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(Frame(text: "text=a\ntitle=A\n").search, .local)
     }
 
+    func testASearchFieldBesideOnlyAListShowsTheSheetsOwnSearchRow() throws {
+        let output = Frame(text: "frame=\n\nfield=search\ntype=search\n\nitems=items\n\nitem=a\nparent=items\ntitle=A\n\nbutton=edit\nparent=items\ntitle=Edit\n")
+        let sheet = try XCTUnwrap(SheetParts(output: output))
+
+        XCTAssertEqual(output.search, .local)
+        XCTAssertFalse(sheet.placesSearch)
+        XCTAssertTrue(sheet.top.hasField)
+    }
+
     func testASearchFieldWithNoItemsShowsTheSearchInItsPlace() throws {
         let output = Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n")
         let sheet = try XCTUnwrap(SheetParts(output: output))

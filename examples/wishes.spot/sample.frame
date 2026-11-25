@@ -1,0 +1,48 @@
+frame=
+recents=false
+detail=3 wishes
+
+items=items
+
+item=add
+parent=items
+title=Add wish
+icon=plus.circle.fill
+pin=top
+
+box=s1
+parent=items
+title=Books
+
+item=w1
+parent=s1
+title=The Design of Everyday Things
+detail=$18 · bookshop.org
+icon=book
+
+box=s2
+parent=items
+title=Clothes
+
+item=w2
+parent=s2
+title=Wool sweater
+detail=€89 · example.com
+icon=tshirt
+
+box=s3
+parent=items
+title=Gadgets
+
+item=w3
+parent=s3
+title=Noise cancelling headphones
+detail=$349 · example.com
+icon=headphones
+
+item=share
+parent=items
+title=Share list
+detail=Copies your wishes as text, by type
+icon=square.and.arrow.up
+pin=bottom

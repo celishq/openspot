@@ -4,10 +4,16 @@ import SwiftUI
 struct SpotHint: View {
     let words: HintWords
     var activeKey: String?
+    var isWorking = false
     var onPress: (String) -> Void = { _ in }
+    @Environment(\.spotIsShown) private var isShown
 
     var body: some View {
         HStack(spacing: SpotTokens.hintGroupGap) {
+            if isWorking {
+                Image(systemName: "progress.indicator")
+                    .symbolEffect(.variableColor.iterative, isActive: isShown)
+            }
             ForEach(Array(words.groups.enumerated()), id: \.offset) { _, group in
                 if let key = group.key {
                     Button { onPress(key) } label: { words(of: group).contentShape(Rectangle()) }

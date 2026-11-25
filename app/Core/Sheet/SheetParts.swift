@@ -36,7 +36,7 @@ public struct SheetParts: Equatable, Sendable {
         shown = holdsParts ? output.tree.partIDs(shownIn: [variants]) : []
         self.variants = variants
         showsRows = output.showsRows
-        placesSearch = output.placesSearch
+        placesSearch = output.placesSearch && holdsParts
         tree = output.tree
         top = SheetTop(showsRows: showsRows && !placesSearch, search: output.search, header: 0)
         height = 0
@@ -228,7 +228,7 @@ public struct SheetParts: Equatable, Sendable {
         guard generation == self.generation, !every.isEmpty else { return false }
         let kept = id.flatMap(part)?.value
         showsRows = output.showsRows
-        placesSearch = output.placesSearch
+        placesSearch = output.placesSearch && holdsParts
         tree = output.tree
         if let id, let kept { tree.set(kept, of: id) }
         shown = tree.partIDs(shownIn: [variants])

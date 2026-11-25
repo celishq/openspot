@@ -1,0 +1,11 @@
+#!/bin/sh
+printf 'frame=\nrecents=false\ndetail=3 wishes\n\n'
+printf 'items=items\n\n'
+printf 'item=add\nparent=items\ntitle=Add wish\nicon=plus.circle.fill\npin=top\n\n'
+printf 'box=s1\nparent=items\ntitle=Books\n\n'
+printf 'item=w1\nparent=s1\ntitle=The Design of Everyday Things\ndetail=$18 · bookshop.org\nicon=book\n\n'
+printf 'box=s2\nparent=items\ntitle=Clothes\n\n'
+printf 'item=w2\nparent=s2\ntitle=Wool sweater\ndetail=€89 · example.com\nicon=tshirt\n\n'
+printf 'box=s3\nparent=items\ntitle=Gadgets\n\n'
+printf 'item=w3\nparent=s3\ntitle=Noise cancelling headphones\ndetail=$349 · example.com\nicon=headphones\n\n'
+printf 'item=share\nparent=items\ntitle=Share list\ndetail=Copies your wishes as text, by type\nicon=square.and.arrow.up\npin=bottom\n'

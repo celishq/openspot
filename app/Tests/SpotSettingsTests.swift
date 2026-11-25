@@ -85,7 +85,7 @@ final class SpotSettingsTests: XCTestCase {
 
         let items = try await rows(of: settings, in: SpotRuns())
 
-        XCTAssertEqual(items.map(\.run), ["key:move:open", "key:move:float", "setting:move:place", "menubar:move", "window:move"])
+        XCTAssertEqual(items.map(\.run), ["setting:move:place", "key:move:open", "key:move:float", "menubar:move", "window:move"])
         XCTAssertEqual(items.first { $0.run == "setting:move:place" }?.subtitle, "far\n\ntext=other\ntitle=Other")
     }
 
@@ -156,14 +156,14 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(settings.name, "Shelf Settings")
         let before = try await rows(of: settings, in: runs)
         XCTAssertEqual(before.map(\.run), [
-            "key:shelf:open", "key:shelf:key.left", "key:shelf:key.right", "key:shelf:float",
-            "setting:shelf:folder", "setting:shelf:editor", "setting:shelf:theme", "menubar:shelf", "window:shelf"
+            "setting:shelf:folder", "setting:shelf:editor", "setting:shelf:theme",
+            "key:shelf:open", "key:shelf:key.left", "key:shelf:key.right", "key:shelf:float", "menubar:shelf", "window:shelf"
         ])
-        XCTAssertEqual(before.map(\.title), ["Open", "Left side", "Right side", "Float", "Folder", "Default app", "Theme", "Show in the menu bar", "Open in a window"])
-        XCTAssertEqual(before.map(\.subtitle), ["Press ⏎ to set", "Press ⏎ to set", "Press ⏎ to set", "Press ⏎ to set", "~/Code", "Not set", "dark", nil, nil])
-        XCTAssertEqual(before.map(\.symbol), ["tray.full", "tray.full", "tray.full", "tray.full", "slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "menubar.rectangle", "macwindow"])
-        XCTAssertEqual(before.map(\.records), [true, true, true, true, false, false, false, false, false])
-        XCTAssertEqual(before.map { $0.hides ?? [] }, [["clear"], ["clear"], ["clear"], ["clear"], [], ["clear"], [], ["clear"], ["clear"]])
+        XCTAssertEqual(before.map(\.title), ["Folder", "Default app", "Theme", "Open", "Left side", "Right side", "Float", "Show in the menu bar", "Open in a window"])
+        XCTAssertEqual(before.map(\.subtitle), ["~/Code", "Not set", "dark", nil, nil, nil, nil, nil, nil])
+        XCTAssertEqual(before.map(\.symbol), ["slider.horizontal.3", "app.badge", "slider.horizontal.3", "keyboard", "tray.full", "tray.full", "pip", "menubar.rectangle", "macwindow"])
+        XCTAssertEqual(before.map(\.records), [false, false, false, true, true, true, true, false, false])
+        XCTAssertEqual(before.map { $0.hides ?? [] }, [[], ["clear"], [], ["clear"], ["clear"], ["clear"], ["clear"], ["clear"], ["clear"]])
         let own = try await runs.answer(of: shelf, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(Frame(text: own).items.map(\.run), ["own"])
 

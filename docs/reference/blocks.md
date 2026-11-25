@@ -74,11 +74,11 @@ A block's first line is its kind and its id, such as `item=4120`.
 | `series`  | Points over time, a bar each.          | `value`, points split by commas, `-` for a gap; `add`, points after the last; `keep`, the most it holds, 60 by default and 600 at most; `max`, `unit`, `display`. |
 | `icon`    | An icon alone.                         | `value`, the icon.                                                   |
 | `picture` | An image that fills its room.          | `icon`, the image.                                                   |
-| `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press. |
+| `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press; `wait`, what the sheet's foot says while its form waits, such as Reading the page. |
 | `field`   | A text people type.                    | `value`; `type`, `multiline`, `slider`, `search` or `hotkey`; `placeholder`; `required`; `readonly`; `min` and `max` of a slider, 0 and 100 by default; `recording`, while a `hotkey` records. |
 | `switch`  | On or off.                             | `value`, `true` or `false`; `type`, `tick` for a round tick.         |
 | `choice`  | A menu of the `option` blocks after it. | `value`, the chosen id; `type`, `list`, `swatches` or `multiple`; `color`, one colour of `swatches`. |
-| `option`  | One choice of a `choice`.              | `title`, its id by default; `icon`.                                  |
+| `option`  | One choice of a `choice`.              | `title`, its id by default; `icon`; `send`, `true` sends the form when it's chosen; `remove`, `true` lets `⌘⌫` delete it. |
 | A view    | A block your SwiftUI file draws, named by the file, such as `week=`. | Any key; see [Draw your own view](../further/views.md). |
 
 A `field`, `switch` or `choice` runs its id with its new value as `value`. A text field sends as people type, and a
@@ -117,6 +117,8 @@ footer.
 | `close`         | `false` keeps the panel open after a press.                               |
 | `shake`         | `true` lets a shake be the key the row records.                           |
 | `open.title`    | The words of Return on this row.                                          |
+| `chosen`        | The value a press of the row picks, at its end with ⌃⌄.                    |
+| `open.wait`     | What the sheet's foot says while a press of the row waits, such as Reading the page. |
 | `route`         | The page a press opens, with no run of `press`.                           |
 | `route.title`   | The title of that page, the row's title by default.                       |
 | `route.replace` | `true` replaces the sheet that shows.                                     |
@@ -131,7 +133,7 @@ lines, then your settings as `setting.<name>=` lines.
 | Word                 | Comes                                              | Inputs                                               |
 | -------------------- | -------------------------------------------------- | ---------------------------------------------------- |
 | `show`               | When Openspot needs what to show.                  | `event`: `panel.open`, `sheet.open`, `spot.want` or `spot.change`; `route`, the page, empty for the first. |
-| `press`              | When people press a row.                           | `item`, and `item.<key>` for each key of the row.    |
+| `press`              | When people press a row.                           | `item`, and `item.<key>` for each key of the row; `search`, the text of the sheet's search, on a row with `pin=top`. |
 | `drag`               | When people drag rows that have a `file` out.      | `item`, once for each row.                           |
 | `search`             | At each text of the panel's search that matches.   | `text`; `alt`, the texts people may have meant, such as in another keyboard layout. |
 | `every`              | Each `every` seconds.                              | none                                                 |

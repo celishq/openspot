@@ -106,6 +106,23 @@ If a value is wrong, print `error=` and a message. The form stays open and shows
 | `placeholder`          | The words a field shows while it's empty.                  |
 | `required`             | `true` keeps Return from sending while the field is empty. |
 
+## Keys in a form
+
+Return does the act of the part in focus: it moves on from a field, opens the list of a choice, flips a switch and saves
+on Save. `⌘` Return saves from any part, and Return saves a form of one field. The arrows move between the parts.
+
+An `option` with `send=true`, such as Add type…, sends the form as soon as it's chosen. An `option` with `remove=true`
+can be deleted with `⌘⌫` in the list of its choice, and the form sends the id of each deleted one as
+`input.<choice id>.removed`.
+
+## While it waits
+
+While your script prints the form, or reads what was sent, the sheet's foot says Loading… or Saving… after a moment.
+`wait` on a button, or `open.wait` on a row, names what your spot does instead, such as `wait=Reading the page`.
+
+A row with `pin=top`, such as Add wish, gets the text of the sheet's search as `input.search` when it's pressed, and the
+first field of its form holds it.
+
 ## Next
 
 - [Run an action by name](actions.md) has every key of an action.

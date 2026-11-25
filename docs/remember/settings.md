@@ -38,8 +38,8 @@ setting.zone=Asia/Tokyo
 
 Until someone picks a value, the line holds the `default`. A setting with no value and no default sends no line.
 
-People find your settings in the spot's Settings, below its keys. Each row shows the setting's `title` and its value,
-or Not set. `⌘⌫` removes the value.
+People find your settings in the spot's Settings, below its keys. Each row shows the setting's `icon`, its `title` and its value,
+its `default` until people pick one, or Not set. `⌘⌫` removes the value.
 
 Openspot asks for a `choice` itself, with a menu of its `options`, and for a `secret` in its own form. For any other
 type, Return on the row runs your script with the setting's name, such as `clock.sh zone`. Ask there, and keep the

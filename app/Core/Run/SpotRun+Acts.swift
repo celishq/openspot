@@ -120,8 +120,10 @@ extension SpotRun {
         press(picking(item), closes: closes)
     }
 
-    public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
-        await answer(toPress: picking(item), closes: closes)
+    public func answer(toPick item: SpotItem, closes: Bool = false, search: String = "") async -> CallAnswer {
+        var message = picking(item)
+        if !search.isEmpty { message.inputs.append(TextBlock.Field(key: Self.searchInput, value: search)) }
+        return await answer(toPress: message, closes: closes)
     }
 
     private func picking(_ item: SpotItem) -> Message {
@@ -264,6 +266,7 @@ extension SpotRun {
 
     private static let valueInput = "value"
     static let itemInput = "item"
+    static let searchInput = "search"
 
     private static func key(part id: String) -> String {
         "part:\(id)"

@@ -86,7 +86,7 @@ struct SpotItemsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, in: room) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, sections: list.sectionCount, in: room) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -125,7 +125,7 @@ struct SpotItemsView: View {
                         .font(SpotType.detail.weight(.semibold))
                         .modifier(SpotSecondaryText())
                         .padding(.horizontal, SpotTokens.padding)
-                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRow, maxHeight: SpotTokens.listRow, alignment: .bottomLeading)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.sectionRow, maxHeight: SpotTokens.sectionRow, alignment: .bottomLeading)
                 }
                 Button {
                     onRun(item)
@@ -163,7 +163,9 @@ struct SpotItemsView: View {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
             ItemFailureMark(failure: { [failure, run = item.run] in failure(run) }, tips: tips, id: item.run)
-            if item.isToggle {
+            if let chosen = item.chosen {
+                ItemChosen(words: chosen)
+            } else if item.isToggle {
                 ItemSwitch(isOn: item.isOn)
             } else if item.isOn {
                 Image(systemName: "checkmark")
@@ -205,6 +207,23 @@ private struct ItemFailureMark: View {
                 .accessibilityLabel("Last run failed")
             if let tips { mark.modifier(SpotFailureTip(model: tips, id: id, text: text)) } else { mark }
         }
+    }
+}
+
+private struct ItemChosen: View {
+    let words: String
+
+    var body: some View {
+        HStack(spacing: SpotTokens.choiceChevronGap) {
+            Text(words)
+                .font(SpotType.detail)
+                .foregroundStyle(SpotTheme.ink)
+                .lineLimit(1)
+            Image(systemName: "chevron.up.chevron.down")
+                .font(SpotType.mark)
+                .modifier(SpotSecondaryText())
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

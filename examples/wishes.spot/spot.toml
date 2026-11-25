@@ -1,0 +1,12 @@
+title = "Wishes"
+icon = "gift"
+detail = "Things you want"
+keywords = ["wishlist", "gifts", "shopping"]
+uses = ["network", "clipboard", "files"]
+
+[on]
+"panel.open" = true
+
+[settings]
+folder = { type = "file", title = "Keep in", icon = "folder", description = "The folder of Wishes.md, the list you can open and edit. The folder of Wishes by default." }
+group = { type = "choice", title = "Group by", icon = "rectangle.3.group", options = ["Type", "Price"], default = "Type" }

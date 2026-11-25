@@ -46,6 +46,7 @@ public struct CommandAction: Equatable, Sendable {
     public let after: After
     public let confirm: String?
     public let placeholder: String?
+    public let wait: String?
 
     public init(
         id: String,
@@ -54,9 +55,10 @@ public struct CommandAction: Equatable, Sendable {
         scope: Scope = .item,
         after: After = .stay,
         confirm: String? = nil,
-        placeholder: String? = nil
+        placeholder: String? = nil,
+        wait: String? = nil
     ) {
-        self.init(kind: .frame(id), title: title, key: key, scope: scope, after: after, confirm: confirm, placeholder: placeholder)
+        self.init(kind: .frame(id), title: title, key: key, scope: scope, after: after, confirm: confirm, placeholder: placeholder, wait: wait)
     }
 
     private init(
@@ -66,7 +68,8 @@ public struct CommandAction: Equatable, Sendable {
         scope: Scope = .item,
         after: After = .stay,
         confirm: String? = nil,
-        placeholder: String? = nil
+        placeholder: String? = nil,
+        wait: String? = nil
     ) {
         self.kind = kind
         self.title = title
@@ -75,6 +78,7 @@ public struct CommandAction: Equatable, Sendable {
         self.after = after
         self.confirm = confirm
         self.placeholder = placeholder
+        self.wait = wait
     }
 
     public var id: String {
@@ -87,6 +91,14 @@ public struct CommandAction: Equatable, Sendable {
         case .secret(let key): "openspot.secret." + key
         case .option(let key): "openspot.option." + key
         }
+    }
+
+    public var openWords: String {
+        wait.map { "\($0)…" } ?? "Loading…"
+    }
+
+    public var sendWords: String {
+        wait.map { "\($0)…" } ?? "Saving…"
     }
 
     public var callName: String {
@@ -108,7 +120,8 @@ public struct CommandAction: Equatable, Sendable {
             scope: scope,
             after: block.flag("close") == false ? .stay : .close,
             confirm: block.value("confirm"),
-            placeholder: block.value("placeholder")
+            placeholder: block.value("placeholder"),
+            wait: block.value("wait")
         )
     }
 }

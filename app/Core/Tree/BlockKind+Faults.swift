@@ -6,7 +6,7 @@ extension BlockKind {
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope",
         "shortcut", "tone", "unit", "recording", "grow", "parent", "class"
     ]
-    private static let optionKeys: Set<String> = ["option", "title", "icon"]
+    private static let optionKeys: Set<String> = ["option", "title", "icon", "send", "remove"]
 
     public static func faults(in block: TextBlock, kinds: [BlockKind] = BlockKind.all) -> [String] {
         BlockKind.of(block, in: kinds).map { faults(in: block, kind: $0) } ?? []

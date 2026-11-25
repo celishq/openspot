@@ -184,6 +184,7 @@ struct SpotFieldView: View {
     }
 
     private var sheetWord: String {
+        if let word = model.formPickWord { return SearchPrompt.word(for: word) }
         let id = model.transition.id
         return SearchPrompt.word(for: model.sheetEntry(id)?.state.title ?? "")
     }

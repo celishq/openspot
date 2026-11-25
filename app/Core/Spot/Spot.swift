@@ -164,7 +164,7 @@ public struct Spot: Equatable, Sendable {
     private var settingKeys: [SpotSettings.Key] {
         let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
         let commands = self.commands.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
-        return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
+        return [SpotSettings.Key(act: .open, title: "Open", icon: SpotSettings.openIcon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: SpotSettings.floatIcon)]
     }
 
     func takingSettings(in config: ConfigFile, secrets: SecretStore, isWindow: Bool = false) -> Spot {
