@@ -34,7 +34,7 @@ extension SettingsView {
                             if row.kind == .key {
                                 keycaps(row).allowsHitTesting(false)
                             } else if row.kind != .secret {
-                                Text(book.display(row)).foregroundStyle(.secondary).lineLimit(1)
+                                Text(book.value(of: row).word).foregroundStyle(.secondary).lineLimit(1)
                             }
                             chevron
                         }
@@ -52,7 +52,7 @@ extension SettingsView {
             case .key:
                 keycaps(row)
             case .toggle:
-                Toggle("", isOn: Binding(get: { book.value(of: row) == "true" }, set: { isOn in act { await $0.set(row, to: isOn ? "true" : "false") } }))
+                Toggle("", isOn: Binding(get: { book.value(of: row).isOn }, set: { isOn in act { await $0.set(row, on: isOn) } }))
                     .toggleStyle(.switch)
                     .labelsHidden()
                     .controlSize(.small)
@@ -61,26 +61,26 @@ extension SettingsView {
                     .textFieldStyle(.roundedBorder)
                     .frame(width: SpotTokens.settingsFieldWidth)
                     .onSubmit { submit(row, drafts[row.item] ?? row.value ?? "") }
-            case .choice where !(row.options ?? "").isEmpty:
-                Picker("", selection: Binding(get: { book.shown(row) }, set: { value in submit(row, value) })) {
-                    if book.shown(row).isEmpty { Text("Not set").tag("") }
-                    ForEach((row.options ?? "").split(separator: ",").map(String.init), id: \.self) { Text($0).tag($0) }
+            case .choice where !row.choices.isEmpty:
+                Picker("", selection: Binding(get: { book.value(of: row).text }, set: { value in submit(row, value) })) {
+                    if book.value(of: row) == .unset { Text(SettingValue.unset.word).tag("") }
+                    ForEach(row.choices, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .fixedSize()
             case .secret:
-                SecureField(book.value(of: row).isEmpty ? "Not set" : "Set", text: draft(row, blank: true))
+                SecureField(book.value(of: row).word, text: draft(row, blank: true))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: SpotTokens.settingsFieldWidth)
                     .onSubmit { keep(row) }
                     .onKeyPress(.delete) {
-                        guard (drafts[row.item] ?? "").isEmpty, !book.value(of: row).isEmpty else { return .ignored }
+                        guard (drafts[row.item] ?? "").isEmpty, book.value(of: row) != .unset else { return .ignored }
                         act { await $0.remove(row) }
                         return .handled
                     }
             default:
-                Text(book.display(row)).foregroundStyle(.secondary)
+                Text(book.value(of: row).word).foregroundStyle(.secondary)
             }
         }
         .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)

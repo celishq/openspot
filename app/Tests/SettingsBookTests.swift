@@ -184,7 +184,17 @@ final class SettingsBookTests: PanelCase {
     func testAChoiceWithNoValueShowsItsDefault() {
         let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spots, icon: "", options: ["name", "date"], default: "date")
 
-        XCTAssertEqual(book.display(row), "date")
+        XCTAssertEqual(book.value(of: row), .text("date"))
+    }
+
+    func testAValueReadsAsItsKind() {
+        let toggle = SettingRow(spot: "notes", name: "Notes", key: "menubar", title: "Menu bar", value: "true", kind: .toggle, section: .spots, icon: "")
+        let key = SettingRow(spot: "notes", name: "Notes", key: "open", title: "Open", value: "ctrl+option+k", kind: .key, section: .spots, icon: "")
+        let secret = SettingRow(spot: "notes", name: "Notes", key: "token", title: "Token", value: SettingRow.secretValue, kind: .secret, section: .spots, icon: "")
+
+        XCTAssertTrue(book.value(of: toggle).isOn)
+        XCTAssertEqual(book.value(of: key).caps, ["⌃", "⌥", "K"])
+        XCTAssertEqual(book.value(of: secret).word, "Set")
     }
 
     func testAToggleOfTheAppGoesToTheMac() async throws {

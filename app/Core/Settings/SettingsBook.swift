@@ -17,7 +17,7 @@ public final class SettingsBook {
     public private(set) var query = ""
     public private(set) var target: String?
     public private(set) var recording: String?
-    public private(set) var pending: [String: String] = [:]
+    private var pending: [String: String] = [:]
     public internal(set) var grant: AccessGrant?
     public private(set) var isOpen = false
     @ObservationIgnored weak var model: SpotsModel?
@@ -42,22 +42,9 @@ public final class SettingsBook {
         }
     }
 
-    public func value(of row: SettingRow) -> String {
-        pending[row.item] ?? row.value ?? ""
-    }
-
-    public func shown(_ row: SettingRow) -> String {
-        let value = value(of: row)
-        return value.isEmpty ? row.default ?? "" : value
-    }
-
-    public func display(_ row: SettingRow) -> String {
-        switch (row.kind, shown(row)) {
-        case (_, ""): "Not set"
-        case (.toggle, "true"): "On"
-        case (.toggle, _): "Off"
-        case (_, let shown): shown
-        }
+    public func value(of row: SettingRow) -> SettingValue {
+        let text = pending[row.item] ?? row.value ?? ""
+        return SettingValue(text.isEmpty ? row.default ?? "" : text, of: row.kind)
     }
 
     func open(at place: SettingsPage?) {
@@ -194,6 +181,10 @@ public final class SettingsBook {
     public func set(_ row: SettingRow, to value: String) async {
         pending[row.item] = value
         await run(["setting", "set", "--spot", row.spot, row.key] + (value.isEmpty ? [] : [value]))
+    }
+
+    public func set(_ row: SettingRow, on isOn: Bool) async {
+        await set(row, to: String(isOn))
     }
 
     public func remove(_ row: SettingRow) async {

@@ -39,6 +39,10 @@ public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
         item
     }
 
+    public var choices: [String] {
+        options?.split(separator: ",").map(String.init) ?? []
+    }
+
     var blocks: [[(String, String?)]] {
         [[("item", item), ("spot", spot), ("name", name), ("key", key), ("title", title), ("value", value), ("kind", kind.rawValue), ("section", section.rawValue), ("icon", icon), ("detail", detail), ("options", options), ("default", `default`)]]
     }

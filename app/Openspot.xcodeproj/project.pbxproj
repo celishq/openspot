@@ -391,6 +391,7 @@
 		549DB7DA5F3CFA012C677BA4 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 906DB6D154A3163E39180C24 /* main.swift */; };
 		554C75B6033F4C44E5F8E4B1 /* ThemeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F084FBAEA116474C7972BD01 /* ThemeColor.swift */; };
 		55ACEDBB37B7CF30AF25457F /* LaunchSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE67B48020CB65712DB3B5B4 /* LaunchSettingsTests.swift */; };
+		55B453C45D898E09556CB98A /* SettingValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85457306A1B1B75E9C196118 /* SettingValue.swift */; };
 		568AD074743B5BEAAED5178C /* Manifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A176CC744CDD2C84801FB9 /* Manifest.swift */; };
 		56DA577218F96B95BF3E1DC0 /* SpotLiftedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF54036BAB7C42C5F74AB672 /* SpotLiftedCard.swift */; };
 		56EF5117F5469B1B91FEF83F /* SettingsView+Access.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF401138B433137556437DED /* SettingsView+Access.swift */; };
@@ -1852,6 +1853,7 @@
 		84FC9C7DC492FCBEE4648520 /* AttachmentPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentPick.swift; sourceTree = "<group>"; };
 		84FD5E0A2962D925FF02807B /* SpotMotionProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMotionProbe.swift; sourceTree = "<group>"; };
 		85366F1DE5D75FB2E6938DC9 /* MacAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAccess.swift; sourceTree = "<group>"; };
+		85457306A1B1B75E9C196118 /* SettingValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingValue.swift; sourceTree = "<group>"; };
 		8562FC6E0AAFAD1315637E0D /* AppCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCalls.swift; sourceTree = "<group>"; };
 		85E2019C78DD77D68D39432B /* Stats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stats.swift; sourceTree = "<group>"; };
 		8612986697AC04A580A55E75 /* ScriptProcessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcessTests.swift; sourceTree = "<group>"; };
@@ -3708,6 +3710,7 @@
 				33A221C6F5EFE1673DE88C45 /* SettingsFacts.swift */,
 				A46603E8F123967E19A4E53A /* SettingsIndex.swift */,
 				D839E262156F537D4B78FABF /* SettingsPage.swift */,
+				85457306A1B1B75E9C196118 /* SettingValue.swift */,
 				D45B1119621517187A646E37 /* SpotRows.swift */,
 				B6A5C60FCC3E77BF84221036 /* SpotStandings.swift */,
 			);
@@ -5124,6 +5127,7 @@
 				F892ADDEB6B2BB2A5295DE7D /* SettingCalls.swift in Sources */,
 				92963D11D3568604C1168153 /* SettingRow.swift in Sources */,
 				46AE09580C49A17F7170E474 /* SettingRows.swift in Sources */,
+				55B453C45D898E09556CB98A /* SettingValue.swift in Sources */,
 				BE69D46A2BB8A532920C7C3A /* SettingsBook+Account.swift in Sources */,
 				3CBA6B10A65347B4CA9AFCFB /* SettingsBook+Search.swift in Sources */,
 				0EE40620E3A80D282C76B9B3 /* SettingsBook.swift in Sources */,

@@ -152,7 +152,7 @@ extension SettingsView {
     }
 
     func keycaps(_ row: SettingRow) -> some View {
-        let caps = Shortcut.caps(book.value(of: row))
+        let caps = book.value(of: row).caps
         let clash = book.keys.clashing.contains(row.item)
         let isRecording = book.recording == row.item
         let field = SpotRoundShape(radius: SpotTokens.settingsRecordCorner)
