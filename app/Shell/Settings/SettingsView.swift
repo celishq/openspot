@@ -9,7 +9,8 @@ struct SettingsView: View {
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
     @State private var isTitleShown = false
-    @FocusState private var isListening: Bool
+    @State private var barHeight: CGFloat = 0
+    @State private var position = ScrollPosition(edge: .top)
     @Environment(\.colorScheme) var scheme
 
     var book: SettingsBook {
@@ -26,27 +27,35 @@ struct SettingsView: View {
                 .navigationSplitViewColumnWidth(min: SpotTokens.settingsSidebarMin, ideal: SpotTokens.settingsSidebarIdeal, max: SpotTokens.settingsSidebarMax)
                 .toolbar(removing: .sidebarToggle)
         } detail: {
-            VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: SpotTokens.settingsPageGap) {
-                            content
-                        }
-                        .padding(SpotTokens.settingsPagePadding)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .scrollEdgeEffectStyle(.soft, for: .top)
-                    .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
-                        withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
-                    })
-                    .onChange(of: book.target) {
-                        guard let target = book.target else { return }
-                        proxy.scrollTo(target, anchor: .center)
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: SpotTokens.settingsPageGap) {
+                    content
                 }
-                Divider()
-                SpotWindowFooter(hint: book.hint, tip: "Close Settings") {}
+                .padding(SpotTokens.settingsPagePadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollPosition($position)
+            .scrollEdgeEffectStyle(.soft, for: .top)
+            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
+                withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
+            })
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { _, height in barHeight = height })
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(.bar)
+                    .frame(height: barHeight)
+                    .opacity(isTitleShown ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(false)
+            }
+            .onChange(of: [book.page.place, book.query, book.target]) {
+                if let target = book.target {
+                    position.scrollTo(id: target, anchor: .center)
+                } else {
+                    position.scrollTo(edge: .top)
+                }
+            }
+            .onChange(of: book.recording == nil) { _, isIdle in HotKey.pause(!isIdle) }
+            .onDisappear { HotKey.pause(false) }
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(book.title)
@@ -69,10 +78,6 @@ struct SettingsView: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isListening)
-        .onKeyPress(phases: .down) { press in record(press) }
         .overlay { book.grant.map { SettingsGrantSheet(book: book, grant: $0) } }
         .sheet(isPresented: $isAboutShown) { about }
         .sheet(isPresented: Binding(get: { step != nil }, set: { if !$0 { step = nil } })) { SettingsAccountSheet(book: book, step: $step) }
@@ -124,33 +129,6 @@ struct SettingsView: View {
             case .developer: rowsPage(.developer)
             case .row, .search: EmptyView()
             }
-        }
-    }
-
-    func startRecording(_ row: SettingRow) {
-        book.startRecording(row)
-        isListening = true
-    }
-
-    private func record(_ press: KeyPress) -> KeyPress.Result {
-        guard book.recording != nil else { return .ignored }
-        let modifiers = [(EventModifiers.command, "cmd"), (EventModifiers.control, "ctrl"), (EventModifiers.option, "option"), (EventModifiers.shift, "shift")]
-            .filter { press.modifiers.contains($0.0) }.map(\.1)
-        return book.record(key: Self.name(of: press.key), modifiers: modifiers) ? .handled : .ignored
-    }
-
-    private static func name(of key: KeyEquivalent) -> String {
-        switch key {
-        case .space: "space"
-        case .return: "return"
-        case .tab: "tab"
-        case .delete: "backspace"
-        case .escape: "escape"
-        case .leftArrow: "left"
-        case .rightArrow: "right"
-        case .upArrow: "up"
-        case .downArrow: "down"
-        default: String(key.character).lowercased()
         }
     }
 

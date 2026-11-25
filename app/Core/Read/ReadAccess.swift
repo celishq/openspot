@@ -14,10 +14,10 @@ public enum ReadAccess: String, Sendable {
 
     public var sentence: String {
         switch self {
-        case .allowed: "macOS gives it to Openspot."
-        case .denied: "macOS doesn’t give it to Openspot. Allow… opens its switch in System Settings."
-        case .unasked: "macOS hasn’t asked you yet."
-        case .unknown: "Openspot can’t read whether macOS gives it."
+        case .allowed: "Openspot has this access."
+        case .denied: "Openspot doesn’t have this access. Click Allow… to turn it on in System Settings."
+        case .unasked: "Openspot hasn’t asked for this access yet."
+        case .unknown: "Openspot can’t tell whether it has this access."
         }
     }
 }

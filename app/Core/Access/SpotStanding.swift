@@ -5,6 +5,11 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         public let id: SpotUse
         public let needs: [MacAccess]
         public let maybe: [MacAccess]
+
+        public var needsLine: String? {
+            let parts = [needs.isEmpty ? nil : "Needs \(MacAccess.names(needs))", maybe.isEmpty ? nil : "May ask for \(MacAccess.names(maybe))"].compactMap { $0 }
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        }
     }
 
     public let id: String

@@ -31,9 +31,9 @@ extension SettingsView {
             if let banner = standing.banner {
                 self.banner(standing, banner.title, banner.line)
             }
-            group("Uses") {
+            group("Permissions") {
                 if standing.uses.isEmpty {
-                    plain("It uses nothing of your Mac.")
+                    plain("This spot doesn’t need any permissions.")
                 }
                 lines(standing.uses) { useLine($0) }
             }
@@ -73,36 +73,33 @@ extension SettingsView {
 
     private func useLine(_ use: SpotStanding.Use) -> some View {
         let accesses = use.needs.compactMap(facts.access)
+        let first = accesses.first
         return HStack(spacing: SpotTokens.settingsRowGap) {
-            Text(use.id.rawValue)
-                .font(SpotType.settingsUse)
-                .padding(.horizontal, SpotTokens.settingsUsePaddingX)
-                .padding(.vertical, SpotTokens.settingsUsePaddingY)
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
-            Text(use.id.purpose)
-                .foregroundStyle(.secondary)
+            SettingsTile(use: use.id, access: use.needs.first, side: SpotTokens.settingsRowTile)
+            VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
+                Text(use.id.title)
+                Text(use.id.purpose)
+                    .font(SpotType.settingsLine)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let needs = use.needsLine {
+                    Text(needs)
+                        .font(SpotType.settingsLine)
+                        .foregroundStyle(.tertiary)
+                }
+            }
             Spacer(minLength: SpotTokens.settingsTrailingGap)
-            VStack(alignment: .trailing, spacing: SpotTokens.settingsTitleGap) {
-                if accesses.isEmpty {
-                    Text("Nothing to grant").foregroundStyle(.tertiary)
-                }
-                ForEach(accesses) { access in
-                    HStack(spacing: SpotTokens.settingsUseGap) {
-                        SettingsTile(access: access.id, side: SpotTokens.settingsUseTile)
-                        Text(access.id.title + ": ") + Text(access.status.word).foregroundColor(SpotTheme.settings(access.status))
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture { book.go(.accessOf(access.id)) }
-                }
-                if !use.maybe.isEmpty {
-                    Text("May ask for \(MacAccess.names(use.maybe))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            if let first {
+                Text(first.status.word).foregroundStyle(SpotTheme.settings(first.status))
+                chevron
             }
         }
         .padding(.horizontal, SpotTokens.settingsRowPadding)
         .padding(.vertical, SpotTokens.settingsUseRowPadding)
+        .frame(minHeight: SpotTokens.settingsRowHeight)
+        .contentShape(Rectangle())
+        .onTapGesture { if let first { book.go(.accessOf(first.id)) } }
+        .accessibilityAddTraits(first == nil ? [] : .isButton)
     }
 
     func spotLine(_ standing: SpotStanding, detail: String? = nil) -> some View {
@@ -160,32 +157,41 @@ extension SettingsView {
         let clash = facts.clashing.contains(row.item)
         let isRecording = book.recording == row.item
         let cap = SpotRoundShape(radius: SpotTokens.settingsCapCorner)
-        return Button {
-            startRecording(row)
-        } label: {
-            if isRecording {
-                Text("Type a key…")
-                    .foregroundStyle(Color.accentColor)
-                    .padding(.horizontal, SpotTokens.settingsRecordPadding)
-                    .frame(height: SpotTokens.settingsRecordHeight)
-                    .overlay(SpotRoundShape(radius: SpotTokens.settingsRecordCorner).strokeBorder(Color.accentColor, lineWidth: 1))
-            } else if caps.isEmpty {
-                Text("Not set").foregroundStyle(.secondary)
-            } else {
-                HStack(spacing: SpotTokens.settingsCapGap) {
-                    ForEach(Array(caps.enumerated()), id: \.offset) { _, word in
-                        Text(word)
-                            .font(SpotType.settingsCap)
-                            .foregroundStyle(clash ? SpotTheme.settingsClash : Color.primary)
-                            .padding(.horizontal, SpotTokens.settingsCapPadding)
-                            .frame(minWidth: SpotTokens.settingsCapWidth, minHeight: SpotTokens.settingsCapHeight)
-                            .background(Color.primary.opacity(SpotTheme.settingsQuietFill), in: cap)
-                            .overlay(cap.strokeBorder(clash ? SpotTheme.settingsClash : Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
+        return HStack(spacing: SpotTokens.settingsCapGap) {
+            Button {
+                book.startRecording(row)
+            } label: {
+                if isRecording {
+                    Text("Type Shortcut")
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, SpotTokens.settingsRecordPadding)
+                        .frame(height: SpotTokens.settingsRecordHeight)
+                        .overlay(SpotRoundShape(radius: SpotTokens.settingsRecordCorner).strokeBorder(Color.accentColor, lineWidth: 1))
+                } else if caps.isEmpty {
+                    Text("Not set").foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: SpotTokens.settingsCapGap) {
+                        ForEach(Array(caps.enumerated()), id: \.offset) { _, word in
+                            Text(word)
+                                .font(SpotType.settingsCap)
+                                .foregroundStyle(clash ? SpotTheme.settingsClash : Color.primary)
+                                .padding(.horizontal, SpotTokens.settingsCapPadding)
+                                .frame(minWidth: SpotTokens.settingsCapWidth, minHeight: SpotTokens.settingsCapHeight)
+                                .background(Color.primary.opacity(SpotTheme.settingsQuietFill), in: cap)
+                                .overlay(cap.strokeBorder(clash ? SpotTheme.settingsClash : Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
+                        }
                     }
                 }
             }
+            .buttonStyle(.plain)
+            .help(isRecording ? "Press Esc to keep the shortcut, or Delete to remove it" : "Record a new shortcut")
+            if !caps.isEmpty, !isRecording {
+                Button { act { await $0.remove(row) } } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Remove the shortcut")
+            }
         }
-        .buttonStyle(.plain)
-        .help(isRecording ? "Esc keeps the old key" : "Record a new key")
     }
 }

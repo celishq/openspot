@@ -8,8 +8,14 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var isPresent = false
     private var declared: CGSize?
     private var book: SettingsBook?
+    private var sidebar: CGFloat?
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        record(event) || super.performKeyEquivalent(with: event)
+    }
 
     override func sendEvent(_ event: NSEvent) {
+        if record(event) { return }
         if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
             if key.name == "escape", !(firstResponder is NSText), book?.recording == nil { return performClose(nil) }
             if key.name != "escape", let model, model.handleFloatKey(key, in: id) { return }
@@ -17,8 +23,16 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         super.sendEvent(event)
     }
 
+    private func record(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown, let book, book.recording != nil else { return false }
+        let modifiers = event.keyModifiers
+        let name = Shortcut(code: UInt32(event.keyCode), modifiers: modifiers)?.name ?? event.actionKey?.name ?? ""
+        return book.record(key: name, modifiers: Shortcut.Modifiers.all.filter { modifiers.contains($0) }.compactMap(\.word))
+    }
+
     func show() {
-        if !isPresent {
+        let opens = !isPresent
+        if opens {
             isPresent = true
             AppPresence.open()
             if let declared {
@@ -27,6 +41,9 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
             }
         }
         contentView?.layoutSubtreeIfNeeded()
+        if opens, let sidebar, let split = contentView?.firstSplitView {
+            split.setPosition(sidebar, ofDividerAt: 0)
+        }
         NSApp.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
     }
@@ -69,6 +86,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         )
         window.book = model.settingsBook
         window.declared = SpotTokens.settingsWindowSize
+        window.sidebar = SpotTokens.settingsSidebarIdeal
         window.toolbarStyle = .unified
         window.isOpaque = true
         window.backgroundColor = .windowBackgroundColor
@@ -101,5 +119,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }
         return window
+    }
+}
+
+private extension NSView {
+    var firstSplitView: NSSplitView? {
+        self as? NSSplitView ?? subviews.lazy.compactMap(\.firstSplitView).first
     }
 }

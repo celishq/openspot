@@ -38,7 +38,7 @@ public struct Shortcut: Hashable, Sendable {
             !isDisjoint(with: [.command, .control, .option])
         }
 
-        static var all: [Modifiers] {
+        public static var all: [Modifiers] {
             Shortcut.modifierWords.map(\.modifier)
         }
     }

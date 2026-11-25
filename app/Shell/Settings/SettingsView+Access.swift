@@ -11,7 +11,7 @@ extension SettingsView {
                     .buttonStyle(.link)
             }
             if !facts.waiting.isEmpty {
-                group("Needs you") {
+                group("Needs Attention") {
                     lines(facts.waiting) { standing in
                         row(open: .spotOf(standing.id)) {
                             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
@@ -22,7 +22,7 @@ extension SettingsView {
                     }
                 }
             }
-            group("macOS gives Openspot") {
+            group("Privacy & Security") {
                 lines(needed) { access in
                     row(open: .accessOf(access.id)) {
                         SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
@@ -38,9 +38,9 @@ extension SettingsView {
                         HStack(spacing: SpotTokens.settingsMoreOverlap) {
                             ForEach(rest.prefix(4)) { SettingsTile(access: $0.id, side: SpotTokens.settingsMoreTile) }
                         }
-                        titled(rest.count == 1 ? "1 more" : "\(rest.count) more", rest.map(\.id.title).joined(separator: ", "))
+                        titled("Other Access", rest.map(\.id.title).joined(separator: ", "))
                         Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        Text("No spot needs them").foregroundStyle(.secondary)
+                        Text("Not used").foregroundStyle(.secondary)
                         Image(systemName: isFolded ? "chevron.down" : "chevron.up")
                             .font(SpotType.settingsChevron)
                             .foregroundStyle(.tertiary)
@@ -49,7 +49,7 @@ extension SettingsView {
                         lines(rest, first: true) { access in
                             row(open: .accessOf(access.id)) {
                                 SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-                                titled(access.id.title, access.maybe.isEmpty ? "" : "Asked at first use by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
+                                titled(access.id.title, access.maybe.isEmpty ? "" : "Sometimes used by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
                                 Spacer(minLength: SpotTokens.settingsTrailingGap)
                                 Text(access.status.word).foregroundStyle(.secondary)
                                 chevron
@@ -72,14 +72,14 @@ extension SettingsView {
                         .padding(.top, SpotTokens.settingsTitleGap)
                 }
             }
-            group("Spots that need it") {
+            group("Spots Using This") {
                 if needers.isEmpty {
-                    plain("No spot that is on needs it.")
+                    plain("No spots use this access.")
                 }
                 lines(needers) { spotLine($0) }
             }
             if !maybes.isEmpty {
-                group("Spots that may ask for it") {
+                group("Spots That May Ask") {
                     lines(maybes) { spotLine($0) }
                 }
             }

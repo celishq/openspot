@@ -108,13 +108,13 @@ public struct Config: Equatable, Sendable {
         return sections
     }
 
-    public mutating func set(_ shortcut: Shortcut, for name: String) {
+    public mutating func set(_ shortcut: Shortcut?, for name: String) {
         switch name {
         case "panel-key": panelKey = shortcut
         case "fix-key": fixKey = shortcut
         default: return
         }
-        kept.set(name, to: .string(shortcut.text))
+        if let shortcut { kept.set(name, to: .string(shortcut.text)) } else { kept.remove(name) }
     }
 
     public mutating func set(theme: String) {

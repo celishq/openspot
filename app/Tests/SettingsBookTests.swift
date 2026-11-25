@@ -142,6 +142,21 @@ final class SettingsBookTests: PanelCase {
         XCTAssertNil(book.recording)
     }
 
+    func testBackspaceWhileRecordingRemovesTheKeyOfASpotAndOfTheApp() async throws {
+        try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
+        await read()
+        await book.set(try row("cups/open"), to: "ctrl+option+k")
+        await book.set(try row("openspot/fix-key"), to: "ctrl+option+f")
+
+        book.startRecording(try row("cups/open"))
+        XCTAssertTrue(book.record(key: "backspace", modifiers: []))
+        try await wait("the spot's key removed") { (try? self.row("cups/open").value) == nil }
+        book.startRecording(try row("openspot/fix-key"))
+        XCTAssertTrue(book.record(key: "backspace", modifiers: []))
+        try await wait("the app's key removed") { self.config.fixKey != Shortcut(text: "ctrl+option+f") }
+        XCTAssertNil(book.recording)
+    }
+
     func testRemoveTakesAwayASecret() async throws {
         try script("weather", toml: "title = 'Weather'\n[settings]\ntoken = 'secret'", "")
         try model.files.secrets.keep("MARKER-7f3c", key: "token", of: "weather")
@@ -274,6 +289,11 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.facts.clashing, ["cups/open", "mugs/open"])
         XCTAssertEqual(book.facts.clashes.map(\.title), ["⌃⌥K does two things"])
         XCTAssertEqual(book.facts.clashes.map(\.line), ["Cups · Open and Mugs · Open. Change one of them."])
+    }
+
+    func testAUseSaysTheAccessItNeedsAndMayAskFor() {
+        XCTAssertEqual(SpotStanding.Use(id: .screen, needs: [.screen], maybe: [.camera, .microphone]).needsLine, "Needs Screen Recording · May ask for Camera and Microphone")
+        XCTAssertNil(SpotStanding.Use(id: .clipboard, needs: [], maybe: []).needsLine)
     }
 
     func testTheFactsSayWhatAPageShowsSoTheWindowOnlyDrawsIt() async throws {

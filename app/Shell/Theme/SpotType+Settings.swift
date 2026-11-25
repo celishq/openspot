@@ -5,7 +5,6 @@ extension SpotType {
     static let settingsChevron = Font.system(size: 11, weight: .semibold)
     static let settingsCap = Font.system(size: 11, weight: .medium)
     static let settingsLine = Font.system(size: 11)
-    static let settingsUse = Font.system(size: 12, design: .monospaced)
     static let settingsTick = Font.system(size: 11, weight: .bold)
     static let settingsNumber = Font.system(size: 12, weight: .semibold)
     static let settingsTitle = Font.largeTitle.weight(.bold)

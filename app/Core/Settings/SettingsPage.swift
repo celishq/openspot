@@ -88,28 +88,14 @@ public enum SettingsPage: Hashable, Sendable {
 
     public var line: String {
         switch self {
-        case .access: "macOS gives each access, such as Screen Recording, to Openspot as a whole. Openspot passes it only to the spots whose calls need it."
-        case .spots: "Each spot that comes with Openspot or that you added, and whether it can run."
-        case .keys: "Every key of Openspot and of its spots."
-        case .look: "The theme of the panel. Each theme keeps its exact values in its own file."
-        case .account: "Your key signs each spot you publish, so people know an update is from you."
-        case .general: "The keys that open Openspot, and how it starts."
-        case .developer: "For those who build spots and themes."
+        case .access: "Spots can use features of your Mac, such as the screen or your calendars, only after you allow Openspot to access them. Each spot gets only the access it needs."
+        case .spots: "The spots that come with Openspot and the ones you’ve added."
+        case .keys: "Keyboard shortcuts for Openspot and your spots."
+        case .look: "Choose a theme for the panel."
+        case .account: "Your account signs the spots you publish, so people know that updates come from you."
+        case .general: "Choose how Openspot opens and starts up."
+        case .developer: "Tools for building spots and themes."
         case .accessOf, .spotOf, .row, .search: ""
-        }
-    }
-
-    public var hint: String {
-        switch self {
-        case .access, .row, .search: "Each spot works with all it declares, or not at all."
-        case .accessOf: "Turn it off in System Settings, and every spot here stops."
-        case .spots: "Click a spot to see what it uses."
-        case .spotOf: "A spot gets only the uses it declares."
-        case .keys: "Click a key to record a new one."
-        case .look: "A theme changes only the look."
-        case .account: "The account signs what you publish."
-        case .general: "The settings of Openspot itself."
-        case .developer: "Tools for those who build spots."
         }
     }
 }

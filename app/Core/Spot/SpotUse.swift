@@ -20,6 +20,23 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
         return uses
     }
 
+    public var title: String {
+        switch self {
+        case .app: "Openspot"
+        case .spots: "Other Spots"
+        case .screen: "Screen"
+        case .clipboard: "Clipboard"
+        case .calendar: "Calendars & Reminders"
+        case .power: "Power"
+        case .timer: "Timers"
+        case .attachment: "Panel Field"
+        case .read: "What You’re Working On"
+        case .network: "Network"
+        case .files: "Files"
+        case .account: "Account Key"
+        }
+    }
+
     public var purpose: String {
         switch self {
         case .app: "Change Openspot itself: quit or update it, or change its theme, its keys or the menu bar."

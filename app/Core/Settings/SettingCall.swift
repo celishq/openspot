@@ -10,7 +10,7 @@ public enum SettingCall: NounCall {
     case menuBar(spot: String, isShown: Bool)
     case window(spot: String, isWindow: Bool)
     case key(spot: String, act: GlobalKey.Act, key: String?)
-    case appKey(name: String, key: String)
+    case appKey(name: String, key: String?)
     case login(Bool)
     case link(Bool)
     case slow(Bool)
@@ -31,7 +31,7 @@ public enum SettingCall: NounCall {
             "Removes the value the person chose for the spot, a secret too. Only you can, in Settings or in Terminal; a spot cannot.",
             rule: CallRule(use: .spots, used: "removed a setting", inShow: .changes("removes a setting"), onlyPerson: "cannot remove a setting. Only you can, in Settings or with `openspot setting remove` in Terminal.")
         ) { words in
-            pair(words, sets: false) { spot, key, _ in Self.remove(spot: spot, key: key) }
+            pair(words, sets: false) { spot, key, _ in removedKey(spot, key) ?? Self.remove(spot: spot, key: key) }
         },
         CommandVerb(
             "list", "[--spot id] [--json]",
@@ -60,6 +60,11 @@ public enum SettingCall: NounCall {
         guard let key = rest.first, !key.isEmpty, !key.hasPrefix("-"), rest.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return CallFault.refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return call(spot, key, rest.dropFirst().first)
+    }
+
+    private static func removedKey(_ spot: String, _ key: String) -> SettingCall? {
+        if spot == ReservedSetting.appSpot, ["panel-key", "fix-key"].contains(key) { return .appKey(name: key, key: nil) }
+        return GlobalKey.Act(setting: key).map { .key(spot: spot, act: $0, key: nil) }
     }
 
     private static func reserved(_ spot: String, _ key: String, _ value: String?, isInShow: Bool) -> (any NounCall)? {

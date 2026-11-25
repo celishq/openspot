@@ -201,7 +201,6 @@ extension SpotTokens {
     public static let settingsHeaderTile: CGFloat = 52
     public static let settingsMoreTile: CGFloat = 22
     public static let settingsMoreOverlap: CGFloat = -6
-    public static let settingsUseTile: CGFloat = 18
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44
     public static let settingsTileCorner: CGFloat = 0.225
@@ -230,8 +229,6 @@ extension SpotTokens {
     public static let settingsRecordCorner: CGFloat = 5
     public static let settingsKeyName: CGFloat = 150
     public static let settingsFieldWidth: CGFloat = 220
-    public static let settingsUsePaddingX: CGFloat = 8
-    public static let settingsUsePaddingY: CGFloat = 2
     public static let settingsUseGap: CGFloat = 6
     public static let settingsLookColumn: CGFloat = 170
     public static let settingsLookGap: CGFloat = 18

@@ -36,12 +36,6 @@ public final class SettingsBook {
         }
     }
 
-    public var hint: String {
-        if recording != nil { return "Type the new key. Esc keeps the old one, and ⌫ removes it." }
-        if !query.isEmpty { return "Click a row to open its page." }
-        return page.hint
-    }
-
     public func value(of row: SettingRow) -> String {
         pending[row.item] ?? row.value ?? ""
     }
@@ -170,7 +164,7 @@ public final class SettingsBook {
         }
         if name == "backspace", modifiers.isEmpty {
             recording = nil
-            if row.spot != ReservedSetting.appSpot { Task { await set(row, to: "") } }
+            Task { await remove(row) }
             return true
         }
         guard modifiers.contains(where: { ["cmd", "ctrl", "option"].contains($0) }) else { return true }
