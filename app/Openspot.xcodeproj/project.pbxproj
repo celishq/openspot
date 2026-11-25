@@ -137,6 +137,7 @@
 		1CAEAADD4501F87EF0717A6A /* SpotRuns+Bindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90D63EDCEA1A048E23A6DF0 /* SpotRuns+Bindings.swift */; };
 		1D12D81A025F0F0FACBE61A8 /* Spot+Handlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 520D59D23F0B3D2876F37810 /* Spot+Handlers.swift */; };
 		1D23EC7E2F4FA1B0C01B2FAE /* IconSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A38FF55DF7A8FEABDA80146 /* IconSpotTests.swift */; };
+		1DC97DEB78A768DE18FF66F3 /* SpotUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D857E52630595DD40D56126D /* SpotUpdate.swift */; };
 		1DE759742B261909118FDDE0 /* SpotSheetTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61C9AE007C191C0749FE73C /* SpotSheetTitle.swift */; };
 		1E7E2C64B91EADA3912287AE /* ActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A528E71CE22F9C5AA7A772 /* ActionMenu.swift */; };
 		1EF2850A27D6FB0ABA34228C /* SpotButtonKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D3D0BD6C083FA82A61C56E /* SpotButtonKey.swift */; };
@@ -937,6 +938,7 @@
 		D10438CE111B53F51918604E /* SpotScreenTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE8B6BEB3303CE902A2652E /* SpotScreenTarget.swift */; };
 		D1177EDC5F72DFA83C5B8903 /* StatsMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C779C28F6D2B9C11583CF22 /* StatsMetrics.swift */; };
 		D1212CFF23662E4C0E9A1BE0 /* SheetMorphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9074750AD2F96E35B990B7AD /* SheetMorphTests.swift */; };
+		D1938B67325946C0601CFC86 /* SpotUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D8FD48EE2CE1EFF4694A7A /* SpotUpdateTests.swift */; };
 		D1AFFF5893EEF1D4035D88AA /* SpotSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F351B3EF47C2DAF4BA8F8A3A /* SpotSettings.swift */; };
 		D1C1EF3AF7C81B3B0595245B /* SpotDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718EEAA2B249C7E41F781019 /* SpotDragTests.swift */; };
 		D1C2209B67F7AED29E67E081 /* ClipboardContentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFBB33279C1CECA85540126 /* ClipboardContentsTests.swift */; };
@@ -2209,6 +2211,7 @@
 		D804B826EE1EB3E60610605F /* SpotTapWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTapWatch.swift; sourceTree = "<group>"; };
 		D85292A8C878D26D74AD761D /* PressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressTests.swift; sourceTree = "<group>"; };
 		D8537B2D6978D8BD23935625 /* AppUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
+		D857E52630595DD40D56126D /* SpotUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotUpdate.swift; sourceTree = "<group>"; };
 		D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPromptTests.swift; sourceTree = "<group>"; };
 		D85F91680509D4E7CCA32862 /* SpotsModel+SheetContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+SheetContent.swift"; sourceTree = "<group>"; };
 		D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftProgramTests.swift; sourceTree = "<group>"; };
@@ -2357,6 +2360,7 @@
 		F88DACD8904B76FD2D7206B0 /* SpotSheetPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPicture.swift; sourceTree = "<group>"; };
 		F894C3208A1981A4A892F11D /* Style.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Style.swift; sourceTree = "<group>"; };
 		F8D57520DBD5C68FBDC5AB01 /* ScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleTests.swift; sourceTree = "<group>"; };
+		F8D8FD48EE2CE1EFF4694A7A /* SpotUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotUpdateTests.swift; sourceTree = "<group>"; };
 		F9652A45F60BC12EECD5CE3E /* SpotDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDrag.swift; sourceTree = "<group>"; };
 		F9D2AD233DF4D263761E78D7 /* MacEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacEvents.swift; sourceTree = "<group>"; };
 		FA5E0E63AFDDD60B9D9F8F45 /* SpotRuns+Hooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Hooks.swift"; sourceTree = "<group>"; };
@@ -3377,6 +3381,7 @@
 				5F0F199285F66143AF841BB9 /* SpotTokensTests.swift */,
 				0588CD041BF74701E2094D18 /* SpotTomlTests.swift */,
 				CAAF0E80DC97DF254E294165 /* SpotTypesTests.swift */,
+				F8D8FD48EE2CE1EFF4694A7A /* SpotUpdateTests.swift */,
 				837FBD3C6970770BB9E1767E /* SpotUsesTests.swift */,
 				273FB2EF365B1DEA1351117D /* SpotVerbTests.swift */,
 				DB842FE758DDDBC5BE168ACE /* SpotVersionTests.swift */,
@@ -4079,6 +4084,7 @@
 				0DEF5FDD7805656647E97A4A /* SpotSample.swift */,
 				C42FBE58EF799F5E305EB033 /* SpotsModel+Store.swift */,
 				60EC06DC86AC533E6A7EE0D0 /* SpotsModel+StoreCards.swift */,
+				D857E52630595DD40D56126D /* SpotUpdate.swift */,
 				F04BEF46B4A79B0040258B67 /* Store.swift */,
 				74A64DC629CBB934BF448CF0 /* StoreCall.swift */,
 				60B10AC6C094A6932202B245 /* StoreCalls.swift */,
@@ -5093,6 +5099,7 @@
 				182982FBE9FE9FCD8A343E6C /* SpotTokens.swift in Sources */,
 				67707C841A53A5E19391D55C /* SpotTypes+Swift.swift in Sources */,
 				AAD352FBA753FA30AFB8BFE9 /* SpotTypes.swift in Sources */,
+				1DC97DEB78A768DE18FF66F3 /* SpotUpdate.swift in Sources */,
 				F43766016E130EA85B20FD01 /* SpotUse.swift in Sources */,
 				4AF9146236F922E801BEEA2D /* SpotUseCall.swift in Sources */,
 				E5A5DB86D90C90B7E2D9DD51 /* SpotVersion.swift in Sources */,
@@ -5770,6 +5777,7 @@
 				89040A5967BC2D2BACDD6A34 /* SpotTokensTests.swift in Sources */,
 				68877036C88F1099FD17E541 /* SpotTomlTests.swift in Sources */,
 				615094AF6AEF2A4F5440FE5F /* SpotTypesTests.swift in Sources */,
+				D1938B67325946C0601CFC86 /* SpotUpdateTests.swift in Sources */,
 				26BC8518E10BAEC83888711F /* SpotUsesTests.swift in Sources */,
 				932AC883417DB972A1B8EF03 /* SpotVerbTests.swift in Sources */,
 				2C7F57A5FCA51407704AB510 /* SpotVersionTests.swift in Sources */,

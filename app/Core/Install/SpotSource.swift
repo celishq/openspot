@@ -33,8 +33,14 @@ public enum SpotSource: Equatable, Sendable {
     }
 
     func version() throws -> SpotVersion? {
-        guard case .folder(let url) = self else { return nil }
-        return try SpotVersion(of: url)
+        var isFolder: ObjCBool = false
+        switch self {
+        case .folder(let url), .file(let url):
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue else { return nil }
+            return try SpotVersion(of: url)
+        case .git:
+            return nil
+        }
     }
 
     func add(

@@ -3,6 +3,8 @@ import Foundation
 enum StoreCall: NounCall {
     case list(PrintForm)
     case get(String, isConfirmed: Bool, clash: SpotClash? = nil)
+    case update(String?, isConfirmed: Bool)
+    case revert(String, isConfirmed: Bool)
     case publish(String)
     case add(String)
     case remove(String)
@@ -17,6 +19,14 @@ enum StoreCall: NounCall {
             let clash: SpotClash? = fit.has("--replace") ? .replace : fit.has("--keep-both") ? .keepBoth : nil
             return Self.get(fit.rest[0], isConfirmed: fit.has("--yes"), clash: clash)
         },
+        CommandVerb("update", "[<id>] [--yes]", "Updates a spot that store get installed to the newest version of its store, or each such spot with no id. An update that asks for a new use, binding or power prints only what it adds and needs --yes. A spot you edited takes no update.", rule: CallRule(use: .spots, used: "updated a spot", inShow: .changes("changes your spots"))) { words in
+            guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
+            return Self.update(fit.rest.first, isConfirmed: fit.has("--yes"))
+        },
+        CommandVerb("revert", "<id> [--yes]", "Moves a spot you edited to the Trash and installs the version of its store in its place. Its data stays. A version that asks for a new use, binding or power prints only what it adds and needs --yes.", rule: CallRule(use: .spots, used: "reverted a spot", inShow: .changes("changes your spots"))) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.revert(fit.rest[0], isConfirmed: fit.has("--yes"))
+        },
         CommandVerb("add", "<folder>", "Adds a folder that holds spot folders as a store, so the Store lists its spots.", rule: CallRule(use: .spots, used: "added a store", inShow: .changes("changes your stores"))) { $0.one.map(Self.add) },
         CommandVerb("remove", "<folder>", "Removes a store that store add added. The spots you got from it stay.", rule: CallRule(use: .spots, used: "removed a store", inShow: .changes("changes your stores"))) { $0.one.map(Self.remove) },
         CommandVerb("folders", "[--json]", "Prints the built-in store Openspot, then each store that store add added, with its name and whether its folder is found. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the stores")) { words in
@@ -30,6 +40,8 @@ enum StoreCall: NounCall {
         return switch self {
         case .list(let form): calls.list(form)
         case .get(let id, let isConfirmed, let clash): calls.get(id, isConfirmed: isConfirmed, clash: clash)
+        case .update(let id, let isConfirmed): calls.update(id, isConfirmed: isConfirmed)
+        case .revert(let id, let isConfirmed): calls.revert(id, isConfirmed: isConfirmed)
         case .publish(let id): calls.publish(id, account: context.account, caller: context.caller)
         case .add(let path): calls.add(path)
         case .remove(let path): calls.remove(path)

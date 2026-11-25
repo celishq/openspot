@@ -68,8 +68,12 @@ and never blocks the add. A bound spot that isn't installed and doesn't come wit
   folder. In the app, the review comes first, and only its Install copies. `openspot store get` prints the title, the
   uses, Binds, Can also, Runs by itself and each file. When the review names any of them but the files, it copies
   nothing until `--yes`.
-- An update with no new use and no new binding applies quietly. An update with a new use or a new binding waits for
-  `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
+- A spot that `store get` installed updates from its own store. While its files are as they came, a newer version
+  applies when the Store or `openspot store list` reads the stores, or by `openspot store update`. A spot you edited
+  takes no update: `store list` marks it `edited`, and `openspot store revert` moves your copy to the Trash and puts the
+  store's version in its place. The review of an update names only what it adds.
+- An update that asks for nothing new applies quietly. An update with a new use, binding, Can also or Runs by itself
+  waits for `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
   required with no default, and the review names each such spot.
 
 ## Careful mode

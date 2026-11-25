@@ -1,0 +1,106 @@
+import Foundation
+
+public struct SpotUpdate: Sendable {
+    public enum State: String, Sendable {
+        case current, update, edited
+    }
+
+    let lock: SpotLock
+    let spots: URL
+    let trash: @Sendable (URL) throws -> Void
+    let now: @Sendable () -> Date
+
+    public init(places: AppPlaces, clock: RunClock = RunClock()) {
+        lock = places.lock
+        spots = places.spots.url
+        trash = places.trash
+        now = clock.now
+    }
+
+    public static func state(of entry: SpotLock.Entry, in spots: URL) -> (state: State, version: SpotVersion)? {
+        guard let version = entry.version.flatMap(SpotVersion.init(text:)), let path = entry.paths.first else { return nil }
+        guard (try? SpotVersion.hash(of: spots.appendingPathComponent(path))) == version.hash else { return (.edited, version) }
+        guard let newer = source(of: entry).flatMap({ try? SpotVersion(of: $0) }), newer.isNewer(than: version) else { return (.current, version) }
+        return (.update, version)
+    }
+
+    public func run(_ id: String?, isConfirmed: Bool) async throws -> String {
+        guard let id else { return try await all(isConfirmed: isConfirmed) }
+        let entry = try entry(id)
+        let name = name(of: entry)
+        switch Self.state(of: entry, in: spots)?.state {
+        case nil:
+            throw SpotError.failed(1, "\(name) did not come from a store, so it takes no update.")
+        case .edited:
+            throw SpotError.failed(1, "\(name) is edited, so it takes no update. Run `openspot store revert \(id)` to replace it with the version of its store.")
+        case .current:
+            return "\(name) is up to date.\n"
+        case .update:
+            return try await take(entry, named: name, isConfirmed: isConfirmed, command: "openspot store update \(id) --yes")
+        }
+    }
+
+    public func revert(_ id: String, isConfirmed: Bool) async throws -> String {
+        let entry = try entry(id)
+        let name = name(of: entry)
+        guard Self.state(of: entry, in: spots)?.state == .edited else { return "\(name) has no edit to revert.\n" }
+        guard let source = Self.source(of: entry), let path = entry.paths.first else {
+            throw SpotError.failed(1, "Openspot cannot find the store of \(name), so it kept your edit.")
+        }
+        _ = try await lock.add(
+            .folder(source), to: spots, isConfirmed: isConfirmed, replaces: [path], naming: path, updating: "openspot store revert \(id) --yes", discard: trash
+        )
+        return "Reverted \(name) to its version of \(try day(of: source)). Your edited copy is in the Trash.\n"
+    }
+
+    public func takeEachWithNoNewPower() async {
+        for entry in (try? lock.entries()) ?? [] where Self.state(of: entry, in: spots)?.state == .update {
+            _ = try? await take(entry, named: name(of: entry), isConfirmed: false, command: "")
+        }
+    }
+
+    private func all(isConfirmed: Bool) async throws -> String {
+        var said = ""
+        for entry in try lock.entries() where Self.state(of: entry, in: spots)?.state == .update {
+            let id = SpotID(path: entry.paths.first ?? entry.source).name
+            let name = name(of: entry)
+            do {
+                said += try await take(entry, named: name, isConfirmed: isConfirmed, command: "")
+            } catch {
+                said += "\(name) waits for your yes. Run `openspot store update \(id)` to see what it adds.\n"
+            }
+        }
+        return said.isEmpty ? "Each spot is up to date.\n" : said
+    }
+
+    private func take(_ entry: SpotLock.Entry, named name: String, isConfirmed: Bool, command: String) async throws -> String {
+        guard let source = Self.source(of: entry), let path = entry.paths.first else { return "" }
+        _ = try await lock.add(
+            .folder(source), to: spots, isConfirmed: isConfirmed, naming: path, updating: command, discard: { try FileManager.default.removeItem(at: $0) }
+        )
+        return "Updated \(name) to its version of \(try day(of: source)).\n"
+    }
+
+    private func day(of source: URL) throws -> String {
+        try SpotVersion(of: source).day(now: now())
+    }
+
+    private func entry(_ id: String) throws -> SpotLock.Entry {
+        guard let entry = try lock.entries().first(where: { $0.holds(id) }) else {
+            throw SpotError.failed(1, "`\(id)` did not come from a store, so it takes no update. Run `openspot store list` to see each spot.")
+        }
+        return entry
+    }
+
+    private func name(of entry: SpotLock.Entry) -> String {
+        let path = entry.paths.first ?? ""
+        let found = ((try? SpotsFolder(url: spots).scan())?.files ?? []).first { $0.spots.first?.url.deletingLastPathComponent().lastPathComponent == path }
+        return found?.spots.first?.name ?? entry.name
+    }
+
+    private static func source(of entry: SpotLock.Entry) -> URL? {
+        var isFolder: ObjCBool = false
+        guard entry.source.hasPrefix("/"), FileManager.default.fileExists(atPath: entry.source, isDirectory: &isFolder), isFolder.boolValue else { return nil }
+        return URL(fileURLWithPath: entry.source, isDirectory: true)
+    }
+}

@@ -9,6 +9,8 @@ public struct SpotCatalog: Sendable {
         public let publication: SpotPublication?
         public let hasSample: Bool
         public let store: Store?
+        public let version: SpotVersion?
+        public let copy: SpotUpdate.State?
         let isCore: Bool
 
         public var origin: SpotOrigin {
@@ -33,12 +35,14 @@ public struct SpotCatalog: Sendable {
     let folder: SpotsFolder
     let arrangement: SpotChoices
     let stores: [Store]
+    let lock: SpotLock?
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotChoices, stores: [Store]) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotChoices, stores: [Store], lock: SpotLock? = nil) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement
         self.stores = stores
+        self.lock = lock
     }
 
     public static func url(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
@@ -57,15 +61,21 @@ public struct SpotCatalog: Sendable {
         let own = (try? folder.scanOwn()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: published) : [:]
+        let entries = (try? lock?.entries()) ?? []
         let core = folder.coreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: true, isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, isAdded: true, publication: publications[$0.id]) }
+            file.spots.first.map { spot in
+                let copy = entries.first { $0.holds(file.id) }.flatMap { SpotUpdate.state(of: $0, in: folder.url) }
+                return item(spot, id: file.id, isAdded: true, publication: publications[spot.id], version: copy?.version, copy: copy?.state)
+            }
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
-                file.spots.first.map { item($0, id: file.id, isAdded: false, store: store) }
+                file.spots.first.map { spot in
+                    item(spot, id: file.id, isAdded: false, store: store, version: lock == nil ? nil : try? SpotVersion(of: spot.url.deletingLastPathComponent()))
+                }
             }
         }
         var seen = Set<String>()
@@ -76,10 +86,13 @@ public struct SpotCatalog: Sendable {
         items(publications: false).first { $0.id == id }
     }
 
-    private func item(_ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: Store? = nil) -> Item {
+    private func item(
+        _ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: Store? = nil, version: SpotVersion? = nil,
+        copy: SpotUpdate.State? = nil
+    ) -> Item {
         Item(
             id: id, spot: spot, isAdded: isAdded, size: arrangement.size(of: id) ?? spot.size, publication: publication,
-            hasSample: SpotSample.exists(for: spot, runsScript: store == nil), store: store, isCore: isCore
+            hasSample: SpotSample.exists(for: spot, runsScript: store == nil), store: store, version: version, copy: copy, isCore: isCore
         )
     }
 
@@ -114,24 +127,24 @@ public struct SpotCatalog: Sendable {
         return stored.digest(of: root).written == spot.digest(of: root).written ? .current : .changed
     }
 
-    func text(_ form: PrintForm) throws -> String {
-        try form.text(of: items.map(Printed.init))
+    func text(_ form: PrintForm, now: Date = RunClock().now()) throws -> String {
+        try form.text(of: items.map { Printed($0, now: now) })
     }
 
     private struct Printed: PrintedRecord {
         let id, name, icon, size, origin, step: String
-        let detail, published, path, store: String?
+        let detail, published, path, store, updated, copy: String?
         let readme: [String]
         let added, sample: Bool
 
         var blocks: [[(String, String?)]] {
             [[
                 ("item", id), ("title", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
-                ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil)
+                ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil), ("updated", updated), ("copy", copy)
             ] + readme.map { ("readme", $0) }]
         }
 
-        init(_ item: Item) {
+        init(_ item: Item, now: Date) {
             id = item.id
             name = item.spot.name
             icon = item.spot.image ?? item.spot.file ?? item.spot.glyph ?? item.spot.symbol
@@ -145,6 +158,8 @@ public struct SpotCatalog: Sendable {
             path = item.package?.path
             store = item.store?.url.path
             readme = SpotReadme.lines(at: SpotReadme.url(beside: item.spot.url))
+            updated = item.version?.day(now: now)
+            copy = item.copy == .current ? nil : item.copy?.rawValue
         }
     }
 }

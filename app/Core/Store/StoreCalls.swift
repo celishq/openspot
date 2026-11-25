@@ -6,7 +6,9 @@ struct StoreCalls {
 
     private static func catalog(in places: AppPlaces) -> SpotCatalog {
         let config = places.config.read()
-        return SpotCatalog(published: places.store, folder: places.spots, arrangement: config.arrangement, stores: Store.all(builtIn: places.examples, config: config))
+        return SpotCatalog(
+            published: places.store, folder: places.spots, arrangement: config.arrangement, stores: Store.all(builtIn: places.examples, config: config), lock: places.lock
+        )
     }
 
     private struct PrintedFolder: PrintedRecord {
@@ -55,7 +57,28 @@ struct StoreCalls {
     }
 
     func list(_ form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places] in try Self.catalog(in: places).text(form) }
+        CommandAnswer.work { [places, app] in
+            let before = try places.lock.entries()
+            await SpotUpdate(places: places).takeEachWithNoNewPower()
+            if try places.lock.entries() != before { await app?.spotsChanged() }
+            return try Self.catalog(in: places).text(form)
+        }
+    }
+
+    func update(_ id: String?, isConfirmed: Bool) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            let said = try await SpotUpdate(places: places).run(id, isConfirmed: isConfirmed)
+            await app?.spotsChanged()
+            return said
+        }
+    }
+
+    func revert(_ id: String, isConfirmed: Bool) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            let said = try await SpotUpdate(places: places).revert(id, isConfirmed: isConfirmed)
+            await app?.spotsChanged()
+            return said
+        }
     }
 
     func get(_ id: String, isConfirmed: Bool, clash: SpotClash?) -> CommandAPI.Work {
