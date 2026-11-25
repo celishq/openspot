@@ -16,6 +16,14 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if firstResponder is NSText, event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey,
+           let action = EditMenu.action(of: key), NSApp.sendAction(action, to: nil, from: self) {
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
     func warm(then done: @escaping () -> Void) {
         model?.isWarming = true
         alphaValue = 0
