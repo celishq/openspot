@@ -29,6 +29,10 @@ public struct GridLayout: Equatable, Sendable {
         return placements.sorted { $0.index < $1.index }
     }
 
+    public func list(_ sizes: [SpotSize]) -> [SpotPlacement] {
+        GridLayout(columns: columns, rows: sizes.reduce(0) { $0 + $1.rows }).place(sizes.map { GridSpot(size: $0, cell: nil) })
+    }
+
     public func size(of size: SpotSize, at cell: GridCell, among others: [SpotPlacement], choices: [SpotSize]) -> SpotSize {
         let taken = occupancy(of: others)
         if fits(size, at: cell, in: taken) { return size }

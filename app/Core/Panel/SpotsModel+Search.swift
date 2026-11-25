@@ -107,13 +107,10 @@ extension SpotsModel {
 
     private func takeVisible(_ next: [Entry]) {
         holdsRows = false
-        let isGrid = content == .cards
-        if isGridFixed != isGrid { isGridFixed = isGrid }
-        let spots = isGrid
-            ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) }
-            : next.map { GridSpot(size: $0.role == .answer && $0.size != .strip ? $0.size : grid.row, cell: nil) }
+        let isFixed = content.isFixed
+        if isGridFixed != isFixed { isGridFixed = isFixed }
         let top = fieldRoom
-        if isGrid, let gesture {
+        if isFixed, let gesture {
             let shown = Set(visible.map(\.id))
             if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
                 lay(gesture.layout, top: top)
@@ -121,12 +118,12 @@ extension SpotsModel {
             }
             dropGesture()
         }
-        let laid = isGrid
-            ? grid.place(spots)
-            : GridLayout(columns: grid.columns, rows: spots.reduce(0) { $0 + $1.size.rows }).place(spots)
+        let laid = isFixed
+            ? grid.place(next.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })
+            : grid.list(next.map { $0.role == .answer && $0.size != .strip ? $0.size : grid.row })
         let shown = laid.map { next[$0.index] }
         if shown != visible { visible = shown }
-        if isGrid {
+        if isFixed {
             let placed = Set(shown.map(\.id))
             let left = Set(next.map(\.id)).subtracting(placed)
             if left != leftOut { leftOut = left }

@@ -122,7 +122,7 @@ public final class SpotsModel {
     func takePlacements() {
         let free = grid.freeCells(around: placements)
         if free != freeCells { freeCells = free }
-        let shown = content == .cards && isEditing ? grid.height + laidOutTop : SpotPlacement.height(of: placements)
+        let shown = content.isFixed && isEditing ? grid.height + laidOutTop : SpotPlacement.height(of: placements)
         let height = SpotTokens.contentHeight(gridHeight: max(shown, laidOutTop))
         if height != gridHeight { gridHeight = height }
         takeShade()

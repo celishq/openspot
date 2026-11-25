@@ -89,4 +89,9 @@ final class GridLayoutTests: XCTestCase {
         let cell = layout.cell(near: CGPoint(x: 10_000, y: 10_000), for: .wide)
         XCTAssertEqual(cell, GridCell(row: 6, column: 2))
     }
+
+    func testAListTakesAsManyRowsAsItsSpotsNeed() {
+        let placements = layout.list(Array(repeating: layout.row, count: 9) + [.small])
+        XCTAssertEqual(placements.map(\.row), Array(0..<10))
+    }
 }
