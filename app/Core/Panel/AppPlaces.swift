@@ -86,4 +86,8 @@ public struct AppPlaces: Sendable {
     private static func recentKey(_ id: String) -> String {
         "recent.\(id)"
     }
+
+    public func foundStores(in config: Config) -> [StoreSource] {
+        StoreSource.all(builtIn: examples, config: config).filter { !$0.isBuiltIn || $0.exists() }
+    }
 }

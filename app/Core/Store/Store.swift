@@ -188,21 +188,15 @@ public final class Store {
     }
 
     private nonisolated static func sources(in places: AppPlaces, config: Config, opened: StoreSource?) -> [StoreSource] {
-        StoreSource.all(builtIn: places.examples, config: config).filter { !$0.isBuiltIn || $0.exists() } + [opened].compactMap { $0 }
-    }
-
-    private nonisolated static func catalog(_ places: AppPlaces, _ config: Config, sources: [StoreSource]) -> SpotCatalog {
-        SpotCatalog(folder: places.spots, arrangement: config.arrangement, stores: sources, lock: places.lock)
+        places.foundStores(in: config) + [opened].compactMap { $0 }
     }
 
     @concurrent
     private nonisolated static func read(_ places: AppPlaces, opened: StoreSource?) async -> StoreRead {
-        let before = try? places.lock.entries()
-        await SpotUpdate(places: places).takeEachWithNoNewPower()
-        let tookUpdates = (try? places.lock.entries()) != before
+        let tookUpdates = await SpotUpdate(places: places).takeEachWithNoNewPower()
         let config = places.config.read()
         let sources = sources(in: places, config: config, opened: opened)
-        let mine = catalog(places, config, sources: []).items.filter(\.isAdded).map { StoreCard(id: $0.id, spot: $0.spot, mark: StoreMark(of: $0)) }
+        let mine = SpotCatalog(places: places, config: config, stores: []).items.filter(\.isAdded).map { StoreCard(id: $0.id, spot: $0.spot, mark: StoreMark(of: $0)) }
         let had = Set(mine.map(\.id))
         var cards: [StorePlace: [StoreCard]] = [.mine: mine]
         for source in sources {
@@ -217,7 +211,7 @@ public final class Store {
     private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, now: Date) async -> StorePage? {
         let config = places.config.read()
         let folder = places.spots
-        let own = catalog(places, config, sources: []).items.first { $0.id == id && $0.isAdded }
+        let own = SpotCatalog(places: places, config: config, stores: []).items.first { $0.id == id && $0.isAdded }
         let button = StoreButton(of: own)
         switch place {
         case .mine:
@@ -262,7 +256,7 @@ public final class Store {
             let config = places.config.read()
             let sources = sources(in: places, config: config, opened: opened)
             let chosen = place.source
-            guard let install = try catalog(places, config, sources: sources).install(id, in: places, from: chosen) else { return nil }
+            guard let install = try SpotCatalog(places: places, config: config, stores: sources).install(id, in: places, from: chosen) else { return nil }
             let source = chosen ?? sources.first { $0.fetch(id) != nil }
             return StoreReview(
                 name: install.name, from: "From \(source?.name ?? install.source.deletingLastPathComponent().lastPathComponent)",

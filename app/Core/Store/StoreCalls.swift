@@ -6,9 +6,7 @@ struct StoreCalls {
 
     private static func catalog(in places: AppPlaces) -> SpotCatalog {
         let config = places.config.read()
-        return SpotCatalog(
-            folder: places.spots, arrangement: config.arrangement, stores: StoreSource.all(builtIn: places.examples, config: config), lock: places.lock
-        )
+        return SpotCatalog(places: places, config: config, stores: places.foundStores(in: config))
     }
 
     private struct PrintedFolder: PrintedRecord {
@@ -40,16 +38,14 @@ struct StoreCalls {
 
     func folders(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places] in
-            let stores = StoreSource.all(builtIn: places.examples, config: places.config.read()).filter { !$0.isBuiltIn || $0.exists() }
+            let stores = places.foundStores(in: places.config.read())
             return try form.text(of: stores.map { PrintedFolder(store: $0.url.path, name: $0.name, found: $0.exists(), builtin: $0.isBuiltIn) })
         }
     }
 
     func list(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places, app] in
-            let before = try places.lock.entries()
-            await SpotUpdate(places: places).takeEachWithNoNewPower()
-            if try places.lock.entries() != before { await app?.spotsChanged() }
+            if await SpotUpdate(places: places).takeEachWithNoNewPower() { await app?.spotsChanged() }
             return try Self.catalog(in: places).text(form)
         }
     }

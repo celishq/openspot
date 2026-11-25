@@ -42,6 +42,10 @@ public struct SpotCatalog: Sendable {
         self.lock = lock
     }
 
+    public init(places: AppPlaces, config: Config, stores: [StoreSource]) {
+        self.init(folder: places.spots, arrangement: config.arrangement, stores: stores, lock: places.lock)
+    }
+
     public static func id(of spot: Spot, in folder: SpotsFolder) -> String {
         folder.fileID(of: spot)
     }

@@ -73,10 +73,13 @@ public struct SpotUpdate: Sendable {
         name(of: try entry(id))
     }
 
-    public func takeEachWithNoNewPower() async {
-        for entry in (try? lock.entries()) ?? [] where Self.state(of: entry, in: spots, lock: lock)?.state == .update {
+    @discardableResult
+    public func takeEachWithNoNewPower() async -> Bool {
+        let before = try? lock.entries()
+        for entry in before ?? [] where Self.state(of: entry, in: spots, lock: lock)?.state == .update {
             _ = try? await take(entry, named: name(of: entry), isConfirmed: false, command: "")
         }
+        return (try? lock.entries()) != before
     }
 
     private func all(isConfirmed: Bool) async throws -> String {
