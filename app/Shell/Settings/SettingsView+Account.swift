@@ -4,8 +4,8 @@ import SwiftUI
 
 extension SettingsView {
     var accountPage: some View {
-        let account = facts.account
-        let rows = facts.rows(in: .account)
+        let account = book.account
+        let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.isSignedIn {
                 hero(account.handle.map { "@\($0)" } ?? SettingsPage.account.section.title, SettingsPage.account.line) {

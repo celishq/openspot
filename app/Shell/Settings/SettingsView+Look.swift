@@ -7,7 +7,7 @@ extension SettingsView {
             pageHeader(.look)
             Section {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
-                    ForEach(facts.looks) { look in
+                    ForEach(book.looks) { look in
                         VStack(spacing: SpotTokens.settingsLookWords) {
                             preview(look)
                             Text(look.id)

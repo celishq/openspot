@@ -7,7 +7,7 @@ struct SettingsGrantSheet: View {
     let grant: AccessGrant
 
     var body: some View {
-        let name = book.facts.standing(grant.spot)?.title ?? grant.spot
+        let name = book.spots.standing(grant.spot)?.title ?? grant.spot
         let shape = SpotRoundShape(radius: SpotTokens.settingsGrantCorner)
         ZStack(alignment: .top) {
             SpotTheme.settingsDim

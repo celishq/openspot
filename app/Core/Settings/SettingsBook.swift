@@ -4,7 +4,13 @@ import Observation
 @MainActor
 @Observable
 public final class SettingsBook {
-    public private(set) var facts = SettingsFacts()
+    public private(set) var access = AccessFacts()
+    public private(set) var spots = SpotStandings()
+    public private(set) var keys = KeyMap()
+    public private(set) var rows = SettingRows()
+    public private(set) var looks: [SettingsFacts.Look] = []
+    public private(set) var account: SettingsFacts.Account?
+    public private(set) var index = SettingsIndex()
     public private(set) var page = SettingsPage.access
     public private(set) var back: [SettingsPage] = []
     public private(set) var forward: [SettingsPage] = []
@@ -31,7 +37,7 @@ public final class SettingsBook {
         guard query.isEmpty else { return "Search" }
         return switch page {
         case .accessOf(let id): id.title
-        case .spotOf(let id): facts.standing(id)?.title ?? id
+        case .spotOf(let id): spots.standing(id)?.title ?? id
         default: page.section.title
         }
     }
@@ -86,13 +92,24 @@ public final class SettingsBook {
         let next = await api.settingsFacts()
         guard !Task.isCancelled else { return }
         hasRead = true
-        if next != facts { facts = next }
-        take(rows: next.rows)
+        take(next)
         if !pending.isEmpty { pending = [:] }
         if let place = landing {
             landing = nil
             land(place)
         }
+    }
+
+    private func take(_ next: SettingsFacts) {
+        let isIndexed = next.access == access && next.spots == spots && next.rows == rows
+        if next.access != access { access = next.access }
+        if next.spots != spots { spots = next.spots }
+        if next.keys != keys { keys = next.keys }
+        if next.rows != rows { rows = next.rows }
+        if next.looks != looks { looks = next.looks }
+        if next.account != account { account = next.account }
+        if !isIndexed { index = SettingsIndex(accesses: access.all, standings: spots.all, rows: rows.all) }
+        take(rows: rows.all)
     }
 
     public func go(_ next: SettingsPage) {
@@ -134,11 +151,11 @@ public final class SettingsBook {
         target = nil
         switch place {
         case .row(let item):
-            guard let row = facts.row(item) else { return page = .access }
+            guard let row = rows.row(item) else { return page = .access }
             reveal(row)
         case .search(let words):
             query = words
-        case .spotOf(let id) where facts.standing(id) == nil && facts.rows.contains { $0.spot == id }:
+        case .spotOf(let id) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
             page = .keys
             target = "\(id)/open"
         default:
@@ -147,7 +164,7 @@ public final class SettingsBook {
     }
 
     public func reveal(_ row: SettingRow) {
-        land(row.spot == ReservedSetting.appSpot ? row.section.page : facts.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
+        land(row.spot == ReservedSetting.appSpot ? row.section.page : spots.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
         target = row.item
     }
 
@@ -157,7 +174,7 @@ public final class SettingsBook {
 
     @discardableResult
     public func record(key name: String, modifiers: [String]) -> Bool {
-        guard let id = recording, let row = facts.row(id) else { return false }
+        guard let id = recording, let row = rows.row(id) else { return false }
         if name == "escape" {
             recording = nil
             return true

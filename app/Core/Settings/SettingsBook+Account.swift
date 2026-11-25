@@ -1,7 +1,7 @@
 import Foundation
 
 extension SettingsBook {
-    private var account: Account? {
+    private var keyAccount: Account? {
         guard let model else { return nil }
         return Account(store: model.files.account, allows: { [weak model] reason in await model?.allows(reason) ?? false })
     }
@@ -28,16 +28,16 @@ extension SettingsBook {
     }
 
     public func words() async -> (words: [String], failure: String?) {
-        guard let account else { return ([], nil) }
+        guard let keyAccount else { return ([], nil) }
         do {
-            return (try await account.words(), nil)
+            return (try await keyAccount.words(), nil)
         } catch {
             return ([], Self.reason(error))
         }
     }
 
     public func choices(at places: [Int]) -> [[String]] {
-        (try? account?.choices(at: places)) ?? []
+        (try? keyAccount?.choices(at: places)) ?? []
     }
 
     public func confirm(_ places: [Int], _ picked: [String]) async -> String? {
@@ -49,7 +49,7 @@ extension SettingsBook {
     }
 
     public func line(of phrase: String) -> [String: String] {
-        AccountPhrase(phrase).line(isSignedIn: facts.account?.isSignedIn == true)
+        AccountPhrase(phrase).line(isSignedIn: account?.isSignedIn == true)
     }
 
     private func act(_ work: (Account) async throws -> Void) async {
@@ -57,9 +57,9 @@ extension SettingsBook {
     }
 
     private func failure(_ work: (Account) async throws -> Void) async -> String? {
-        guard let account else { return nil }
+        guard let keyAccount else { return nil }
         do {
-            try await work(account)
+            try await work(keyAccount)
             await read()
             return nil
         } catch {

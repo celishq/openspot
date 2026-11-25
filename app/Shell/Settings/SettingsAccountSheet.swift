@@ -28,7 +28,7 @@ struct SettingsAccountSheet: View {
     }
 
     private var account: SettingsFacts.Account? {
-        book.facts.account
+        book.account
     }
 
     var body: some View {

@@ -72,7 +72,7 @@ final class SettingsAccountTests: PanelCase {
         await book.signOut()
 
         XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
-        let reached = model.toasts.queue.map(\.words) + ["\(book.facts)"]
+        let reached = model.toasts.queue.map(\.words) + ["\(String(describing: book.account))", "\(book.rows.all)"]
         for said in reached {
             XCTAssertFalse(said.contains("abandon"), said)
         }

@@ -3,16 +3,16 @@ import SwiftUI
 
 extension SettingsView {
     var accessPage: some View {
-        let needed = facts.needed
-        let rest = facts.unneeded
+        let needed = book.access.needed
+        let rest = book.access.unneeded
         return Group {
             header(SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
                 Button("About Access…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
-            if !facts.waiting.isEmpty {
+            if !book.spots.waiting.isEmpty {
                 group("Needs Attention") {
-                    lines(facts.waiting) { standing in
+                    lines(book.spots.waiting) { standing in
                         row(open: .spotOf(standing.id)) {
                             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
                             titled(standing.title, standing.lack)
@@ -55,8 +55,8 @@ extension SettingsView {
     }
 
     func accessPage(of access: AccessList.Entry) -> some View {
-        let needers = access.spots.compactMap(facts.standing)
-        let maybes = access.maybe.compactMap(facts.standing)
+        let needers = access.spots.compactMap(book.spots.standing)
+        let maybes = access.maybe.compactMap(book.spots.standing)
         return Group {
             header(SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
                 if !access.isAllowed {

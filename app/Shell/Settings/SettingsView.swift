@@ -14,10 +14,6 @@ struct SettingsView: View {
         model.settingsBook
     }
 
-    var facts: SettingsFacts {
-        book.facts
-    }
-
     var body: some View {
         NavigationSplitView {
             sidebar
@@ -86,7 +82,7 @@ struct SettingsView: View {
     private var sidebar: some View {
         List(selection: chosen) {
             ForEach(SettingsPage.Section.allCases.filter { $0 != .account }) { section in
-                let count = section == .access ? facts.waiting.count : 0
+                let count = section == .access ? book.spots.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
                     Text(section.title)
@@ -109,7 +105,7 @@ struct SettingsView: View {
 
     private var accountRow: some View {
         let isChosen = book.query.isEmpty && book.page.section == .account
-        let account = facts.account
+        let account = book.account
         return HStack(spacing: SpotTokens.settingsGroupGap) {
             SettingsAvatar(side: SpotTokens.settingsAccountTile)
             VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
@@ -146,9 +142,9 @@ struct SettingsView: View {
         } else {
             switch book.page {
             case .access: accessPage
-            case .accessOf(let id): facts.access(id).map { accessPage(of: $0) }
+            case .accessOf(let id): book.access.access(id).map { accessPage(of: $0) }
             case .spots: spotsPage
-            case .spotOf(let id): facts.standing(id).map { spotPage(of: $0) }
+            case .spotOf(let id): book.spots.standing(id).map { spotPage(of: $0) }
             case .keys: keysPage
             case .look: lookPage
             case .account: accountPage

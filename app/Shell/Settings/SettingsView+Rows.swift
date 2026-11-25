@@ -5,7 +5,7 @@ extension SettingsView {
     func rowsPage(_ section: SettingsPage.Section) -> some View {
         Group {
             pageHeader(section)
-            group(nil) { lines(facts.rows(in: section)) { settingLine($0) } }
+            group(nil) { lines(book.rows.rows(in: section)) { settingLine($0) } }
         }
     }
 }

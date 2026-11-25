@@ -198,6 +198,6 @@ final class AccessGrantTests: XCTestCase {
 
         await model.settingsBook.read()
 
-        XCTAssertEqual(Set(model.settingsBook.facts.waiting.map(\.id)), model.waiting)
+        XCTAssertEqual(Set(model.settingsBook.spots.waiting.map(\.id)), model.waiting)
     }
 }

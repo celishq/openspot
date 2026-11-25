@@ -113,16 +113,16 @@ final class SettingsEntryTests: PanelCase {
         takeCalls()
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await model.reload()
-        XCTAssertTrue(book.facts.rows.isEmpty)
+        XCTAssertTrue(book.rows.all.isEmpty)
 
         model.openSettings(at: .row("cups/key.fill"))
 
         try await wait("the facts and the row") { self.book.page == .spotOf("cups") && self.book.target == "cups/key.fill" }
         book.closed()
-        let rows = book.facts.rows.count
+        let rows = book.rows.all.count
         try script("mugs", toml: "title = 'Mugs'\n[actions.fill]\ntitle = 'Fill'", "")
         await model.spotsChanged()
-        XCTAssertEqual(book.facts.rows.count, rows)
+        XCTAssertEqual(book.rows.all.count, rows)
     }
 
     func testASettingRowIsFoundInThePanelsSearchWithItsSpotAndOpensSettingsAtTheRow() async throws {
