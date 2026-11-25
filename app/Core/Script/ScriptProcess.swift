@@ -220,7 +220,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     public func end() {
         closeInput()
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
+        clock.after(stopPause) { [self] in
             if lock.withLock({ ended && !stopped }) {
                 stopGroup()
             } else {
@@ -328,7 +328,7 @@ public final class ScriptProcess: @unchecked Sendable {
             return stops
         }
         deliver(SIGTERM)
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in killLate(stop) }
+        clock.after(stopPause) { [self] in killLate(stop) }
     }
 
     private func killLate(_ stop: Int) {

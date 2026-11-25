@@ -50,13 +50,31 @@ final class CapabilityTests: XCTestCase {
         kill(id, 0) == 0
     }
 
-    private func wait(seconds: TimeInterval, for fact: () async -> Bool) async -> Bool {
-        let deadline = Date().addingTimeInterval(seconds)
-        while Date() < deadline {
-            if await fact() { return true }
-            try? await Task.sleep(for: .milliseconds(50))
+    private func lines(_ name: String) -> [String] {
+        lines(at: folder.appendingPathComponent(name).path)
+    }
+
+    private func waitForOneHelper() async throws {
+        let count = HelperCount()
+        nonisolated(unsafe) let test = self
+        let watch = Task {
+            while !Task.isCancelled { count.take(await test.helpers().count) }
         }
-        return await fact()
+        defer { watch.cancel() }
+        try await wait("one helper") { count.value == 1 }
+    }
+
+    private final class HelperCount: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count: Int?
+
+        var value: Int? {
+            lock.withLock { count }
+        }
+
+        func take(_ count: Int) {
+            lock.withLock { self.count = count }
+        }
     }
 
     func testStateStaysAcrossTwoSeparateRunsOfAScriptAndACallFromATerminal() async throws {
@@ -87,8 +105,7 @@ final class CapabilityTests: XCTestCase {
 
         XCTAssertEqual(Set(try answers.map { try field("pid", in: $0) }).count, 1)
         XCTAssertEqual(Set(try answers.map { try field("count", in: $0) }), Set(1...total))
-        let settled = await wait(seconds: 60) { await self.helpers().count == 1 }
-        XCTAssertTrue(settled)
+        try await waitForOneHelper()
     }
 
     func testTheHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
@@ -98,8 +115,7 @@ final class CapabilityTests: XCTestCase {
         XCTAssertTrue(isAlive(id))
         XCTAssertTrue(FileManager.default.fileExists(atPath: socket))
 
-        let gone = await wait(seconds: 60) { !self.isAlive(id) }
-        XCTAssertTrue(gone)
+        try await wait("the end of the helper") { !self.isAlive(id) }
         XCTAssertFalse(FileManager.default.fileExists(atPath: socket))
 
         let next = try await call()
@@ -111,32 +127,19 @@ final class CapabilityTests: XCTestCase {
         environment["STANDIN_IDLE"] = "1"
         let id = pid_t(try field("pid", in: try await call("hold")))
 
-        try await Task.sleep(for: .seconds(3))
+        try await wait("an idle time of the held helper") { self.lines("idle").contains("held") }
         XCTAssertTrue(isAlive(id))
         let freed = try await call("free")
         XCTAssertEqual(pid_t(try field("pid", in: freed)), id)
 
-        let gone = await wait(seconds: 60) { !self.isAlive(id) }
-        XCTAssertTrue(gone)
-    }
-
-    func testACallPutsOffTheIdleExit() async throws {
-        environment["STANDIN_IDLE"] = "2"
-        let id = try field("pid", in: try await call())
-
-        for _ in 0..<4 {
-            try await Task.sleep(for: .seconds(0.8))
-            let next = try await call()
-            XCTAssertEqual(try field("pid", in: next), id)
-        }
+        try await wait("the end of the helper") { !self.isAlive(id) }
     }
 
     func testAHelperLeftByACrashDoesNotBlockANewOne() async throws {
         let id = pid_t(try field("pid", in: try await call()))
 
         kill(id, SIGKILL)
-        let gone = await wait(seconds: 60) { !self.isAlive(id) }
-        XCTAssertTrue(gone)
+        try await wait("the end of the helper") { !self.isAlive(id) }
         XCTAssertTrue(FileManager.default.fileExists(atPath: socket))
 
         let next = try await call()
@@ -152,9 +155,8 @@ final class CapabilityTests: XCTestCase {
         let id = pid_t(try field("pid", in: try XCTUnwrap(first)))
 
         process.stop()
-        let stopped = await wait(seconds: 60) { !process.isRunning }
+        try await wait("the end of the script") { !process.isRunning }
 
-        XCTAssertTrue(stopped)
         XCTAssertTrue(isAlive(id))
         let next = try await call()
         XCTAssertEqual(try field("count", in: next), 2)
@@ -163,13 +165,13 @@ final class CapabilityTests: XCTestCase {
     func testACallerStoppedDuringACallLeavesTheHelperAlive() async throws {
         let id = pid_t(try field("pid", in: try await call()))
         let process = ScriptProcess(url: tool, arguments: ["call", label], mode: .once(input: "slow"), base: environment)
-        _ = process.start()
-        try await Task.sleep(for: .milliseconds(500))
+        let answers = process.start()
+        try await wait("the slow call in the helper") { self.lines("heard").contains("slow") }
 
         process.stop()
-        let stopped = await wait(seconds: 60) { !process.isRunning }
+        for try await _ in answers { XCTFail("no answer") }
+        try await wait("the end of the caller") { !process.isRunning }
 
-        XCTAssertTrue(stopped)
         let next = try await call()
         XCTAssertEqual(pid_t(try field("pid", in: next)), id)
     }

@@ -1,6 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
+@MainActor
 final class SheetStreamTests: XCTestCase {
     private var folder: URL!
 
@@ -73,36 +74,41 @@ final class SheetStreamTests: XCTestCase {
 
     func testAFrameArrivesWhileTheScriptRuns() async throws {
         let url = try script("printf 'text=a\\n---\\n'\nsleep 30")
-        let started = Date()
+        let process = ScriptProcess(url: url, limit: 60)
 
-        for try await frame in ScriptProcess(url: url, limit: 60).start() {
+        for try await frame in process.start() {
             XCTAssertEqual(frame, "text=a\n")
+            XCTAssertTrue(process.isRunning)
             break
         }
-
-        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
     }
 
     func testEndingTheStreamStopsTheScript() async throws {
         let marker = folder.appendingPathComponent("alive")
-        let url = try script("printf 'text=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
+        let url = try script("printf 'text=a\\n---\\n'\nsleep 30\ntouch '\(marker.path)'")
+        let process = ScriptProcess(url: url, limit: 60)
 
-        for try await _ in ScriptProcess(url: url, limit: 60).start() { break }
-        try await Task.sleep(for: .seconds(0.5))
+        for try await _ in process.start() { break }
+        try await wait("the end of the script") { !process.isRunning }
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+        XCTAssertFalse(placed(at: marker.path))
     }
 
     func testOnlyTheFirstFrameHasATimeLimit() async throws {
+        let clock = FakeClock()
         let release = folder.appendingPathComponent("release").path
         let gate = "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
         let silent = try script("sleep 30", name: "silent")
         let slow = try script("printf 'text=a\\n---\\n'\n\(gate)\nprintf 'text=b\\n---\\n'", name: "slow")
-        var frames = ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
+        var frames = ScriptProcess(url: slow, limit: 1.5, clock: clock.value).start().makeAsyncIterator()
         let first = try await frames.next()
+        let quiet = ScriptProcess(url: silent, limit: 1.5, clock: clock.value).start()
+
+        try await wait("the limit of each script") { clock.timerCount == 2 }
+        clock.advance(by: 1.5)
 
         do {
-            for try await _ in ScriptProcess(url: silent, limit: 1.5).start() {}
+            for try await _ in quiet {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)

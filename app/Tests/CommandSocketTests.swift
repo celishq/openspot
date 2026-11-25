@@ -5,6 +5,7 @@ import os
 final class CommandSocketTests: XCTestCase {
     private struct SlowApp: RunningApp {
         let folder: URL
+        let clock: RunClock
 
         func configChanged(_ change: ConfigChange, to config: KeptConfig) async {}
         func spotsChanged() async {}
@@ -29,7 +30,7 @@ final class CommandSocketTests: XCTestCase {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)
             defer { FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: nil) }
             do {
-                try await Task.sleep(for: .seconds(30))
+                try await clock.sleep(.seconds(30), nil)
                 FileManager.default.createFile(atPath: folder.appendingPathComponent("far").path, contents: nil)
             } catch {}
             return true
@@ -108,7 +109,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testASlowCallSendsItsFirstChunkBeforeItsEnd() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder, clock: await FakeClock().value)))
         let connection = connect()
         defer { connection.close() }
         try connection.send(request(["batch"]))
@@ -125,7 +126,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder, clock: await FakeClock().value)))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
         try await wait("the start of the work") { placed(at: folder.appendingPathComponent("started").path) }

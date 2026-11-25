@@ -14,22 +14,32 @@ final class PictureFileTests: XCTestCase {
     }
 
     private func firstChange(of file: URL, writing write: @escaping @Sendable () throws -> Void) async throws -> Double?? {
+        let change = Change()
         let changes = PictureFile(path: file.path).changes
-        let next = Task { () -> Double?? in
-            for await time in changes { return time }
-            return nil
+        let next = Task {
+            for await time in changes { return change.take(time) }
         }
-        let writes = Task {
-            while !Task.isCancelled {
-                try write()
-                try await Task.sleep(for: .milliseconds(50))
-            }
+        defer { next.cancel() }
+
+        try await wait("a change of the picture") {
+            try? write()
+            return change.first != nil
         }
-        let limit = Task { try await Task.sleep(for: .seconds(60)); next.cancel() }
-        let time = await next.value
-        writes.cancel()
-        limit.cancel()
-        return time
+
+        return change.first
+    }
+
+    private final class Change: @unchecked Sendable {
+        private let lock = NSLock()
+        private var times: [Double?] = []
+
+        var first: Double?? {
+            lock.withLock { times.first }
+        }
+
+        func take(_ time: Double?) {
+            lock.withLock { times.append(time) }
+        }
     }
 
     func testAPictureThatAppearsAfterItsAnswerGivesItsTime() async throws {

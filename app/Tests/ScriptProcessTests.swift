@@ -1,8 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
+@MainActor
 final class ScriptProcessTests: XCTestCase {
-    private static let stopPause: TimeInterval = 0.2
+    private nonisolated static let stopPause: TimeInterval = 0.2
 
     private var folder: URL!
 
@@ -35,7 +36,7 @@ final class ScriptProcessTests: XCTestCase {
 
         let during = Self.threadCount()
         processes.forEach { $0.stop() }
-        for process in processes { process.finish(by: Date().addingTimeInterval(5)) }
+        try await wait("the end of each script") { processes.allSatisfy { !$0.isRunning } }
 
         XCTAssertLessThan(during - before, 16)
     }
@@ -128,16 +129,19 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAStopEndsTheStreamAtOnceWithNoError() async throws {
-        let spot = try writeSpot("slow.sh", "#!/bin/sh\nsleep 30\n")
-        let process = ScriptProcess(url: spot.url)
+        let clock = FakeClock()
+        let spot = try writeSpot("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(String.longLoop)\n")
+        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause, clock: clock.value)
         let frames = process.start()
-        let started = Date()
+        let script = try await pid("script")
 
         process.stop()
         for try await _ in frames { XCTFail("no frame") }
 
-        XCTAssertLessThan(Date().timeIntervalSince(started), 1)
+        XCTAssertTrue(runs(script))
         XCTAssertTrue(process.isStopped)
+        clock.advance(by: Self.stopPause)
+        try await wait("the end of the script") { !self.runs(script) }
     }
 
     func testAScriptThatCannotStartEndsItsFramesWithTheReason() async throws {
@@ -193,29 +197,28 @@ final class ScriptProcessTests: XCTestCase {
 
         process.stop()
         for try await _ in frames { XCTFail("no frame") }
-        try await Task.sleep(for: .seconds(Self.stopPause * 3))
+        try await wait("the end of the call") { !process.needsFinish }
 
-        if placed(at: folder.appendingPathComponent("script").path) {
-            let script = try await pid("script")
+        if let script = lines(at: path("script")).first.flatMap({ Int32($0) }) {
             XCTAssertFalse(runs(script))
         }
     }
 
     func testAStopReachesEachChildOfTheScript() async throws {
-        let spot = try writeSpot("child.sh", "#!/bin/sh\n(sleep 0.3; touch '\(path("child"))') &\nprintf 'a=1\\n---\\n'\nwait\n")
-        let process = ScriptProcess(url: spot.url)
+        let spot = try writeSpot("child.sh", "#!/bin/sh\n\(child())printf 'a=1\\n---\\n'\nwait\n")
+        let process = ScriptProcess(url: spot.url, clock: FakeClock().value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
+        let child = try await pid("child")
 
         process.stop()
-        try await Task.sleep(for: .seconds(0.5))
 
-        XCTAssertFalse(placed(at: folder.appendingPathComponent("child").path))
+        try await wait("the end of the child") { !self.runs(child) }
     }
 
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
         let spot = try writeSpot("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
-        let process = ScriptProcess(url: spot.url)
+        let process = ScriptProcess(url: spot.url, clock: FakeClock().value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
 
@@ -225,16 +228,19 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
-        let spot = try writeSpot("deaf.sh", "#!/bin/sh\ntrap '' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
-        let process = ScriptProcess(url: spot.url)
+        let clock = FakeClock()
+        let spot = try writeSpot("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
+        let process = ScriptProcess(url: spot.url, clock: clock.value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
+        let script = try await pid("script")
 
-        let started = Date()
         process.stop()
-        try await wait("the end of the process") { !process.isRunning }
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 2)
+        XCTAssertTrue(runs(script))
+        XCTAssertTrue(clock.hasTimer(for: 2))
+        clock.advance(by: 2)
+        try await wait("the end of the process") { !process.isRunning }
     }
 
     private func writesPid(_ name: String) -> String {
@@ -242,12 +248,16 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     private func deafChild() -> String {
-        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); exec sleep 30\" >/dev/null 2>&1 &\n"
+        child(trap: "trap '' TERM; ")
+    }
+
+    private func child(trap: String = "") -> String {
+        "sh -c \"\(trap)\(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); exec sleep 30\" >/dev/null 2>&1 &\n"
     }
 
     private func pid(_ name: String) async throws -> Int32 {
-        for _ in 0..<6000 where !placed(at: folder.appendingPathComponent(name).path) { try await Task.sleep(for: .milliseconds(10)) }
-        return try XCTUnwrap(Int32(try String(contentsOfFile: path(name), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        try await wait("the pid of the \(name)") { !lines(at: path(name)).isEmpty }
+        return try XCTUnwrap(lines(at: path(name)).first.flatMap { Int32($0) })
     }
 
     private func runs(_ pid: Int32) -> Bool {
@@ -268,33 +278,36 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
-        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause)
+        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause, clock: clock.value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
-        let started = Date()
 
         process.stop()
-        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
+        XCTAssertTrue(runs(script) && runs(child))
+        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
+        clock.advance(by: Self.stopPause)
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
     func testAChildThatIgnoresTheTerminateSignalIsGoneAfterItsScriptEndedAtTheStop() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("parent.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\nsleep 30\n")
-        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause)
+        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause, clock: clock.value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
-        let started = Date()
 
         process.stop()
-        try await wait("the end of the child") { !self.runs(child) }
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
-        XCTAssertFalse(process.isRunning)
+        XCTAssertTrue(runs(child))
+        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
+        clock.advance(by: Self.stopPause)
+        try await wait("the end of the child and its script") { !self.runs(child) && !process.isRunning }
     }
 
     func testTheLateKillOfAStoppedScriptIsCancelledWhenItsGroupIsReaped() async throws {
@@ -309,45 +322,56 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("away.sh", "#!/bin/sh\n\(deafChild())\n")
-        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause)
+        let process = ScriptProcess(url: spot.url, stopPause: Self.stopPause, clock: clock.value)
         for try await _ in process.start() {}
         let child = try await pid("child")
         defer { kill(child, SIGKILL) }
 
         process.stop()
-        try await Task.sleep(for: .seconds(Self.stopPause + 0.2))
 
+        XCTAssertEqual(clock.timerCount, 0)
         XCTAssertTrue(runs(child))
     }
 
     func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
-        let live = ScriptProcess(url: spot.url, mode: .stays, stopPause: Self.stopPause)
+        let live = ScriptProcess(url: spot.url, mode: .stays, stopPause: Self.stopPause, clock: clock.value)
         var frames = live.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
-        let started = Date()
 
         live.end()
-        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
+        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
+        clock.advance(by: Self.stopPause)
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
+        XCTAssertTrue(live.isStopped)
+        XCTAssertTrue(runs(script) && runs(child))
+        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
+        clock.advance(by: Self.stopPause)
+        try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
     func testAnEndReachesAChildAfterAStayingScriptEndedWithItsInput() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("stay.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\ncat >/dev/null\n")
-        let live = ScriptProcess(url: spot.url, mode: .stays, stopPause: Self.stopPause)
+        let live = ScriptProcess(url: spot.url, mode: .stays, stopPause: Self.stopPause, clock: clock.value)
         var frames = live.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
-        let started = Date()
 
         live.end()
-        try await wait("the end of the child") { !self.runs(child) }
+        try await wait("the end of the script") { !live.isLive }
+        clock.advance(by: Self.stopPause)
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
+        XCTAssertFalse(live.isStopped)
+        XCTAssertTrue(runs(child))
+        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
+        clock.advance(by: Self.stopPause)
+        try await wait("the end of the child") { !self.runs(child) }
         XCTAssertFalse(live.isRunning)
     }
 
@@ -360,13 +384,14 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testACallEndsWhenItsOutputCloses() async throws {
-        let spot = try writeSpot("away.sh", "#!/bin/sh\nsleep 30 >/dev/null 2>&1 &\nprintf 'a=1\\n'\nexit 0\n")
-        let started = Date()
+        let spot = try writeSpot("away.sh", "#!/bin/sh\n\(child())printf 'a=1\\n'\nexit 0\n")
 
         let output = try await ScriptProcess.output(url: spot.url, limit: 60)
+        let child = try await pid("child")
+        defer { kill(child, SIGKILL) }
 
         XCTAssertEqual(output, "a=1\n")
-        XCTAssertLessThan(Date().timeIntervalSince(started), 2)
+        XCTAssertTrue(runs(child))
     }
 
     func testAFailureNamesTheLastLineOfALongStderr() async throws {
@@ -415,14 +440,20 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAOutOfTimeFirstFrameStopsTheScript() async throws {
+        let clock = FakeClock()
         let spot = try writeSpot("late.sh", "#!/bin/sh\n\(writesPid("script"))\nsleep 30\ntouch '\(path("went-on"))'\n")
+        let process = ScriptProcess(url: spot.url, limit: 1, clock: clock.value)
+        let frames = process.start()
+        let script = try await pid("script")
+
+        try await wait("the limit of the first frame") { clock.hasTimer(for: 1) }
+        clock.advance(by: 1)
 
         do {
-            _ = try await ScriptProcess.output(url: spot.url, limit: 1)
+            for try await _ in frames { XCTFail("no frame") }
             XCTFail("expected a timeout")
         } catch SpotError.timedOut {
         }
-        let script = try await pid("script")
         try await wait("the end of the script") { !self.runs(script) }
 
         XCTAssertFalse(placed(at: folder.appendingPathComponent("went-on").path))
