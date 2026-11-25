@@ -131,8 +131,8 @@ esac
   `app=`, the bundle ID of the app whose icon the chip shows, and `icon=`, which takes what `icon` in `spot.toml`
   takes. With none of these, it takes them on stdin, as `openspot browser tab` prints them, and adds nothing when stdin
   holds no value.
-- After the value, on stdin, more blocks draw its preview under the field in place of its title, as a
-  [strip card](../show/the-card.md) draws them. They take `text`, `number`, `series`, `picture` and `icon` blocks and a
+- After the value, on stdin, more blocks draw its preview under the field in place of its title, where a class with
+  the [`details:`](../reference/classes.md#variants) prefix applies. They take `text`, `number`, `series`, `picture` and `icon` blocks and a
   first block of the frame's own keys, such as `class`, in the room of two lines. A block of any other kind fails with
   exit code 2:
 

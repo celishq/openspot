@@ -9,6 +9,7 @@ public struct AttachmentPreview: Hashable, Sendable {
     static let reading = "Reading…"
 
     static let kinds: [BlockKind] = [.text, .number, .series, .picture, .icon]
+    public static let variants: Set<Style.Variant> = [.details]
 
     let blocks: [TextBlock]
     public let tree: ViewTree

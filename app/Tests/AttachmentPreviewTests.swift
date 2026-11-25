@@ -64,6 +64,14 @@ final class AttachmentPreviewTests: XCTestCase {
         XCTAssertEqual(SpotTokens.attachmentValueLines(of: String(name.dropLast(6)), besidePicture: true), 2)
     }
 
+    func testAClassWithTheDetailsPrefixAppliesInTheDetailsAndOneForStripCardsDoesNot() throws {
+        let blocks = TextBlock.blocks(in: "frame=\nclass=flex-col\n\ntext=a\ntitle=A\nclass=details:hidden\n\ntext=b\ntitle=B\nclass=strip:hidden\n")
+        let preview = AttachmentPreview(AttachmentValue(.url("https://example.com"), preview: blocks))
+
+        XCTAssertEqual(preview.tree.node("a")?.style.resolved(for: AttachmentPreview.variants).isHidden, true)
+        XCTAssertNotEqual(preview.tree.node("b")?.style.resolved(for: AttachmentPreview.variants).isHidden, true)
+    }
+
     func testACopiedImageShowsASmallThumbnailSavedOnceFromItsBytes() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
