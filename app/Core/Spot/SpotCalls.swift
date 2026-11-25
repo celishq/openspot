@@ -70,13 +70,33 @@ struct SpotCalls {
     }
 
     func allow(_ word: String?, for id: String) -> CommandAPI.Work {
-        guard let word else { return { CommandAnswer(errors: "`openspot spot allow` needs a use for now, such as `openspot spot allow \(id) clipboard`.\n", code: 2) } }
+        guard let word else { return grant(id) }
         return CommandAnswer.work { [places, app] in
             guard let use = try SpotUse.set([word], of: id).first else { return "" }
             let answer = try await places.lock.allow(use, for: id)
             await app?.spotsChanged()
             return answer
         }
+    }
+
+    private func grant(_ id: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("spot allow \(id)") }
+        return CommandAnswer.work { [places, mac, access, runs] in
+            let config = places.config.read()
+            guard let spot = try places.folder(config).scan().scripts.first(where: { $0.id == id }) else {
+                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
+            }
+            let statuses = await access.read(from: mac, browsers: config.browsers).statuses
+            let made = Array(((runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]).keys)
+            let needs = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: made).missing(in: statuses)
+            guard !needs.isEmpty else { return "\(spot.name) has each macOS access it needs.\n" }
+            guard await app.grant(id, needs: needs) else { throw SpotError.failed(1, "Openspot has no Settings to walk you through. Open Settings, then run this again.") }
+            return "Settings walks you through \(Self.names(AccessGrant(spot: id, steps: needs).steps.map(\.title))).\n"
+        }
+    }
+
+    private static func names(_ titles: [String]) -> String {
+        titles.count > 1 ? titles.dropLast().joined(separator: ", ") + " and " + titles[titles.count - 1] : titles.first ?? ""
     }
 
     func open(_ id: String, at: String?) -> CommandAPI.Work {

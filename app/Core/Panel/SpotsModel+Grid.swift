@@ -117,6 +117,7 @@ extension SpotsModel {
     }
 
     private func runShown(_ entry: Entry) {
+        if openWaiting(entry.spot.id) { return }
         switch content {
         case .attachment: give(to: entry)
         case .slash: launch(entry, with: slash?.text ?? "")
@@ -137,7 +138,7 @@ extension SpotsModel {
 
     public func press(_ id: String) {
         asOnePress {
-            guard let entry = entry(id) else { return }
+            guard let entry = entry(id), !openWaiting(entry.spot.id) else { return }
             if let sheet = sheets[id], sheet.awaitsAnswer {
                 sheet.afterAnswer { [weak self] in self?.press(id) }
                 return

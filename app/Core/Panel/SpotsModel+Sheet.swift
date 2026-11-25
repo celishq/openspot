@@ -102,8 +102,10 @@ extension SpotsModel {
     @discardableResult
     public func openSettings(at place: String? = nil) -> Bool {
         asOnePress {
-            guard let id = entries.first(where: { $0.spot.edits == .settings && $0.spot.isBuiltIn })?.id else { return false }
-            return open(id, at: place)
+            guard let settings = settingsSpot else { return false }
+            sheets[settings]?.destination = place
+            openWindow(settings)
+            return true
         }
     }
 

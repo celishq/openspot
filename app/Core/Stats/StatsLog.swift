@@ -112,6 +112,10 @@ public final class StatsLog: @unchecked Sendable {
         return Self.days(count, at: date, today: now, in: folder)
     }
 
+    var keepsDays: Bool {
+        folder != nil
+    }
+
     public static func days(_ count: Int, at date: Date, today: Day? = nil, in folder: URL?) -> [Day] {
         (0..<max(count, 1)).compactMap { back in
             let name = day(of: Calendar.current.date(byAdding: .day, value: -back, to: date) ?? date)

@@ -36,6 +36,10 @@ final class DetachedWindows {
         window.show()
     }
 
+    func focus(_ id: String) {
+        windows[id]?.focus()
+    }
+
     func land(_ id: String) {
         floats.removeValue(forKey: id)?.orderOut(nil)
         windows.removeValue(forKey: id)?.close()

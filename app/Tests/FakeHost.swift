@@ -135,6 +135,12 @@ final class FakeHost: SpotsHost {
         windows.append(entry.id)
     }
 
+    var focusedWindows: [String] = []
+
+    func focusWindow(_ id: String) {
+        focusedWindows.append(id)
+    }
+
     func copy(_ file: URL) {}
 
     func prepare(_ items: [SpotItem], glyphs: [String]) async {

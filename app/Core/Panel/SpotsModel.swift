@@ -137,6 +137,10 @@ public final class SpotsModel {
     }
     public internal(set) var confirming: GlobalKey?
     public private(set) var openSheetID: String?
+    public internal(set) var waiting: Set<String> = []
+    @ObservationIgnored public internal(set) var grant: AccessGrant?
+    @ObservationIgnored var grantWatch: Task<Void, Never>?
+    @ObservationIgnored var waitingRead: Task<Void, Never>?
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
@@ -406,6 +410,7 @@ public final class SpotsModel {
         }
         loading = task
         await task.value
+        readWaiting()
     }
 
     @concurrent
@@ -542,6 +547,7 @@ public final class SpotsModel {
     public func panelWillShow() {
         asOnePress {
             isPanelHidden = false
+            readWaiting()
             finishPick()
             selected = 0
             openAttachment()

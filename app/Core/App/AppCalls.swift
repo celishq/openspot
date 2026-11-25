@@ -55,4 +55,12 @@ struct AppCalls {
             return CommandAnswer()
         }
     }
+
+    func restart() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("app restart") }
+        return CommandAnswer.work {
+            guard await app.restart() else { throw SpotError.failed(1, "This copy of Openspot cannot start again by itself. Quit it, then open it again.") }
+            return ""
+        }
+    }
 }

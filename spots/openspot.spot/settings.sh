@@ -30,7 +30,7 @@ records() {
 }
 
 # Prints the window: the view's block, with where to land when the show was asked to, then every access, spot, setting
-# row, theme and the account as items.
+# row, theme, the account and the guided grant that runs as items.
 window() {
   printf 'frame=\n\nsettings=window\n'
   [ -z "${1-}" ] || printf 'at=%s\n' "$1"
@@ -41,6 +41,7 @@ window() {
   openspot setting list | sed 's/^kind=/form=/' | records row: row
   openspot theme list | records theme: theme
   openspot account show 2>/dev/null | records '' account
+  openspot access grant | records '' grant
 }
 
 # Prints the System Settings pane of the macOS access $1.
@@ -67,20 +68,6 @@ ask() {
   esac
 }
 
-# Walks spot $1 through each macOS access it lacks: by `openspot spot allow` where the app has it, or else by asking for
-# each access that `spot list` names in its needs.
-allow() {
-  said=$(openspot spot allow "$1" 2>&1)
-  case $? in
-    0) return ;;
-    2) ;;
-    *) toast "$said"; return ;;
-  esac
-  needs=$(openspot spot list | awk -v id="$1" 'BEGIN { RS = ""; FS = "\n" }
-    $1 == "item=" id { for (i = 2; i <= NF; i++) if (index($i, "needs=") == 1) print substr($i, 7) }')
-  for access in $(printf '%s' "$needs" | tr ',' ' '); do ask "$access"; done
-}
-
 # Runs the words that a click of the view sent.
 act() {
   IFS=$tab read -r verb one two three <<EOF
@@ -91,8 +78,11 @@ EOF
     turn) call setting set --spot "$one" enabled "$two" ;;
     theme) call theme use "$one" ;;
     ask) ask "$one" ;;
-    allow) allow "$one" ;;
-    review) if [ -n "$two" ]; then call spot allow "$one" "$two"; else allow "$one"; fi ;;
+    pane) if [ "$one" = helper ]; then ask helper; else open "x-apple.systempreferences:com.apple.preference.security?$(pane "$one")"; fi ;;
+    allow) call spot allow "$one" ;;
+    review) if [ -n "$two" ]; then call spot allow "$one" "$two"; else call spot allow "$one"; fi ;;
+    grant) call access grant --end ;;
+    restart) call app restart ;;
     *) echo 'Settings cannot do that.' >&2; exit 1 ;;
   esac
 }

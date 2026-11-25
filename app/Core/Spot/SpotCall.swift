@@ -53,8 +53,8 @@ public enum SpotCall: NounCall {
             return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
         CommandVerb(
-            "allow", "<id> <use>",
-            "Lets a spot that spot add added make the calls of a use that its spot.toml does not name, and records the use in spots.lock, as an update that adds a use does with --yes.",
+            "allow", "<id> [use]",
+            "Lets a spot that spot add added make the calls of a use that its spot.toml does not name, and records the use in spots.lock, as an update that adds a use does with --yes. With no use, it opens Settings at the spot and walks you through each macOS access that the spot needs, one at a time, beside System Settings.",
             rule: CallRule(use: .spots, used: "allowed a use of a spot", inShow: .changes("changes what a spot can do"), onlyPerson: "cannot allow a use. Only you can, with `openspot spot allow` in Terminal.")
         ) { words in
             guard let fit = words.fit, (1...2).contains(fit.rest.count) else { return nil }
