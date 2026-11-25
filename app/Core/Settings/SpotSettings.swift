@@ -35,7 +35,10 @@ public struct SpotSettings: Equatable, Sendable {
         let fieldRows = self.fields.map { field in
             field.isSecret
                 ? row(field.id, field.title, secrets[field.id].map { _ in SettingRow.secretValue }, .secret, Self.valueIcon)
-                : row(field.id, field.title, config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, Self.kind(of: field), Self.valueIcon)
+                : SettingRow(
+                    spot: spot, name: name, key: field.id, title: field.title, value: config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, kind: Self.kind(of: field),
+                    section: .spot, icon: Self.valueIcon, options: field.options, default: field.defaultValue
+                )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
         let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)

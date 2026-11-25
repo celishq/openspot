@@ -188,6 +188,8 @@ struct SpotView: View {
         let section: String
         let detail: String
         let words: String
+        let options: [String]
+        let fallback: String
     }
 
     /// The colours of a theme in one appearance.
@@ -267,7 +269,8 @@ struct SpotView: View {
                     let title = item["title"] ?? ""
                     rows.append(Row(
                         id: String(id.dropFirst(4)), spot: item["spot"] ?? "", name: item["name"] ?? item["spot"] ?? "", key: item["key"] ?? "", title: title, value: item["value"] ?? "",
-                        form: item["form"] ?? "", section: item["section"] ?? "", detail: item["detail"] ?? "", words: fold(title + " " + (item["detail"] ?? ""))
+                        form: item["form"] ?? "", section: item["section"] ?? "", detail: item["detail"] ?? "", words: fold(title + " " + (item["detail"] ?? "")),
+                        options: list(item["options"]), fallback: item["default"] ?? ""
                     ))
                 case "theme":
                     let swatch = { (name: String) in
@@ -1153,6 +1156,14 @@ struct SpotView: View {
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 220)
                     .onSubmit { set(row, drafts[row.id] ?? row.value) }
+            case "choice" where !row.options.isEmpty:
+                Picker("", selection: Binding(get: { shown(row) }, set: { set(row, $0) })) {
+                    if shown(row).isEmpty { Text("Not set").tag("") }
+                    ForEach(row.options, id: \.self) { Text($0).tag($0) }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
             case "secret":
                 SecureField((pending[row.id] ?? row.value).isEmpty ? "Not set" : "Set", text: draft(row, blank: true))
                     .textFieldStyle(.roundedBorder)
@@ -1174,8 +1185,14 @@ struct SpotView: View {
         .id(row.id)
     }
 
+    /// The value of a row, or its default while it has none.
+    private func shown(_ row: Row) -> String {
+        let value = pending[row.id] ?? row.value
+        return value.isEmpty ? row.fallback : value
+    }
+
     private func display(_ row: Row) -> String {
-        switch (row.form, row.value) {
+        switch (row.form, shown(row)) {
         case (_, ""): "Not set"
         case ("toggle", "true"): "On"
         case ("toggle", _): "Off"
