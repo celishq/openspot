@@ -151,6 +151,20 @@ final class AccessListTests: XCTestCase {
         XCTAssertEqual(records(again.output)["shot"]?["needs"], "accessibility,screen")
     }
 
+    func testTheCoreListShowsTheLastUseOfEachCoreSpot() async throws {
+        let script = core.appendingPathComponent("frame.spot/frame.sh")
+        try "#!/bin/sh\nopenspot window frame\n".writeScript(to: script, toml: "title = 'Frame'\nuses = ['screen']")
+        reads.set(trust: .unasked)
+        let runs = SpotRuns(clock: clock.value, stats: root.appendingPathComponent("stats", isDirectory: true))
+        let api = api(runs: runs)
+        let frame = Spot(id: "frame", name: "Frame", url: script, dataName: "frame", uses: [.screen])
+
+        _ = try await call(["window", "frame"], api: api, from: frame, runs: runs)
+        let listed = records(try await call(["spot", "list", "--core"], api: api).output)
+
+        XCTAssertEqual(listed["frame"]?["last.screen"], "1970-01-01T00:16:40Z")
+    }
+
     func testARefusedUseShowsAsReviewUntilItIsAllowed() async throws {
         let runs = SpotRuns(clock: clock.value, stats: root.appendingPathComponent("stats", isDirectory: true))
         let api = api(runs: runs)

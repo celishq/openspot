@@ -127,7 +127,7 @@ struct SpotList {
 
     func core(_ form: PrintForm) throws -> String {
         try form.text(of: choices.map { choice in
-            let access = Access(choice.spot, isOn: choice.on, statuses: statuses, last: lastUses[choice.id] ?? [:], refused: refused[choice.spot.id] ?? [:])
+            let access = Access(choice.spot, isOn: choice.on, statuses: statuses, last: lastUses[choice.spot.id] ?? [:], refused: refused[choice.spot.id] ?? [:])
             return Choice(
                 id: choice.id, name: choice.spot.name, icon: Self.picture(of: choice.spot), detail: choice.spot.subtitle, on: choice.on, own: choice.own,
                 state: access.state, uses: access.uses, needs: access.needs, refused: access.refused, last: access.last, byUse: access.byUse
