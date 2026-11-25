@@ -58,13 +58,13 @@ struct StoreCalls {
         CommandAnswer.work { [places] in try Self.catalog(in: places).text(form) }
     }
 
-    func get(_ id: String, isConfirmed: Bool) -> CommandAPI.Work {
+    func get(_ id: String, isConfirmed: Bool, clash: SpotClash?) -> CommandAPI.Work {
         CommandAnswer.work { [places, app] in
             let catalog = Self.catalog(in: places)
             guard let install = try catalog.install(id, in: places) else {
                 return "\(catalog.item(id)?.spot.name ?? id) is one of your spots already.\n"
             }
-            let said = try await install.run(isConfirmed: isConfirmed)
+            let said = try await install.run(clash, isConfirmed: isConfirmed)
             await app?.spotsChanged()
             return said
         }

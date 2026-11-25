@@ -17,6 +17,8 @@ Every spot answers the same keys, so you learn them once.
 - The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Remove.
 - Remove, or `⌘⌫`, moves the spot's folder to the Trash. Its data and its settings stay, so the spot has them again when
   you install it again.
+- An install of a spot whose id your spots have already asks, as Finder does: Replace moves yours to the Trash, Keep
+  Both installs the new one under a new id, such as `ports-2`, and Stop leaves both as they are.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
 - A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Edit Spots takes it off the grid.
 

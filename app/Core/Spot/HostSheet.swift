@@ -7,7 +7,7 @@ public enum HostSheet: Equatable, Sendable {
 
     func answer(_ arguments: [String], input: String?, base: [String: String]? = nil) async throws -> HostAnswer {
         switch self {
-        case .review(let review): arguments.first == ReviewSpot.installPart ? try await review.add() : HostAnswer(frame: try review.answer(arguments))
+        case .review(let review): arguments.first == "show" ? HostAnswer(frame: try review.answer(arguments)) : try await review.press(arguments.first ?? "")
         case .fault(let fault): try await fault.answer(arguments, base: base)
         case .account(let account): try await account.answer(arguments, input: input)
         }

@@ -18,12 +18,34 @@ public struct SpotInstall: Equatable, Sendable {
         try ReviewSpot(installing: self)
     }
 
-    public func run(isConfirmed: Bool) async throws -> String {
-        let folder = source.lastPathComponent
-        let asking = "Openspot installed nothing. Run `openspot store get \(id) --yes` to install it."
-        _ = try await lock.add(.folder(source), to: spots, isConfirmed: isConfirmed, asking: asking, discard: trash)
+    public func clashes() -> Bool {
+        FileManager.default.fileExists(atPath: spots.appendingPathComponent(target).path)
+    }
+
+    public func run(_ clash: SpotClash? = nil, isConfirmed: Bool) async throws -> String {
+        let command = "openspot store get \(id)"
+        let clash = clashes() ? clash : nil
+        if clashes(), clash == nil {
+            throw SpotError.failed(1, "Your spots have \(id) already. Run `\(command) --replace` to move yours to the Trash, or `\(command) --keep-both` to install this one as \(SpotID(path: free()).name).")
+        }
+        let folder = clash == .keepBoth ? free() : target
+        let asking = "Openspot installed nothing. Run `\(command)\(clash.map { " --\($0.rawValue)" } ?? "") --yes` to install it."
+        _ = try await lock.add(
+            .folder(source), to: spots, isConfirmed: isConfirmed, replaces: clash == .replace ? [folder] : [], naming: clash == .keepBoth ? folder : nil,
+            asking: asking, discard: trash
+        )
         try leaveOffGrid(folder)
-        return "Installed \(name).\n"
+        return clash == .keepBoth ? "Installed \(name) as \(SpotID(path: folder).name).\n" : "Installed \(name).\n"
+    }
+
+    private var target: String {
+        SpotID(path: source.lastPathComponent).folderName
+    }
+
+    private func free() -> String {
+        let base = SpotID(path: target).name
+        let taken = { (name: String) in ([spots] + (core.map { [$0] } ?? [])).contains { FileManager.default.fileExists(atPath: $0.appendingPathComponent(name).path) } }
+        return (2...).lazy.map { SpotID("\(base)-\($0)").folderName }.first { !taken($0) } ?? base
     }
 
     private func leaveOffGrid(_ folder: String) throws {

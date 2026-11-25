@@ -4,6 +4,7 @@ public struct ReviewSpot: Equatable, Sendable {
     public static let id = "openspot/install"
     static let textLimit = 256_000
     static let installPart = "install"
+    static let stopPart = "stop"
 
     public let shared: SpotPackage
     public let name: String
@@ -18,6 +19,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var source: URL?
     private var lock: SpotLock?
     private var install: SpotInstall?
+    private var clashes = false
 
     public init(spot: SpotPackage, folder: URL, core: URL? = nil, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
@@ -81,17 +83,30 @@ public struct ReviewSpot: Equatable, Sendable {
     init(installing install: SpotInstall) throws {
         try self.init(spot: SpotPackage(paths: [install.source.lastPathComponent], in: install.source.deletingLastPathComponent()), folder: install.spots, core: install.core)
         self.install = install
+        clashes = install.clashes()
     }
 
     public var summary: String {
         "\(name)\n\n\(trust)" + (Self.section("Files", shared.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") }) ?? "")
     }
 
-    func add() async throws -> HostAnswer {
-        if let install {
-            let said = try await install.run(isConfirmed: true)
-            return HostAnswer(frame: "", effects: [.toast(ToastNote(words: said.trimmingCharacters(in: .newlines)))])
+    func press(_ part: String) async throws -> HostAnswer {
+        switch part {
+        case Self.installPart: return try await add()
+        case Self.stopPart: return HostAnswer(frame: "")
+        default:
+            guard let install, let clash = SpotClash(rawValue: part) else { throw SpotError.failed(1, "This sheet cannot do that.") }
+            return try await Self.installed(install, clash)
         }
+    }
+
+    private static func installed(_ install: SpotInstall, _ clash: SpotClash?) async throws -> HostAnswer {
+        let said = try await install.run(clash, isConfirmed: true)
+        return HostAnswer(frame: "", effects: [.toast(ToastNote(words: said.trimmingCharacters(in: .newlines)))])
+    }
+
+    func add() async throws -> HostAnswer {
+        if let install { return try await Self.installed(install, nil) }
         guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
         _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
         return HostAnswer(frame: "", effects: [.toast("\(name) added")])
@@ -113,6 +128,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var sheet: String {
         let root = RootKey.block([.init(key: "class", value: "gap-group")]).text
         guard canAdd else { return [root, reviewPart.text].joined(separator: "\n") }
+        if clashes { return ([root, reviewPart.text] + clashParts.map(\.text)).joined(separator: "\n") }
         return [
             root,
             reviewPart.text,
@@ -123,6 +139,20 @@ public struct ReviewSpot: Equatable, Sendable {
                 .init(key: "class", value: "bg-accent")
             ]).text
         ].joined(separator: "\n")
+    }
+
+    private var clashParts: [TextBlock] {
+        let row = "choices"
+        func button(_ id: String, _ title: String, _ more: [TextBlock.Field]) -> TextBlock {
+            TextBlock(fields: [.init(key: "button", value: id), .init(key: "title", value: title), .init(key: "parent", value: row)] + more)
+        }
+        return [
+            TextBlock(fields: [.init(key: "text", value: "clash"), .init(key: "title", value: "A spot named “\(name)” already exists in your spots. Do you want to replace it with the one you’re installing?")]),
+            TextBlock(fields: [.init(key: "box", value: row), .init(key: "class", value: "grid grid-cols-3 gap-part")]),
+            button(SpotClash.keepBoth.rawValue, "Keep Both", []),
+            button(Self.stopPart, "Stop", [.init(key: "shortcut", value: "escape")]),
+            button(SpotClash.replace.rawValue, "Replace", [.init(key: "shortcut", value: "cmd+return"), .init(key: "class", value: "bg-accent")])
+        ]
     }
 
     private var reviewPart: TextBlock {
