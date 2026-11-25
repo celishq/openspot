@@ -153,7 +153,7 @@ final class FakeHost: SpotsHost {
     private(set) var changeDepth = 0
     private(set) var disagreements = 0
     private(set) var hintWrites: [(motion: PanelMotion?, depth: Int)] = []
-    private(set) var hiddenWrites: [(motion: PanelMotion?, depth: Int)] = []
+    private(set) var hiddenWrites: [(motion: PanelMotion?, depth: Int, query: String?)] = []
     private(set) var previewWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var menuFootWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var fieldDropWrites: [(motion: PanelMotion?, depth: Int)] = []
@@ -166,13 +166,14 @@ final class FakeHost: SpotsHost {
         motions.append(motion)
         let hint = model.map { ($0.gridHint, $0.sheetHint) }
         let hidden = model?.isAttachmentHidden
+        let query = model?.query
         let preview = model?.preview
         let menuFoot = model?.menuContentHeight
         let showsDrop = model?.showsFieldDrop
         changeDepth += 1
         body()
         changeDepth -= 1
-        if let hidden, hidden != model?.isAttachmentHidden { hiddenWrites.append((motion, changeDepth)) }
+        if let hidden, hidden != model?.isAttachmentHidden { hiddenWrites.append((motion, changeDepth, query)) }
         if let model, preview != model.preview { previewWrites.append((motion, changeDepth)) }
         if let model, menuFoot != model.menuContentHeight { menuFootWrites.append((motion, changeDepth)) }
         if let model, showsDrop != model.showsFieldDrop { fieldDropWrites.append((motion, changeDepth)) }

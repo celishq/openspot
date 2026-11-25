@@ -146,6 +146,7 @@ extension SpotsModel {
     }
 
     func takeQuery(_ text: String) {
+        hideAttachments(for: text)
         hold(shownPreview(of: text), motion: .edit)
         query = text
     }
@@ -179,7 +180,6 @@ extension SpotsModel {
                 } else {
                     takeQuery(newValue)
                 }
-                hideAttachments()
             }
         }
     }

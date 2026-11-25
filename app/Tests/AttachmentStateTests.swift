@@ -73,6 +73,16 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.depth), [0, 0])
     }
 
+    func testTheFadeOfTheStackIsTheFirstChangeOfTheTypedLetter() async throws {
+        try await openWithTab()
+        let writes = host.hiddenWrites.count
+
+        model.searchText = "k"
+
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.query), [""])
+        XCTAssertEqual(model.query, "k")
+    }
+
     func testAWriteOfTheQueryThatLeavesTheChipsMakesNoChangeOfItsOwn() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))

@@ -466,7 +466,6 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
-        hideAttachments()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
