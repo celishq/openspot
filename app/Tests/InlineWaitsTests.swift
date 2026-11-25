@@ -3,11 +3,13 @@ import XCTest
 
 @MainActor
 final class InlineWaitsTests: PanelCase {
+    private let clock = FakeClock()
+
     override func setUp() async throws {
         try await super.setUp()
         model.quit()
         let host = host!
-        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(showLimit: 0.3, stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
+        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(showLimit: 0.3, clock: clock.value, stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
         takeCalls()
         try script("picker", toml: "title = 'Picker'\n[actions.pick]\noutputs.until = 'text'", """
@@ -48,11 +50,9 @@ final class InlineWaitsTests: PanelCase {
         asker.pressCard()
         try await wait("the pushed view of the action") { self.model.transition.phase == .open && self.titles == ["Morning", "Evening"] }
 
-        let started = Date()
         let shown = try await model.runs.answer(of: asker.spot, ScriptEntry.show.name, limit: 5)
         XCTAssertEqual(TextBlock.blocks(in: shown).first?.value("title"), "Asker")
-        XCTAssertLessThan(Date().timeIntervalSince(started), 1)
-        try await wait("a wait past the limit") { Date().timeIntervalSince(started) > 1 }
+        clock.advance(by: 1)
         model.sheets["picker"]?.list.select(run: "evening")
         model.runSelectedItem()
 

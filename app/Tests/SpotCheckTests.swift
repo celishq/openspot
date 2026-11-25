@@ -91,10 +91,7 @@ final class SpotCheckTests: XCTestCase {
         try "#!/bin/sh\n\(body)\n".writeScript(to: folder.spotFile("first"), toml: "")
         try "#!/bin/sh\n\(body)\n".writeScript(to: folder.spotFile("second"), toml: "")
         let check = Task { await SpotCheck(folder: SpotsFolder(url: folder), timeout: 60).findings() }
-        for _ in 0..<6000 {
-            if FileManager.default.fileExists(atPath: started.path) { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        try await wait("the first read") { self.placed(at: started.path) }
 
         check.cancel()
         _ = await check.value

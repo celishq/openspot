@@ -174,9 +174,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
-        for _ in 0..<6000 where order != ["a", "b", "d", "c"] {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        try await wait("the room after the rest") { self.order == ["a", "b", "d", "c"] }
         XCTAssertEqual(order, ["a", "b", "d", "c"])
     }
 
@@ -470,7 +468,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
         XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
         model.show(.right, false)
-        for _ in 0..<6000 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the hidden panel") { !self.model.panels.hasRight }
         XCTAssertFalse(model.panels.hasRight)
         XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
         XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")

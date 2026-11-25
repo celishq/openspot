@@ -17,7 +17,7 @@ public final class SpotsModel {
 
     static let searchLimit = 8
     public static let dragWatchPause: Duration = .milliseconds(16)
-    private static let loadLimit: Duration = .seconds(2)
+    private static let loadLimit: TimeInterval = 2
     private static let loadPause: Duration = .milliseconds(20)
     public static let dropPause: Duration = .milliseconds(300)
 
@@ -571,9 +571,9 @@ public final class SpotsModel {
     }
 
     public func waitForShows() async {
-        let end = ContinuousClock.now + Self.loadLimit
-        while runs.isShowing, ContinuousClock.now < end {
-            try? await Task.sleep(for: Self.loadPause)
+        let end = runs.clock.now().addingTimeInterval(Self.loadLimit)
+        while runs.isShowing, runs.clock.now() < end {
+            try? await runs.clock.sleep(Self.loadPause, nil)
         }
     }
 

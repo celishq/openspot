@@ -109,7 +109,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     @MainActor
-    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [String]?)] {
+    private func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [String]?)] {
         let clock = FakeClock()
         let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock(now: { [clock] in clock.time }), stopPause: 0.2)
         defer { runs.quit() }
@@ -122,9 +122,7 @@ final class DoomExampleTests: SampleSpotsCase {
             clock.advance(by: 10)
             let before = log.frames.count
             runs.panelOpened()
-            for _ in 0..<6000 where log.frames.count == before {
-                try await Task.sleep(for: .milliseconds(10))
-            }
+            try await wait("the next frame") { log.frames.count > before }
             runs.panelClosed()
             let tree = sheet.state.face
             pictures.append((tree.node("screen")?.values["picture"]?.last, tree.isWritten ? tree.children : nil))
@@ -300,6 +298,7 @@ final class DoomExampleTests: SampleSpotsCase {
         }
     }
 
+    @MainActor
     func testTheCardShowsTheNewestGameScreenFromTheNextOpenOfThePanel() async throws {
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
@@ -309,7 +308,7 @@ final class DoomExampleTests: SampleSpotsCase {
             let first = screens.appendingPathComponent("screen-1.png")
             let second = screens.appendingPathComponent("screen-2.png")
 
-            let pictures = try await Self.pictures(spots: spots, changes: [
+            let pictures = try await self.pictures(spots: spots, changes: [
                 {
                     try FileManager.default.createDirectory(at: screens, withIntermediateDirectories: true)
                     try Data("png".utf8).write(to: first)

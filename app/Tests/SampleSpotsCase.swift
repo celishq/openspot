@@ -49,7 +49,7 @@ class SampleSpotsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func withPrivateHome(_ more: [String: String] = [:], settings: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
+    @nonobjc func withPrivateHome(_ more: [String: String] = [:], settings: [String: String] = [:], isolation: isolated (any Actor)? = #isolation, _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -230,7 +230,7 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
+    func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
         let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
@@ -240,10 +240,10 @@ class SampleSpotsCase: XCTestCase {
         }
         runs.panelOpened()
         sheet.open {}
-        for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the open sheet") { sheet.panel != nil }
         let first = options()
         FileManager.default.createFile(atPath: release.path, contents: Data())
-        for _ in 0..<6000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the languages") { options() >= 2 }
         return (first, options())
     }
 }

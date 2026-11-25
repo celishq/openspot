@@ -94,15 +94,6 @@ final class AgendaExampleTests: SampleSpotsCase {
         }
     }
 
-    @MainActor
-    private static func wait(_ what: String, until condition: () -> Bool) async throws {
-        for _ in 0..<6000 {
-            if condition() { return }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTFail("waited for \(what)")
-    }
-
     private func calls(in folder: URL) throws -> [String] {
         try read("calls", in: folder).split(separator: "\n").map(String.init)
     }
@@ -225,19 +216,20 @@ final class AgendaExampleTests: SampleSpotsCase {
         }
     }
 
+    @MainActor
     func testTextTypedInTheOpenSheetShowsTheRowsThatMatch() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let rows = try await Self.rows(of: agenda, after: "call")
+            let rows = try await self.rows(of: agenda, after: "call")
 
             XCTAssertEqual(rows, ["add-reminder", "reminder:R1"])
         }
     }
 
     @MainActor
-    private static func rows(of spot: Spot, after text: String) async throws -> [String] {
+    private func rows(of spot: Spot, after text: String) async throws -> [String] {
         let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)

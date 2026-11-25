@@ -844,18 +844,25 @@ final class SpotsModelTests: XCTestCase {
     func testTheOpenAtLaunchWaitsAtMostTwoSecondsForTheReads() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("stuck", toml: "[on]\n\"panel.open\" = true", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done")
-        await model.reload()
-        model.panelWillShow()
-        let start = ContinuousClock.now
+        let clock = FakeClock()
+        let host = FakeHost()
+        let waiting = SpotsModel(host: host, files: model.files, runs: SpotRuns(clock: clock.value, stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
+        host.model = waiting
+        defer { waiting.quit() }
+        await waiting.reload()
+        waiting.panelWillShow()
+        try await wait("the read") { waiting.runs.isShowing }
 
-        await model.waitForShows()
+        let shows = Task { await waiting.waitForShows() }
+        try await wait("the first pause") { clock.isSleeping(for: 0.02) }
+        clock.advance(by: 1.9)
+        try await wait("the pause before the limit") { clock.isSleeping(for: 0.02) }
+        clock.advance(by: 0.2)
+        await shows.value
 
-        let waited = ContinuousClock.now - start
-        XCTAssertTrue(model.runs.isShowing)
-        XCTAssertGreaterThanOrEqual(waited, .seconds(2))
-        XCTAssertLessThan(waited, .seconds(20))
+        XCTAssertTrue(waiting.runs.isShowing)
         FileManager.default.createFile(atPath: gate, contents: nil)
-        try await wait("the end of the read") { !model.runs.isShowing }
+        try await wait("the end of the read") { !waiting.runs.isShowing }
     }
 
     func testAFirstLaunchOpensThePanelOnTheGridAndSaysNothingWhenItCloses() async {
@@ -1009,14 +1016,17 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.frameActions.isEmpty == false }
         let entry = try XCTUnwrap(model.openEntry)
         let action = try XCTUnwrap(entry.spot.frameActions.first { $0.id == "new" })
-        model.openForm(action, on: (entry, nil))
+        var isAnswered = false
+        model.ask(action, on: (entry, nil)) { [sheets = model.sheets] in
+            defer { isAnswered = true }
+            return try await sheets["list"]?.form(action, item: nil).map(CallAnswer.form)
+        }
         try await wait("the form call") { model.sheets["list"]?.calls.isEmpty == false }
 
         host.dismiss()
         FileManager.default.createFile(atPath: gate, contents: Data())
 
-        try await wait("the end of the form call") { model.sheets["list"]?.calls.isEmpty == true }
-        for _ in 0..<10 { await Task.yield() }
+        try await wait("the answer of the form call") { isAnswered }
         XCTAssertNil(model.form)
     }
 

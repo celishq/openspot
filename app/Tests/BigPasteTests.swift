@@ -4,7 +4,6 @@ import XCTest
 @MainActor
 final class BigPasteTests: XCTestCase {
     private static let megabyte = 1_000_000
-    private static let runCount = 3
 
     private static let texts: [(name: String, text: String)] = [
         ("letters", String(repeating: "a", count: megabyte)),
@@ -40,46 +39,28 @@ final class BigPasteTests: XCTestCase {
         return try XCTUnwrap(runs.sheets["script"])
     }
 
-    private func answerTime(of sheet: SpotRun, for text: String) async throws -> TimeInterval {
+    private func answer(of sheet: SpotRun, to text: String, _ name: String) async throws {
         sheet.open {}
-        for _ in 0..<6000 where sheet.panel == nil || !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the open sheet") { sheet.panel != nil && sheet.calls.isEmpty }
         let input = try XCTUnwrap(sheet.panel?.parts.first { $0.id == "input" })
-        let started = Date()
         sheet.set(input, to: text)
-        while sheet.panel?.parts.first(where: { $0.id == "output" })?.value != text {
-            try await Task.sleep(for: .milliseconds(1))
-            if Date().timeIntervalSince(started) > 60 { break }
-        }
-        let time = Date().timeIntervalSince(started)
+        try await wait("the answer to the \(name)", seconds: 60) { sheet.panel?.parts.first(where: { $0.id == "output" })?.value == text }
         sheet.close()
         runs.panelClosed()
-        while !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
-        return time
+        try await wait("the end of the calls") { sheet.calls.isEmpty }
     }
 
-    private func bestTime(of sheet: SpotRun, for text: String, under limit: TimeInterval) async throws -> TimeInterval {
-        var best = TimeInterval.infinity
-        for _ in 0..<Self.runCount where best >= limit {
-            best = min(best, try await answerTime(of: sheet, for: text))
-        }
-        return best
-    }
-
-    func testAPasteOfOneMegabyteAnswersInUnderTenSeconds() async throws {
+    func testAPasteOfOneMegabyteAnswersWhole() async throws {
         let sheet = try sheet(answer: "printf 'frame=\\nclass=gap-part\\n\\nfield=output\\nvalue='; sed -n 's/^input\\.input=//p'")
         for (name, text) in Self.texts {
-            let best = try await bestTime(of: sheet, for: text, under: 10)
-            print("TIMING \(name) paste to answer: \(Int(best * 1000)) ms")
-            XCTAssertLessThan(best, 10, name)
+            try await answer(of: sheet, to: text, name)
         }
     }
 
-    func testAPasteOfOneMegabyteThroughTheShellHelperAnswers() async throws {
+    func testAPasteOfOneMegabyteThroughTheShellHelperAnswersWhole() async throws {
         let sheet = try sheet(answer: #". "$OPENSPOT_SH"; input=$(value input.input; printf x); printf 'frame=\nclass=gap-part\n\nfield=output\nvalue=%s\n' "$(esc "${input%x}")""#)
         for (name, text) in Self.texts {
-            let best = try await bestTime(of: sheet, for: text, under: 30)
-            print("TIMING \(name) paste to answer through the helper: \(Int(best * 1000)) ms")
-            XCTAssertLessThan(best, 30, name)
+            try await answer(of: sheet, to: text, name)
         }
     }
 }

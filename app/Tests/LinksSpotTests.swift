@@ -67,7 +67,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let before = try self.read("fetched", in: folder)
             let items = try await links.items(timeout: 60).items
             let site = items.first { $0.title == "Site" }
-            try await Task.sleep(nanoseconds: 500_000_000)
+            try await self.readsEnded(of: links)
 
             XCTAssertNil(site?.image)
             XCTAssertEqual(site?.symbol, "link")

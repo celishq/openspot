@@ -103,12 +103,12 @@ final class SettingsSpotTests: BuiltInCase {
         defer { runs.quit() }
         let sheet = runs.sheet(for: try settings)
         sheet.open {}
-        for _ in 0..<6000 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the rows") { !sheet.list.shown.isEmpty }
         let item = try XCTUnwrap(sheet.list.selectedItem)
 
         sheet.set(item, to: "cmd+k")
 
-        for _ in 0..<6000 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the recorded key") { sheet.list.shown.first?.shortcut == "cmd+k" }
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "cmd+k"))
         XCTAssertEqual(sheet.list.shown.first?.shortcut, "cmd+k")
         let changes = await app.changes

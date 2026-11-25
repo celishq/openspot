@@ -2,6 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class TranslateSpotTests: SampleSpotsCase {
+    @MainActor
     func testTranslateShowsItsPartsBeforeItKnowsItsLanguages() async throws {
         try await withPrivateHome { folder in
             _ = try self.fakeTranslate(in: folder)
@@ -12,7 +13,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  \(wait)").writeScript(to: tool)
             let translate = try XCTUnwrap(try self.scan.spots.first { $0.name == "Translate" })
 
-            let options = try await Self.targetOptions(of: translate, release: release)
+            let options = try await self.targetOptions(of: translate, release: release)
 
             XCTAssertLessThan(options.first, 2)
             XCTAssertEqual(options.last, 2)
