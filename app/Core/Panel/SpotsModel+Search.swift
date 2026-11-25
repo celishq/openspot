@@ -29,11 +29,14 @@ extension SpotsModel {
 
     nonisolated static let unpickedRows = 3
 
-    struct SearchAsk: Sendable {
+    struct SearchAsk {
         let query: SearchQuery
         let lists: [ItemList]
         let search: MainSearch
         let limit: Int
+        let answers: [Entry]
+        let sources: [Spot]
+        let isWhole: Bool
 
         func found() -> (matches: [(list: Int, item: SpotItem)], search: MainSearch) {
             SearchRanks.meter?.add()
@@ -76,7 +79,8 @@ extension SpotsModel {
             return takeVisible(rows)
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
+        let answering = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
+        let answers = answering
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, role: .answer) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
@@ -85,9 +89,12 @@ extension SpotsModel {
             query: runs.search(of: text),
             lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
             search: mainSearch,
-            limit: Self.searchLimit - answers.count
+            limit: Self.searchLimit - answers.count,
+            answers: Array(answers),
+            sources: sources.map(\.spot),
+            isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
-        takeFound(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
+        takeFound(ask)
     }
 
     private func indexSpots() {
@@ -102,19 +109,26 @@ extension SpotsModel {
         answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
-    private func takeFound(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), answers: [Entry], sources: [Spot]) {
+    private func takeFound(_ ask: SearchAsk) {
+        let found = ask.found()
         mainSearch = found.search
-        let ids = Set(answers.map(\.id))
+        let ids = Set(ask.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         foundSpots = found.matches.compactMap { match in
-            match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1], item: match.item)
+            match.list == 0 ? spots[match.item.run] : Entry(spot: ask.sources[match.list - 1], item: match.item)
         }
-        takeVisible(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        let next = Self.placed(ask.answers, around: foundSpots.filter { !ids.contains($0.id) })
+        if next.isEmpty, !ask.isWhole, !visible.isEmpty {
+            holdsRows = true
+            return
+        }
+        takeVisible(next)
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
     private func takeVisible(_ next: [Entry]) {
+        holdsRows = false
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }

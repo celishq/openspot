@@ -15,7 +15,6 @@ extension SpotsModel {
         if let slashHint { return slashHint }
         if content == .attachment, let attachmentHint { return attachmentHint }
         if let soleHint { return soleHint }
-        if openSheetID == nil, slash == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
