@@ -18,8 +18,11 @@ extension SpotsModel {
     }
 
     func spot(openedBy key: ActionKey) -> String? {
-        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        let chosen = arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        return chosen ?? (key == Self.settingsKey ? settingsSpot : nil)
     }
+
+    static let settingsKey = ActionKey(name: ",", isCommand: true)
 
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)

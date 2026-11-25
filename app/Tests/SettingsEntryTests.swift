@@ -109,4 +109,14 @@ final class SettingsEntryTests: PanelCase {
 
         try await wait("the Settings window") { self.host.windows == [self.settingsID] }
     }
+
+    func testCommandCommaOpensSettingsWithNoSetup() async throws {
+        try script("draw", toml: "title = 'Draw'", "printf 'item=own\\ntitle=Own\\n'")
+        try await open(selecting: "draw")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
+
+        try await wait("the Settings window") { self.host.windows == [self.settingsID] }
+    }
+
 }
