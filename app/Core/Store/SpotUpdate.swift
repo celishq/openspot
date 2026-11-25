@@ -93,7 +93,7 @@ public struct SpotUpdate: Sendable {
         let origin = lock.origin(of: entry)
         guard let source = origin.find(), let path = entry.paths.first else { return "" }
         _ = try await lock.add(
-            origin, to: spots, isConfirmed: isConfirmed, naming: path, updating: command, discard: { try FileManager.default.removeItem(at: $0) }
+            origin, to: spots, isConfirmed: isConfirmed, naming: path, updating: command, discard: trash
         )
         return "Updated \(name) to its version of \(try day(of: source)).\n"
     }

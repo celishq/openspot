@@ -104,7 +104,20 @@ final class SpotUpdateTests: XCTestCase {
 
         XCTAssertEqual(answer.output, "Updated Clock to its version of 25 Nov 2031.\n")
         XCTAssertEqual(try text("clock.spot/clock.sh"), "#!/bin/sh\necho two\n")
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: trash.path), [])
+    }
+
+    func testAnUpdateMovesTheOldCopyWithThePersonsTestsToTheTrash() async throws {
+        try await installed("clock")
+        try FileManager.default.createDirectory(at: spots.appendingPathComponent("clock.spot/tests"), withIntermediateDirectories: true)
+        try "mine".write(to: spots.appendingPathComponent("clock.spot/tests/mine.txt"), atomically: true, encoding: .utf8)
+        try release("clock", "#!/bin/sh\necho two\n", toml: "title = 'Clock'\n")
+
+        let answer = try await call(["store", "update", "clock"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(try text("clock.spot/clock.sh"), "#!/bin/sh\necho two\n")
+        let trashed = try XCTUnwrap(try FileManager.default.contentsOfDirectory(atPath: trash.path).first)
+        XCTAssertEqual(try String(contentsOf: trash.appendingPathComponent(trashed).appendingPathComponent("tests/mine.txt"), encoding: .utf8), "mine")
     }
 
     func testAnUpdateThatAsksForANewUseWaitsForAYesAndNamesOnlyTheNewPower() async throws {
