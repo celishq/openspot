@@ -109,6 +109,7 @@ detail = "Access, spots, keys and look"
 uses = ["app", "spots", "read"]
 views = ["settings.swift"]
 window = "settings"
+edits = "settings"
 
 [scripts.settings.on]
 "sheet.open" = true
@@ -149,7 +150,7 @@ title = "Attachments"
 icon = "rectangle.on.rectangle"
 detail = "Choose what the panel hands to spots"
 keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
-uses = ["spots", "read"]
+uses = ["spots"]
 edits = "attachments"
 
 [scripts.attachments.on]

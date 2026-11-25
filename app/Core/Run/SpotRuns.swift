@@ -147,10 +147,6 @@ public final class SpotRuns {
         order = scripts.map(\.id)
         let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for (id, sheet) in sheets where !order.contains(id) {
-            if let settings = SpotSettings.owner(of: id).flatMap({ owners[$0] })?.settingsSpot {
-                sheet.update(settings)
-                continue
-            }
             if let owner = OwnedSheet.owner(of: id), owner.sheet == .edit, owners[owner.spot] != nil, editor != nil { continue }
             sheets[id] = nil
             if sheet.isOpen { onReport(id, .closed) }
@@ -183,11 +179,6 @@ public final class SpotRuns {
         }
         sheets[id] = sheet
         return sheet
-    }
-
-    @discardableResult
-    public func settingsSheet(of spot: Spot) -> SpotRun? {
-        spot.settingsSpot.map(sheet(for:))
     }
 
     public var editsSpots: Bool {

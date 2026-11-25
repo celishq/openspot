@@ -2,7 +2,6 @@ import Foundation
 
 extension SpotRuns {
     func mode(of spot: Spot) -> any ScriptMode.Type {
-        if spot.holdsSettings, spot.settingsSheet != nil { return SettingsMode.self }
         if spot.host != nil { return HostMode.self }
         return switch spot.mode {
         case .inline: InlineMode.self

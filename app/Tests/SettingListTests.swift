@@ -121,7 +121,7 @@ final class SettingListTests: XCTestCase {
 
     func testASpotThatCannotShowInTheMenuBarHasNoMenuBarOrWindowRow() throws {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let settings = SpotSettings(file: file, secrets: SecretStore(file: folder.appendingPathComponent("secrets.json")), spot: "notes", fields: [], showsInMenuBar: false, keys: [])
+        let settings = SpotSettings(spot: "notes", fields: [], showsInMenuBar: false, keys: [])
 
         XCTAssertEqual(settings.rows(in: file.read(), secrets: [:]), [])
     }
@@ -132,19 +132,6 @@ final class SettingListTests: XCTestCase {
         let rows = try await rows(["--spot", "board"])
 
         XCTAssertEqual(rows.map(\.key), ["open", "float", "menubar"])
-    }
-
-    func testTheSheetShowsEachRowOfTheList() throws {
-        try writeWeather()
-        var scan = try places.readSpots().scan()
-        scan.addSettings(in: places.config, secrets: places.secrets)
-        let settings = try XCTUnwrap(scan.scripts.first { $0.id == "weather" }?.settingsSheet)
-        let config = places.config.read()
-        let kept = try places.secrets.read()["weather"] ?? [:]
-
-        let titles = TextBlock.blocks(in: settings.sheet(in: config, secrets: kept)).compactMap { $0.value("item") ?? $0.value("field") == nil ? nil : $0.value("title") }
-
-        XCTAssertEqual(titles, settings.rows(in: config, secrets: kept).map(\.title))
     }
 
     func testEachKeyOfTheListIsOneThatSettingSetTakes() async throws {

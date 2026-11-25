@@ -9,7 +9,6 @@ extension SpotsModel {
         guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
         switch act {
         case .settings:
-            if !isShown { host.show() }
             if !openSettings(of: entry) { toast(.failure("\(entry.state.title) has nothing to set.")) }
         case .edit:
             if openEdit(of: entry) {

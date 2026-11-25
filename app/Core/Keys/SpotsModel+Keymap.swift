@@ -180,7 +180,7 @@ extension SpotsModel {
     }
 
     var settingsRow: KeyRow {
-        let shows = target.map { openSheetID == nil && $0.item == nil && settingsSheet(of: $0.entry) != nil } ?? false
+        let shows = target.map { openSheetID == nil && $0.item == nil && hasSettings($0.entry) } ?? false
         return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
             openSelectedSettings() ? true : nil
         }

@@ -988,7 +988,13 @@ struct SpotView: View {
 
     /// Opens the page that holds a row of the search, scrolled to the row.
     private func reveal(_ row: Row) {
-        land(row.spot == "openspot" ? "\(row.section)/\(row.id)" : "spot/\(row.spot)/\(row.key)")
+        if row.spot == "openspot" {
+            land("\(row.section)/\(row.id)")
+        } else if book.entry(row.spot) == nil {
+            land("keys/\(row.id)")
+        } else {
+            land("spot/\(row.spot)/\(row.key)")
+        }
     }
 
     // MARK: Rows
@@ -1254,7 +1260,8 @@ struct SpotView: View {
     }
 
     /// Lands on the page that `at` names: a section such as `keys`, `access/<id>`, `spot/<id>`, `spot/<id>/<key>` at one
-    /// row, `<section>/<spot>/<key>` at one row of a section, or `search/<words>` on the results of a search.
+    /// row, `<section>/<spot>/<key>` at one row of a section, `row/<spot>/<key>` on the page of a row, or `search/<words>`
+    /// on the results of a search. A spot of the app itself has no page, so it lands on its keys.
     private func land(_ at: String) {
         let parts = at.split(separator: "/", maxSplits: 1).map(String.init)
         let rest = parts.count > 1 ? parts[1] : nil
@@ -1265,6 +1272,12 @@ struct SpotView: View {
         switch parts.first {
         case "access":
             page = rest.map { .accessOf($0) } ?? .access
+        case "row":
+            if let row = book.rows.first(where: { $0.id == rest }) { return reveal(row) }
+            page = .access
+        case "spot" where rest.map { id in book.entry(id) == nil && book.rows.contains { $0.spot == id } } == true:
+            page = .keys
+            target = rest.map { "\($0)/open" }
         case "spot", "spots":
             let words = rest?.split(separator: "/", maxSplits: 1).map(String.init) ?? []
             page = words.first.map { .spotOf($0) } ?? .spots

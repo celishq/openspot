@@ -225,7 +225,7 @@ final class SpotFloatTests: XCTestCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.openSettings()
+        XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
         try await wait("the rows of the keys") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
 
         model.toggleRecording(id: "panel-key")

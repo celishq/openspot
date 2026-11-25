@@ -3,10 +3,6 @@ import XCTest
 
 @MainActor
 final class SpotLoadTests: PanelCase {
-    private var core: URL {
-        folder.appendingPathComponent("core", isDirectory: true)
-    }
-
     override func setUp() async throws {
         try await super.setUp()
         model.quit()

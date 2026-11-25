@@ -11,7 +11,7 @@ extension SpotsModel {
     }
 
     func openSheet(on key: ActionKey) -> Bool {
-        guard openSheetID == nil, let id = spot(openedBy: key) else { return false }
+        guard let id = spot(openedBy: key), openSheetID == nil || place(ofSheet: id) == .window else { return false }
         endEditing(moving: false)
         pushFirst(id, moving: true)
         return true

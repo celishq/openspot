@@ -47,7 +47,7 @@ struct SettingCalls {
             }
             if !isApp {
                 var scan = try places.folder(config).scan()
-                scan.addSettings(in: places.config, secrets: secrets, read: config, defaults: places.readDefaultArrangement())
+                scan.addSettings(in: places.config, read: config, defaults: places.readDefaultArrangement())
                 let sheets = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.settingsSheet)
                 if let spot, sheets.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
                 let kept = try secrets.read()

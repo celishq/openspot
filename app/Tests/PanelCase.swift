@@ -25,7 +25,7 @@ class PanelCase: XCTestCase {
         let host = FakeHost()
         self.host = host
         let files = AppPlaces(
-            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults
         )
@@ -45,6 +45,22 @@ class PanelCase: XCTestCase {
 
     var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
+    }
+
+    var core: URL {
+        folder.appendingPathComponent("core", isDirectory: true)
+    }
+
+    let settingsID = "openspot/settings"
+
+    var settingsLog: URL {
+        folder.appendingPathComponent("settings-at")
+    }
+
+    func writeSettings() throws {
+        let body = "at=$(sed -n 's/^input\\.at=//p')\n[ -z \"$at\" ] || echo \"$at\" >> '\(settingsLog.path)'\nprintf 'item=a\\ntitle=A\\n'"
+        let toml = "title = 'Settings'\nwindow = 'settings'\nedits = 'settings'\n[on]\n\"sheet.open\" = true"
+        try TestSpot(toml: toml, body: body).write(to: core.appendingPathComponent("openspot.spot/settings.sh"))
     }
 
     let back = ActionKey(name: "[", isCommand: true)

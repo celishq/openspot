@@ -30,7 +30,7 @@ class SampleSpotsCase: XCTestCase {
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
             var scan = try SpotsFolder(url: folder).scan()
-            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")), secrets: SecretStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/secrets.json")))
+            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan
         }
     }

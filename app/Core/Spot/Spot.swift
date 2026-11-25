@@ -168,12 +168,10 @@ public struct Spot: Equatable, Sendable {
         return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
     }
 
-    func takingSettings(in config: ConfigFile, secrets: SecretStore, isWindow: Bool = false) -> Spot {
+    func takingSettings(isWindow: Bool = false) -> Spot {
         guard self.host == nil else { return self }
         var spot = self
         spot.settingsSheet = SpotSettings(
-            file: config,
-            secrets: secrets,
             spot: self.id,
             fields: self.settings,
             showsInMenuBar: canShowInMenuBar,
@@ -184,25 +182,6 @@ public struct Spot: Equatable, Sendable {
         if !self.hasSheet, !self.commands.isEmpty {
             spot.opensToKeys = true
         }
-        return spot
-    }
-
-    public var settingsSpot: Spot? {
-        guard let settingsSheet = self.settingsSheet, !self.holdsSettings else { return nil }
-        var spot = Spot(
-            id: SpotSettings.sheetID(of: self.id),
-            name: "\(self.name) Settings",
-            url: self.url,
-            kind: .list,
-            size: self.size,
-            symbol: header.facts.baseSymbol,
-            icon: self.icon,
-            triggers: .sheet,
-            isFound: false,
-            isOnGrid: false
-        )
-        spot.settingsSheet = self.settingsSheet
-        spot.holdsSettings = true
         return spot
     }
 
@@ -278,7 +257,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesHandlers: Bool {
-        self.host == nil && !self.holdsSettings
+        self.host == nil
     }
 
     public var canShowInMenuBar: Bool {

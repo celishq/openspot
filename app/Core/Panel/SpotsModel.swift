@@ -97,7 +97,6 @@ public final class SpotsModel {
     }
     public private(set) var fieldRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
-    @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
     @ObservationIgnored var previewBuilds = 0
@@ -426,7 +425,7 @@ public final class SpotsModel {
         var scan = ((try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
+        scan.addSettings(in: files.config, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         var stamps: [String: [Int]] = [:]
@@ -493,7 +492,6 @@ public final class SpotsModel {
         }
         if case .value(let spot, let caller) = change {
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
-            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.show(need: .change) }
         }
         runs.showOfferedItems()
     }
@@ -614,9 +612,6 @@ public final class SpotsModel {
         case .frame(let frame):
             markFound(id)
             if id == openSheetID { takeKeyField() }
-            if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
-                settingsChanged(of: owner)
-            }
         case .landed:
             host.land(id)
         case .closed:
@@ -633,18 +628,6 @@ public final class SpotsModel {
         case .attachment(let value):
             takeAttachment(value, of: id)
         }
-    }
-
-    private func settingsChanged(of spot: String) {
-        let next = files.config.readKept()
-        let isNewValue = next.config.settings != config.settings
-        if next.config.arrangement.menuBar != arrangement.menuBar {
-            configChanged(.spots([spot]), to: next)
-        } else if take(next, changing: [.keys, .settings]) {
-            host.applyConfig(config)
-            holdAssignedKeys(config)
-        }
-        if isNewValue { configChanged(.value(spot: spot, caller: nil), to: next) }
     }
 
     public func chooseFiles(for id: String) -> Bool {
