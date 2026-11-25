@@ -84,11 +84,10 @@ extension SpotsModel {
         marksMenu(ofCard: index) && isMenuGrown ? .focused : .none
     }
 
-    public func tap(_ id: String, opening: Bool = false) {
+    public func tap(_ id: String) {
         asOnePress {
             guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
             selected = position
-            if opening, openSelectedSettings() { return }
             guard !isEditing else { return }
             guard openSheetID == nil else { return runSelectedItem() }
             runShown(visible[position])

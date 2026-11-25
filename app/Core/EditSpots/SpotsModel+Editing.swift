@@ -26,6 +26,25 @@ extension SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         beginEditing()
+        editsByKey = false
+    }
+
+    func editByKey() {
+        guard isCommandHeld, !isEditing, openSheetID == nil, menu == nil, form == nil, recording == nil,
+              query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        beginEditing()
+        editsByKey = isEditing
+    }
+
+    func holdCommand(_ isHeld: Bool) {
+        guard isHeld != isCommandHeld else { return }
+        isCommandHeld = isHeld
+        if !isHeld { endKeyEditing() }
+    }
+
+    func endKeyEditing() {
+        guard editsByKey, !isCommandHeld, isEditing, drag == nil, resize == nil, landing == nil else { return }
+        endEditing()
     }
 
     public func turnsOff(_ entry: Entry) -> Bool {
@@ -59,6 +78,7 @@ extension SpotsModel {
     public func endEditing(moving: Bool = true) {
         asOnePress {
             guard isEditing else { return }
+            editsByKey = false
             stopDragWait()
             change(moving ? .edit : nil) {
                 isEditing = false

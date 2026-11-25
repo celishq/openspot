@@ -1191,19 +1191,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.openItems?.selected, 1)
     }
 
-    func testAClickWithCommandOpensTheSettingsOfASpot() async throws {
-        let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "", "if [ \"$1\" = show ]; then printf 'item=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-
-        model.tap("conf", opening: true)
-
-        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
-    }
-
     func testCommandEnterOpensTheSettingsOfASpotWithNoPressOpenAndNotItsOwnSheet() async throws {
         try script("list", toml: "", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()

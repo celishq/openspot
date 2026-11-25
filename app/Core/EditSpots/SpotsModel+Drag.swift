@@ -80,6 +80,7 @@ extension SpotsModel {
         if landing == id { landing = nil }
         if drag == nil, carry?.entry.id == id { carry = nil }
         if drag == nil, lift.offset != .zero { lift.offset = .zero }
+        endKeyEditing()
     }
 
     private var windowInGrid: CGRect {

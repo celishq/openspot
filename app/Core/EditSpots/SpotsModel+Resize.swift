@@ -34,7 +34,7 @@ extension SpotsModel {
             guard let resize else { return }
             pointerMove = nil
             guard resize.size != resize.start else { return cancelResize() }
-            saveLayout(resize.layout(of: resize.size), selecting: resize.id) { self.resize = nil }
+            saveLayout(resize.layout(of: resize.size), selecting: resize.id, ending: { self.resize = nil }, landed: { self.endKeyEditing() })
         }
     }
 
@@ -45,5 +45,6 @@ extension SpotsModel {
             resize = nil
             updateVisible()
         }
+        endKeyEditing()
     }
 }

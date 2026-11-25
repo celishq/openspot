@@ -201,6 +201,7 @@ public final class SpotsModel {
     @ObservationIgnored var askedAnswer: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
+        holdCommand(modifiers.contains(.command))
         guard recording != nil, let code = keys.hold(modifiers) else { return }
         record(code: code, modifiers: modifiers)
     }
@@ -282,6 +283,8 @@ public final class SpotsModel {
     public var isEditing = false {
         didSet { takeMode() }
     }
+    @ObservationIgnored var isCommandHeld = false
+    @ObservationIgnored var editsByKey = false
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
     var shakes: [String: Int] = [:]

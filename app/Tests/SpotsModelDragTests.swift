@@ -423,6 +423,69 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(place(of: "a").cell, row0)
     }
 
+    private var pointOnGrid: PointerTarget {
+        .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY))
+    }
+
+    func testAHeldCommandAloneStartsNoEditing() {
+        model.endEditing()
+
+        model.hold([.command])
+
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testAPointerMoveOverTheGridWithCommandHeldStartsEditingAndTheReleaseEndsIt() {
+        model.endEditing()
+        let placements = model.placements
+
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertEqual(model.placements, placements)
+        model.hold([])
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testACommandReleasedDuringADragEndsEditingOnceTheCardLands() {
+        model.endEditing()
+        host.heldEnds = []
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        let translation = move("d", to: GridCell(row: 3, column: 0))
+        model.dragSpot("d", by: translation)
+
+        model.hold([])
+        XCTAssertTrue(model.isEditing)
+        model.dropSpot(by: translation)
+        XCTAssertTrue(model.isEditing)
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertFalse(model.isEditing)
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 0))
+    }
+
+    func testEditingOpenedByRearrangeStaysWhenCommandIsReleased() {
+        model.endEditing()
+        model.editGrid()
+
+        model.hold([.command])
+        model.hold([])
+
+        XCTAssertTrue(model.isEditing)
+    }
+
+    func testACommandHeldOverTheGridWhileASearchShowsStartsNoEditing() {
+        model.endEditing()
+        model.query = "a"
+
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+
+        XCTAssertFalse(model.isEditing)
+    }
+
     func testAPanelThatHidesEndsTheResize() {
         model.resizeSpot("c", by: down)
 
