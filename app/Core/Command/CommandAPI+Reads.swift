@@ -20,10 +20,10 @@ extension CommandAPI {
         try await settingCalls.rows(of: nil)
     }
 
-    public func answer(_ arguments: [String]) async -> CommandAnswer {
-        let request = CommandRequest(arguments: arguments, folder: places.config.url.deletingLastPathComponent().path, isPiped: false)
-        guard let work = work(for: request, input: { "" }) else {
-            return CommandAnswer(errors: "openspot cannot do this: \(arguments.joined(separator: " "))\n", code: 2)
+    func answer(_ call: any NounCall, as name: String) async -> CommandAnswer {
+        let request = CommandRequest(arguments: name.split(separator: " ").map(String.init), folder: places.config.url.deletingLastPathComponent().path, isPiped: false)
+        guard let work = work(for: CommandLineCall(name: name, call: call), request: request, input: { "" }) else {
+            return CommandAnswer(errors: "openspot cannot do this: \(name)\n", code: 2)
         }
         return await work()
     }

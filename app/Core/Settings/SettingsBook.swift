@@ -180,7 +180,7 @@ public final class SettingsBook {
 
     public func set(_ row: SettingRow, to value: String) async {
         pending[row.item] = value
-        await run(["setting", "set", "--spot", row.spot, row.key] + (value.isEmpty ? [] : [value]))
+        await run(SettingCall.setting(row.spot, row.key, to: value.isEmpty ? nil : value), as: "setting set")
     }
 
     public func set(_ row: SettingRow, on isOn: Bool) async {
@@ -189,28 +189,28 @@ public final class SettingsBook {
 
     public func remove(_ row: SettingRow) async {
         pending[row.item] = ""
-        await run(["setting", "remove", "--spot", row.spot, row.key])
+        await run(SettingCall.removing(row.spot, row.key), as: "setting remove")
     }
 
     public func turn(_ spot: String, on isOn: Bool) async {
-        await run(["setting", "set", "--spot", spot, "enabled", isOn ? "true" : "false"])
+        await run(SettingCall.turn(spot: spot, on: isOn), as: "setting set")
     }
 
     public func use(theme name: String) async {
-        await run(["theme", "use", name])
+        await run(ThemeCall.use(name), as: "theme use")
     }
 
     public func allow(_ spot: String) async {
-        await run(["access", "grant", spot])
+        await run(AccessCall.grant(spot, end: false), as: "access grant")
     }
 
     public func review(_ spot: String, use: SpotUse) async {
-        await run(["spot", "allow", spot, use.rawValue])
+        await run(SpotCall.allow(spot, use: use.rawValue), as: "spot allow")
     }
 
     public func ask(_ access: MacAccess) async {
         guard access == .accessibility else { return openPane(of: access) }
-        await run(["access", "ask", access.rawValue])
+        await run(AccessCall.ask(access.rawValue), as: "access ask")
     }
 
     public func openPane(of access: MacAccess) {
@@ -219,20 +219,20 @@ public final class SettingsBook {
     }
 
     public func endGrant() async {
-        await run(["access", "grant", "--end"])
+        await run(AccessCall.grant(nil, end: true), as: "access grant")
     }
 
     public func restart() async {
-        await run(["app", "restart"])
+        await run(AppCall.restart, as: "app restart")
     }
 
     public func say(_ words: String) {
         model?.toast(ToastNote(words: words))
     }
 
-    func run(_ arguments: [String]) async {
+    func run(_ call: any NounCall, as name: String) async {
         guard let api = model?.runs.api else { return }
-        let answer = await api.answer(arguments)
+        let answer = await api.answer(call, as: name)
         if answer.code != 0, let line = answer.errors.split(separator: "\n").last { model?.toast(.failure(String(line))) }
         await read()
     }

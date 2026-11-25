@@ -62,6 +62,14 @@ public enum SettingCall: NounCall {
         return call(spot, key, rest.dropFirst().first)
     }
 
+    static func setting(_ spot: String, _ key: String, to value: String?) -> any NounCall {
+        reserved(spot, key, value, isInShow: false) ?? Self.set(spot: spot, key: key, value: value)
+    }
+
+    static func removing(_ spot: String, _ key: String) -> SettingCall {
+        removedKey(spot, key) ?? .remove(spot: spot, key: key)
+    }
+
     private static func removedKey(_ spot: String, _ key: String) -> SettingCall? {
         if spot == ReservedSetting.appSpot, AppSetting(rawValue: key)?.isKey == true { return .appKey(name: key, key: nil) }
         return GlobalKey.Act(setting: key).map { .key(spot: spot, act: $0, key: nil) }
