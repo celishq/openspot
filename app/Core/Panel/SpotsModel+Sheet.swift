@@ -68,7 +68,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         asOnePress {
             if !searchText.isEmpty {
-                type("")
+                search("")
             } else if popPage() {
             } else if openSheetID != nil {
                 closeSheet(moving: isShown)
@@ -188,7 +188,7 @@ extension SpotsModel {
                 change(moving ? .sheet(isOpen: true) : nil, {
                     transition.show(list, moves: true)
                 }) { [weak self] in
-                    self?.change(nil) { self?.transition.settle(list) }
+                    self?.snap { self?.transition.settle(list) }
                 }
                 return
             }

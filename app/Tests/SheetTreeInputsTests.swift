@@ -90,11 +90,11 @@ final class SheetTreeInputsTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "f", isCommand: true)))
         try await wait("the action on the item") { self.calls(in: calls).contains("forget a") }
 
-        model.type("app")
+        model.search("app")
         try await wait("the search") { self.titles == ["Apple"] }
         model.runSelectedItem()
         try await wait("the press of the item") { self.calls(in: calls).contains("press a") }
-        model.type("")
+        model.search("")
         try await wait("all items") { self.titles == ["Apple", "Banana"] }
 
         for _ in 0..<2 where !model.handleKey(ActionKey(name: "down")) {

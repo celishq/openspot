@@ -92,7 +92,7 @@ final class SpotMotionProbe: NSObject {
             return press(target.id, left: presses)
         }
         if action == "searchask" {
-            model.type(searchText)
+            model.search(searchText)
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 if let index = self.model.visible.firstIndex(where: { $0.item?.run == self.row }) { self.model.selected = index }
                 self.start = CACurrentMediaTime()
@@ -282,8 +282,8 @@ final class SpotMotionProbe: NSObject {
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
             }),
             (nil, 1, { self.model.closeMenu() }),
-            ("search", 1.5, { self.model.type("ro") }),
-            (nil, 1, { self.model.type("") }),
+            ("search", 1.5, { self.model.search("ro") }),
+            (nil, 1, { self.model.search("") }),
             ("edit", 1.5, { self.model.beginEditing() }),
             ("tip", 1, { self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") } }),
             (nil, 1.5, {
@@ -328,7 +328,7 @@ final class SpotMotionProbe: NSObject {
 
     private func shootTyping(into folder: String) {
         panel.makeKeyAndOrderFront(nil)
-        model.type(searchText)
+        model.search(searchText)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/search.png")
             self.saveSharp(to: "\(folder)/search-focused.png")
@@ -358,7 +358,7 @@ final class SpotMotionProbe: NSObject {
         _ = model.stepBack()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             let word = self.model.visible.first?.state.title.split(separator: " ").first.map(String.init) ?? "a"
-            self.model.type(word)
+            self.model.search(word)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -480,13 +480,13 @@ final class SpotMotionProbe: NSObject {
 
     private func search(left: Int) {
         guard left > 0 else {
-            model.type(searchText)
+            model.search(searchText)
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 let shown = self.model.visible.map { "\($0.state.title) · \($0.state.subtitle ?? "")" }
                 self.finish(with: self.report() + "shows:\n" + shown.joined(separator: "\n") + "\n")
             }
         }
-        model.type(String(searchText.prefix((presses - left) % (searchText.count + 1))))
+        model.search(String(searchText.prefix((presses - left) % (searchText.count + 1))))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
@@ -507,7 +507,7 @@ final class SpotMotionProbe: NSObject {
         guard left > 0 else { return end() }
         let word = "smile"
         let length = left % (word.count + 1)
-        model.type(String(word.prefix(length)))
+        model.search(String(word.prefix(length)))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.type(left: left - 1) }
     }
 
@@ -529,7 +529,7 @@ final class SpotMotionProbe: NSObject {
         } else if key == "settings" {
             model.openSettings()
         } else if key.hasPrefix("text:") {
-            model.type(String(key.dropFirst(5)))
+            model.search(String(key.dropFirst(5)))
         } else if key.hasPrefix("part:") {
             let id = String(key.dropFirst(5))
             if let part = model.openSheet?.panel?.parts.first(where: { $0.id == id }) { model.pressPart(part) }

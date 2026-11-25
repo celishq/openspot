@@ -17,7 +17,7 @@ grep -lE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' $(find app/Core -name '
   }
   fn != "" {
     line = FNR == 0 ? "" : $0
-    if (line ~ /(^|[^A-Za-z0-9_.])change\([^)]/ && fn != "change") direct[fn] = 1
+    if ((line ~ /(^|[^A-Za-z0-9_.])change\([^)]/ || line ~ /(^|[^A-Za-z0-9_.])snap[[:space:]]*\{/) && fn != "change") direct[fn] = 1
     s = line
     while (match(s, /(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9_]*\(/)) {
       m = substr(s, RSTART, RLENGTH - 1); sub(/^[^A-Za-z_]/, "", m)
@@ -41,7 +41,7 @@ find app/Core -name '*.swift' | sort | while read -r file; do
   awk -v f="$file" -v shared="$shared" '
     function count(s, c,  t) { t = s; return gsub(c, "", t) }
     function changes(s,  m) {
-      if (s ~ /(^|[^A-Za-z0-9_])change\(/) return 1
+      if (s ~ /(^|[^A-Za-z0-9_])change\(/ || s ~ /(^|[^A-Za-z0-9_.])snap[[:space:]]*\{/) return 1
       while (match(s, /(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9_]*\(/)) {
         m = substr(s, RSTART, RLENGTH - 1); sub(/^[^A-Za-z_]/, "", m)
         if (m in helper) return 1

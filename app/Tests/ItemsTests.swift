@@ -184,7 +184,7 @@ final class ItemsTests: PanelCase {
     func testAnItemIsSearchedAndPickedAsAMessage() async throws {
         try await open("item=apple\ntitle=Apple\nkind=fruit\n\nitem=milk\ntitle=Milk\n")
 
-        model.type("mil")
+        model.search("mil")
         try await wait("the search") { self.model.openItems?.shown.map(\.run) == ["milk"] }
         model.runSelectedItem()
 

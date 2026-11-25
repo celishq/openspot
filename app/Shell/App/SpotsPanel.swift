@@ -25,8 +25,12 @@ final class SpotsPanel: NSPanel {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey else { return super.performKeyEquivalent(with: event) }
         if key == ActionKey(name: "v", isCommand: true), model?.isShown == true, model?.pasteSpot() == true { return true }
-        if firstResponder is NSText, let action = EditMenu.action(of: key), NSApp.sendAction(action, to: nil, from: self) { return true }
-        return super.performKeyEquivalent(with: event)
+        if super.performKeyEquivalent(with: event) { return true }
+        guard isKeyWindow, firstResponder is NSText, let item = EditMenu.item(of: key), let action = item.action,
+              let target = NSApp.target(forAction: action, to: nil, from: item) as? NSResponder,
+              (target as? NSUserInterfaceValidations)?.validateUserInterfaceItem(item) ?? true
+        else { return false }
+        return NSApp.sendAction(action, to: target, from: item)
     }
 
     func warm(then done: @escaping () -> Void) {

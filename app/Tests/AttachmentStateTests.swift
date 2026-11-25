@@ -42,13 +42,13 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         XCTAssertFalse(model.isAttachmentHidden)
 
-        model.type("k")
+        model.search("k")
         XCTAssertTrue(model.isAttachmentHidden)
-        model.type("")
+        model.search("")
         XCTAssertFalse(model.isAttachmentHidden)
 
         XCTAssertTrue(model.handleKey(tab))
-        model.type("k")
+        model.search("k")
         XCTAssertFalse(model.isAttachmentHidden)
     }
 
@@ -65,7 +65,7 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         let writes = host.hiddenWrites.count
 
-        model.type("k")
+        model.search("k")
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertFalse(model.isAttachmentHidden)
@@ -77,7 +77,7 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         let writes = host.hiddenWrites.count
 
-        model.type("k")
+        model.search("k")
 
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.query), [""])
         XCTAssertEqual(model.query, "k")
@@ -110,7 +110,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
         let writes = host.previewWrites.count
 
-        model.type("/")
+        model.search("/")
 
         XCTAssertNil(model.preview)
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
@@ -155,7 +155,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.attachments.selected, "tab")
         XCTAssertEqual(model.hintTakes - takes, 1)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
-        XCTAssertTrue(host.hintWrites.dropFirst(writes).allSatisfy { $0.depth == 0 })
+        XCTAssertEqual(host.hintWrites.count, writes)
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
@@ -219,7 +219,7 @@ final class AttachmentStateTests: AttachmentCase {
         let builds = model.previewBuilds
 
         for text in ["s", "sa", "sav"] {
-            model.type(text)
+            model.search(text)
         }
 
         XCTAssertEqual(model.commands.fits, fits)

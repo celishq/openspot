@@ -230,11 +230,11 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         let grid = model.placements
 
-        model.type("o")
+        model.search("o")
         XCTAssertEqual(model.placements.map(\.size), [.strip, .strip])
         XCTAssertEqual(model.placements.map(\.row), [0, 1])
 
-        model.type("")
+        model.search("")
         XCTAssertEqual(model.placements, grid)
     }
 
@@ -376,7 +376,7 @@ final class SpotsModelTests: XCTestCase {
     func testTheSearchOfAnOpenListFiltersItsRowsAndLeavesTheGridsSearch() async throws {
         try await openList()
 
-        model.type("ban")
+        model.search("ban")
 
         try await wait("the found rows") { model.openItems?.shown.map(\.run) == ["b"] }
         XCTAssertEqual(model.query, "")
@@ -396,7 +396,7 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 2 }
 
-        model.type("ban")
+        model.search("ban")
         model.runSelectedItem()
 
         try await wait("the pick") { FileManager.default.fileExists(atPath: picks) }
@@ -411,7 +411,7 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 3 }
 
-        model.type("bl")
+        model.search("bl")
         model.moveItem(by: 1)
 
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["c"])
@@ -421,7 +421,7 @@ final class SpotsModelTests: XCTestCase {
     func testAKeyInAnOpenListShowsItsRowsBeforeTheSetterReturns() async throws {
         try await openList()
 
-        model.type("ban")
+        model.search("ban")
 
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["b"])
         XCTAssertEqual(model.openItems?.isFinding, false)
@@ -471,7 +471,7 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
 
-        model.type("45")
+        model.search("45")
         try await wait("the row that makes the action") { model.createAction?.title == "Keep awake for…" }
         model.runSelectedItem()
 
@@ -501,7 +501,7 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
 
-        model.type("example.com")
+        model.search("example.com")
         try await wait("the row that makes the action") { model.createAction?.title == "New link" }
         model.runSelectedItem()
 
@@ -683,7 +683,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
         try await openList()
-        model.type("ban")
+        model.search("ban")
 
         XCTAssertTrue(model.stepBack())
         XCTAssertEqual(model.openSheetID, "list")
@@ -830,7 +830,7 @@ final class SpotsModelTests: XCTestCase {
     func testTheSearchStaysThroughAHideUntilEsc() async {
         await model.reload()
         model.panelWillShow()
-        model.type("ban")
+        model.search("ban")
 
         model.panelWillHide()
         model.panelDidHide()
@@ -932,7 +932,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the form") { model.form != nil }
 
         XCTAssertTrue(model.showsSearch)
-        model.type("b")
+        model.search("b")
         XCTAssertEqual(model.searchText, "b")
         XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["Banana", "Blueberry"])
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
@@ -967,7 +967,7 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "c")
         XCTAssertTrue(model.showsSearch)
-        model.type("ban")
+        model.search("ban")
         XCTAssertEqual(model.form?.draft.choices?.shown.map(\.run), ["b"])
     }
 
@@ -1073,7 +1073,7 @@ final class SpotsModelTests: XCTestCase {
         try script("other", toml: "", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
-        model.type("oth")
+        model.search("oth")
 
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
@@ -1221,7 +1221,7 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
 
-        model.type("shortcuts")
+        model.search("shortcuts")
 
         try await wait("the row of the app") { model.visible.contains { $0.id == "apps\nshortcuts" } }
         XCTAssertEqual(model.visible.map(\.id), ["shortcuts", "apps\nshortcuts"])
@@ -1233,7 +1233,7 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
 
-        model.type("settings")
+        model.search("settings")
 
         try await wait("the row") { model.visible.contains { $0.id == "settings\nsound" } }
         XCTAssertEqual(model.visible.map(\.id), ["settings", "settings\nsound"])
@@ -1248,7 +1248,7 @@ final class SpotsModelTests: XCTestCase {
         let before = model.spotListBuilds
 
         for text in ["n", "no", "not", "note", "notes"] {
-            model.type(text)
+            model.search(text)
         }
 
         XCTAssertEqual(model.spotListBuilds - before, 1)
@@ -1276,7 +1276,7 @@ final class SpotsModelTests: XCTestCase {
         nonisolated(unsafe) var changed = false
         withObservationTracking { _ = (model.formRect, model.formHasChoices, model.formIsMultiple, model.isMenuOpen, model.gridHeight) } onChange: { changed = true }
 
-        model.type("b")
+        model.search("b")
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
 
         XCTAssertFalse(changed)
@@ -1345,7 +1345,7 @@ final class SpotsModelTests: XCTestCase {
         nonisolated(unsafe) var told = false
         trackPanelAndField { told = true }
 
-        model.type("b")
+        model.search("b")
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
 
         XCTAssertEqual(model.form?.draft.choices?.query, "b")
@@ -1364,7 +1364,7 @@ final class SpotsModelTests: XCTestCase {
         nonisolated(unsafe) var told = false
         trackPanelAndField { told = true }
 
-        model.type("ap")
+        model.search("ap")
 
         try await wait("the found rows") { model.openItems?.shown.count == 50 }
         XCTAssertEqual(model.openSheet?.sheetRect, rect)
@@ -1712,7 +1712,7 @@ final class SpotsModelTests: XCTestCase {
         model.selected = 1
         await hopsEnd()
 
-        let takes = await hintTakes { model.type("zzz") }
+        let takes = await hintTakes { model.search("zzz") }
 
         XCTAssertEqual(takes, 1)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
@@ -1764,7 +1764,7 @@ final class SpotsModelTests: XCTestCase {
         let writes = host.hintWrites.count
         let before = model.gridHint
 
-        let takes = await hintTakes { model.type("zzz") }
+        let takes = await hintTakes { model.search("zzz") }
 
         XCTAssertEqual(takes, 1)
         XCTAssertNotEqual(model.gridHint, before)
@@ -1820,12 +1820,12 @@ final class SpotsModelTests: XCTestCase {
         try script("mood", toml: "title = 'Calm'\n[on]\n\"panel.open\" = true", "printf 'frame=\\ntitle=Stormy\n'")
         await model.reload()
         model.isShown = true
-        model.type("c")
+        model.search("c")
         XCTAssertEqual(model.visible.map(\.id), ["mood"])
         model.panelWillShow()
         try await wait("the read title") { model.sheets["mood"]?.state.title == "Stormy" }
 
-        model.type("st")
+        model.search("st")
 
         XCTAssertEqual(model.visible.map(\.id), ["mood"])
     }
@@ -1837,13 +1837,13 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow()
         let sheet = try XCTUnwrap(model.sheets["mood"])
         try await wait("the read title") { sheet.state.title == "Stormy" && sheet.answered != nil }
-        model.type("s")
+        model.search("s")
         let builds = model.spotListBuilds
         let answered = sheet.answered
 
         sheet.show(need: .change)
         try await wait("the next answer") { sheet.answered != answered && sheet.answered != nil }
-        model.type("st")
+        model.search("st")
 
         XCTAssertEqual(model.spotListBuilds, builds)
         XCTAssertEqual(model.visible.map(\.id), ["mood"])
@@ -1880,7 +1880,7 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         let builds = model.runs.searchBuilds
 
-        model.type("2")
+        model.search("2")
 
         XCTAssertEqual(model.runs.searchBuilds, builds + 1)
     }
@@ -1888,16 +1888,16 @@ final class SpotsModelTests: XCTestCase {
     func testASpotAnswersTheMainSearchFirstWhileItsPatternMatchesTheText() async throws {
         try await showAnswers()
 
-        model.type("2")
+        model.search("2")
         try await wait("the answer") { model.visible.first?.id == "calc\n2" }
         XCTAssertEqual(model.visible.map(\.id), ["calc\n2", "notes"])
         XCTAssertEqual(model.visible.first?.state.title, "Is 2")
         XCTAssertEqual(model.visible.first?.state.subtitle, "Read 2")
 
-        model.type("notes")
+        model.search("notes")
         XCTAssertEqual(model.visible.map(\.id), ["notes"])
 
-        model.type("")
+        model.search("")
         XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
     }
 
@@ -1906,7 +1906,7 @@ final class SpotsModelTests: XCTestCase {
         try script("make", toml: "title = 'Make'\nanswers = 'last'\n[on]\nsearch = '.'", #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); printf 'item=%s\ntitle=Make\n' "$t""#)
         await model.reload()
 
-        model.type("notes")
+        model.search("notes")
         try await wait("the last answer") { model.visible.last?.id == "make\nnotes" }
 
         XCTAssertEqual(model.visible.map(\.id), ["notes", "make\nnotes"])
@@ -1922,7 +1922,7 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
 
-        model.type("2")
+        model.search("2")
         try await wait("the answer card") { model.visible.first?.id == "calc\n14" }
 
         XCTAssertEqual(model.placements.map(\.size), [.large, .strip])
@@ -1938,7 +1938,7 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
 
-        model.type("2")
+        model.search("2")
         try await wait("the answer row") { model.visible.first?.id == "calc\nanswer" }
 
         XCTAssertNil(model.visible.first?.item?.card)
@@ -1953,7 +1953,7 @@ final class SpotsModelTests: XCTestCase {
         let before = model.answerMatches.count
 
         for text in ["1", "12", "12 k", "12 km", "12 kmh"] {
-            model.type(text)
+            model.search(text)
         }
 
         XCTAssertEqual(model.answerMatches.count - before, 10)
@@ -1962,9 +1962,9 @@ final class SpotsModelTests: XCTestCase {
     func testTheLastAnswerStaysUntilTheNewestTextIsAnswered() async throws {
         try await showAnswers(slow: "12")
 
-        model.type("1")
+        model.search("1")
         try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
-        model.type("12")
+        model.search("12")
         XCTAssertEqual(model.visible.first?.id, "calc\n1")
         try await wait("the newer answer") { model.visible.first?.id == "calc\n12" }
     }
@@ -1972,7 +1972,7 @@ final class SpotsModelTests: XCTestCase {
     func testAPickOfAnAnswerCallsItsSpotWithTheRow() async throws {
         try await showAnswers()
 
-        model.type("7")
+        model.search("7")
         try await wait("the answer") { model.visible.first?.id == "calc\n7" }
         model.runSelected()
 
@@ -1987,7 +1987,7 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.type("2")
+        model.search("2")
         try await wait("the first answer") { model.visible.first?.state.title == "Call 1" }
 
         model.panelDidHide()
@@ -1999,10 +1999,10 @@ final class SpotsModelTests: XCTestCase {
 
     func testReturnOnAnAnswerThatIsNotYetNewWaitsForTheNewest() async throws {
         try await showAnswers(slow: "12")
-        model.type("1")
+        model.search("1")
         try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
 
-        model.type("12")
+        model.search("12")
         model.runSelected()
 
         try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
@@ -2024,10 +2024,10 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.type("1")
+        model.search("1")
         try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
 
-        model.type("12")
+        model.search("12")
         XCTAssertEqual(model.visible.first?.id, "calc\n1")
         model.runSelected()
 
@@ -2045,7 +2045,7 @@ final class SpotsModelTests: XCTestCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.type("5")
+        model.search("5")
         try await wait("the answer") { model.visible.first?.id == "calc\n5" }
 
         model.panelWillHide()
@@ -2063,7 +2063,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow()
         try await wait("the failure of the read") { model.sheets["calc"]?.failure != nil }
 
-        model.type("2")
+        model.search("2")
 
         try await wait("the answer") { model.visible.first?.id == "calc\n2" }
         XCTAssertNotNil(model.sheets["calc"]?.failure)
@@ -2201,7 +2201,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
 
         XCTAssertEqual(model.openParts?.selectedPart?.id, "vpn")
-        model.type("b")
+        model.search("b")
         XCTAssertNil(model.openParts?.selectedPart)
     }
 }

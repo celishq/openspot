@@ -46,7 +46,7 @@ final class PlaygroundPlaceTests: XCTestCase {
         let id = try await panel.place(file: nil, text: answering, manifest: manifest)
 
         panel.show(.card, id: id)
-        panel.model.type("21")
+        panel.model.search("21")
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }

@@ -169,7 +169,7 @@ extension SpotsModel {
         form?.draft.choices?.query ?? openSheet?.query ?? query
     }
 
-    public func type(_ text: String) {
+    public func search(_ text: String) {
         asOnePress {
             if form?.draft.choices != nil {
                 form?.draft.search(text)

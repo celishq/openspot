@@ -19,12 +19,13 @@ enum EditMenu {
         NSApp.mainMenu = main
     }
 
-    static func action(of key: ActionKey) -> Selector? {
+    static func item(of key: ActionKey) -> NSMenuItem? {
+        guard key.isCommand else { return nil }
         let items = NSApp.mainMenu?.items.compactMap(\.submenu).flatMap(\.items) ?? []
         return items.first { item in
             let typed = item.keyEquivalent
             return !typed.isEmpty && item.keyEquivalentModifierMask == .command
                 && key == ActionKey(name: typed.lowercased(), isCommand: true, isShift: typed != typed.lowercased())
-        }?.action
+        }
     }
 }
