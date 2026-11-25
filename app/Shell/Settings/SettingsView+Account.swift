@@ -10,7 +10,7 @@ extension SettingsView {
         return Group {
             if let account, account.isSignedIn {
                 header(tile, SettingsPage.account.section.title, SettingsPage.account.line) {
-                    Button("How it works") { step = .how }
+                    Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
                 }
                 group(nil) {
@@ -68,7 +68,7 @@ extension SettingsView {
                         Button("Create a New Key…") { step = .handle }
                             .buttonStyle(.borderedProminent)
                         Button("Use My Own Key…") { step = .signIn }
-                        Button("How it works") { step = .how }
+                        Button("How It Works…") { step = .how }
                             .buttonStyle(.link)
                     }
                     .padding(.top, SpotTokens.settingsSheetTop)

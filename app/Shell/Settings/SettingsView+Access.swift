@@ -7,7 +7,7 @@ extension SettingsView {
         let rest = facts.unneeded
         return Group {
             header(SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
-                Button("About access…") { isAboutShown = true }
+                Button("About Access…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
             if !facts.waiting.isEmpty {
@@ -22,38 +22,28 @@ extension SettingsView {
                     }
                 }
             }
-            group("Privacy & Security") {
-                lines(needed) { access in
-                    row(open: .accessOf(access.id)) {
-                        SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-                        titled(access.id.title, access.spots.map(facts.title(ofSpot:)).joined(separator: ", "))
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
-                        chevron
+            if !needed.isEmpty {
+                group("Privacy & Security") {
+                    lines(needed) { access in
+                        row(open: .accessOf(access.id)) {
+                            SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
+                            titled(access.id.title, access.spots.map(facts.title(ofSpot:)).joined(separator: ", "))
+                            Spacer(minLength: SpotTokens.settingsTrailingGap)
+                            Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
+                            chevron
+                        }
                     }
                 }
-                if !rest.isEmpty {
-                    if !needed.isEmpty { Divider().padding(.leading, SpotTokens.settingsRowPadding) }
-                    row(action: { isFolded.toggle() }) {
-                        HStack(spacing: SpotTokens.settingsMoreOverlap) {
-                            ForEach(rest.prefix(4)) { SettingsTile(access: $0.id, side: SpotTokens.settingsMoreTile) }
-                        }
-                        titled("Other Access", rest.map(\.id.title).joined(separator: ", "))
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        Text("Not used").foregroundStyle(.secondary)
-                        Image(systemName: isFolded ? "chevron.down" : "chevron.up")
-                            .font(SpotType.settingsChevron)
-                            .foregroundStyle(.tertiary)
-                    }
-                    if !isFolded {
-                        lines(rest, first: true) { access in
-                            row(open: .accessOf(access.id)) {
-                                SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-                                titled(access.id.title, access.maybe.isEmpty ? "" : "Sometimes used by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
-                                Spacer(minLength: SpotTokens.settingsTrailingGap)
-                                Text(access.status.word).foregroundStyle(.secondary)
-                                chevron
-                            }
+            }
+            if !rest.isEmpty {
+                folding("Not Used by Any Spot", isFolded: $isFolded) {
+                    lines(rest) { access in
+                        row(open: .accessOf(access.id)) {
+                            SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
+                            titled(access.id.title, access.maybe.isEmpty ? "" : "Sometimes used by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
+                            Spacer(minLength: SpotTokens.settingsTrailingGap)
+                            Text(access.status.word).foregroundStyle(.secondary)
+                            chevron
                         }
                     }
                 }

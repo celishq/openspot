@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
     @State private var isTitleShown = false
-    @State private var barHeight: CGFloat = 0
+    @State private var isScrolled = false
     @State private var position = ScrollPosition(edge: .top)
     @Environment(\.colorScheme) var scheme
 
@@ -39,12 +39,22 @@ struct SettingsView: View {
             .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
                 withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
             })
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { _, height in barHeight = height })
+            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { _, isPast in
+                withAnimation(SpotMotion.fade(isShown: isPast)) { isScrolled = isPast }
+            })
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(.bar)
-                    .frame(height: barHeight)
-                    .opacity(isTitleShown ? 1 : MotionTokens.hiddenOpacity)
+                    .mask {
+                        VStack(spacing: 0) {
+                            Rectangle()
+                            LinearGradient(colors: SpotTheme.settingsBarFade, startPoint: .top, endPoint: .bottom)
+                                .frame(height: SpotTokens.settingsBarFade)
+                        }
+                    }
+                    .frame(height: SpotTokens.settingsBarFade)
+                    .ignoresSafeArea(edges: .top)
+                    .opacity(isScrolled ? 1 : MotionTokens.hiddenOpacity)
                     .allowsHitTesting(false)
             }
             .onChange(of: [book.page.place, book.query, book.target]) {

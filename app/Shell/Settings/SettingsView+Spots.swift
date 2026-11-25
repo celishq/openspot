@@ -4,7 +4,7 @@ import SwiftUI
 extension SettingsView {
     var spotsPage: some View {
         Group {
-            heading(SettingsPage.spots.section.title, SettingsPage.spots.line)
+            pageHeader(.spots)
             group(nil) {
                 lines(facts.standings) { spotLine($0, detail: $0.detail) }
             }
@@ -13,17 +13,7 @@ extension SettingsView {
 
     func spotPage(of standing: SpotStanding) -> some View {
         Group {
-            HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
-                SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsSpotIcon)
-                VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
-                    Text(standing.title)
-                        .font(SpotType.settingsTitle)
-                    if !standing.detail.isEmpty {
-                        Text(standing.detail)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer(minLength: SpotTokens.settingsValueGap)
+            header(SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {} accessory: {
                 if !standing.isOff, let entry = model.entry(standing.id) {
                     SettingsCard(model: model, entry: entry)
                 }
@@ -118,7 +108,7 @@ extension SettingsView {
     var keysPage: some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         return Group {
-            heading(SettingsPage.keys.section.title, SettingsPage.keys.line)
+            pageHeader(.keys)
             ForEach(Array(facts.clashes.enumerated()), id: \.offset) { _, clash in
                 VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
                     Text(clash.title)
@@ -131,22 +121,20 @@ extension SettingsView {
                 .background(SpotTheme.settingsClash.opacity(SpotTheme.settingsBannerFill), in: shape)
                 .overlay(shape.strokeBorder(SpotTheme.settingsClash.opacity(SpotTheme.settingsBannerRim), lineWidth: SpotTokens.settingsRim))
             }
-            group(nil) {
-                lines(facts.keyRows) { row in
-                    HStack(spacing: SpotTokens.settingsValueGap) {
-                        Text(row.name)
-                            .foregroundStyle(.secondary)
-                            .frame(width: SpotTokens.settingsKeyName, alignment: .leading)
-                            .lineLimit(1)
-                        Text(row.title)
-                            .lineLimit(1)
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        keycaps(row)
+            ForEach(facts.keyGroups) { keys in
+                group(keys.id) {
+                    lines(keys.rows) { row in
+                        HStack(spacing: SpotTokens.settingsValueGap) {
+                            Text(row.title)
+                                .lineLimit(1)
+                            Spacer(minLength: SpotTokens.settingsTrailingGap)
+                            keycaps(row)
+                        }
+                        .padding(.horizontal, SpotTokens.settingsRowPadding)
+                        .frame(minHeight: SpotTokens.settingsLineHeight)
+                        .background(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : .clear)
+                        .id(row.item)
                     }
-                    .padding(.horizontal, SpotTokens.settingsRowPadding)
-                    .frame(minHeight: SpotTokens.settingsLineHeight)
-                    .background(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : .clear)
-                    .id(row.item)
                 }
             }
         }

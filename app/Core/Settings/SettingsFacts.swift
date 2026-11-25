@@ -61,7 +61,7 @@ public struct SettingsFacts: Equatable, Sendable {
     public private(set) var accesses: [AccessList.Entry] = []
     public private(set) var needed: [AccessList.Entry] = []
     public private(set) var unneeded: [AccessList.Entry] = []
-    public private(set) var keyRows: [SettingRow] = []
+    public private(set) var keyGroups: [RowGroup] = []
     public private(set) var standings: [SpotStanding] = []
     public private(set) var rows: [SettingRow] = []
     public private(set) var looks: [Look] = []
@@ -94,7 +94,8 @@ public struct SettingsFacts: Equatable, Sendable {
         let clashing = Dictionary(grouping: keyed) { Self.normal($0.value ?? "") }.values.filter { $0.count > 1 }.sorted { ($0[0].value ?? "") < ($1[0].value ?? "") }
         clashes = clashing.map(Clash.init)
         self.clashing = Set(clashing.flatMap { $0.map(\.item) })
-        keyRows = rows.filter { $0.kind == .key }
+        let keys = rows.filter { $0.kind == .key }
+        keyGroups = keys.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.map { name in RowGroup(id: name, rows: keys.filter { $0.name == name }) }
     }
 
     public var waiting: [SpotStanding] {
@@ -136,7 +137,7 @@ public struct SettingsFacts: Equatable, Sendable {
 
     public func groups(of spot: String) -> [RowGroup] {
         let rows = rows(of: spot)
-        let kinds: [(String, Set<SettingRow.Kind>)] = [("Keys", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where it shows", [.toggle])]
+        let kinds: [(String, Set<SettingRow.Kind>)] = [("Keyboard Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where It Shows", [.toggle])]
         return kinds.map { title, kinds in RowGroup(id: title, rows: rows.filter { kinds.contains($0.kind) }) }.filter { !$0.rows.isEmpty }
     }
 

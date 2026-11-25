@@ -303,14 +303,16 @@ final class SettingsBookTests: PanelCase {
         let facts = book.facts
         let cups = try XCTUnwrap(facts.standing("cups"))
 
-        XCTAssertEqual(facts.groups(of: "cups").map(\.id), ["Keys", "Settings", "Where it shows"])
+        XCTAssertEqual(facts.groups(of: "cups").map(\.id), ["Keyboard Shortcuts", "Settings", "Where It Shows"])
         XCTAssertEqual(facts.groups(of: "cups")[1].rows.map(\.key), ["city"])
         XCTAssertEqual(cups.banner?.title, "Cups can’t run yet")
         XCTAssertEqual(cups.banner?.line, "It needs Screen Recording from macOS.")
         XCTAssertEqual(cups.lack, "Needs Screen Recording")
         XCTAssertEqual(facts.needed.map(\.id), [.screen])
         XCTAssertFalse(facts.unneeded.contains { $0.id == .screen })
-        XCTAssertTrue(facts.keyRows.allSatisfy { $0.kind == .key })
+        XCTAssertTrue(facts.keyGroups.allSatisfy { $0.rows.allSatisfy { $0.kind == .key } })
+        XCTAssertEqual(facts.keyGroups.last?.id, "Cups")
+        XCTAssertEqual(facts.keyGroups.last?.rows.map(\.key), ["open", "key.fill", "float"])
         XCTAssertEqual(facts.looks.first { $0.isUsed }?.word, "In use")
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])

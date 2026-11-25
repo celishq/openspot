@@ -21,9 +21,13 @@ extension SpotTheme {
     static let settingsClash = Color.red
     static let settingsDone = Color.green
     static let settingsAccountTile = Color.gray
-    static let settingsLookInk = 0.18
-    static let settingsLookCell = 0.14
-    static let settingsLookPanel = 0.88
+    static let settingsBarFade = [Color.black, Color.clear]
+    static let settingsLookCell = 0.12
+    static let settingsLookHint = 0.5
+    static let settingsLookGlow = 0.6
+    static let settingsLookPanelFill = 0.85
+    static let settingsLookBackdrop = 0.35
+    static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
     static let settingsLookWall = [
         Color(red: 0.96, green: 0.36, blue: 0.36), Color(red: 0.55, green: 0.42, blue: 0.95), Color(red: 0.36, green: 0.78, blue: 0.42)
     ]

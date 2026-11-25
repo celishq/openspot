@@ -195,12 +195,11 @@ extension SpotTokens {
     public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
     public static let settingsPageGap: CGFloat = 22
-    public static let settingsTitleReveal: CGFloat = 36
+    public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
+    public static let settingsBarFade: CGFloat = 14
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 28
     public static let settingsHeaderTile: CGFloat = 52
-    public static let settingsMoreTile: CGFloat = 22
-    public static let settingsMoreOverlap: CGFloat = -6
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44
     public static let settingsTileCorner: CGFloat = 0.225
@@ -234,14 +233,11 @@ extension SpotTokens {
     public static let settingsLookGap: CGFloat = 18
     public static let settingsLookHeight: CGFloat = 104
     public static let settingsLookWords: CGFloat = 6
-    public static let settingsLookSideInset: CGFloat = 30
     public static let settingsLookTopInset: CGFloat = 14
-    public static let settingsLookPanelPadding: CGFloat = 8
-    public static let settingsLookPanelCorner: CGFloat = 8
-    public static let settingsLookCellCorner: CGFloat = 4
-    public static let settingsLookCellGap: CGFloat = 5
-    public static let settingsLookBar: CGFloat = 9
     public static let settingsLookRing: CGFloat = 3
+    public static let settingsLookPanel: CGFloat = 150
+    public static let settingsLookRows: CGFloat = 1.6
+    public static let settingsLookGlow: CGFloat = 12
     public static let settingsSheetWidth: CGFloat = 460
     public static let settingsSheetPadding: CGFloat = 24
     public static let settingsSheetGap: CGFloat = 14

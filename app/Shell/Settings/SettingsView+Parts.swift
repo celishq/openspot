@@ -104,19 +104,30 @@ extension SettingsView {
         act { await $0.keep(secret: value, of: row) }
     }
 
+    func pageHeader(_ section: SettingsPage.Section) -> some View {
+        header(SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsHeaderTile), section.title, section.page.line) {}
+    }
+
     func header<Trailing: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        header(icon, title, text, trailing: trailing) {}
+    }
+
+    func header<Trailing: View, Accessory: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing, @ViewBuilder accessory: () -> Accessory) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return HStack(alignment: .top, spacing: SpotTokens.settingsHeaderGap) {
+        return HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
             icon
             VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                 Text(title)
                     .font(SpotType.settingsHeader)
-                Text(text)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !text.isEmpty {
+                    Text(text)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 trailing()
             }
             Spacer(minLength: 0)
+            accessory()
         }
         .padding(SpotTokens.settingsHeaderPadding)
         .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
@@ -144,6 +155,29 @@ extension SettingsView {
             }
             .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
             .overlay(shape.strokeBorder(Color.primary.opacity(SpotTheme.settingsRim), lineWidth: SpotTokens.settingsRim))
+        }
+    }
+
+    func folding<Rows: View>(_ title: String, isFolded: Binding<Bool>, @ViewBuilder _ rows: () -> Rows) -> some View {
+        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
+        return VStack(alignment: .leading, spacing: SpotTokens.settingsGroupGap) {
+            HStack {
+                Text(title)
+                    .fontWeight(.semibold)
+                Spacer(minLength: SpotTokens.settingsTrailingGap)
+                Button(isFolded.wrappedValue ? "Show" : "Hide") {
+                    withAnimation(SpotMotion.fade(isShown: isFolded.wrappedValue)) { isFolded.wrappedValue.toggle() }
+                }
+                .buttonStyle(.link)
+            }
+            if !isFolded.wrappedValue {
+                VStack(spacing: 0) {
+                    rows()
+                }
+                .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
+                .overlay(shape.strokeBorder(Color.primary.opacity(SpotTheme.settingsRim), lineWidth: SpotTokens.settingsRim))
+                .transition(.opacity)
+            }
         }
     }
 
