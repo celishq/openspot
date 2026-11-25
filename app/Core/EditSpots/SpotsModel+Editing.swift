@@ -8,13 +8,17 @@ extension SpotsModel {
     }
 
     public func beginEditing() {
+        begin(.open)
+    }
+
+    private func begin(_ session: EditSession) {
         asOnePress {
             guard openSheetID == nil else { return }
             closeMenu()
             missedSearch.drop()
             hold(nil, motion: .edit)
             change(.edit) {
-                isEditing = true
+                editing = session
                 query = ""
                 updateVisible()
             }
@@ -26,33 +30,30 @@ extension SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         beginEditing()
-        editsByKey = false
     }
 
     func editByKey() {
-        guard isCommandHeld, !isCommandSpoiled, !isEditing, openSheetID == nil, menu == nil, form == nil, recording == nil,
+        guard command == .held, !isEditing, openSheetID == nil, menu == nil, form == nil, recording == nil,
               query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        beginEditing()
-        editsByKey = isEditing
+        begin(.held)
     }
 
     func holdCommand(_ isHeld: Bool) {
-        guard isHeld != isCommandHeld else { return }
-        isCommandHeld = isHeld
-        isCommandSpoiled = false
+        guard isHeld != (command != .up) else { return }
+        command = isHeld ? .held : .up
         if !isHeld { endKeyEditing() }
     }
 
     func spoilCommand(by key: ActionKey) {
-        guard key.isCommand, isCommandHeld else { return }
-        isCommandSpoiled = true
-        guard editsByKey, isEditing else { return }
+        guard key.isCommand, command != .up else { return }
+        command = .spoiled
+        guard editing == .held else { return }
         if gesture != nil { dropGesture() }
         endEditing(moving: false)
     }
 
     func endKeyEditing() {
-        guard editsByKey, !isCommandHeld, isEditing, gesture == nil, landing == nil else { return }
+        guard editing == .held, command == .up, gesture == nil, landing == nil else { return }
         endEditing()
     }
 
@@ -87,10 +88,9 @@ extension SpotsModel {
     public func endEditing(moving: Bool = true) {
         asOnePress {
             guard isEditing else { return }
-            editsByKey = false
             stopDragWait()
             change(moving ? .edit : nil) {
-                isEditing = false
+                editing = nil
                 tip = nil
                 gesture = nil
                 landing = nil

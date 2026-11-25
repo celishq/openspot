@@ -283,18 +283,18 @@ public final class SpotsModel {
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var askedWindows: Set<String> = []
-    public var isEditing = false {
+    public internal(set) var editing: EditSession? {
         didSet {
+            guard isEditing != (oldValue != nil) else { return }
             takeMode()
             takePlacements()
         }
     }
-    @ObservationIgnored var isCommandHeld = false
-    @ObservationIgnored var isCommandSpoiled = false
+    public var isEditing: Bool { editing != nil }
+    @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []
     public internal(set) var freeCells: [GridCell] = []
     public internal(set) var isGridFixed = true
-    @ObservationIgnored var editsByKey = false
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
     var shakes: [String: Int] = [:]
