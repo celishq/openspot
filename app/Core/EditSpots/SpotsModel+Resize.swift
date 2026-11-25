@@ -5,7 +5,7 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, drag == nil else { return }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            gesture = .size(SpotResize(id: id, index: index, placements: placements, choices: sizes(of: visible[index]), grid: columns.layout))
+            gesture = .size(SpotResize(id: id, index: index, placements: placements, choices: sizes(of: visible[index]), grid: grid))
             resizeGrip = grip
             selected = index
         }

@@ -47,8 +47,8 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testTheGridHasFourColumnsUntilTheFileAsksForSixOrEight() {
-        XCTAssertEqual(Config(text: "").columns, GridColumns(4))
-        XCTAssertEqual(Config(text: "columns = 8\n").columns, GridColumns(8))
+        XCTAssertEqual(Config(text: "").grid, GridLayout(columns: 4))
+        XCTAssertEqual(Config(text: "columns = 8\n").grid, GridLayout(columns: 8))
         XCTAssertEqual(Config(text: "columns = 5\n").faults, ["config.toml: columns is 4, 6 or 8."])
         XCTAssertEqual(Config(text: "left_panel = true\n").faults, [])
     }

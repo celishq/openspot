@@ -5,7 +5,6 @@ struct SpotMenuLayer: View {
     let model: SpotsModel
     let item: SpotMenuAnchor.Item?
     let fieldIsInSheet: Bool
-    @Environment(\.spotColumns) private var panels
 
     var body: some View {
         GeometryReader { proxy in
@@ -36,7 +35,7 @@ struct SpotMenuLayer: View {
     }
 
     private var bounds: CGRect {
-        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + model.openTop.fieldY + SpotTokens.partFieldRoom : SpotTokens.gridTop, in: panels.frame)
+        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + model.openTop.fieldY + SpotTokens.partFieldRoom : SpotTokens.gridTop, in: SpotTokens.panelFrame)
     }
 
     private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: UnitPoint) -> CGRect {

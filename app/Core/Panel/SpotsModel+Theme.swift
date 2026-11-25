@@ -8,15 +8,15 @@ extension SpotsModel {
         defer { takenTheme = theme }
         guard isPanelHidden else {
             if theme != takenTheme { toast(ToastNote(words: Self.openAgain)) }
-            heldLayout = theme.layout.with(columns: columns.count)
+            heldLayout = theme.layout.with(columns: grid.columns)
             return
         }
-        lay(theme.layout.with(columns: columns.count))
+        lay(theme.layout.with(columns: grid.columns))
     }
 
     func widen() {
-        heldLayout = heldLayout?.with(columns: columns.count)
-        laidOut = laidOut.with(columns: columns.count)
+        heldLayout = heldLayout?.with(columns: grid.columns)
+        laidOut = laidOut.with(columns: grid.columns)
         SpotTokens.take(laidOut)
         gridScroll = 0
         cardScroll = 0

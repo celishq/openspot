@@ -312,7 +312,6 @@
 		458683122D4F69FE94747093 /* ClipboardCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E518A63418FE33CDA929F64 /* ClipboardCall.swift */; };
 		45F0C13557E363D5469D446A /* URL+SpotFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24BAAC7014CA50EA7277EE18 /* URL+SpotFile.swift */; };
 		467F1134177144246732FE1E /* MacCallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7550D4A89B7A892745DC4B /* MacCallsTests.swift */; };
-		468776D7C2C5A242EC3DBBFA /* GridColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395619BFC42C907A80E2E4EB /* GridColumns.swift */; };
 		4691F0F3F98E01ED573A438D /* NSEvent+Key.swift in Sources */ = {isa = PBXBuildFile; fileRef = A403F80489A189FFC6569D8C /* NSEvent+Key.swift */; };
 		4781C8C5AACB459217630E7D /* SpotMenuBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A35A1257346DBCF67B5B62 /* SpotMenuBar.swift */; };
 		479BB72BAB2B93899BC7C35E /* DocExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87806A2C3C0BDB3048132D4 /* DocExampleTests.swift */; };
@@ -1463,7 +1462,6 @@
 		39025806F17D5934770B562C /* MenuBarMarkItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMarkItem.swift; sourceTree = "<group>"; };
 		39079830F27B18E8F827EFAB /* NodeFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeFace.swift; sourceTree = "<group>"; };
 		3952D147A3F724DAC0B98EF4 /* Theme+Colours.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme+Colours.swift"; sourceTree = "<group>"; };
-		395619BFC42C907A80E2E4EB /* GridColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridColumns.swift; sourceTree = "<group>"; };
 		397CEA709720AFBD838D24EA /* CommandAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandAPITests.swift; sourceTree = "<group>"; };
 		39A95D19000F5C1357154B1B /* SpotFaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFaultTests.swift; sourceTree = "<group>"; };
 		3A4AAE9DABC882C67CB1FFD0 /* ChipAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipAction.swift; sourceTree = "<group>"; };
@@ -3943,7 +3941,6 @@
 				FFD8983A5D718934384188E9 /* FocusLoss.swift */,
 				8E141CCCC0261DB5E0FEC227 /* GridCall.swift */,
 				606AD39DC8126EED8B7CC3A9 /* GridCell.swift */,
-				395619BFC42C907A80E2E4EB /* GridColumns.swift */,
 				D5ED5CE8F80C07D4053D8EAA /* GridLayout.swift */,
 				ADC8A751A82EE02999D85596 /* GridShade.swift */,
 				A5E08F4772529F1A771B6570 /* GridSpot.swift */,
@@ -4816,7 +4813,6 @@
 				A9651902740496FFCED303F1 /* GlyphKeywords.swift in Sources */,
 				C2BA25F36825C4F57770830C /* GridCall.swift in Sources */,
 				26C07C3946A891ABC79C769C /* GridCell.swift in Sources */,
-				468776D7C2C5A242EC3DBBFA /* GridColumns.swift in Sources */,
 				2A9C14B335915C2622FE0C7A /* GridContent.swift in Sources */,
 				AD6A5C8925972D94D4027435 /* GridLayout.swift in Sources */,
 				6032F37899249BBB6B0BE6AA /* GridShade.swift in Sources */,

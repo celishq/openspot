@@ -41,7 +41,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let shown = core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }
-        let placements = GridColumns().layout.place(shown.map { GridSpot(size: defaults.size(of: $0.id) ?? $0.size, cell: defaults.cells(of: $0.id)?[4]) })
+        let placements = GridLayout().place(shown.map { GridSpot(size: defaults.size(of: $0.id) ?? $0.size, cell: defaults.cells(of: $0.id)?[4]) })
 
         XCTAssertEqual(placements.count, shown.count)
     }

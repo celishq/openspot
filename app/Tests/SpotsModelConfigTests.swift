@@ -24,12 +24,12 @@ final class SpotsModelConfigTests: PanelCase {
     }
 
     func testASectionThatAChangeDoesNotNameIsNotLost() async throws {
-        try model.files.config.change { $0.set(columns: GridColumns(6)) }
+        try model.files.config.change { $0.set(columns: 6) }
 
         model.configChanged(.keys, to: model.files.config.readKept())
         await model.spotsChanged()
 
-        XCTAssertEqual(model.columns, GridColumns(6))
+        XCTAssertEqual(model.grid, GridLayout(columns: 6))
     }
 
     func testAChangeThatTheAPIHandsOverReadsNoConfigFromTheDisk() throws {
@@ -52,11 +52,11 @@ final class SpotsModelConfigTests: PanelCase {
 
         model.configChanged(.keys, to: try model.files.config.change { $0.set(key, for: "panel-key") })
         model.configChanged(.careful, to: try model.files.config.change { $0.set(isCareful: true) })
-        model.set(columns: GridColumns(6))
+        model.set(columns: 6)
         await model.spotsChanged()
 
         XCTAssertEqual(model.gridBuilds, builds)
-        XCTAssertEqual(model.columns, GridColumns(6))
+        XCTAssertEqual(model.grid, GridLayout(columns: 6))
         XCTAssertEqual(model.config, Config(text: disk.text ?? ""))
     }
 
@@ -64,10 +64,10 @@ final class SpotsModelConfigTests: PanelCase {
         model.beginEditing()
         let layOuts = host.layOuts.count
 
-        model.set(columns: GridColumns(8))
+        model.set(columns: 8)
 
         XCTAssertEqual(host.layOuts.count, layOuts)
-        XCTAssertEqual(host.widths, [GridColumns(8).frame.width])
+        XCTAssertEqual(host.widths, [GridLayout(columns: 8).panelWidth])
     }
 
     func testAnEditKeyReadsNoConfigFromTheDisk() throws {
@@ -85,7 +85,7 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertTrue(wrote())
         _ = model.handleKey(ActionKey(name: "s"))
         XCTAssertTrue(wrote())
-        model.set(columns: GridColumns(6))
+        model.set(columns: 6)
         XCTAssertTrue(wrote())
         model.prefer(.large, for: "b")
         model.turnOff("c")
@@ -104,12 +104,12 @@ final class SpotsModelConfigTests: PanelCase {
         let placements = model.placements
         model.moveSpot(order[0], to: GridCell(row: 3, column: 0))
         model.prefer(.large, for: order[0])
-        model.set(columns: GridColumns(6))
+        model.set(columns: 6)
 
         XCTAssertEqual(model.visible.map(\.id), order)
         XCTAssertEqual(model.placements, placements)
         XCTAssertEqual(model.config, config)
-        XCTAssertEqual(model.columns, GridColumns())
+        XCTAssertEqual(model.grid, GridLayout())
         XCTAssertEqual(host.notes.count, 3)
         XCTAssertTrue(host.notes.allSatisfy { $0.hasPrefix("Openspot could not save the ") })
     }

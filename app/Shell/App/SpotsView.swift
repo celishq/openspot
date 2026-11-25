@@ -46,10 +46,10 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .fade(coversGrid ? 0 : 1) { SheetMorph.sheetOpacity(at: $0) }
-            .modifier(PanelSpan(columns: model.columns))
+            .modifier(PanelSpan(grid: model.grid))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
-                .id(model.columns.count)
+                .id(model.grid.columns)
             field(card: card, motion: motion, isGlass: true)
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -66,13 +66,13 @@ struct SpotsView: View {
                     fadeHeight: cardHeight,
                     showsField: showsSearchField && fieldIsInSheet
                 )
-                .id(model.columns.count)
+                .id(model.grid.columns)
             }
             field(card: card, motion: motion, isGlass: false)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
-                    .modifier(PanelSpan(columns: model.columns))
+                    .modifier(PanelSpan(grid: model.grid))
                     .onTapGesture { model.closeMenu() }
             }
         }
@@ -86,7 +86,7 @@ struct SpotsView: View {
         .background(alignment: .topLeading) { SpotBackdrop(model: model, motion: motion) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotViewPlace, SpotViewPlace(model: model))
-        .environment(\.spotColumns, model.columns)
+        .environment(\.spotGrid, model.grid)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
@@ -104,7 +104,7 @@ struct SpotsView: View {
             isGlass: isGlass
         )
         .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
-        .id(model.columns.count)
+        .id(model.grid.columns)
     }
 
     private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {
@@ -121,7 +121,7 @@ struct SpotsView: View {
     private func push(from card: SpotSheetCard?) -> SheetPush? {
         guard sheetID != nil, !isInstall else { return nil }
         let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll)
-        let panel = model.columns.frame
+        let panel = SpotTokens.panelFrame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card?.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window, foot: model.pushFoot.moved(by: -SpotTokens.halo - origin.y))
     }

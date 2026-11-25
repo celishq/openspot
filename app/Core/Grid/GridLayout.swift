@@ -1,10 +1,12 @@
 import Foundation
 
 public struct GridLayout: Equatable, Sendable {
+    public static let widths = [4, 6, 8]
+
     public let columns: Int
     public let rows: Int
 
-    public init(columns: Int, rows: Int = SpotTokens.rows) {
+    public init(columns: Int = SpotTokens.columns, rows: Int = SpotTokens.rows) {
         self.columns = columns
         self.rows = rows
     }
@@ -80,6 +82,14 @@ public struct GridLayout: Equatable, Sendable {
         spots[index] = GridSpot(size: size, cell: cell)
         let next = place(spots, first: index)
         return next.count == spots.count ? next : nil
+    }
+
+    public var row: SpotSize {
+        SpotSize(columns: columns, rows: 1)
+    }
+
+    public var panelWidth: CGFloat {
+        width + 2 * SpotTokens.halo
     }
 
     public var height: CGFloat {

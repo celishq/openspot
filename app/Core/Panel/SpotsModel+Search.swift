@@ -110,20 +110,20 @@ extension SpotsModel {
         let isGrid = content == .cards
         if isGridFixed != isGrid { isGridFixed = isGrid }
         let spots = isGrid
-            ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: columns)) }
-            : next.map { GridSpot(size: $0.role == .answer && $0.size != .strip ? $0.size : columns.row, cell: nil) }
+            ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) }
+            : next.map { GridSpot(size: $0.role == .answer && $0.size != .strip ? $0.size : grid.row, cell: nil) }
         let top = fieldRoom
         if isGrid, let gesture {
             let shown = Set(visible.map(\.id))
-            if gesture.grid == columns.layout, next.filter({ shown.contains($0.id) }) == visible {
+            if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
                 lay(gesture.layout, top: top)
                 return
             }
             dropGesture()
         }
         let laid = isGrid
-            ? columns.layout.place(spots)
-            : GridLayout(columns: columns.count, rows: spots.reduce(0) { $0 + $1.size.rows }).place(spots)
+            ? grid.place(spots)
+            : GridLayout(columns: grid.columns, rows: spots.reduce(0) { $0 + $1.size.rows }).place(spots)
         let shown = laid.map { next[$0.index] }
         if shown != visible { visible = shown }
         if isGrid {

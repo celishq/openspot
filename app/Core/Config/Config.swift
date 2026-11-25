@@ -19,7 +19,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var stores: [Store] = []
     public private(set) var isCareful = false
     public private(set) var theme: String?
-    public private(set) var columns = GridColumns()
+    public private(set) var grid = GridLayout()
     private(set) var browsers = Browser.builtIn
     public private(set) var isReadable = true
     private var kept = ConfigDocument()
@@ -80,7 +80,7 @@ public struct Config: Equatable, Sendable {
             }
         }
         switch document.values["columns"] {
-        case .integer(let count)? where GridColumns.choices.contains(count): columns = GridColumns(count)
+        case .integer(let count)? where GridLayout.widths.contains(count): grid = GridLayout(columns: count)
         case nil: break
         default: faults.append("config.toml: columns is 4, 6 or 8.")
         }
@@ -99,7 +99,7 @@ public struct Config: Equatable, Sendable {
         if arrangement != other.arrangement { sections.insert(.spots) }
         if settings != other.settings { sections.insert(.settings) }
         if isCareful != other.isCareful { sections.insert(.careful) }
-        if columns != other.columns { sections.insert(.columns) }
+        if grid != other.grid { sections.insert(.columns) }
         same.panelKey = panelKey
         same.fixKey = fixKey
         same.keys = keys
@@ -107,7 +107,7 @@ public struct Config: Equatable, Sendable {
         same.settings = settings
         same.isCareful = isCareful
         same.theme = theme
-        same.columns = columns
+        same.grid = grid
         same.kept = kept
         same.kept.tables = other.kept.tables
         if same != self { sections.insert(.rest) }
@@ -133,9 +133,9 @@ public struct Config: Equatable, Sendable {
         kept.set("theme", to: .string(theme))
     }
 
-    public mutating func set(columns: GridColumns) {
-        self.columns = columns
-        kept.set("columns", to: .integer(columns.count))
+    public mutating func set(columns: Int) {
+        grid = GridLayout(columns: columns)
+        kept.set("columns", to: .integer(columns))
     }
 
     public mutating func set(setting key: String, of spot: String, to value: String?) {

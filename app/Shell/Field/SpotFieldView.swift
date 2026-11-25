@@ -105,8 +105,8 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            Picker("Columns", selection: Binding(get: { model.columns.count }, set: { model.set(columns: GridColumns($0)) })) {
-                ForEach(GridColumns.choices, id: \.self) { Text("\($0)").tag($0) }
+            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
+                ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()

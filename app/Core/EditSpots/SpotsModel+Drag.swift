@@ -6,7 +6,7 @@ extension SpotsModel {
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let entry = visible[start]
-            let lifted = SpotDrag(id: id, index: start, placements: placements, grid: columns.layout, choices: sizes(of: entry))
+            let lifted = SpotDrag(id: id, index: start, placements: placements, grid: grid, choices: sizes(of: entry))
             stopDragWait()
             tip = nil
             change(.edit) {
@@ -89,7 +89,7 @@ extension SpotsModel {
     }
 
     private var windowInPanel: CGRect {
-        columns.frame.insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
+        SpotTokens.panelFrame.insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
     }
 
     private func inPanel(_ point: CGPoint) -> CGPoint {

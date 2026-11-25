@@ -111,7 +111,7 @@ extension SpotsModel {
 
     public func moveSpot(_ id: String, to cell: GridCell) {
         guard let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index),
-              let layout = columns.layout.moved(index, to: cell, size: placements[index].size, in: placements),
+              let layout = grid.moved(index, to: cell, size: placements[index].size, in: placements),
               layout != placements else { return }
         saveLayout(layout, selecting: id)
     }
@@ -123,36 +123,37 @@ extension SpotsModel {
         let start = choices.firstIndex(of: here.size) ?? -1
         let next = (1..<max(choices.count, 1)).lazy
             .map { choices[(start + $0 + choices.count) % choices.count] }
-            .compactMap { self.columns.layout.moved(self.selected, to: here.cell, size: $0, in: self.placements) }
+            .compactMap { self.grid.moved(self.selected, to: here.cell, size: $0, in: self.placements) }
             .first
         if let next { saveLayout(next, selecting: entry.id) }
     }
 
     public func prefer(_ size: SpotSize, for id: String) {
         guard let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index),
-              let layout = columns.layout.moved(index, to: placements[index].cell, size: size, in: placements) else { return }
+              let layout = grid.moved(index, to: placements[index].cell, size: size, in: placements) else { return }
         saveLayout(layout, selecting: id, also: { $0.set(size: size, of: id) })
     }
 
-    public func set(columns next: GridColumns) {
+    public func set(columns: Int) {
         asOnePress {
-            guard next != columns else { return }
+            let next = GridLayout(columns: columns)
+            guard next != grid else { return }
             do {
-                try write(.columns) { $0.set(columns: next) }
+                try write(.columns) { $0.set(columns: columns) }
             } catch {
                 return toast(.failure("Openspot could not save the columns. \(Self.reason(error))"))
             }
-            columns = next
+            grid = next
             if !visible.indices.contains(selected) { selected = 0 }
         }
     }
 
     func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotArrangement) -> Void = { _ in }) {
-        let count = columns.count
+        let count = grid.columns
         let changes = layout.filter { visible.indices.contains($0.index) }.map { (visible[$0.index], $0) }
         save { next in
             for (entry, placement) in changes {
-                if entry.cell(in: columns) != placement.cell { next.set(cell: placement.cell, of: entry.id, columns: count) }
+                if entry.cell(in: grid) != placement.cell { next.set(cell: placement.cell, of: entry.id, columns: count) }
                 if entry.size != placement.size { next.set(size: placement.size, of: entry.id) }
             }
             also(&next)

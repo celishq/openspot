@@ -274,7 +274,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertLessThan(model.visible.count, 30)
         XCTAssertEqual(model.placements.map(\.row).max(), SpotTokens.rows - 1)
-        XCTAssertLessThan(model.columns.layout.freeCells(around: model.placements).count, 2)
+        XCTAssertLessThan(model.grid.freeCells(around: model.placements).count, 2)
         XCTAssertEqual(model.placements.indices.map { $0 }, model.placements.map(\.index))
     }
 
@@ -413,14 +413,14 @@ final class SpotsModelDragTests: XCTestCase {
     func testMoreColumnsWidenTheGridAtBothSidesAndKeepEachWidthsOwnCells() async {
         model.moveSpot("d", to: GridCell(row: 4, column: 3))
 
-        model.set(columns: GridColumns(8))
-        defer { model.columns = GridColumns() }
+        model.set(columns: 8)
+        defer { model.grid = GridLayout() }
 
-        XCTAssertEqual(files.config.read().columns, GridColumns(8))
+        XCTAssertEqual(files.config.read().grid, GridLayout(columns: 8))
         XCTAssertEqual(SpotTokens.gridWidth, SpotTokens.width(columns: 8))
         XCTAssertEqual(cells, [GridCell(row: 0, column: 0), GridCell(row: 0, column: 2), GridCell(row: 0, column: 4), GridCell(row: 0, column: 6)])
         model.moveSpot("a", to: GridCell(row: 3, column: 6))
-        model.set(columns: GridColumns(4))
+        model.set(columns: 4)
         XCTAssertEqual(place(of: "d").cell, GridCell(row: 4, column: 3))
         XCTAssertEqual(place(of: "a").cell, row0)
     }
@@ -431,7 +431,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testTheGridEndsAtItsLastRowAndEditingShowsAllSevenRows() {
         let rows = SpotPlacement.height(of: model.placements)
-        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: model.columns.layout.height))
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: model.grid.height))
 
         model.endEditing()
 
@@ -533,8 +533,8 @@ final class SpotsModelDragTests: XCTestCase {
     func testAColumnSwitchDuringADragDropsTheDrag() {
         model.dragSpot("d", by: move("d", to: row0))
 
-        model.set(columns: GridColumns(8))
-        defer { model.columns = GridColumns() }
+        model.set(columns: 8)
+        defer { model.grid = GridLayout() }
 
         XCTAssertNil(model.drag)
     }

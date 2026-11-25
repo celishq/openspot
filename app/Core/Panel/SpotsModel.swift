@@ -110,9 +110,9 @@ public final class SpotsModel {
     @ObservationIgnored var heldLayout: Theme.Layout?
     @ObservationIgnored var laidOut = Theme.Layout()
     @ObservationIgnored var takenTheme = Theme()
-    public internal(set) var columns = GridColumns() {
+    public internal(set) var grid = GridLayout() {
         didSet {
-            guard columns != oldValue else { return }
+            guard grid != oldValue else { return }
             widen()
         }
     }
@@ -120,9 +120,9 @@ public final class SpotsModel {
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
-        let free = columns.layout.freeCells(around: placements)
+        let free = grid.freeCells(around: placements)
         if free != freeCells { freeCells = free }
-        let shown = content == .cards && isEditing ? columns.layout.height + laidOutTop : SpotPlacement.height(of: placements)
+        let shown = content == .cards && isEditing ? grid.height + laidOutTop : SpotPlacement.height(of: placements)
         let height = SpotTokens.contentHeight(gridHeight: max(shown, laidOutTop))
         if height != gridHeight { gridHeight = height }
         takeShade()
@@ -443,7 +443,7 @@ public final class SpotsModel {
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
         holdAssignedKeys(config)
-        if columns != config.columns { columns = config.columns }
+        if grid != config.grid { grid = config.grid }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()

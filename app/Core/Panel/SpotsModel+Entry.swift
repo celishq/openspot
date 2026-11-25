@@ -64,8 +64,8 @@ extension SpotsModel {
             run?.spot ?? fixedSpot
         }
 
-        public func cell(in columns: GridColumns) -> GridCell? {
-            cells[columns.count]
+        public func cell(in grid: GridLayout) -> GridCell? {
+            cells[grid.columns]
         }
 
         @MainActor public var size: SpotSize {

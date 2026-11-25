@@ -80,8 +80,8 @@ final class PanelBackdropTests: PanelCase {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
         let four = SpotTokens.panelWidth
-        model.columns = GridColumns(8)
-        defer { model.columns = GridColumns() }
+        model.grid = GridLayout(columns: 8)
+        defer { model.grid = GridLayout() }
 
         XCTAssertEqual(SpotTokens.panelWidth, four + 4 * (SpotTokens.cell + SpotTokens.columnGap))
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: model.gridHeight))

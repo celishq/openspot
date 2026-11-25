@@ -21,7 +21,7 @@ struct SpotGridView: View {
     var body: some View {
         let placements = model.placements
         let drag = model.drag
-        let frame = model.columns.layout
+        let frame = model.grid
         let height = model.query.isEmpty ? frame.height : SpotPlacement.height(of: placements)
         let cards = placements.map { placement in
             let entry = model.visible[placement.index]

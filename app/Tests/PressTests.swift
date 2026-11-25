@@ -145,9 +145,9 @@ final class PressTests: PanelCase {
         try await showGrid("notes")
         model.beginEditing()
 
-        let takes = await takes(stale: true) { model.set(columns: GridColumns(6)) }
+        let takes = await takes(stale: true) { model.set(columns: 6) }
 
-        XCTAssertEqual(model.columns, GridColumns(6))
+        XCTAssertEqual(model.grid, GridLayout(columns: 6))
         XCTAssertEqual(takes, [1, 1])
     }
 
