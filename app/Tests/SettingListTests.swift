@@ -76,6 +76,7 @@ final class SettingListTests: XCTestCase {
 
         XCTAssertFalse(answer.output.contains("MARKER"), answer.output)
         XCTAssertEqual(rows, weather)
+        XCTAssertEqual(Set(TextBlock.blocks(in: answer.output).map { $0.value("name") }), ["Weather"])
     }
 
     func testTheRowsOfTheAppAreItsKeysItsMacChoicesAndItsTheme() async throws {
@@ -88,7 +89,9 @@ final class SettingListTests: XCTestCase {
         let mac = Mac(login: { LoginItem(isOn: { true }, set: { _ in }) })
 
         let rows = try await rows(["--spot", "openspot"], mac: mac, app: app)
+        let names = try await answer(["setting", "list", "--spot", "openspot"], mac: mac, app: app).output
 
+        XCTAssertEqual(Set(TextBlock.blocks(in: names).map { $0.value("name") }), ["Openspot"])
         XCTAssertEqual(rows, [
             Row(item: "openspot/panel-key", key: "panel-key", title: "Open Openspot", value: "option+space", kind: "key", section: "general"),
             Row(item: "openspot/fix-key", key: "fix-key", title: "Open a fix", value: "cmd+option+o", kind: "key", section: "general"),

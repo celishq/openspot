@@ -4,7 +4,7 @@ public enum RenderCall: NounCall {
     case sheet(String, view: String?)
     case card(SpotSize, String)
     case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
-    case panel(String)
+    case panel(String, search: String?, isLight: Bool)
     case store(String)
     case window(id: String, at: String?, path: String, isLight: Bool)
 
@@ -25,7 +25,10 @@ public enum RenderCall: NounCall {
             guard size != .some(nil) else { return nil }
             return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1], isLight: fit.has("--light"))
         },
-        CommandVerb("panel", "<file.png>", "Draws the panel with each installed spot on its grid.", rule: rule) { $0.one.map(Self.panel) },
+        CommandVerb("panel", "[--search <words>] [--light] <file.png>", "Draws the panel with each installed spot on its grid, or with what a search finds, dark or light.", rule: rule) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.panel(fit.rest[0], search: fit.value("--search"), isLight: fit.has("--light"))
+        },
         CommandVerb("store", "<file.png>", "Draws the window of the Store with each spot as its card.", rule: rule) { $0.one.map(Self.store) },
         CommandVerb("window", "<id> [--at <where>] [--light] <file.png>", "Draws the window of a spot whose sheet opens as a window, opened as `spot open --at` opens it, dark or light.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 2 else { return nil }

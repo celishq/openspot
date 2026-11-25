@@ -6,8 +6,8 @@ import SwiftUI
 enum SpotPanelPicture {
     private static let settle = 0.8
 
-    static func run(path: String) -> Never {
-        SpotPicture.start()
+    static func run(path: String, search: String? = nil, isLight: Bool = false) -> Never {
+        SpotPicture.start(isLight: isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
@@ -21,6 +21,11 @@ enum SpotPanelPicture {
             }
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForShows()
+            if let search {
+                model.search(search)
+                try? await Task.sleep(for: .milliseconds(300))
+                await model.waitForShows()
+            }
             model.selected = -1
             let shapes = [(SpotFieldView.rect, SurfaceEdge(card: .strip).radius)] + model.placements.map {
                 ($0.rect.offsetBy(dx: SpotTokens.halo, dy: SpotTokens.gridTop), SurfaceEdge(card: $0.size).radius)

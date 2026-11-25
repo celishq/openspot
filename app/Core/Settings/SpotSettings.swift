@@ -19,6 +19,7 @@ public struct SpotSettings: Equatable, Sendable {
     let keys: [Key]
     var isWindowByDefault = false
     var opensAsWindow = false
+    var name = ""
 
     private func kept(in config: Config) -> [SpotSetting] {
         config.settings.filter { value in
@@ -28,7 +29,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     func rows(in config: Config, secrets: [String: String]) -> [SettingRow] {
         func row(_ key: String, _ title: String, _ value: String?, _ kind: SettingRow.Kind, _ icon: String) -> SettingRow {
-            SettingRow(spot: spot, key: key, title: title, value: value, kind: kind, section: .spot, icon: icon)
+            SettingRow(spot: spot, name: name, key: key, title: title, value: value, kind: kind, section: .spot, icon: icon)
         }
         let keyRows = self.keys.map { key in row(key.act.setting, key.title, config.keys.first { $0.spot == spot && $0.act == key.act }?.trigger.text, .key, key.icon) }
         let fieldRows = self.fields.map { field in

@@ -37,7 +37,7 @@ final class SpotVerbTests: XCTestCase {
         try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
         try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nviews = ['drawer.swift']\nuses = ['spots']\n\n[actions.draw]\ninputs.spot = { type = 'text', required = true }\n\n[on]\ndrop = [\"png\", \"svg\"]")
         try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("drawer.swift"), atomically: true, encoding: .utf8)
-        try "#!/bin/sh\necho\n".writeScript(to: app.appendingPathComponent("settings.sh"), toml: "title = 'Settings'\nwindow = 'settings'\nedits = 'settings'")
+        try "#!/bin/sh\nsed -n 's/^input\\.at=//p' >> '\(folder.path)/at'\n".writeScript(to: app.appendingPathComponent("settings.sh"), toml: "title = 'Settings'\nwindow = 'settings'\nedits = 'settings'\n[on]\n\"sheet.open\" = true")
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
@@ -253,6 +253,30 @@ final class SpotVerbTests: XCTestCase {
         model.run(draw, offeredBy: "openspot/actions", on: target)
 
         try await wait("the sheet of the icon") { model.openSheetID == "openspot/icon" }
+    }
+
+    func testATypedSettingRowIsFoundWithItsSpotAndOpensSettingsAtTheRow() async throws {
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: folder.appendingPathComponent("tools/openspot"))
+        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/rows.sh")
+        try String(contentsOf: real, encoding: .utf8).writeScript(
+            to: core.appendingPathComponent("openspot.spot/rows.sh"), toml: "title = 'All settings'\nuses = ['spots']\n[on]\n\"panel.open\" = true\nsearch = true"
+        )
+        try script("weather", toml: "title = 'Weather'\n[settings]\ncity = { type = 'text', title = 'Home city' }")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.search("home city")
+
+        try await wait("the row in the search") { model.visible.contains { $0.item?.run == "weather/city" } }
+        let row = try XCTUnwrap(model.visible.first { $0.item?.run == "weather/city" })
+        XCTAssertEqual(row.item?.title, "Home city")
+        XCTAssertEqual(row.item?.subtitle, "Weather")
+        XCTAssertEqual(row.state.subtitle, "All settings › Weather")
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.item?.run == "weather/city" })
+        model.runSelected()
+        try await wait("Settings at the row") { saved("at") == "row/weather/city\n" }
+        XCTAssertEqual(host.windows, ["openspot/settings"])
     }
 
     func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
