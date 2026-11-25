@@ -89,16 +89,12 @@ extension SpotsModel {
         pointerMove = translation
         let next = pin.moved(by: translation)
         guard next != pin else { return stopDragWait() }
-        guard next.target?.cell != dragTarget || dragWait == nil else { return }
-        stopDragWait()
-        guard dragRest > .zero, let cell = next.target?.cell else { return show(next) }
-        dragTarget = cell
-        let rest = dragRest
-        dragWait = Task { [weak self] in
-            try? await Task.sleep(for: rest)
-            guard !Task.isCancelled, let self, let pin = self.pin, let move = self.pointerMove else { return }
-            self.dragWait = nil
-            self.dragTarget = nil
+        guard let cell = next.target?.cell else {
+            stopDragWait()
+            return show(next)
+        }
+        afterRest(at: cell) {
+            guard let pin = self.pin, let move = self.pointerMove else { return }
             self.show(pin.moved(by: move))
         }
     }

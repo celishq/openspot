@@ -27,15 +27,21 @@ extension SpotsModel {
 
     private func follow(_ target: GridCell, of drag: SpotDrag) {
         guard target != drag.cell else { return stopDragWait() }
-        guard target != dragTarget else { return }
+        afterRest(at: target) { self.land(at: target) }
+    }
+
+    func afterRest(at cell: GridCell, _ land: @escaping @MainActor () -> Void) {
+        guard cell != dragTarget else { return }
         stopDragWait()
-        dragTarget = target
-        guard dragRest > .zero else { return land(at: target) }
+        guard dragRest > .zero else { return land() }
+        dragTarget = cell
         let rest = dragRest
         dragWait = Task { [weak self] in
             try? await Task.sleep(for: rest)
-            guard !Task.isCancelled, let self, self.dragTarget == target else { return }
-            self.land(at: target)
+            guard !Task.isCancelled, let self, self.dragTarget == cell else { return }
+            self.dragWait = nil
+            self.dragTarget = nil
+            land()
         }
     }
 
