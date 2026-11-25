@@ -3,17 +3,13 @@ import XCTest
 final class DocReferenceTests: XCTestCase {
     private let repo = RepoDoc.repo
 
-    private func exists(_ path: String, in folder: URL) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path)
-    }
-
     func testEachLinkOfADocReachesAFileAndAHeadingThatExist() throws {
         for doc in try RepoDoc.all() {
             let links = RepoDoc.matches(#"\]\(([^)\s]+)\)"#, in: doc.prose) + RepoDoc.matches(#"(?:href|src)="([^"]+)""#, in: doc.prose)
             for link in links.map({ $0[1] }) where !link.contains("://") && !link.hasPrefix("mailto:") {
                 let parts = link.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
                 let file = parts[0]
-                XCTAssertTrue(file.isEmpty || exists(file, in: doc.folder), "\(doc.path) links to \(file), which does not exist")
+                XCTAssertTrue(file.isEmpty || placed(at: doc.folder.appendingPathComponent(file).path), "\(doc.path) links to \(file), which does not exist")
                 guard parts.count == 2 else { continue }
                 let target = file.isEmpty ? doc : try? RepoDoc(doc.folder.appendingPathComponent(file).path.replacingOccurrences(of: repo.path + "/", with: ""))
                 XCTAssertTrue(target?.anchors.contains(parts[1]) == true, "\(doc.path) links to \(link), a heading that does not exist")
@@ -47,7 +43,7 @@ final class DocReferenceTests: XCTestCase {
         for doc in try RepoDoc.all() {
             for path in RepoDoc.matches("`([^`\\s]+)`", in: doc.prose).map({ $0[1] }) {
                 if path.range(of: #"^[A-Z]+\.md$"#, options: .regularExpression) != nil {
-                    XCTAssertTrue(bases.contains { exists(path, in: $0) }, "\(doc.path) names \(path), which does not exist")
+                    XCTAssertTrue(bases.contains { placed(at: $0.appendingPathComponent(path).path) }, "\(doc.path) names \(path), which does not exist")
                     continue
                 }
                 guard path.contains("/"), !path.contains("*"), !path.contains("<"), !path.contains(":") else { continue }
@@ -56,7 +52,7 @@ final class DocReferenceTests: XCTestCase {
                 var isFolder: ObjCBool = false
                 let named = bases.filter { FileManager.default.fileExists(atPath: $0.appendingPathComponent(first).path, isDirectory: &isFolder) && isFolder.boolValue }
                 guard !named.isEmpty else { continue }
-                XCTAssertTrue(named.contains { exists(path, in: $0) }, "\(doc.path) names \(path), which does not exist")
+                XCTAssertTrue(named.contains { placed(at: $0.appendingPathComponent(path).path) }, "\(doc.path) names \(path), which does not exist")
             }
         }
     }

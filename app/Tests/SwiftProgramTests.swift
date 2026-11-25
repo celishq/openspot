@@ -677,7 +677,7 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(built.map(\.lastPathComponent), [name])
         XCTAssertEqual(try Data(contentsOf: spot.appendingPathComponent(name)), Data("built".utf8))
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: spot.appendingPathComponent(name).path))
-        XCTAssertFalse(exists(old))
+        XCTAssertFalse(placed(at: old.path))
         XCTAssertEqual(builds, 2)
     }
 
@@ -727,7 +727,7 @@ final class SwiftProgramTests: XCTestCase {
 
         await swift.prune(keeping: [spot.url], with: [spot.url: spot.sources])?.value
 
-        XCTAssertTrue(exists(program))
+        XCTAssertTrue(placed(at: program.path))
     }
 
     private func built(_ sources: [URL], by program: SwiftProgram) async throws -> [URL] {
@@ -744,10 +744,6 @@ final class SwiftProgramTests: XCTestCase {
         try FileManager.default.setAttributes([.modificationDate: clock.now.addingTimeInterval(-days * 86_400)], ofItemAtPath: file.path)
     }
 
-    private func exists(_ file: URL) -> Bool {
-        FileManager.default.fileExists(atPath: file.path)
-    }
-
     func testAPruneRemovesEachBuildOfNoSourceAndEachNotRunFor30Days() async throws {
         let program = try caching()
         let used = try source()
@@ -761,7 +757,7 @@ final class SwiftProgramTests: XCTestCase {
 
         await program.prune(keeping: [used, idle])?.value
 
-        XCTAssertEqual([exists(builds[0]), exists(builds[1]), exists(orphan)], [true, false, false])
+        XCTAssertEqual([placed(at: builds[0].path), placed(at: builds[1].path), placed(at: orphan.path)], [true, false, false])
     }
 
     func testAPruneRunsAtMostOnceADay() async throws {
@@ -771,10 +767,10 @@ final class SwiftProgramTests: XCTestCase {
         await program.prune(keeping: [source])?.value
 
         XCTAssertNil(program.prune(keeping: []))
-        XCTAssertTrue(exists(builds[0]))
+        XCTAssertTrue(placed(at: builds[0].path))
         clock.move(days: 1.1)
         await program.prune(keeping: [])?.value
-        XCTAssertFalse(exists(builds[0]))
+        XCTAssertFalse(placed(at: builds[0].path))
     }
 
     func testAPruneKeepsABuildWhileItRuns() async throws {
@@ -788,13 +784,13 @@ final class SwiftProgramTests: XCTestCase {
         try process.run()
 
         await program.prune(keeping: [])?.value
-        XCTAssertTrue(exists(builds[0]))
+        XCTAssertTrue(placed(at: builds[0].path))
         try input.fileHandleForWriting.close()
         process.waitUntilExit()
         clock.move(days: 1.1)
         await program.prune(keeping: [])?.value
 
-        XCTAssertFalse(exists(builds[0]))
+        XCTAssertFalse(placed(at: builds[0].path))
     }
 
     private var root: URL { folder.appendingPathComponent("swift", isDirectory: true) }
@@ -827,6 +823,6 @@ final class SwiftProgramTests: XCTestCase {
 
         await debug.prune(keeping: [])?.value
 
-        XCTAssertTrue(exists(kept[0]))
+        XCTAssertTrue(placed(at: kept[0].path))
     }
 }

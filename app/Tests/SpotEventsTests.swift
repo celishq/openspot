@@ -121,7 +121,7 @@ final class SpotEventsTests: SpotRunsCase {
         runs.panelOpened()
         runs.panelClosed()
 
-        try await wait("the end of the launch read") { self.exists("done") }
+        try await wait("the end of the launch read") { self.placed(at: path("done")) }
     }
 
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {

@@ -43,7 +43,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         XCTAssertFalse(sheet.calls.isEmpty)
         openGate()
-        try await wait("the end of the work") { self.exists("done") }
+        try await wait("the end of the work") { self.placed(at: path("done")) }
     }
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
@@ -207,7 +207,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelClosed()
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(sheet.calls.count, 0)
     }
 
@@ -230,7 +230,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the row") { sheet.list.shown.count == 1 }
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
     }
 
     func testAProcessThatEndedIsLetGoWithNoLaterCall() async throws {
@@ -296,7 +296,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.count, 1)
 
-        try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
+        try await wait("the end of the work") { self.placed(at: path("done")) && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
         XCTAssertEqual(frames.last, "frame=\nclass=gap-part\n\ntext=bar\ntitle=done\n")
         XCTAssertEqual(sheet.panel?.parts.map(\.title) ?? ["done"], ["done"])
@@ -360,15 +360,15 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(parts[1], to: "true")
         sheet.set(parts[0], to: "true")
-        try await wait("the first call of a with true") { self.exists("a-true") }
+        try await wait("the first call of a with true") { self.placed(at: path("a-true")) }
         sheet.set(parts[0], to: "false")
 
         try await wait("the new call of a") { sheet.panel?.parts[2].title == "new" }
         openGate()
-        try await wait("the end of b") { self.exists("b") && sheet.calls.isEmpty }
+        try await wait("the end of b") { self.placed(at: path("b")) && sheet.calls.isEmpty }
         try await allEnded()
-        XCTAssertTrue(exists("new-a"))
-        XCTAssertFalse(exists("old-a"))
+        XCTAssertTrue(placed(at: path("new-a")))
+        XCTAssertFalse(placed(at: path("old-a")))
         XCTAssertEqual(sheet.panel?.parts[0].value, "false")
     }
 
@@ -412,7 +412,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertTrue(sheet.calls.isEmpty)
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(log(), ["show", "go"])
     }
 
@@ -434,7 +434,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.run(action, item: nil)
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(log(), ["show", "go"])
     }
 
@@ -467,7 +467,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: Self.big)
 
-        try await wait("the call") { self.exists("done") }
+        try await wait("the call") { self.placed(at: path("done")) }
         XCTAssertEqual(try String(contentsOfFile: path("count"), encoding: .utf8), "1")
         let got = try String(contentsOfFile: path("got"), encoding: .utf8)
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input.input"), Self.big)

@@ -177,7 +177,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await pause(0.1)
 
         XCTAssertFalse(runs.isShowing)
-        XCTAssertFalse(exists("runs"))
+        XCTAssertFalse(placed(at: path("runs")))
     }
 
     func testEachScriptHasOneSheet() throws {
@@ -217,7 +217,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await pause(0.35)
 
         XCTAssertNil(runs.sheets["script"])
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
     }
 
     func testARequestJoinsTheReadThatRuns() async throws {

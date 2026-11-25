@@ -122,7 +122,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         runs.panelClosed()
         try await allEnded()
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(sheet.list.shown.count, 1)
 
         time += 5
@@ -225,7 +225,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the answer") { sheet.list.shown.map(\.title) == ["slower"] }
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
     }
 
     func testATimedSpotJoinsTheMainSearchWithNoKeyAndStartsOffTheGrid() throws {

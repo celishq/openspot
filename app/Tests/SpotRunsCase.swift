@@ -31,10 +31,6 @@ class SpotRunsCase: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
-    func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: path(name))
-    }
-
     func log(_ name: String = "log") -> [String] {
         ((try? String(contentsOfFile: path(name), encoding: .utf8)) ?? "").split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
     }

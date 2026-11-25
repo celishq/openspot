@@ -31,10 +31,6 @@ final class SpotRunTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
-    private func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: path(name))
-    }
-
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
@@ -391,7 +387,7 @@ final class SpotRunTests: XCTestCase {
         let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
         try await wait("the end of the script") { kill(pid, 0) != 0 }
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
     }
 
@@ -434,7 +430,7 @@ final class SpotRunTests: XCTestCase {
         sheet.show()
         try await Task.sleep(for: .milliseconds(150))
 
-        XCTAssertFalse(exists("started"))
+        XCTAssertFalse(placed(at: path("started")))
     }
 
     func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
@@ -447,7 +443,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the count") { sheet.panel?.parts.first?.title == "1" }
 
         sheet.close()
-        try await wait("the end of the script") { exists("ended") }
+        try await wait("the end of the script") { placed(at: path("ended")) }
 
         var isReady = false
         sheet.open { isReady = true }
@@ -473,7 +469,7 @@ final class SpotRunTests: XCTestCase {
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
         sheet.close()
 
-        try await wait("the copy") { exists("copied") }
+        try await wait("the copy") { placed(at: path("copied")) }
     }
 
     func testAStayingScriptGetsTheValuesOfTheSheetAsTheStdinOfItsCall() async throws {

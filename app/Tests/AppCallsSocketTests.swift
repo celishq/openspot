@@ -46,10 +46,6 @@ final class AppCallsSocketTests: XCTestCase {
         try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
-    private func exists(_ file: URL) -> Bool {
-        FileManager.default.fileExists(atPath: file.path)
-    }
-
     func testASpotRunGetsTheFolderAndTheStdinOfItsCallerAndTheVariablesOfTheApp() throws {
         try spot("echo", toml: TestSpot.command, "printf 'folder=%s\\ntone=%s\\n---\\n' \"$PWD\" \"$TONE\"; cat")
         listen()
@@ -84,13 +80,13 @@ final class AppCallsSocketTests: XCTestCase {
         listen()
         let connection = connect()
         try connection.send(request(["spot", "run", "long"]))
-        try await wait("the start of the script") { exists(started) && !((try? String(contentsOf: started, encoding: .utf8)) ?? "").isEmpty }
+        try await wait("the start of the script") { placed(at: started.path) && !((try? String(contentsOf: started, encoding: .utf8)) ?? "").isEmpty }
         let script = try XCTUnwrap(pid_t(try String(contentsOf: started, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
 
         connection.close()
 
         try await wait("the end of the script") { kill(script, 0) != 0 }
-        XCTAssertFalse(exists(far))
+        XCTAssertFalse(placed(at: far.path))
     }
 
     func testCarefulModeRunsAPersonsSpotRunInItsUsesAndLeavesASpotsRunToItsOwnSandbox() async throws {
@@ -107,8 +103,8 @@ final class AppCallsSocketTests: XCTestCase {
         let spot = try ask(["spot", "run", "writer", "spot"], channel: channel)
 
         XCTAssertEqual(person.stdout, "wrote\n", person.stderr)
-        XCTAssertTrue(exists(outside.appendingPathComponent("person")))
-        XCTAssertFalse(exists(outside.appendingPathComponent("spot")))
+        XCTAssertTrue(placed(at: outside.appendingPathComponent("person").path))
+        XCTAssertFalse(placed(at: outside.appendingPathComponent("spot").path))
         XCTAssertEqual((spot.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
@@ -123,7 +119,7 @@ final class AppCallsSocketTests: XCTestCase {
 
         XCTAssertEqual(answer.stdout, "")
         XCTAssertEqual(answer.code, 0)
-        XCTAssertFalse(exists(leak))
+        XCTAssertFalse(placed(at: leak.path))
     }
 
     func testTheReadsOfACheckInCarefulModeAreKnownAsTheirSpots() async throws {

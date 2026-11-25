@@ -31,7 +31,7 @@ final class StatsLogTests: SpotRunsCase {
 
         runs.panelOpened()
         sheet.open {}
-        try await wait("the busy loop") { self.exists("busy") }
+        try await wait("the busy loop") { self.placed(at: path("busy")) }
         let pid = try await pid("pids")
 
         let cpu = runs.usage.counts["script"]?.cost.cpu ?? 0
@@ -56,12 +56,12 @@ final class StatsLogTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the first busy loop") { self.exists("busy") }
+        try await wait("the first busy loop") { self.placed(at: path("busy")) }
         time += 24 * 60 * 60
         runs.usage.flush()
 
         openGate()
-        try await wait("the second busy loop") { self.exists("busy again") }
+        try await wait("the second busy loop") { self.placed(at: path("busy again")) }
         runs.usage.flush()
 
         let days = runs.usage.days(2, at: time)

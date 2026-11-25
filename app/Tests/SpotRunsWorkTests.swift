@@ -350,7 +350,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.cardAct)
         XCTAssertFalse(sheet.isCardRunning)
         try await allEnded()
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
     }
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
@@ -370,7 +370,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.press(part)
 
         XCTAssertEqual(sheet.calls.filter(\.isAct).count, 1)
-        try await wait("the end of the work") { self.exists("done") }
+        try await wait("the end of the work") { self.placed(at: path("done")) }
         try await wait("the read after the work") { self.log() == ["show", "go", "show"] }
     }
 
@@ -394,7 +394,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pick(item)
 
         XCTAssertEqual(sheet.calls.filter(\.isAct).count, 2)
-        try await wait("the end of the work") { self.exists("action") && self.exists("pick") }
+        try await wait("the end of the work") { self.placed(at: path("action")) && self.placed(at: path("pick")) }
     }
 
     func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
@@ -408,7 +408,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.state.on, true)
         XCTAssertTrue(sheet.isCardRunning)
-        try await wait("the end of the work") { self.exists("done") && !sheet.isCardRunning }
+        try await wait("the end of the work") { self.placed(at: path("done")) && !sheet.isCardRunning }
         XCTAssertEqual(sheet.state.on, true)
     }
 
@@ -476,7 +476,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         guard case .form(let form) = asked else { return XCTFail("no form: \(String(describing: asked))") }
         XCTAssertEqual(form.fields.map(\.name), ["editor"])
         XCTAssertEqual(done, .done)
-        XCTAssertTrue(exists("folder"))
+        XCTAssertTrue(placed(at: path("folder")))
     }
 
     func testQuittingStopsEachCall() async throws {
@@ -497,7 +497,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         runs.quit()
 
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
-        try await wait("the stop") { self.exists("stopped") }
+        try await wait("the stop") { self.placed(at: path("stopped")) }
         try await wait("the end of the deaf script") { kill(pid, 0) != 0 }
     }
 

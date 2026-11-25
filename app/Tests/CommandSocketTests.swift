@@ -66,10 +66,6 @@ final class CommandSocketTests: XCTestCase {
         return try connection.exchange(input: input)
     }
 
-    private func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
-    }
-
     func testOnlyThePersonCanReachTheSocket() throws {
         let mode = try XCTUnwrap(FileManager.default.attributesOfItem(atPath: folder.appendingPathComponent(CommandSocket.name).path)[.posixPermissions] as? Int)
 
@@ -124,7 +120,7 @@ final class CommandSocketTests: XCTestCase {
 
         XCTAssertEqual(first["method"] as? String, "stdout")
         XCTAssertEqual(((first["params"] as? [String: Any])?["text"] as? String)?.hasPrefix(version), true)
-        XCTAssertFalse(exists("ended"))
+        XCTAssertFalse(placed(at: folder.appendingPathComponent("ended").path))
     }
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
@@ -132,12 +128,12 @@ final class CommandSocketTests: XCTestCase {
         socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
-        try await wait("the start of the work") { exists("started") }
+        try await wait("the start of the work") { placed(at: folder.appendingPathComponent("started").path) }
 
         connection.close()
 
-        try await wait("the end of the work") { exists("ended") }
-        XCTAssertFalse(exists("far"))
+        try await wait("the end of the work") { placed(at: folder.appendingPathComponent("ended").path) }
+        XCTAssertFalse(placed(at: folder.appendingPathComponent("far").path))
     }
 
     func testTheConfigAndTheSpotsOfACallerChangeNothingTheAppWrites() throws {

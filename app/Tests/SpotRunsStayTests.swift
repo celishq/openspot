@@ -81,7 +81,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await pause()
 
         XCTAssertEqual(sheet.calls.map(\.key), ["call:press\nhold"])
-        XCTAssertFalse(exists("ended"))
+        XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(kill(child, 0), 0)
     }
 
@@ -106,7 +106,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.quit()
 
         try await wait("the end of the child") { kill(child, 0) != 0 }
-        XCTAssertTrue(exists("ended"))
+        XCTAssertTrue(placed(at: path("ended")))
     }
 
     func testEachCallOfAStayingScriptHasItsOwnId() async throws {
@@ -615,7 +615,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         _ = try scanned()
         try await pause(0.15)
 
-        XCTAssertFalse(exists("ended"))
+        XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(log().count, 1)
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
@@ -670,7 +670,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(reads(), ["arg=show"])
 
         runs.panelClosed()
-        try await wait("the end") { self.exists("ended") }
+        try await wait("the end") { self.placed(at: path("ended")) }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -686,7 +686,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.woke()
         try await pause(0.15)
 
-        XCTAssertFalse(exists("ended"))
+        XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(log().count, 1)
     }
 
@@ -742,7 +742,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(SpotItem(title: "A", run: "a"))
 
-        try await wait("the end") { self.exists("ended") }
+        try await wait("the end") { self.placed(at: path("ended")) }
         XCTAssertEqual(reads(), ["arg=show", "arg=press\ninput.item=a"])
         XCTAssertEqual(log().count, 1)
     }
@@ -756,7 +756,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try FileManager.default.removeItem(at: url)
         _ = try scanned()
 
-        try await wait("the end") { self.exists("ended") }
+        try await wait("the end") { self.placed(at: path("ended")) }
     }
 
     private static let givenUp = "Script failed 3 times in one minute. Openspot will not start it again until its file changes."
@@ -913,7 +913,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.search("ab")
 
         try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
-        XCTAssertTrue(exists("stopped"))
+        XCTAssertTrue(placed(at: path("stopped")))
         openGate()
         try await wait("the toast after the late answer") { toasts == ["Done"] }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])

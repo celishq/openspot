@@ -13,6 +13,16 @@ if grep -rEn --include='*.swift' 'pgrep|proc_listallpids' app/Tests | grep -v '^
   echo "A test looks for processes outside its own; find them with children(running:), children(matching:) or processes(tagged:); see Tests in AGENTS.md." >&2
   exit 1
 fi
+if find app/Tests -name '*.swift' ! -name 'XCTestCase+Files.swift' -exec awk '
+  FNR == 1 { prev = "" }
+  prev ~ /(func|var) .*\{[[:space:]]*$/ && /^[[:space:]]*(return )?FileManager\.default\.fileExists\(atPath: [^,]*\)[[:space:]]*$/ { print FILENAME ":" FNR ": " $0; found = 1 }
+  /(func|var) [^=]*\{[[:space:]]*(return )?FileManager\.default\.fileExists\(atPath: [^,]*\)[[:space:]]*\}/ { print FILENAME ":" FNR ": " $0; found = 1 }
+  { prev = $0 }
+  END { exit !found }
+' {} + | grep .; then
+  echo "A test wraps fileExists, which hides a wait for a file from this check; use placed(at:) or lines(at:); see Tests in AGENTS.md." >&2
+  exit 1
+fi
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
 grep -rEo --include='*.swift' 'Task\.sleep|setenv\(' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '(' >"$found"

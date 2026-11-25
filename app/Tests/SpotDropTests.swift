@@ -22,10 +22,6 @@ final class SpotDropTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
-    private func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: path(name))
-    }
-
     private func file(_ name: String) -> String {
         FileManager.default.createFile(atPath: path(name), contents: Data())
         return path(name)
@@ -272,7 +268,7 @@ final class SpotDropTests: XCTestCase {
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the drop") { self.log().contains("drop \(file)") }
-        XCTAssertTrue(exists("worked"))
+        XCTAssertTrue(placed(at: path("worked")))
     }
 
     func testAWaitingDropRunsAfterTheRunningCallIsStopped() async throws {
@@ -283,7 +279,7 @@ final class SpotDropTests: XCTestCase {
         sheet.stop(try XCTUnwrap(sheet.calls.first))
 
         try await wait("the drop") { self.log().contains("drop \(file)") }
-        XCTAssertFalse(exists("worked"))
+        XCTAssertFalse(placed(at: path("worked")))
     }
 
     func testAWaitingDropRunsAfterASecondPressStopsTheRunningCard() async throws {
@@ -348,7 +344,7 @@ final class SpotDropTests: XCTestCase {
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the second drop") { self.log() == ["drop \(first)", "drop \(second)"] }
-        XCTAssertTrue(exists("first-done"))
+        XCTAssertTrue(placed(at: path("first-done")))
     }
 
     func testARunningReadDoesNotHoldADrop() async throws {
@@ -451,7 +447,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertFalse(sheet.isCardRunning)
         try await allEnded()
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
     }
 
     func testAPressWithinOneSecondOfADropDoesNothing() async throws {
@@ -461,7 +457,7 @@ final class SpotDropTests: XCTestCase {
         sheet.pressCard()
 
         XCTAssertTrue(sheet.isCardRunning)
-        try await wait("the end of the work") { self.exists("done") }
+        try await wait("the end of the work") { self.placed(at: path("done")) }
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
@@ -486,7 +482,7 @@ final class SpotDropTests: XCTestCase {
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.first?.isAct, true)
 
-        try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
+        try await wait("the end of the work") { self.placed(at: path("done")) && sheet.calls.isEmpty }
         XCTAssertEqual(failures, [])
     }
 
@@ -533,7 +529,7 @@ final class SpotDropTests: XCTestCase {
         sheet.stop(try XCTUnwrap(sheet.calls.first))
         try await allEnded()
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: path("went-on")))
         XCTAssertEqual(sheet.list.shown.count, 1)
         XCTAssertEqual(log().count, 2)
     }

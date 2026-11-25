@@ -136,10 +136,6 @@ final class DoomExampleTests: SampleSpotsCase {
         ((try? read(name, in: folder)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    private func exists(_ name: String, in folder: URL) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
-    }
-
     private func leftovers(in folder: URL) throws -> [String] {
         try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasPrefix("doom.") }
     }
@@ -159,8 +155,8 @@ final class DoomExampleTests: SampleSpotsCase {
             XCTAssertEqual(played.last.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }, self.data(in: folder).resolvingSymlinksInPath().path)
             XCTAssertTrue(run.frames.contains { $0.contains("title=Playing\ndetail=Press to quit") }, "\(run.frames)")
             XCTAssertNil(run.failure)
-            XCTAssertFalse(self.exists("fetched", in: folder))
-            XCTAssertFalse(self.exists("compiled", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("fetched").path))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("compiled").path))
         }
     }
 
@@ -181,7 +177,7 @@ final class DoomExampleTests: SampleSpotsCase {
             XCTAssertFalse(compiled.contains { $0.contains("doomgeneric_xlib") }, "\(compiled)")
             XCTAssertTrue(compiled.contains { $0.contains("doom.spot/doomgeneric_mac.m") && $0.contains("-framework Cocoa") }, "\(compiled)")
             XCTAssertEqual(self.lines("played", in: folder).first, "built -iwad \(self.data(in: folder).path)/doom1.wad")
-            XCTAssertFalse(self.exists("fetched", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("fetched").path))
         }
     }
 
@@ -213,7 +209,7 @@ final class DoomExampleTests: SampleSpotsCase {
             XCTAssertEqual(self.lines("fetched", in: folder).count, 1)
             XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: self.data(in: folder).path), [])
             XCTAssertEqual(try self.leftovers(in: folder), [])
-            XCTAssertFalse(self.exists("played", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("played").path))
         }
     }
 
@@ -232,9 +228,9 @@ final class DoomExampleTests: SampleSpotsCase {
             XCTAssertTrue(fetched.first?.contains("deb.debian.org") == true, "\(fetched)")
             XCTAssertTrue(fetched.last?.contains("snapshot.debian.org") == true, "\(fetched)")
             XCTAssertEqual(run.failure, "The download of Doom is not the expected file, so Openspot did not keep it. Press Doom again to download it again.")
-            XCTAssertFalse(self.exists("doom1.wad", in: self.data(in: folder)))
+            XCTAssertFalse(self.placed(at: self.data(in: folder).appendingPathComponent("doom1.wad").path))
             XCTAssertEqual(try self.leftovers(in: folder), [])
-            XCTAssertFalse(self.exists("played", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("played").path))
         }
     }
 
@@ -249,7 +245,7 @@ final class DoomExampleTests: SampleSpotsCase {
             let run = await self.press(doom)
 
             XCTAssertEqual(run.failure, "Openspot cannot download Doom. Check the connection to the internet, then press Doom again.")
-            XCTAssertFalse(self.exists("played", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("played").path))
         }
     }
 
@@ -327,9 +323,9 @@ final class DoomExampleTests: SampleSpotsCase {
 
             XCTAssertEqual(pictures.map(\.picture), [nil, first.path, second.path])
             XCTAssertEqual(pictures.map(\.sheet), [nil, ["screen", "play"], ["screen", "play"]])
-            XCTAssertFalse(self.exists("fetched", in: folder))
-            XCTAssertFalse(self.exists("compiled", in: folder))
-            XCTAssertFalse(self.exists("played", in: folder))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("fetched").path))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("compiled").path))
+            XCTAssertFalse(self.placed(at: folder.appendingPathComponent("played").path))
         }
     }
 

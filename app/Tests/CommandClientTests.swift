@@ -257,15 +257,11 @@ final class CommandClientTests: XCTestCase {
         return (process, output, errors)
     }
 
-    private func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
-    }
-
     func testALiveCallWithNoAppStartsItInTheBackgroundAndAsksItsSocket() async throws {
         try "#!/bin/sh\nif [ $# -gt 2 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
         let run = try start(["app", "status"])
 
-        try await wait("the start of the app") { exists("started") }
+        try await wait("the start of the app") { placed(at: folder.appendingPathComponent("started").path) }
         listen()
         try await wait("the end of the call") { !run.process.isRunning }
 
@@ -298,13 +294,13 @@ final class CommandClientTests: XCTestCase {
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: SlowApp(folder: folder)))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
-        try await wait("the start of the work") { exists("started") }
+        try await wait("the start of the work") { placed(at: folder.appendingPathComponent("started").path) }
 
         run.process.interrupt()
 
-        try await wait("the end of the work") { exists("ended") }
+        try await wait("the end of the work") { placed(at: folder.appendingPathComponent("ended").path) }
         try await wait("the end of the command") { !run.process.isRunning }
-        XCTAssertFalse(exists("far"))
+        XCTAssertFalse(placed(at: folder.appendingPathComponent("far").path))
         XCTAssertEqual(run.process.terminationStatus, 130)
     }
 

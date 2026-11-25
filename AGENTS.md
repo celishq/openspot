@@ -276,7 +276,9 @@ interaction.
   wait for its end, then check.
 - A wait's fact is the content that the test then checks, never that a file exists or reads, since a child makes a file
   before it writes it. Read a file that a child writes with `lines(at:)`, which gives only its whole lines, and have a
-  marker that a child makes write a line. `placed(at:)` waits for a file that its writer moves into place whole.
+  marker that a child makes write a line. `placed(at:)` is for a file that appears whole: one that its writer moves
+  into place, or an empty marker made by `touch`. A test does not wrap `fileExists`, since a wrapper hides its waits from
+  the check.
 - A test never catches a state that a span of real time ends, such as a frame that a `sleep` replaces. A gate that the test
   opens holds it, such as a fake `sleep` on the `PATH` that waits for a file, or the test checks the record of each change.
 - A test finds only its own processes: its children by program or by arguments (`children(running:)`,
@@ -294,7 +296,7 @@ interaction.
 - A time that decides an outcome, such as a limit, comes from the clock of the runs (`RunClock`), which a test moves with
   `FakeClock`. A test proves a fact, not a speed: a speed goes to `make perf` or a bench.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
-  blocks its thread with a sleep, on a wait for a file that exists or reads, on a look for processes outside
+  blocks its thread with a sleep, on a wait for a file that exists or reads, on a wrapper of `fileExists`, on a look for processes outside
   `XCTestCase+Processes.swift`, and on a new `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
   `Date().timeIntervalSince` outside the shared helpers. `scripts/check-core.sh` fails on a new `asyncAfter` in `Core/`
   outside `RunClock`.

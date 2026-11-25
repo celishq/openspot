@@ -112,10 +112,6 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data/up").path)
     }
 
-    private func exists(_ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
-    }
-
     private func path(_ name: String) -> String {
         folder.appendingPathComponent(name).path
     }
@@ -199,7 +195,7 @@ final class ScriptProcessTests: XCTestCase {
         for try await _ in frames { XCTFail("no frame") }
         try await Task.sleep(for: .seconds(Self.stopPause * 3))
 
-        if exists("script") {
+        if placed(at: folder.appendingPathComponent("script").path) {
             let script = try await pid("script")
             XCTAssertFalse(runs(script))
         }
@@ -214,7 +210,7 @@ final class ScriptProcessTests: XCTestCase {
         process.stop()
         try await Task.sleep(for: .seconds(0.5))
 
-        XCTAssertFalse(exists("child"))
+        XCTAssertFalse(placed(at: folder.appendingPathComponent("child").path))
     }
 
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
@@ -225,7 +221,7 @@ final class ScriptProcessTests: XCTestCase {
 
         process.stop()
 
-        try await wait("the clean-up and the end") { self.exists("cleaned") && !process.isRunning }
+        try await wait("the clean-up and the end") { self.placed(at: folder.appendingPathComponent("cleaned").path) && !process.isRunning }
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
@@ -250,7 +246,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     private func pid(_ name: String) async throws -> Int32 {
-        for _ in 0..<6000 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
+        for _ in 0..<6000 where !placed(at: folder.appendingPathComponent(name).path) { try await Task.sleep(for: .milliseconds(10)) }
         return try XCTUnwrap(Int32(try String(contentsOfFile: path(name), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
@@ -429,6 +425,6 @@ final class ScriptProcessTests: XCTestCase {
         let script = try await pid("script")
         try await wait("the end of the script") { !self.runs(script) }
 
-        XCTAssertFalse(exists("went-on"))
+        XCTAssertFalse(placed(at: folder.appendingPathComponent("went-on").path))
     }
 }
