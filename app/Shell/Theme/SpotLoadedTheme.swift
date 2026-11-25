@@ -32,6 +32,10 @@ final class SpotLoadedTheme {
         layout += 1
     }
 
+    func widen() {
+        viewThemes = [:]
+    }
+
     func viewTheme(isDark: Bool, corner: CGFloat) -> [String: Any] {
         let palette = palette
         let name = ViewThemeKey(isDark: isDark, corner: corner)

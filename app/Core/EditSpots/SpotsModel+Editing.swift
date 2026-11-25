@@ -143,11 +143,8 @@ extension SpotsModel {
             } catch {
                 return toast(.failure("Openspot could not save the columns. \(Self.reason(error))"))
             }
-            change(.edit) {
-                columns = next
-                updateVisible()
-                if !visible.indices.contains(selected) { selected = 0 }
-            }
+            columns = next
+            if !visible.indices.contains(selected) { selected = 0 }
         }
     }
 

@@ -60,6 +60,16 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertEqual(model.config, Config(text: disk.text ?? ""))
     }
 
+    func testAColumnSwitchWidensThePanelOnceAndLaysOutNoTheme() {
+        model.beginEditing()
+        let layOuts = host.layOuts.count
+
+        model.set(columns: GridColumns(8))
+
+        XCTAssertEqual(host.layOuts.count, layOuts)
+        XCTAssertEqual(host.widths, [GridColumns(8).frame.width])
+    }
+
     func testAnEditKeyReadsNoConfigFromTheDisk() throws {
         model.beginEditing()
         let reads = disk.reads

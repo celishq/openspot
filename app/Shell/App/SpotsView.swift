@@ -49,6 +49,7 @@ struct SpotsView: View {
             .modifier(PanelSpan(columns: model.columns))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
+                .id(model.columns.count)
             field(card: card, motion: motion, isGlass: true)
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
@@ -65,6 +66,7 @@ struct SpotsView: View {
                     fadeHeight: cardHeight,
                     showsField: showsSearchField && fieldIsInSheet
                 )
+                .id(model.columns.count)
             }
             field(card: card, motion: motion, isGlass: false)
             if model.isMenuOpen {
@@ -74,7 +76,6 @@ struct SpotsView: View {
                     .onTapGesture { model.closeMenu() }
             }
         }
-        .id(model.columns.count)
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
         .allowsHitTesting(!model.transition.isMoving)
@@ -103,6 +104,7 @@ struct SpotsView: View {
             isGlass: isGlass
         )
         .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+        .id(model.columns.count)
     }
 
     private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {

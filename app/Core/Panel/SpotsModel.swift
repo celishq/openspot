@@ -113,9 +113,7 @@ public final class SpotsModel {
     public internal(set) var columns = GridColumns() {
         didSet {
             guard columns != oldValue else { return }
-            let held = heldLayout?.with(columns: columns.count)
-            lay(laidOut.with(columns: columns.count))
-            heldLayout = held
+            widen()
         }
     }
     public internal(set) var backdropSheet: SpotRun?

@@ -14,6 +14,18 @@ extension SpotsModel {
         lay(theme.layout.with(columns: columns.count))
     }
 
+    func widen() {
+        heldLayout = heldLayout?.with(columns: columns.count)
+        laidOut = laidOut.with(columns: columns.count)
+        SpotTokens.take(laidOut)
+        gridScroll = 0
+        cardScroll = 0
+        for run in runs.sheets.values { run.layOut() }
+        showVisible()
+        takePlacements()
+        host.widen()
+    }
+
     func lay(_ layout: Theme.Layout) {
         heldLayout = nil
         guard layout != laidOut else { return }
