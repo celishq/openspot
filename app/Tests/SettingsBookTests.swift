@@ -154,6 +154,12 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(try row("weather/token").value, SettingRow.secretValue)
     }
 
+    func testAChoiceWithNoValueShowsItsDefault() {
+        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spot, icon: "", options: ["name", "date"], default: "date")
+
+        XCTAssertEqual(book.display(row), "date")
+    }
+
     func testAToggleOfTheAppGoesToTheMac() async throws {
         await read()
 

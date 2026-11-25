@@ -56,7 +56,7 @@ public final class SettingsBook {
         case (_, ""): "Not set"
         case (.toggle, "true"): "On"
         case (.toggle, _): "Off"
-        default: row.value ?? ""
+        case (_, let shown): shown
         }
     }
 

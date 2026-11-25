@@ -35,6 +35,7 @@ struct SettingsView: View {
                         .padding(SpotTokens.settingsPagePadding)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .scrollEdgeEffectStyle(.soft, for: .top)
                     .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
                         withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
                     })
