@@ -53,6 +53,12 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "left_panel = true\n").faults, [])
     }
 
+    func testTheKeysOfTheOldSidePanelsGoAtTheNextWrite() {
+        var config = Config(text: "left_panel = true\nright_panel = false\ncareful = true\n\n[[spots]]\nid = \"a\"\nside = \"left\"\n")
+        config.set(columns: 6)
+        XCTAssertEqual(config.text, "careful = true\ncolumns = 6\n\n[[spots]]\nid = \"a\"\n")
+    }
+
     func testASpotKeepsItsCellForEachWidth() throws {
         var arrangement = SpotArrangement()
         arrangement.set(cell: GridCell(row: 2, column: 3), of: "a", columns: 4)

@@ -40,12 +40,15 @@ public struct Config: Equatable, Sendable {
         faults = ["config.toml: \(reason)"]
     }
 
+    private static let gone = ["left_panel", "right_panel"]
+
     public init(document: ConfigDocument) {
         kept = document
         kept.tables = []
+        Self.gone.forEach { kept.remove($0) }
         let known = ["spots", "keys", "settings", "stores"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
-        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns", "left_panel", "right_panel"] + known).contains(key) {
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns"] + Self.gone + known).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
