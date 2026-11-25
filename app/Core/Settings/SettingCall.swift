@@ -63,14 +63,14 @@ public enum SettingCall: NounCall {
     }
 
     private static func removedKey(_ spot: String, _ key: String) -> SettingCall? {
-        if spot == ReservedSetting.appSpot, ["panel-key", "fix-key"].contains(key) { return .appKey(name: key, key: nil) }
+        if spot == ReservedSetting.appSpot, AppSetting(rawValue: key)?.isKey == true { return .appKey(name: key, key: nil) }
         return GlobalKey.Act(setting: key).map { .key(spot: spot, act: $0, key: nil) }
     }
 
     private static func reserved(_ spot: String, _ key: String, _ value: String?, isInShow: Bool) -> (any NounCall)? {
         let flag = value.flatMap { ["true": true, "false": false][$0] }
-        let isApp = spot == ReservedSetting.appSpot && (ReservedSetting.appKeys.contains(key) || key == AppRows.themeKey)
-        let name = "setting set \(isApp ? "--spot \(spot) " : "")\(key)"
+        let app = spot == ReservedSetting.appSpot ? AppSetting(rawValue: key) : nil
+        let name = "setting set \(app == nil ? "" : "--spot \(spot) ")\(key)"
         func on(_ act: String, _ call: (Bool) -> SettingCall) -> any NounCall {
             guard let flag else { return CallFault.refused("`\(key)` takes `true` or `false`, such as `openspot setting set --spot \(spot) \(key) true`.") }
             return changing(call(flag), act)
@@ -79,20 +79,17 @@ public enum SettingCall: NounCall {
             guard isInShow, let refusal = CallRule(inShow: .changes(act)).refusal(of: name) else { return call }
             return CallFault.refused(refusal)
         }
-        if spot == ReservedSetting.appSpot, key == AppRows.themeKey {
+        switch app {
+        case .theme:
             guard let value else { return CallFault.refused("`theme` needs the name of a theme, such as `openspot setting set --spot openspot theme Openspot`.") }
             return changing(.theme(value), "changes the theme")
-        }
-        if isApp {
-            switch key {
-            case "panel-key", "fix-key":
-                guard let value else { return CallFault.refused("`\(key)` needs a key, such as `openspot setting set --spot openspot \(key) ctrl+space`.") }
-                return changing(.appKey(name: key, key: value), "sets a key of your Mac")
-            case "login": return on("changes your Mac", Self.login)
-            case "link": return on("changes your Mac", Self.link)
-            case "slow": return on("changes how fast the panel moves", Self.slow)
-            default: return nil
-            }
+        case .panelKey, .fixKey:
+            guard let value else { return CallFault.refused("`\(key)` needs a key, such as `openspot setting set --spot openspot \(key) ctrl+space`.") }
+            return changing(.appKey(name: key, key: value), "sets a key of your Mac")
+        case .login: return on("changes your Mac", Self.login)
+        case .link: return on("changes your Mac", Self.link)
+        case .slow: return on("changes how fast the panel moves", Self.slow)
+        case nil: break
         }
         switch key {
         case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }

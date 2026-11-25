@@ -52,14 +52,12 @@ struct SettingCalls {
         let isApp = spot == ReservedSetting.appSpot
         var rows: [SettingRow] = []
         if spot == nil || isApp {
-            rows += AppRows(
-                panelKey: (config.panelKey ?? .standard).text,
-                fixKey: (config.fixKey ?? .fix).text,
-                slow: await app?.slowMotion(nil) ?? nil,
-                login: mac.login()?.isOn(),
-                link: mac.link()?.isOn,
-                theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
-            ).rows
+            let flags: [AppSetting: Bool?] = [.slow: await app?.slowMotion(nil) ?? nil, .login: mac.login()?.isOn(), .link: mac.link()?.isOn]
+            rows += AppSetting.rows(flags.compactMapValues { $0.map(String.init) }.merging([
+                .panelKey: (config.panelKey ?? .standard).text,
+                .fixKey: (config.fixKey ?? .fix).text,
+                .theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
+            ]) { flag, _ in flag })
         }
         if !isApp {
             var scan = scan
