@@ -5,13 +5,11 @@ public struct PanelScene: Equatable, Sendable {
     public let search: String?
     public let swap: String?
     public let isHeld: Bool
-    public let picks: Bool
 
-    public init(isArranging: Bool = false, search: String? = nil, swap: String? = nil, isHeld: Bool = false, picks: Bool = false) {
+    public init(isArranging: Bool = false, search: String? = nil, swap: String? = nil, isHeld: Bool = false) {
         self.isArranging = isArranging
         self.search = search
         self.swap = swap
         self.isHeld = isHeld
-        self.picks = picks
     }
 }

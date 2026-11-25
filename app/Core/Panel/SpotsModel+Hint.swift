@@ -5,7 +5,6 @@ extension SpotsModel {
     public var hint: String {
         if recording != nil { return KeyRow.hint(of: keyRows(of: .recording)) }
         if isArranging { return arrangeHint }
-        if slotPick != nil { return "↑↓ Choose   ⏎ Pin   Esc Close" }
         if isEditing { return [offGridCount, KeyRow.hint(of: keyRows(of: .edit))].compactMap { $0 }.joined(separator: "   ") }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         let escape = KeyRow.hint(of: [escapeRow])
@@ -34,7 +33,7 @@ extension SpotsModel {
     }
 
     private var offGridCount: String? {
-        guard slotPick == nil, !offGrid.isEmpty else { return nil }
+        guard !offGrid.isEmpty else { return nil }
         return offGrid.count == 1 ? "1 of your spots is off the grid" : "\(offGrid.count) of your spots are off the grid"
     }
 

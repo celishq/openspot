@@ -25,7 +25,6 @@ enum SpotPanelPicture {
             if scene.isHeld, let first = model.placements.first {
                 model.hold([.command])
                 model.point(at: .grid(CGPoint(x: first.rect.midX, y: first.rect.midY)))
-                if scene.picks, let cell = model.freeCells.first { model.openSlotPick(at: cell) }
             }
             let shapes = [(SpotFieldView.rect, SurfaceEdge(card: .strip).radius)] + model.placements.map {
                 ($0.rect.offsetBy(dx: SpotTokens.halo, dy: SpotTokens.gridTop), SurfaceEdge(card: $0.size).radius)

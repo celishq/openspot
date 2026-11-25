@@ -39,7 +39,7 @@ struct SpotGridView: View {
         }
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
-                GridSlots(model: model, cells: model.freeCells)
+                GridSlots(cells: model.freeCells)
                 landing(of: drag, in: placements)
                     .frame(width: frame.width, height: height)
                 PinLanding(model: model)
@@ -74,10 +74,6 @@ struct SpotGridView: View {
                 .opacity(entry.id == openID ? MotionTokens.hiddenOpacity : 1)
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? MotionTokens.hiddenOpacity : 1) }
                 .allowsHitTesting(entry.id != openID)
-            }
-            if model.isEditing, let pick = model.slotPick {
-                SpotSlotPick(model: model, pick: pick)
-                    .zIndex(2)
             }
         }
         .frame(width: frame.width, height: height, alignment: .topLeading)
@@ -136,13 +132,8 @@ private struct PinLanding: View {
     }
 }
 
-private struct GridSlots: View, @MainActor Equatable {
-    let model: SpotsModel
+private struct GridSlots: View, Equatable {
     let cells: [GridCell]
-
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.model === rhs.model && lhs.cells == rhs.cells
-    }
 
     var body: some View {
         let shape = SpotRoundShape(SurfaceEdge(card: .small))
@@ -151,16 +142,8 @@ private struct GridSlots: View, @MainActor Equatable {
                 let rect = SpotPlacement(index: 0, row: cell.row, column: cell.column, size: .small).rect
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
-                    .overlay {
-                        Image(systemName: "plus")
-                            .font(SpotType.glyph)
-                            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
-                    }
                     .frame(width: rect.width, height: rect.height)
-                    .contentShape(shape)
-                    .onTapGesture { model.openSlotPick(at: cell) }
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel("Pin a spot here")
+                    .allowsHitTesting(false)
                     .offset(x: rect.minX, y: rect.minY)
             }
         }

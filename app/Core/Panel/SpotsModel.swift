@@ -253,7 +253,6 @@ public final class SpotsModel {
     private func takeShade() {
         var next = GridShade()
         if let menuSession, openSheetID == nil { next = GridShade(over: placements, leaving: selected, isOn: menuSession.isGrown) }
-        if slotPick != nil { next = GridShade(over: placements, leaving: -1, isOn: true) }
         if next != gridShade { gridShade = next }
     }
     public internal(set) var menuFrame: ActionMenuFrame?
@@ -298,9 +297,6 @@ public final class SpotsModel {
     public internal(set) var offGrid: [Entry] = []
     @ObservationIgnored var offGridWords: [String] = []
     public internal(set) var shelf: [Entry] = []
-    public internal(set) var slotPick: SlotPick? {
-        didSet { if (slotPick == nil) != (oldValue == nil) { takeShade() } }
-    }
     @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []
     public internal(set) var freeCells: [GridCell] = []

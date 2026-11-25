@@ -105,16 +105,8 @@ extension SpotsModel {
         let plain = { [self] (name: String, dx: Int, dy: Int) in
             KeyRow(name, command: nil, shift: false, act: always { self.moveSelection(dx: dx, dy: dy) })
         }
-        let held = !isArranging && slotPick == nil
-        let pick: [KeyRow?] = slotPick == nil ? [] : [
-            KeyRow("escape", command: nil, shift: nil, words: "Close", act: always { [self] in closeSlotPick() }),
-            KeyRow("return", command: nil, shift: nil, words: "Pin", act: always { [self] in
-                if let id = slotPick?.chosen { pickSlotSpot(id) }
-            }),
-            KeyRow("up", command: nil, shift: nil, act: always { [self] in moveSlotPick(by: -1) }),
-            KeyRow("down", command: nil, shift: nil, act: always { [self] in moveSlotPick(by: 1) }),
-        ]
-        let rows: [KeyRow?] = pick + [
+        let held = !isArranging
+        let rows: [KeyRow?] = [
             .any { [self] key in
                 guard gesture != nil || carry != nil else { return nil }
                 if key.name == "escape" {

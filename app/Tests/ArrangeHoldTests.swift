@@ -28,54 +28,6 @@ final class ArrangeHoldTests: PanelCase {
         XCTAssertTrue(model.hint.hasPrefix("2 of your spots are off the grid"), model.hint)
     }
 
-    func testAPlusOpensAShortListThatFiltersAndReturnPinsTheChosenSpotThere() async throws {
-        try await spots(["a"], off: ["snooze", "notes", "tabs"])
-        holdOverTheGrid()
-        let cell = GridCell(row: 2, column: 2)
-
-        model.openSlotPick(at: cell)
-        XCTAssertEqual(model.slotPick?.ids, ["notes", "snooze", "tabs"])
-        model.hold([])
-        XCTAssertTrue(model.isEditing)
-        model.searchSlotPick("n")
-        XCTAssertEqual(model.slotPick?.ids, ["notes", "snooze"])
-        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
-        XCTAssertEqual(model.slotPick?.chosen, "snooze")
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
-
-        XCTAssertNil(model.slotPick)
-        XCTAssertFalse(model.isEditing)
-        XCTAssertEqual(model.visible.firstIndex { $0.id == "snooze" }.map { model.placements[$0].cell }, cell)
-    }
-
-    func testEscapeClosesTheListAndPinsNothing() async throws {
-        try await spots(["a"], off: ["b"])
-        holdOverTheGrid()
-        model.openSlotPick(at: GridCell(row: 3, column: 0))
-        XCTAssertTrue(model.gridShade.dims(0))
-
-        XCTAssertTrue(model.handleKey(escape))
-
-        XCTAssertNil(model.slotPick)
-        XCTAssertFalse(model.gridShade.isOn)
-        XCTAssertEqual(order, ["a"])
-    }
-
-    func testTheListShowsAtMostSixSpots() async throws {
-        try await spots(["a"], off: (1...9).map { "s\($0)" })
-        holdOverTheGrid()
-
-        model.openSlotPick(at: GridCell(row: 3, column: 0))
-
-        XCTAssertEqual(model.slotPick?.ids.count, SlotPick.limit)
-    }
-
-    private func call(_ arguments: [String]) async throws -> CommandAnswer {
-        let work = try XCTUnwrap(model.runs.api?.work(for: .test(arguments), input: { "" }))
-        return await work()
-    }
-
     func testGridListPutsTheSpotsOffTheGridFirstAndGridPinTakesTheFirstFreeSlot() async throws {
         try await spots(["a", "b"], off: ["c"])
         takeCalls()

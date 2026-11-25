@@ -55,7 +55,7 @@ extension SpotsModel {
     }
 
     func endKeyEditing() {
-        guard editing == .held, command == .up, gesture == nil, landing == nil, slotPick == nil else { return }
+        guard editing == .held, command == .up, gesture == nil, landing == nil else { return }
         endEditing()
     }
 
@@ -87,7 +87,6 @@ extension SpotsModel {
                 gesture = nil
                 landing = nil
                 carry = nil
-                slotPick = nil
                 pointerMove = nil
                 if lift.offset != .zero { lift.offset = .zero }
                 selected = 0
