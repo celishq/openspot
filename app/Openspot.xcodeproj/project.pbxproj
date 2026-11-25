@@ -701,6 +701,7 @@
 		9D79827160465BD450E0D007 /* SpotBackdropBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343B74F47009E908B1316B6B /* SpotBackdropBlur.swift */; };
 		9D8EB89A3C98463B5FF6A8CA /* GlyphBookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BC0434C9402119869A138 /* GlyphBookTests.swift */; };
 		9E13561CB9DAD69582F63CC9 /* NodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13017B4B327B5B125971901 /* NodeButton.swift */; };
+		9E5A03F3F3E95182E93C19CC /* SettingsAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */; };
 		9EA98C3C5C12E79EC768A76E /* SpotFailureTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37B7AE6F005A35E858E0FB3 /* SpotFailureTip.swift */; };
 		9EBDA1C2B4842CB42BC99223 /* SpotGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A2E193370E14885C92F0DC /* SpotGridView.swift */; };
 		9F44FE0E902094859A3CAABD /* SheetPartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 171DE2A93C238530C6A56985 /* SheetPartsView.swift */; };
@@ -2355,6 +2356,7 @@
 		EC9D1FAA02092B549E6CD827 /* SpotEffectTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEffectTests.swift; sourceTree = "<group>"; };
 		ECE84B78135D67C3F48DA1EF /* TypesCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypesCall.swift; sourceTree = "<group>"; };
 		ED1EECEC069C9C84A4342D06 /* KeyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyText.swift; sourceTree = "<group>"; };
+		ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAvatar.swift; sourceTree = "<group>"; };
 		ED4D444DDC7AB9F057FE3633 /* SpotsModel+Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Entry.swift"; sourceTree = "<group>"; };
 		ED9BDEAA645A7CD91FDAD63B /* ReviewSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSpotTests.swift; sourceTree = "<group>"; };
 		EDD03376B36B8E902F1A2559 /* BindingEdgesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingEdgesTests.swift; sourceTree = "<group>"; };
@@ -2655,6 +2657,7 @@
 			isa = PBXGroup;
 			children = (
 				B73F2A6CEF772A766327013C /* SettingsAccountSheet.swift */,
+				ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */,
 				41B45A99ABD0FAD9D147AF16 /* SettingsGrantSheet.swift */,
 				02986C78D1DAB968FCFA79C9 /* SettingsScroll.swift */,
 				26752330834022C3A9E484DF /* SettingsScrollBar.swift */,
@@ -5396,6 +5399,7 @@
 				B746176829FA234939E3EB95 /* SampleHost.swift in Sources */,
 				0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */,
 				E5EECE33AF4E21EEC65EA7B0 /* SettingsAccountSheet.swift in Sources */,
+				9E5A03F3F3E95182E93C19CC /* SettingsAvatar.swift in Sources */,
 				F040669722CDCB1A5D768AD7 /* SettingsGrantSheet.swift in Sources */,
 				DB0F611001CC179255D01C17 /* SettingsPicture.swift in Sources */,
 				2AF4C13DA3D52EED0366EA46 /* SettingsScroll.swift in Sources */,

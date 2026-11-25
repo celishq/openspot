@@ -10,8 +10,6 @@ struct SettingsView: View {
     @State var step: SettingsAccountSheet.Step?
     @State private var scroll = SettingsScroll()
 
-    static let top = "settings-top"
-
     var book: SettingsBook {
         model.settingsBook
     }
@@ -33,10 +31,11 @@ struct SettingsView: View {
                 .formStyle(.grouped)
                 .frame(maxWidth: SpotTokens.settingsFormWidth)
                 .frame(maxWidth: .infinity)
-                .onChange(of: [book.page.place, book.query, book.target]) {
-                    proxy.scrollTo(book.target ?? Self.top, anchor: book.target == nil ? .top : .center)
-                }
+                .id(shown)
+                .onAppear { reveal(in: proxy) }
+                .onChange(of: book.target) { reveal(in: proxy) }
             }
+            .onChange(of: shown) { scroll.reset() }
             .scrollEdgeEffectStyle(.soft, for: .top)
             .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { [scroll] _, isPast in scroll.show(title: isPast) })
             .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { [scroll] _, isPast in scroll.show(bar: isPast) })
@@ -67,9 +66,19 @@ struct SettingsView: View {
         .sheet(isPresented: Binding(get: { step != nil }, set: { if !$0 { step = nil } })) { SettingsAccountSheet(book: book, step: $step) }
     }
 
+    private var shown: String {
+        book.isSearching ? "search/\(book.query)" : book.page.place
+    }
+
+    private func reveal(in proxy: ScrollViewProxy) {
+        guard let target = book.target else { return }
+        proxy.scrollTo(target, anchor: .center)
+    }
+
     private var reveal: CGFloat {
         switch book.page {
-        case .access, .accessOf, .spotOf, .account: SpotTokens.settingsTitleReveal
+        case .account: SpotTokens.settingsHeroReveal
+        case .access, .accessOf, .spotOf: SpotTokens.settingsTitleReveal
         default: SpotTokens.settingsHeadingReveal
         }
     }
@@ -102,11 +111,12 @@ struct SettingsView: View {
         let isChosen = book.query.isEmpty && book.page.section == .account
         let account = facts.account
         return HStack(spacing: SpotTokens.settingsGroupGap) {
-            SettingsTile(symbol: SettingsPage.Section.account.symbol, color: SpotTheme.settings(.account), side: SpotTokens.settingsAccountTile)
+            SettingsAvatar(side: SpotTokens.settingsAccountTile)
             VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
-                Text(account?.handle.map { "@\($0)" } ?? "Account")
+                Text(account?.isSignedIn == true ? account?.handle.map { "@\($0)" } ?? "Account" : "Sign In")
+                    .fontWeight(.medium)
                     .lineLimit(1)
-                Text(account?.isSignedIn == true ? "Your key and backup" : "Sign in to publish")
+                Text(account?.isSignedIn == true ? "Account" : "Publish your spots")
                     .font(SpotType.settingsLine)
                     .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.secondary)
                     .lineLimit(1)

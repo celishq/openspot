@@ -18,6 +18,11 @@ final class SettingsScroll {
         withAnimation(SpotMotion.fade(isShown: isShown)) { isScrolled = isShown }
     }
 
+    func reset() {
+        if isTitleShown { isTitleShown = false }
+        if isScrolled { isScrolled = false }
+    }
+
     func take(barHeight height: CGFloat) {
         guard height != barHeight else { return }
         barHeight = height

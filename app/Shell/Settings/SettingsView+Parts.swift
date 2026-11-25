@@ -129,7 +129,6 @@ extension SettingsView {
             }
             .padding(.vertical, SpotTokens.settingsHeaderPadding)
         }
-        .id(Self.top)
     }
 
     func heading(_ title: String, _ line: String) -> some View {
@@ -147,14 +146,17 @@ extension SettingsView {
             .padding(.bottom, SpotTokens.settingsHeadingGap)
             .textCase(nil)
         }
-        .id(Self.top)
     }
 
     func group<Rows: View>(_ title: String?, @ViewBuilder _ rows: () -> Rows) -> some View {
         Section {
             rows()
         } header: {
-            if let title { Text(title) }
+            if let title {
+                Text(title)
+                    .font(SpotType.settingsGroup)
+                    .foregroundStyle(.primary)
+            }
         }
     }
 
@@ -166,6 +168,8 @@ extension SettingsView {
         } header: {
             HStack {
                 Text(title)
+                    .font(SpotType.settingsGroup)
+                    .foregroundStyle(.primary)
                 Spacer(minLength: SpotTokens.settingsTrailingGap)
                 Button(isFolded.wrappedValue ? "Show" : "Hide") {
                     withAnimation(SpotMotion.fade(isShown: isFolded.wrappedValue)) { isFolded.wrappedValue.toggle() }

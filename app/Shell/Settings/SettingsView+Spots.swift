@@ -109,29 +109,6 @@ extension SettingsView {
                     }
                 }
             }
-            Section {
-                HStack {
-                    if let adding = book.recording.flatMap(facts.row), (adding.value ?? "").isEmpty {
-                        Text("\(adding.name) · \(adding.title)")
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        keycaps(adding)
-                    } else {
-                        Text("Give a spot or a command its own shortcut.").foregroundStyle(.secondary)
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        Menu("Add Shortcut…") {
-                            ForEach(facts.unsetKeys) { keys in
-                                Menu(keys.id) {
-                                    ForEach(keys.rows) { row in
-                                        Button(row.title) { book.startRecording(row) }
-                                    }
-                                }
-                            }
-                        }
-                        .fixedSize()
-                        .disabled(facts.unsetKeys.isEmpty)
-                    }
-                }
-            }
             ForEach(facts.keyGroups) { keys in
                 group(keys.id) {
                     lines(keys.rows) { row in
@@ -146,6 +123,31 @@ extension SettingsView {
                     }
                 }
             }
+            Section {
+                if let adding = book.recording.flatMap(facts.row), (adding.value ?? "").isEmpty {
+                    HStack(spacing: SpotTokens.settingsValueGap) {
+                        Text("\(adding.name) · \(adding.title)")
+                            .lineLimit(1)
+                        Spacer(minLength: SpotTokens.settingsTrailingGap)
+                        keycaps(adding)
+                    }
+                }
+            } footer: {
+                HStack {
+                    Spacer(minLength: 0)
+                    Menu("Add Shortcut…") {
+                        ForEach(facts.unsetKeys) { keys in
+                            Menu(keys.id) {
+                                ForEach(keys.rows) { row in
+                                    Button(row.title) { book.startRecording(row) }
+                                }
+                            }
+                        }
+                    }
+                    .fixedSize()
+                    .disabled(facts.unsetKeys.isEmpty)
+                }
+            }
         }
     }
 
@@ -153,44 +155,32 @@ extension SettingsView {
         let caps = Shortcut.caps(book.value(of: row))
         let clash = facts.clashing.contains(row.item)
         let isRecording = book.recording == row.item
-        let cap = SpotRoundShape(radius: SpotTokens.settingsCapCorner)
-        return HStack(spacing: SpotTokens.settingsCapGap) {
+        let field = SpotRoundShape(radius: SpotTokens.settingsRecordCorner)
+        let ink: Color = isRecording ? .accentColor : clash ? SpotTheme.settingsClash : caps.isEmpty ? .secondary : .primary
+        let rim: Color = isRecording ? .accentColor : clash ? SpotTheme.settingsClash : Color.primary.opacity(SpotTheme.settingsCapRim)
+        return ZStack(alignment: .trailing) {
             Button {
                 book.startRecording(row)
             } label: {
-                if isRecording {
-                    Text("Type Shortcut")
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, SpotTokens.settingsRecordPadding)
-                        .frame(height: SpotTokens.settingsRecordHeight)
-                        .overlay(SpotRoundShape(radius: SpotTokens.settingsRecordCorner).strokeBorder(Color.accentColor, lineWidth: 1))
-                } else if caps.isEmpty {
-                    Text("Record Shortcut")
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, SpotTokens.settingsRecordPadding)
-                        .frame(height: SpotTokens.settingsRecordHeight)
-                        .overlay(SpotRoundShape(radius: SpotTokens.settingsRecordCorner).strokeBorder(Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
-                } else {
-                    HStack(spacing: SpotTokens.settingsCapGap) {
-                        ForEach(Array(caps.enumerated()), id: \.offset) { _, word in
-                            Text(word)
-                                .font(SpotType.settingsCap)
-                                .foregroundStyle(clash ? SpotTheme.settingsClash : Color.primary)
-                                .padding(.horizontal, SpotTokens.settingsCapPadding)
-                                .frame(minWidth: SpotTokens.settingsCapWidth, minHeight: SpotTokens.settingsCapHeight)
-                                .background(Color.primary.opacity(SpotTheme.settingsQuietFill), in: cap)
-                                .overlay(cap.strokeBorder(clash ? SpotTheme.settingsClash : Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
-                        }
-                    }
-                }
+                Text(isRecording ? "Type Shortcut" : caps.isEmpty ? "Record Shortcut" : caps.joined())
+                    .font(caps.isEmpty || isRecording ? SpotType.settingsLine : SpotType.settingsCap)
+                    .foregroundStyle(ink)
+                    .lineLimit(1)
+                    .frame(width: SpotTokens.settingsRecordWidth, height: SpotTokens.settingsRecordHeight)
+                    .background(Color.primary.opacity(SpotTheme.settingsQuietFill), in: field)
+                    .overlay(field.strokeBorder(rim, lineWidth: isRecording ? SpotTokens.settingsRecordRing : SpotTokens.settingsRim))
+                    .contentShape(field)
             }
             .buttonStyle(.plain)
             .help(isRecording ? "Press Esc to keep the shortcut, or Delete to remove it" : "Record a new shortcut")
             if !caps.isEmpty, !isRecording {
                 Button { act { await $0.remove(row) } } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                    Image(systemName: "xmark.circle.fill")
+                        .font(SpotType.settingsLine)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
+                .padding(.trailing, SpotTokens.settingsRecordClear)
                 .help("Remove the shortcut")
             }
         }

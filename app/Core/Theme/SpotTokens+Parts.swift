@@ -195,6 +195,7 @@ extension SpotTokens {
     public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
     public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
+    public static var settingsHeroReveal: CGFloat { settingsPagePadding + settingsHeroAvatar + settingsHeroGap }
     public static var settingsHeadingReveal: CGFloat { settingsPagePadding + settingsTitleLine }
     public static let settingsTitleLine: CGFloat = 32
     public static let settingsHeadingGap: CGFloat = 20
@@ -207,6 +208,8 @@ extension SpotTokens {
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 22
     public static let settingsHeaderTile: CGFloat = 52
+    public static let settingsHeroAvatar: CGFloat = 72
+    public static let settingsHeroGap: CGFloat = 8
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44
     public static let settingsTileCorner: CGFloat = 0.225
@@ -221,13 +224,10 @@ extension SpotTokens {
     public static let settingsLineGap: CGFloat = 1
     public static let settingsTrailingGap: CGFloat = 8
     public static let settingsValueGap: CGFloat = 12
-    public static let settingsCapGap: CGFloat = 3
-    public static let settingsCapPadding: CGFloat = 5
-    public static let settingsCapWidth: CGFloat = 22
-    public static let settingsCapHeight: CGFloat = 20
-    public static let settingsCapCorner: CGFloat = 4
     public static let settingsRecordHeight: CGFloat = 22
-    public static let settingsRecordPadding: CGFloat = 8
+    public static let settingsRecordWidth: CGFloat = 132
+    public static let settingsRecordRing: CGFloat = 1
+    public static let settingsRecordClear: CGFloat = 5
     public static let settingsRecordCorner: CGFloat = 5
     public static let settingsKeyName: CGFloat = 150
     public static let settingsFieldWidth: CGFloat = 220

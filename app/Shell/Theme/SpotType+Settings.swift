@@ -9,6 +9,8 @@ extension SpotType {
     static let settingsNumber = Font.system(size: 12, weight: .semibold)
     static let settingsTitle = Font.largeTitle.weight(.bold)
     static let settingsHeader = Font.largeTitle.weight(.bold)
+    static let settingsGroup = Font.headline
+    static let settingsHero = Font.title.weight(.bold)
     static let settingsPageLine = Font.body
     static let settingsLookCheck = Font.title3
     static let settingsPageTitle = Font.system(size: 15, weight: .semibold)
