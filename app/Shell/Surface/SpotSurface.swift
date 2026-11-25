@@ -8,11 +8,10 @@ struct SpotSurface: View {
     var marks: [FlowEdge] = []
     var markRoom: CGRect = .zero
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotGrid) private var grid
     @Environment(\.spotFade) private var fade
 
     var body: some View {
-        let rect = rect.offsetBy(dx: -panels.frame.minX, dy: 0)
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         ZStack(alignment: .topLeading) {
             ForEach(marks) { mark in
@@ -26,12 +25,12 @@ struct SpotSurface: View {
                 .opacity(isShown ? max(glass, MotionTokens.hiddenOpacity) * SpotTheme.glassStrength(at: fade) : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
-        .modifier(PanelSpan(panels: panels))
+        .modifier(PanelSpan(grid: grid))
         .allowsHitTesting(false)
     }
 
     private func place(of mark: FlowEdge) -> CGRect {
-        mark.rect(around: markRoom).offsetBy(dx: -panels.frame.minX, dy: 0)
+        mark.rect(around: markRoom)
     }
 
     private func strength(of mark: FlowEdge) -> Double {

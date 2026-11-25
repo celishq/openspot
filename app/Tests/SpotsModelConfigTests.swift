@@ -24,12 +24,12 @@ final class SpotsModelConfigTests: PanelCase {
     }
 
     func testASectionThatAChangeDoesNotNameIsNotLost() async throws {
-        try model.files.config.change { $0.show(.left, true) }
+        try model.files.config.change { $0.set(columns: 6) }
 
         model.configChanged(.keys, to: model.files.config.readKept())
         await model.spotsChanged()
 
-        XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
+        XCTAssertEqual(model.grid, GridLayout(columns: 6))
     }
 
     func testAChangeThatTheAPIHandsOverReadsNoConfigFromTheDisk() throws {
@@ -52,12 +52,22 @@ final class SpotsModelConfigTests: PanelCase {
 
         model.configChanged(.keys, to: try model.files.config.change { $0.set(key, for: "panel-key") })
         model.configChanged(.careful, to: try model.files.config.change { $0.set(isCareful: true) })
-        model.show(.left, true)
+        model.set(columns: 6)
         await model.spotsChanged()
 
         XCTAssertEqual(model.gridBuilds, builds)
-        XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
+        XCTAssertEqual(model.grid, GridLayout(columns: 6))
         XCTAssertEqual(model.config, Config(text: disk.text ?? ""))
+    }
+
+    func testAColumnSwitchWidensThePanelOnceAndLaysOutNoTheme() {
+        model.beginEditing()
+        let layOuts = host.layOuts.count
+
+        model.set(columns: 8)
+
+        XCTAssertEqual(host.layOuts.count, layOuts)
+        XCTAssertEqual(host.widths, [GridLayout(columns: 8).panelWidth])
     }
 
     func testAnEditKeyReadsNoConfigFromTheDisk() throws {
@@ -73,12 +83,11 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertTrue(wrote())
         _ = model.handleKey(ActionKey(name: "left", isShift: true))
         XCTAssertTrue(wrote())
-        _ = model.handleKey(ActionKey(name: "h"))
+        _ = model.handleKey(ActionKey(name: "s"))
         XCTAssertTrue(wrote())
-        model.show(.left, true)
+        model.set(columns: 6)
         XCTAssertTrue(wrote())
-        model.setOnGrid(true, for: "a")
-        model.prefer(.small, for: "b")
+        model.prefer(.large, for: "b")
         model.turnOff("c")
 
         XCTAssertEqual(disk.reads, reads)
@@ -92,15 +101,16 @@ final class SpotsModelConfigTests: PanelCase {
         let config = model.config
         disk.fail(true)
 
-        model.moveSpot(order[0], to: 1)
-        model.prefer(.small, for: order[0])
-        model.setOnGrid(false, for: order[0])
-        model.show(.left, true)
+        let placements = model.placements
+        model.moveSpot(order[0], to: GridCell(row: 3, column: 0))
+        model.prefer(.large, for: order[0])
+        model.set(columns: 6)
 
         XCTAssertEqual(model.visible.map(\.id), order)
+        XCTAssertEqual(model.placements, placements)
         XCTAssertEqual(model.config, config)
-        XCTAssertEqual(model.panels, GridPanels())
-        XCTAssertEqual(host.notes.count, 4)
+        XCTAssertEqual(model.grid, GridLayout())
+        XCTAssertEqual(host.notes.count, 3)
         XCTAssertTrue(host.notes.allSatisfy { $0.hasPrefix("Openspot could not save the ") })
     }
 
@@ -133,15 +143,16 @@ final class SpotsModelConfigTests: PanelCase {
 
         model.prefer(.small, for: "a")
         try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "y") }
-        model.setOnGrid(false, for: "b")
+        model.moveSpot("b", to: GridCell(row: 5, column: 0))
         try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "w") }
-        model.moveSpot("c", to: 0)
+        model.moveSpot("c", to: GridCell(row: 6, column: 0))
 
         let written = Config(text: disk.text ?? "")
         XCTAssertEqual(written.arrangement.menuBar, ["z"])
         XCTAssertEqual(written.arrangement.enabled, ["y", "w"])
         XCTAssertEqual(written.arrangement.size(of: "a"), .small)
-        XCTAssertEqual(written.arrangement.isOnGrid(of: "b"), false)
+        XCTAssertEqual(written.arrangement.cells(of: "b"), [4: GridCell(row: 5, column: 0)])
+        XCTAssertEqual(written.arrangement.cells(of: "c"), [4: GridCell(row: 6, column: 0)])
         XCTAssertEqual(host.notes, [])
     }
 }

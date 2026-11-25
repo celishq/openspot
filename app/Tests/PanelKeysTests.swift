@@ -105,10 +105,10 @@ final class PanelKeysTests: PanelCase {
         model.beginEditing()
         let rows = model.keyRows(of: .edit)
 
-        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(KeyRow.hint(of: rows), "S Size   ⇧ Arrows Move   Esc Done")
         XCTAssertEqual(model.hint, KeyRow.hint(of: rows))
         let added = rows + [KeyRow("x", words: "Extra") { _ in true }]
-        XCTAssertEqual(KeyRow.hint(of: added), "S Size   H Hide   ⇧ Arrows Move   Esc Done   X Extra")
+        XCTAssertEqual(KeyRow.hint(of: added), "S Size   ⇧ Arrows Move   Esc Done   X Extra")
     }
 
     func testOnTheGridEscClearsTheSearchThenHidesAndTabGoesToTheText() async throws {

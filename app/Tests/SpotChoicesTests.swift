@@ -1,17 +1,17 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotArrangementTests: XCTestCase {
+final class SpotChoicesTests: XCTestCase {
     private func commands(_ ids: String...) -> [Spot] {
         ids.map { Spot(id: $0, name: $0, url: URL(fileURLWithPath: "/bin/true")) }
     }
 
-    private func choice(_ id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil) -> SpotArrangement.Choice {
-        SpotArrangement.Choice(id: id, size: size, isOnGrid: isOnGrid)
+    private func choice(_ id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil) -> SpotChoices.Choice {
+        SpotChoices.Choice(id: id, size: size, isOnGrid: isOnGrid)
     }
 
     func testAChoiceOfSizeAloneMovesNothing() {
-        let arrangement = SpotArrangement(choices: [choice("b", size: .small)])
+        let arrangement = SpotChoices(choices: [choice("b", size: .small)])
 
         XCTAssertEqual(arrangement.ordered(commands("a", "b", "c")).map(\.id), ["a", "b", "c"])
         XCTAssertEqual(arrangement.size(of: "b"), .small)
@@ -19,13 +19,13 @@ final class SpotArrangementTests: XCTestCase {
     }
 
     func testListedSpotsTakeTheOrderOfTheFile() {
-        let arrangement = SpotArrangement(choices: [choice("c"), choice("a")])
+        let arrangement = SpotChoices(choices: [choice("c"), choice("a")])
 
         XCTAssertEqual(arrangement.ordered(commands("a", "b", "c")).map(\.id), ["c", "b", "a"])
     }
 
     func testASpotThatIsGoneIsKeptAndLeftOut() {
-        var arrangement = SpotArrangement(choices: [choice("gone", size: .small), choice("a")])
+        var arrangement = SpotChoices(choices: [choice("gone", size: .small), choice("a")])
 
         arrangement.arrange(["b", "a"])
 
@@ -34,7 +34,7 @@ final class SpotArrangementTests: XCTestCase {
     }
 
     func testAChoiceKeepsItsPlaceWhenItChanges() {
-        var arrangement = SpotArrangement()
+        var arrangement = SpotChoices()
         arrangement.arrange(["b", "a"])
 
         arrangement.set(size: .square, of: "a")
@@ -60,7 +60,7 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.faults, [])
         XCTAssertEqual(config.arrangement.choices, [
             choice("apps", size: .small),
-            SpotArrangement.Choice(id: "files", isOnGrid: false, isGlobal: false)
+            SpotChoices.Choice(id: "files", isOnGrid: false, isGlobal: false)
         ])
         XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
@@ -105,7 +105,7 @@ final class SpotArrangementTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-arrangement-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        try file.write(SpotArrangement(choices: [choice("apps", size: .small)]))
+        try file.write(SpotChoices(choices: [choice("apps", size: .small)]))
 
         try file.showInMenuBar("cups", true)
         try file.showInMenuBar("pulls", true)
@@ -145,45 +145,17 @@ final class SpotArrangementTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-arrangement-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let arrangement = SpotArrangement(choices: [choice("b", size: .large, isOnGrid: false), choice("a")])
+        let arrangement = SpotChoices(choices: [choice("b", size: .large, isOnGrid: false), choice("a")])
 
         try file.set("panel-key", to: "cmd+k")
         try file.write(arrangement)
         try file.set("panel-key", to: "cmd+j")
-        try file.write(SpotArrangement(choices: arrangement.choices.reversed()))
+        try file.write(SpotChoices(choices: arrangement.choices.reversed()))
 
         let config = file.read()
         XCTAssertEqual(config.faults, [])
         XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+j"))
         XCTAssertEqual(config.arrangement.choices, arrangement.choices.reversed())
-    }
-
-    func testASizeStepTakesTheNextSizeSinceTheGridKeepsIt() {
-        let sizes: [SpotSize] = [.small, .small]
-
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: sizes, among: [.small, .wide, .strip]), .wide)
-    }
-
-    func testASizeStepTurnsBackToTheFirstSize() {
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.strip], among: [.small, .wide, .strip]), .small)
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.large, .large], among: [.strip, .large]), .strip)
-    }
-
-    func testASizeStepFindsNoneForASpotWithNoSizes() {
-        XCTAssertNil(SpotGrid().nextSize(of: 0, in: [.large], among: []))
-    }
-
-    func testAMoveStepSkipsEachPlaceThatLeavesTheSpotWhereItIs() {
-        let sizes: [SpotSize] = [.square, .small, .small, .wide, .small]
-
-        XCTAssertEqual(SpotGrid().nextPlace(of: 0, in: sizes, step: 1), 1)
-        XCTAssertEqual(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small, .small, .square], step: 1), 3)
-        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small], step: 1))
-    }
-
-    func testAMoveStepFindsNoPlaceAtTheEndOfTheGrid() {
-        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.wide, .wide], step: 1))
-        XCTAssertNil(SpotGrid().nextPlace(of: 0, in: [.wide, .wide], step: -1))
     }
 
     func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {
@@ -192,11 +164,11 @@ final class SpotArrangementTests: XCTestCase {
         let mine = Config(text: "[[spots]]\nid = \"mine\"\nkey = \"cmd+n\"\n").arrangement
         let moved = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+j\"\n").arrangement
 
-        XCTAssertEqual(SpotArrangement().spot(openedBy: n, over: defaults), "new")
-        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults), "set")
+        XCTAssertEqual(SpotChoices().spot(openedBy: n, over: defaults), "new")
+        XCTAssertEqual(SpotChoices().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults), "set")
         XCTAssertEqual(mine.spot(openedBy: n, over: defaults), "mine")
         XCTAssertNil(moved.spot(openedBy: n, over: defaults))
-        XCTAssertNil(SpotArrangement().spot(openedBy: ActionKey(name: "m", isCommand: true), over: defaults))
+        XCTAssertNil(SpotChoices().spot(openedBy: ActionKey(name: "m", isCommand: true), over: defaults))
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nkey = \"cmd+space+\"\n").faults, ["config.toml: a cannot use the key cmd+space+."])
         var config = Config()
         config.arrangement = mine

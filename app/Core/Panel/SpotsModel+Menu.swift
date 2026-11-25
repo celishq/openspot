@@ -81,7 +81,7 @@ extension SpotsModel {
 
     public func openMenu(at point: CGPoint) {
         asOnePress {
-            let origin = gridOrigin
+            let origin = SpotTokens.gridOrigin()
             guard openSheetID == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
             selected = index
             if let target { openMenu(on: target) }

@@ -329,7 +329,7 @@ public final class SpotRun {
     func layOut() {
         if var next = parts {
             next.place(top: top)
-            panel = next
+            if next != panel { panel = next }
         }
         settle()
     }

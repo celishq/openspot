@@ -52,8 +52,8 @@ public struct AppPlaces: Sendable {
         AppPlaces(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard)
     }
 
-    public func readDefaultArrangement() -> SpotArrangement {
-        guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotArrangement() }
+    public func readDefaultArrangement() -> SpotChoices {
+        guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotChoices() }
         return Config(text: text).arrangement
     }
 
