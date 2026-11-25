@@ -52,6 +52,10 @@ public struct SpotVersion: Comparable, Hashable, Sendable {
         return calendar.component(.year, from: date) == calendar.component(.year, from: now) ? date.formatted(style) : date.formatted(style.year())
     }
 
+    public func updatedLine(now: Date) -> String {
+        "Updated \(day(now: now))"
+    }
+
     public static func < (one: SpotVersion, other: SpotVersion) -> Bool {
         one.text < other.text
     }

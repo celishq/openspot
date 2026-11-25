@@ -114,17 +114,17 @@ public final class Store {
     }
 
     public func update(_ id: String) async {
-        let update = SpotUpdate(places: places, clock: clock)
-        switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id), reviewed: update.readSourceHash(id)) }) {
-        case .success(let change): ask = .update(change)
-        case .failure(let error): toast(.failure(SpotsModel.reason(error)))
-        }
+        await ask(id, as: StoreAsk.update)
     }
 
     public func revert(_ id: String) async {
+        await ask(id, as: StoreAsk.revert)
+    }
+
+    private func ask(_ id: String, as make: (StoreChange) -> StoreAsk) async {
         let update = SpotUpdate(places: places, clock: clock)
         switch await Self.run({ try StoreChange(id: id, name: update.name(of: id), powers: update.powers(id), reviewed: update.readSourceHash(id)) }) {
-        case .success(let change): ask = .revert(change)
+        case .success(let change): ask = make(change)
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
         }
     }
@@ -227,7 +227,7 @@ public final class Store {
             let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
             let text = readme(beside: own.spot)
             return StorePage(
-                id: id, spot: own.spot, from: from, updated: own.version.map { "Updated \($0.day(now: now))" }, readme: text.lines, shown: text.shown,
+                id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
                 trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
             )
         case .source(let url):
@@ -239,7 +239,7 @@ public final class Store {
             )
             let text = readme(beside: spot)
             return StorePage(
-                id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder)).map { "Updated \($0.day(now: now))" },
+                id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
                 readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
                 hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false
             )
@@ -267,7 +267,7 @@ public final class Store {
             let source = chosen ?? sources.first { $0.fetch(id) != nil }
             return StoreReview(
                 name: install.name, from: "From \(source?.name ?? install.source.deletingLastPathComponent().lastPathComponent)",
-                updated: (try? SpotVersion(of: install.source)).map { "Updated \($0.day(now: now))" }, lines: try install.review().lines, clash: nil, install: install,
+                updated: (try? SpotVersion(of: install.source))?.updatedLine(now: now), lines: try install.review().lines, clash: nil, install: install,
                 clashes: install.clashes()
             )
         }
