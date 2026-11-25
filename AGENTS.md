@@ -174,6 +174,10 @@ fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionT
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `Core/Motion/` holds the geometry and the clock of each motion, such as `SheetMorph`, `SheetPush` and `SheetOpening`. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`, except the base that `SpotSpring` builds for each spring of `SpotMotion`.
 
+- A motion takes its kind from `SpotMotion` and each value from `MotionTokens`. A transition only fades, on the motion of
+  its change, and adds no offset, scale or curve of its own. When no kind or token fits, propose a new one to the person
+  before you add it.
+
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
