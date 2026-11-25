@@ -3,6 +3,7 @@ import XCTest
 
 @MainActor
 final class CaffeinateSpotTests: XCTestCase {
+    private let clock = FakeClock()
     private var folder: URL!
     private var runs: SpotRuns!
     private var environment: [String: String] = [:]
@@ -37,7 +38,7 @@ final class CaffeinateSpotTests: XCTestCase {
             [ -f '\(f)/desk' ] || echo '  | "AppleClamshellState" = No'
             """)
         environment = ["PATH": "\(folder.appendingPathComponent("tools").path):/usr/bin:/bin", "HOME": f, "TMPDIR": f + "/"]
-        runs = SpotRuns(environment: environment, stopPause: 0.2)
+        runs = SpotRuns(environment: environment, clock: clock.value, stopPause: 0.2)
     }
 
     private func fake(_ name: String, _ body: String) throws {
@@ -185,6 +186,7 @@ final class CaffeinateSpotTests: XCTestCase {
     func testTheCardOfALidHoldSaysTheLidCanClose() async throws {
         let sheet = try await holdWithTheLid()
 
+        try await pass(1, on: clock)
         try await wait("the card") { sheet.shownState.subtitle == "Until off · lid closed" }
     }
 
@@ -275,6 +277,7 @@ final class CaffeinateSpotTests: XCTestCase {
         sheet.close()
         runs.panelClosed()
 
+        try await pass(1, on: clock)
         try await wait("the time left on the card") { sheet.shownState.subtitle == "30m left" }
         XCTAssertEqual(running().count, 1)
         XCTAssertEqual(sheet.calls.map(\.key), ["call:press\n1800"])

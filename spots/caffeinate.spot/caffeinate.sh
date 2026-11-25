@@ -14,8 +14,15 @@ lidded=
 holder=
 fault=
 
+# Tells whether a hold runs. A watcher marks its end before it prints it, so a read that comes as it exits sees the end.
 awake() {
-  [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
+  [ -n "$watcher" ] || return 1
+  if [ -e "$OPENSPOT_DATA/ended.$$" ]; then
+    rm -f "$OPENSPOT_DATA/ended.$$"
+    watcher=
+    return 1
+  fi
+  kill -0 "$watcher" 2>/dev/null
 }
 
 # Tells whether this Mac has a lid, as macOS reports a clamshell state only for one that has. Read once, at the start.
@@ -136,6 +143,7 @@ sheet() {
 # that ends the call when it ends by itself. With the display off, the display may sleep and the screen lock. Fails when
 # the lid is on but the Mac refuses to hold it, which turns the lid off.
 hold() {
+  rm -f "$OPENSPOT_DATA/ended.$$"
   held=$1
   picked=$2
   seconds=${3:-$2}
@@ -153,6 +161,7 @@ hold() {
     wait $!
     let_go
     watcher=
+    mkdir -p "$OPENSPOT_DATA" && : > "$OPENSPOT_DATA/ended.$$"
     printf 'end=%s\n---\n%s\n---\n' "$1" "$(sheet)"
   ) &
   watcher=$!
