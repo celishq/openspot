@@ -177,21 +177,35 @@ final class StatsLogTests: SpotRunsCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: stats.path).sorted(), ["2026-08-14.json", "2026-11-10.json"])
     }
 
-    func testACallThatNeedsAUseIsCountedAndLoggedAndToldOnceADayAcrossAStart() throws {
+    func testACallThatNeedsAUseIsCountedAcrossAStart() throws {
         let usage = StatsLog(folder: stats, at: day, pause: 60)
-        let caller = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"), uses: [.network])
+        let caller = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"), uses: [.app, .network])
         let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
 
-        XCTAssertTrue(usage.used(quit, by: caller, at: day))
-        XCTAssertFalse(usage.used(quit, by: caller, at: day))
+        usage.used(quit, by: caller, at: day)
+        usage.used(quit, by: caller, at: day)
         usage.flush()
 
         let again = StatsLog(folder: stats, at: day)
-        XCTAssertFalse(again.used(quit, by: caller, at: day))
+        again.used(quit, by: caller, at: day)
         XCTAssertEqual(again.counts["a"]?.calls, ["app.quit": 3])
         XCTAssertEqual(again.counts["a"]?.network, true)
-        XCTAssertEqual(again.days(1, at: day).first?.uses.map(\.declared), [false, false, false])
-        XCTAssertEqual(again.days(1, at: day).first?.uses.first?.call, "app.quit")
+        XCTAssertEqual(again.days(1, at: day).first?.uses, [])
+    }
+
+    func testARefusalIsLoggedWithItsUseAndToldOnceADayAcrossAStart() throws {
+        let usage = StatsLog(folder: stats, at: day, pause: 60)
+        let refusal = UseRefusal(spot: Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), call: try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a")))
+
+        XCTAssertTrue(usage.refused(refusal, at: day))
+        XCTAssertFalse(usage.refused(refusal, at: day))
+        usage.flush()
+
+        let again = StatsLog(folder: stats, at: day)
+        XCTAssertFalse(again.refused(refusal, at: day))
+        XCTAssertEqual(again.days(1, at: day).first?.uses.map(\.call), ["app.quit", "app.quit", "app.quit"])
+        XCTAssertEqual(Stats(days: again.days(1, at: day), spot: nil).refused, ["a": [.app: day]])
+        XCTAssertNil(again.counts["a"])
     }
 
     func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
@@ -283,17 +297,6 @@ final class StatsLogTests: SpotRunsCase {
         XCTAssertEqual(usage.counts["a"]?.failures.last, day)
     }
 
-    func testOnlyAUseThatItsHeaderDoesNotDeclareIsLogged() throws {
-        let usage = StatsLog(at: day)
-        let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
-
-        _ = usage.used(quit, by: Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"), uses: [.app]), at: day)
-        _ = usage.used(quit, by: Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh"), uses: []), at: day)
-
-        XCTAssertEqual(usage.days(1, at: day).first?.uses.map(\.spot), ["b"])
-        XCTAssertEqual(usage.counts["a"]?.calls, ["app.quit": 1])
-    }
-
     func testADayWithNoFileOrKeptBeforeActsWereCountedHasNoCountOfActs() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
         try #"{"day":"2026-11-10","spots":{},"told":[],"uses":[]}"#.write(to: file("2026-11-10"), atomically: true, encoding: .utf8)
@@ -319,7 +322,10 @@ final class StatsLogTests: SpotRunsCase {
         usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
         usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
         usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b", at: day)
-        _ = usage.used(try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b")), by: Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh"), uses: [.network]), at: day.addingTimeInterval(60))
+        let shot = try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b"))
+        let beta = Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh"), uses: [.network])
+        usage.used(shot, by: beta, at: day.addingTimeInterval(60))
+        _ = usage.refused(UseRefusal(spot: beta, call: shot), at: day.addingTimeInterval(60))
 
         let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 

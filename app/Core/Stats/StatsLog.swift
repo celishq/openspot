@@ -37,6 +37,7 @@ public final class StatsLog: @unchecked Sendable {
         public let spot: String
         public let call: String
         public let declared: Bool
+        public let use: SpotUse?
     }
 
     public struct Version: Codable, Equatable, Sendable {
@@ -185,18 +186,22 @@ public final class StatsLog: @unchecked Sendable {
         }
     }
 
-    func used(_ call: SpotUseCall, by caller: Spot, at date: Date) -> Bool {
-        let declared = caller.uses.contains(call.use)
-        var tells = false
+    func used(_ call: SpotUseCall, by caller: Spot, at date: Date) {
         change(at: date) { day in
             day.change(caller.id, version: spotVersions[caller.id], at: date) { count in
                 count.name = caller.name
                 count.calls[call.name, default: 0] += 1
                 count.network = caller.uses.contains(.network)
             }
-            if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
-            let told = "\(caller.id) \(call.use.rawValue)"
-            if !declared, !day.told.contains(told) {
+        }
+    }
+
+    func refused(_ refusal: UseRefusal, at date: Date) -> Bool {
+        var tells = false
+        change(at: date) { day in
+            day.uses = Array((day.uses + [Use(time: date, spot: refusal.spot, call: refusal.call, declared: false, use: refusal.use)]).suffix(Self.useLimit))
+            let told = "\(refusal.spot) \(refusal.use.rawValue)"
+            if !day.told.contains(told) {
                 day.told.append(told)
                 tells = true
             }

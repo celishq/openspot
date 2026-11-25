@@ -64,6 +64,15 @@ public struct Stats: Sendable {
         days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
+    public var refused: [String: [SpotUse: Date]] {
+        var refused: [String: [SpotUse: Date]] = [:]
+        for kept in uses {
+            guard let use = kept.use else { continue }
+            refused[kept.spot, default: [:]][use] = max(refused[kept.spot]?[use] ?? .distantPast, kept.time)
+        }
+        return refused
+    }
+
     var searches: [(text: String, count: Int)] {
         guard spot == nil else { return [] }
         var counts: [String: Int] = [:]

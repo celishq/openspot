@@ -90,17 +90,15 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "count"], reason: "panel.open", nouns: nouns)?.value as? BellCall, .count)
     }
 
-    func testTheUseOfAVerbIsAdmittedAndCounted() async throws {
-        let answer = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
+    func testADeclaredUseOfAVerbIsAdmittedAndCountedAndAnUndeclaredOneIsRefused() async throws {
+        let answer = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
         try await wait("the count of the use") { self.runs.usage.counts["chime"]?.calls["bell.ring"] == 1 }
         XCTAssertEqual(answer.output, "rang hi\n")
 
-        runs.isCareful = true
         let refused = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
-        let declared = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
 
-        XCTAssertEqual(refused.errors, "Careful mode stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
-        XCTAssertEqual(declared.output, "rang hi\n")
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "Openspot stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml.\nAdd it there, or run `openspot spot allow chime network`.\n")
     }
 
     func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {

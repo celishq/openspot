@@ -431,8 +431,12 @@ public final class SpotRuns {
     }
 
     func used(_ call: SpotUseCall, by caller: Spot) {
-        guard usage.used(call, by: caller, at: now()) else { return }
-        onReport(caller.id, .toast("\(caller.name) \(call.words) without `\(call.use.rawValue)` in the `uses` of its spot.toml. Add it to stop this note."))
+        usage.used(call, by: caller, at: now())
+    }
+
+    func refused(_ refusal: UseRefusal) {
+        guard usage.refused(refusal, at: now()) else { return }
+        onReport(refusal.spot, .toast(ToastNote(words: refusal.toast)))
     }
 
     private func track(_ process: ScriptProcess, of spot: String, caller: SpotCaller) {

@@ -41,19 +41,31 @@ final class SpotUsesTests: SpotRunsCase {
         try await wait("the end of the call in the sheet") { sheet.calls.isEmpty }
     }
 
-    func testAnUndeclaredUseRunsAndShowsOneToastADay() async throws {
-        try lister()
+    func testAnUndeclaredUseIsRefusedWithItsFixAndShowsOneToastADay() async throws {
+        try caller("setting list")
         _ = try scanned()
 
-        try await press()
+        let (code, errors) = try await pressed()
         try await wait("the toast") { !self.toasts.isEmpty }
-        try await press()
+        _ = try await pressed()
         try await pause()
 
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it to stop this note."])
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `spots` in the `uses` of its spot.toml.\nAdd it there, or run `openspot spot allow script spots`.\n")
+        XCTAssertEqual(toasts, ["Openspot stopped Script from using `spots`, which its spot.toml does not name."])
         time += 24 * 60 * 60
-        try await press()
+        _ = try await pressed()
         try await wait("the toast of the next day") { self.toasts.count == 2 }
+    }
+
+    func testARefusalIsKeptWithTheStatsByItsSpotAndUse() async throws {
+        try caller("setting list")
+        _ = try scanned()
+
+        _ = try await pressed()
+
+        try await wait("the refusal kept") { Stats(days: self.runs.usage.days(1, at: self.time), spot: nil).refused["script"]?[.spots] != nil }
+        XCTAssertEqual(Stats(days: runs.usage.days(1, at: time), spot: nil).refused["script"]?[.spots], time)
     }
 
     func testADeclaredUseShowsNoToast() async throws {
@@ -112,18 +124,6 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
-    func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
-        runs.isCareful = true
-        try caller("setting list")
-        _ = try scanned()
-
-        let (code, errors) = try await pressed()
-
-        XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
-        XCTAssertEqual(toasts, [])
-    }
-
     func testInCarefulModeASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
         runs.isCareful = true
         _ = try scanned()
@@ -155,13 +155,13 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testASpotThatClosesItsChannelIsStillKnownByItsProcessGroup() async throws {
-        try script(toml: "", "OPENSPOT_CONFIG='\(config.path)' /bin/bash -c \"exec 11>&-; '\(client.path)' setting list\" > /dev/null && echo done >> '\(path("done"))'")
+        try script(toml: "", "OPENSPOT_CONFIG='\(config.path)' /bin/bash -c \"exec 11>&-; '\(client.path)' setting list\" > /dev/null; echo done >> '\(path("done"))'")
         _ = try scanned()
 
         try await press()
 
         try await wait("the toast") { !self.toasts.isEmpty }
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it to stop this note."])
+        XCTAssertEqual(toasts, ["Openspot stopped Script from using `spots`, which its spot.toml does not name."])
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
