@@ -234,8 +234,8 @@ public final class Store {
     }
 
     private nonisolated static func name(ofSource path: String, in places: AppPlaces, config: Config) -> String {
-        StoreSource.all(builtIn: places.examples, config: config).first { $0.url.path == URL(fileURLWithPath: path).standardizedFileURL.path }?.name
-            ?? URL(fileURLWithPath: path).lastPathComponent
+        let folder = URL(fileURLWithPath: path).standardizedFileURL.deletingLastPathComponent()
+        return StoreSource.all(builtIn: places.examples, config: config).first { $0.url.path == folder.path }?.name ?? folder.lastPathComponent
     }
 
     @concurrent

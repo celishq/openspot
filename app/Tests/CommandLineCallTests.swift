@@ -76,7 +76,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "card", "wide", "a.png"])?.value as? RenderCall, .card(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "card", "huge", "a.png"])?.value as? CallFault, .unknown(["render", "card", "huge", "a.png"]))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "a.png"])?.value as? RenderCall, .panel("a.png"))
-        XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png", place: nil, spot: nil, review: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["render"])?.value as? CallFault, .unknown(["render"]))
     }
 

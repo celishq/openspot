@@ -19,7 +19,7 @@ struct SpotCardSource {
 
     func sheet(_ id: String) -> AnyView {
         guard let model, let entry = model.storeEntry(id) else { return AnyView(EmptyView()) }
-        return AnyView(SpotSampleSheet(model: model, id: id, entry: entry))
+        return AnyView(SpotSampleSheet(model: model, entry: entry) { await model.sample(id) })
     }
 
     func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView {

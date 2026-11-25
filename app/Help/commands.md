@@ -90,6 +90,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot store revert <id> [--yes]` | Moves a spot you edited to the Trash and installs the version of its store in its place. Its data stays. |
 | `openspot store add <folder>` | Adds a folder of spot folders as a store, named like the folder, so that the Store lists its spots. |
 | `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
+| `openspot store open [<id>] [--search <text>]` | Opens the Store, at the page of a spot when given its id, or with the words of `--search` in its search. |
 | `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
 | `openspot store publish <id>` | Publishes a spot of your spots folder, with a `readme.md` beside its script, from the Store spot alone. |
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
@@ -101,7 +102,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
 | `openspot render spot <id> <file.png>` | Draws the sheet of an installed spot, or with `--card <size>` its card, in the dark appearance, or the light one with `--light`. |
 | `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
-| `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
+| `openspot render store [--place <name>] [--spot <id>] [--review <id>] <file.png>` | Draws the window of the Store at My spots, or at the place that `--place` names, such as `Openspot`, with the page of `--spot` open, or the review of an install of `--review` over it. |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |

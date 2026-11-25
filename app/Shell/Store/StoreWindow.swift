@@ -1,0 +1,33 @@
+import AppKit
+import OpenspotCore
+import SwiftUI
+
+@MainActor
+enum StoreWindow {
+    private static var kept: (store: Store, window: SpotSheetWindow)?
+
+    static func show(model: SpotsModel, id: String?, search: String?) async -> Bool {
+        let (store, window) = kept ?? make(model: model)
+        kept = (store, window)
+        guard await store.show(id, search: search) else { return false }
+        if model.isShown { model.host.dismiss() }
+        window.show()
+        return true
+    }
+
+    private static func make(model: SpotsModel) -> (Store, SpotSheetWindow) {
+        let store = Store(places: model.files, changed: { await model.spotsChanged() }, toast: { model.toast($0) })
+        let window = SpotSheetWindow.make(title: "Store", name: "store-window", content: StoreView(store: store, model: model))
+        window.takesEscape = {
+            if store.ask != nil {
+                store.dismissAsk()
+            } else if store.page != nil {
+                store.closePage()
+            } else {
+                return false
+            }
+            return true
+        }
+        return (store, window)
+    }
+}

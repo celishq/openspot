@@ -3,8 +3,8 @@ import SwiftUI
 
 struct SpotSampleSheet: View {
     let model: SpotsModel
-    let id: String
     let entry: SpotsModel.Entry
+    let output: @MainActor () async -> Frame?
     @State private var sample: (panel: SheetParts?, list: ItemList)?
     @State private var selected = 0
 
@@ -27,7 +27,7 @@ struct SpotSampleSheet: View {
         .environment(\.spotViewDates, entry.spot.viewDates)
         .task(id: entry.id) {
             for view in entry.spot.views.values { await SpotViews.shared.load(view) }
-            guard let output = await model.sample(id) else { return }
+            guard let output = await output() else { return }
             sample = (SheetParts(output: output), SpotSheetPicture.list(of: output))
         }
     }

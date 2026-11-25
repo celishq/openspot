@@ -26,6 +26,25 @@ Every spot answers the same keys, so you learn them once.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
 - A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Edit Spots takes it off the grid.
 
+## Get spots in the Store
+
+The Store is the window that shows which spots you have and where they come from. Open it with the Store card,
+with "Look in the Store" at the end of a search, or with `openspot store open`.
+
+1. Look at the sidebar. My spots holds each spot you have. A spot that comes with Openspot shows a lock. Under
+   Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source….
+2. Click a spot. Its page shows its readme, Try with sample data when it has some, and what it uses, runs by itself
+   and can also do, before you install it.
+3. Drag the spot onto My spots, or press Install on its page. While you drag, My spots says Install, and a source
+   says Read only. The review opens, and nothing is copied until its Install.
+
+- The button of a page says Installed once the spot is yours, Update when a newer version waits for your yes, and
+  Revert… when you edited it. Update names only what the new version adds. Revert asks before it moves your copy to the
+  Trash.
+- The search at the top keeps only the spots of the chosen place that match.
+- Each act of the Store is also a command, so an agent can do it: `openspot store list`, `store get`, `store update`,
+  `store revert`, `store add`, `store remove` and `store open`.
+
 ## Change a spot's Settings
 
 Each spot has its own Settings, which open when you press `⌘` Return on its card.

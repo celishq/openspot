@@ -194,6 +194,26 @@ extension SpotTokens {
     public static let windowFooterPadding: CGFloat = builtIn.space.padding
     public static let windowRowPadding: CGFloat = 10
 
+    public static let storeSidebarWidth: CGFloat = 200
+    public static let storeInset: CGFloat = 16
+    public static let storeRowHeight: CGFloat = 30
+    public static let storeRowGap: CGFloat = 2
+    public static let storeRowIcon: CGFloat = 20
+    public static let storeRowRadius: CGFloat = 8
+    public static let storeHeadingGap: CGFloat = 10
+    public static let storeSearchWidth: CGFloat = 200
+    public static let storeTileSize = CGSize(width: 168, height: 96)
+    public static let storeTileGap: CGFloat = 12
+    public static let storeTilePadding: CGFloat = 12
+    public static let storeTileRadius: CGFloat = 14
+    public static let storeTileLineGap: CGFloat = 4
+    public static let storeMarkGap: CGFloat = 2
+    public static let storeMarkPadding: CGFloat = 6
+    public static let storeTrustTitleWidth: CGFloat = 110
+    public static let storeMediaHeight: CGFloat = 240
+    public static let storeAskWidth: CGFloat = 440
+    public static let storeAskRadius: CGFloat = 16
+
     public static let emblemSide: CGFloat = 26
     public static var publisherPlace: CGSize { CGSize(width: partsWidth, height: 178) }
     public static let publisherTiltReach = CGSize(width: 10, height: 7)

@@ -242,6 +242,7 @@ final class StoreTests: XCTestCase {
         store.choose(.mine)
         await store.open("clock")
         XCTAssertEqual(store.page?.button, .edited)
+        XCTAssertEqual(store.page?.from, "From Openspot")
 
         await store.revert("clock")
         guard case .revert(let change)? = store.ask else { return XCTFail("No Replace question") }

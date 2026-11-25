@@ -5,7 +5,7 @@ public enum RenderCall: NounCall {
     case card(SpotSize, String)
     case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
     case panel(String)
-    case store(String)
+    case store(String, place: String?, spot: String?, review: String?)
 
     private static let rule = CallRule(flags: .ownProcess)
 
@@ -25,7 +25,10 @@ public enum RenderCall: NounCall {
             return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1], isLight: fit.has("--light"))
         },
         CommandVerb("panel", "<file.png>", "Draws the panel with each installed spot on its grid.", rule: rule) { $0.one.map(Self.panel) },
-        CommandVerb("store", "<file.png>", "Draws the window of the Store with each spot as its card.", rule: rule) { $0.one.map(Self.store) }
+        CommandVerb("store", "[--place <name>] [--spot <id>] [--review <id>] <file.png>", "Draws the window of the Store at My spots, or at the place --place names, such as Openspot, with the page of --spot open, or the review of an install of --review over it.", rule: rule) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.store(fit.rest[0], place: fit.value("--place"), spot: fit.value("--spot"), review: fit.value("--review"))
+        }
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {

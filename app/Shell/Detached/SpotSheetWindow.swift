@@ -6,10 +6,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
     private var isPresent = false
+    var takesEscape: () -> Bool = { false }
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
-            if key.name == "escape", !(firstResponder is NSText) { return performClose(nil) }
+            if key.name == "escape", !(firstResponder is NSText) { return takesEscape() ? () : performClose(nil) }
             if key.name != "escape", let model, model.handleFloatKey(key, in: id) { return }
         }
         super.sendEvent(event)

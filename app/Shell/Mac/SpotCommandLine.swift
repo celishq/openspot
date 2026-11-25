@@ -45,8 +45,8 @@ enum SpotCommandLine {
             SpotCardPicture.run(text: standardInput, size: size, path: path)
         case RenderCall.panel(let path) as RenderCall:
             SpotPanelPicture.run(path: path)
-        case RenderCall.store(let path) as RenderCall:
-            SpotStorePicture.run(path: path)
+        case RenderCall.store(let path, let place, let spot, let review) as RenderCall:
+            SpotStorePicture.run(path: path, place: place, spot: spot, review: review)
         case HelperCall.capability(SpotTranslation.capability.name) as HelperCall:
             SpotTranslation.serve()
         case HelperCall.capability(SpotRecording.capability.name) as HelperCall:

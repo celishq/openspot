@@ -83,6 +83,10 @@ struct SpotRunningApp: RunningApp {
         await model.editGrid()
     }
 
+    func openStore(_ id: String?, search: String?) async -> Bool {
+        await StoreWindow.show(model: model, id: id, search: search)
+    }
+
     func publish(_ id: String) async -> SpotPublish {
         await model.publish(id)
     }
