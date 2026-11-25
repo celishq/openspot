@@ -62,11 +62,11 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(facts.output, "item=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
-    func testNoVerbMakesChangesOrRemovesTheKeyNorPrintsOrTakesAWord() async throws {
+    func testNoVerbPrintsOrTakesAWord() async throws {
         let key = try store.keyMadeOnce()
 
         for caller in [nil, spot(uses: [.account], isBuiltIn: false), keyed] {
-            for arguments in [["account", "words"], ["account", "choices", "2", "7"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "new"], ["account", "new", "tony"], ["account", "sign-out"], ["account", "sync", "off"]] {
+            for arguments in [["account", "words"], ["account", "choices", "2", "7"], ["account", "checked"], ["account", "phrase"], ["account", "sign-in"]] {
                 let answer = try await call(arguments, from: caller, input: phrase)
                 XCTAssertEqual(answer.code, 2, "\(arguments)")
                 XCTAssertEqual(answer.output, "", "\(arguments)")
@@ -75,6 +75,43 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertEqual(try store.key(), key)
         let asked = await app.asked
         XCTAssertEqual(asked, [])
+    }
+
+    func testOnlyOpenspotsOwnSpotsChangeTheAccount() async throws {
+        for caller in [nil, spot(uses: [.account], isBuiltIn: false), spot(uses: [.app], isBuiltIn: true)] {
+            for arguments in [["account", "new", "tony"], ["account", "sign-out"], ["account", "sync", "off"]] {
+                let answer = try await call(arguments, from: caller)
+                XCTAssertEqual(answer.code, 1, "\(arguments)")
+                XCTAssertEqual(answer.errors, "Only Openspot's own spots can reach your account key.\n", "\(arguments)")
+            }
+        }
+        XCTAssertNil(try store.key())
+    }
+
+    func testNewMakesTheKeyWithItsHandleAndPrintsTheAccount() async throws {
+        let wrong = try await call(["account", "new", "Tony P"], from: keyed)
+        let made = try await call(["account", "new", "tony"], from: keyed)
+
+        XCTAssertEqual(wrong.errors, AccountHandle.rule + "\n")
+        XCTAssertTrue(made.output.hasPrefix("item=account\nsignedIn=true\n"), made.output)
+        XCTAssertTrue(made.output.contains("\nhandle=tony\n"), made.output)
+        XCTAssertEqual(try store.record()?.handle, "tony")
+    }
+
+    func testSignOutFromSettingsAsksTouchIDThenRemovesTheKey() async throws {
+        _ = try store.keyMadeOnce()
+        await app.set(allows: false)
+
+        let denied = try await call(["account", "sign-out"], from: keyed)
+        XCTAssertNotNil(try store.key())
+        await app.set(allows: true)
+        let out = try await call(["account", "sign-out"], from: keyed)
+
+        XCTAssertEqual(denied.errors, "Touch ID didn't pass, so your account stays.\n")
+        XCTAssertEqual(out.output, "item=account\nsignedIn=false\n")
+        XCTAssertNil(try store.key())
+        let asked = await app.asked
+        XCTAssertEqual(asked, ["sign out of your account", "sign out of your account"])
     }
 
     func testTheWordsShowAfterTouchID() async throws {

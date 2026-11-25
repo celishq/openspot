@@ -16,6 +16,14 @@ struct SpotView: View {
     @State private var pending: [String: String] = [:]
     @State private var drafts: [String: String] = [:]
     @State private var target: String?
+    @State private var step: AccountStep?
+    @State private var handle = ""
+    @State private var phrase = ""
+    @State private var words: [String] = []
+    @State private var check: [Int] = []
+    @State private var choices: [[String]] = []
+    @State private var picks: [Int: String] = [:]
+    @State private var failure: String?
     @FocusState private var isListening: Bool
     @Environment(\.colorScheme) private var scheme
 
@@ -368,6 +376,7 @@ struct SpotView: View {
         .onKeyPress(phases: .down) { press in record(press) }
         .overlay { book.grant.map(grantSheet) }
         .sheet(isPresented: $isAboutShown) { about }
+        .sheet(item: $step) { accountSheet($0) }
         .onChange(of: spot.answers, initial: true) {
             book = Book(spot.items)
             pending = [:]
@@ -1027,43 +1036,375 @@ struct SpotView: View {
         let facts = Dictionary(book.account) { first, _ in first }
         let isIn = facts["signedIn"] == "true"
         let rows = book.rows.filter { $0.section == "account" }
-        let shown = ["handle", "npub", "since", "backedUp", "sync"].filter { facts[$0] != nil }.map { Named(id: $0) }
-        let text = isIn
-            ? "Your account signs each spot you publish, so others know it comes from you."
-            : "You have no account yet. Openspot makes one the first time you publish a spot from the Store."
         return Group {
-            header(tile("person.crop.circle.fill", .gray, size: 52), "Account", text) { EmptyView() }
             if isIn {
+                header(tile("person.crop.circle.fill", .gray, size: 52), "Account", "Your key signs each spot you publish, so people know an update is from you.") {
+                    Button("How it works") { step = .how }
+                        .buttonStyle(.link)
+                }
                 group(nil) {
-                    lines(shown) { fact in
+                    lines(["handle", "npub", "since"].filter { facts[$0] != nil }.map { Named(id: $0) }) { fact in
                         HStack {
-                            Text(["handle": "Handle", "npub": "Public key", "since": "Since", "backedUp": "Recovery words", "sync": "iCloud Keychain"][fact.id] ?? fact.id)
+                            Text(["handle": "Handle", "npub": "Public key", "since": "Since"][fact.id] ?? fact.id)
                             Spacer(minLength: 12)
-                            Text(word(of: fact.id, facts[fact.id] ?? ""))
+                            Text(facts[fact.id] ?? "")
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                                 .textSelection(.enabled)
+                            if fact.id == "npub" {
+                                Button("Copy") { copy(facts["npub"] ?? "") }
+                            }
                         }
                         .padding(.horizontal, 12)
                         .frame(minHeight: 40)
                     }
                 }
-            }
-            if !rows.isEmpty {
-                group(nil) { lines(rows) { settingLine($0) } }
+                group("Backup") {
+                    if let sync = facts["sync"] {
+                        HStack {
+                            titled("Keep in iCloud Keychain", "Your other Macs sign in with it.")
+                            Spacer(minLength: 12)
+                            Toggle("", isOn: Binding(get: { sync == "true" }, set: { send("sync", $0 ? "on" : "off") }))
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 40)
+                        Divider().padding(.leading, 12)
+                    }
+                    HStack {
+                        titled("Recovery words", "12 words bring your key back on any Mac.")
+                        Spacer(minLength: 12)
+                        Text(saved(facts).word).foregroundStyle(saved(facts).color)
+                        Button("Show My Words…") { step = .words }
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                }
+                if !rows.isEmpty {
+                    group(nil) { lines(rows) { settingLine($0) } }
+                }
+                HStack {
+                    Spacer()
+                    Button("Sign Out…") { step = .leave }
+                }
+                .controlSize(.large)
+            } else {
+                header(tile("person.crop.circle.fill", .gray, size: 52), "Account", "You need a key to publish. Openspot signs your spots with it, so people know an update is from you.") {
+                    HStack(spacing: 10) {
+                        Button("Create a New Key…") { step = .handle }
+                            .buttonStyle(.borderedProminent)
+                        Button("Use My Own Key…") { step = .signIn }
+                        Button("How it works") { step = .how }
+                            .buttonStyle(.link)
+                    }
+                    .padding(.top, 6)
+                }
             }
         }
     }
 
-    private func word(of fact: String, _ value: String) -> String {
-        switch (fact, value) {
-        case ("backedUp", "true"): "Written down"
-        case ("backedUp", _): "Not written down"
-        case ("sync", "true"): "On"
-        case ("sync", _): "Off"
-        default: value
+    /// Puts the public key on the clipboard, and says so.
+    private func copy(_ npub: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(npub, forType: .string)
+        send("say", "Copied your key")
+    }
+
+    /// Whether the recovery words are kept somewhere, said in a word and its colour.
+    private func saved(_ facts: [String: String]) -> (word: String, color: Color) {
+        if facts["backedUp"] == "true" { return ("Saved", .green) }
+        if facts["sync"] == "true" { return ("In iCloud Keychain", .secondary) }
+        return ("Not saved yet", .orange)
+    }
+
+    // MARK: The steps of the account
+
+    /// A step of the account, shown as a sheet of the window.
+    private enum AccountStep: String, Identifiable {
+        case how, handle, signIn, words, check, leave
+
+        var id: Self { self }
+    }
+
+    @ViewBuilder
+    private func accountSheet(_ shown: AccountStep) -> some View {
+        let facts = Dictionary(book.account) { first, _ in first }
+        VStack(alignment: .leading, spacing: 14) {
+            switch shown {
+            case .how: howSheet
+            case .handle: handleSheet
+            case .signIn: signInSheet(isIn: facts["signedIn"] == "true")
+            case .words: wordsSheet(isSaved: facts["backedUp"] == "true", isSynced: facts["sync"] == "true")
+            case .check: checkSheet
+            case .leave: leaveSheet(facts)
+            }
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(24)
+        .frame(width: 460, alignment: .leading)
+        .onDisappear(perform: forgetWords)
+    }
+
+    private func sheetTitle(_ title: String, _ line: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.title2.weight(.semibold))
+            Text(line)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func fact(_ text: String, _ symbol: String, _ color: Color = .secondary) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: symbol).foregroundStyle(color)
+        }
+    }
+
+    private func buttons<Main: View>(@ViewBuilder _ main: () -> Main) -> some View {
+        HStack(spacing: 10) {
+            Spacer()
+            Button("Cancel") { step = nil }
+                .keyboardShortcut(.cancelAction)
+            main()
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+        }
+        .controlSize(.large)
+        .padding(.top, 6)
+    }
+
+    private var howSheet: some View {
+        Group {
+            sheetTitle("How your key works", "Openspot signs each spot you publish with your key. There is no email, password or server.")
+            VStack(alignment: .leading, spacing: 10) {
+                fact("Shows an update is yours", "checkmark.seal")
+                fact("Kept in iCloud Keychain", "icloud")
+                fact("12 words bring it back", "list.number")
+                fact("Anyone with the words is you", "eye.slash")
+                fact("Nobody can reset them", "exclamationmark.triangle", .orange)
+            }
+            HStack {
+                Spacer()
+                Button("Done") { step = nil }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .controlSize(.large)
+            .padding(.top, 6)
+        }
+    }
+
+    private var handleSheet: some View {
+        Group {
+            sheetTitle("Pick your handle", "It names you on the spots you publish, and in their links.")
+            TextField("yourname", text: $handle)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(create)
+            buttons {
+                Button("Create Key", action: create)
+                    .disabled(handle.isEmpty)
+            }
+        }
+    }
+
+    private func create() {
+        guard !handle.isEmpty else { return }
+        send("new", handle)
+        step = nil
+    }
+
+    private func signInSheet(isIn: Bool) -> some View {
+        let line = spot.secrets?.line(of: phrase) ?? [:]
+        let canSign = line["detail"] != nil
+        return Group {
+            sheetTitle("Use your own key", "Type your 12 words, or an nsec. Openspot asks for Touch ID before it signs in.")
+            TextEditor(text: $phrase)
+                .font(.body.monospaced())
+                .frame(height: 76)
+                .scrollContentBackground(.hidden)
+                .padding(6)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            if let failure {
+                fact(failure, "exclamationmark.triangle", .red)
+            } else if let title = line["title"] {
+                HStack(spacing: 6) {
+                    fact(title, line["icon"] ?? "info.circle", tone(line["tone"]))
+                    if let detail = line["detail"] {
+                        Text(detail).foregroundStyle(.secondary).font(.body.monospaced())
+                    }
+                }
+            }
+            buttons {
+                Button("Sign In") { signIn() }
+                    .disabled(!canSign)
+            }
+        }
+        .onChange(of: phrase) { failure = nil }
+    }
+
+    private func tone(_ word: String?) -> Color {
+        switch word {
+        case "good": .green
+        case "warn": .orange
+        case "bad": .red
+        default: .secondary
+        }
+    }
+
+    private func signIn() {
+        let typed = phrase
+        guard let secrets = spot.secrets else { return failure = SpotSecrets.missing }
+        Task {
+            if let failure = await secrets.signIn(typed) {
+                self.failure = failure
+            } else {
+                step = nil
+                send("say", "Signed in")
+            }
+        }
+    }
+
+    private func wordsSheet(isSaved: Bool, isSynced: Bool) -> some View {
+        Group {
+            sheetTitle("Write them down", "In this order. Anyone with them is you, and nobody can reset them.")
+            if let failure {
+                fact(failure, "exclamationmark.triangle", .red)
+            }
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
+                ForEach(0..<(words.count + 2) / 3, id: \.self) { line in
+                    GridRow {
+                        ForEach(0..<3, id: \.self) { column in
+                            let index = line * 3 + column
+                            if index < words.count {
+                                HStack(spacing: 6) {
+                                    Text("\(index + 1)").foregroundStyle(.secondary).monospacedDigit().frame(width: 18, alignment: .trailing)
+                                    Text(words[index]).font(.body.monospaced())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+            HStack(spacing: 10) {
+                Spacer()
+                Button(isSaved ? "Done" : "Later") { step = nil }
+                    .keyboardShortcut(.cancelAction)
+                if !words.isEmpty, !isSaved {
+                    Button("I Wrote Them Down") { wrote(isSynced: isSynced) }
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+            .controlSize(.large)
+            .padding(.top, 6)
+        }
+        .task { await reveal() }
+    }
+
+    private func reveal() async {
+        guard words.isEmpty, let secrets = spot.secrets else { return }
+        let shown = await secrets.words()
+        words = shown.words
+        failure = shown.failure
+    }
+
+    private func wrote(isSynced: Bool) {
+        words = []
+        if isSynced { return step = nil }
+        let places = Array((1...12).shuffled().prefix(2)).sorted()
+        check = places
+        choices = spot.secrets?.choices(at: places) ?? []
+        picks = [:]
+        failure = nil
+        step = .check
+    }
+
+    private var checkSheet: some View {
+        Group {
+            sheetTitle("Pick each word you wrote", "Openspot checks two of them, so you know your words bring your key back.")
+            if let failure {
+                fact(failure, "exclamationmark.triangle", .red)
+            }
+            ForEach(Array(zip(check, choices)), id: \.0) { place, offered in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Word \(place)").fontWeight(.semibold)
+                    HStack(spacing: 8) {
+                        ForEach(offered, id: \.self) { word in
+                            Button(word) { pick(word, at: place) }
+                                .buttonStyle(.bordered)
+                                .tint(picks[place] == word ? .accentColor : nil)
+                        }
+                    }
+                }
+            }
+            HStack(spacing: 10) {
+                Button("Show the Words Again") { step = .words }
+                Spacer()
+                Button("Later") { step = nil }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .controlSize(.large)
+            .padding(.top, 6)
+        }
+    }
+
+    private func pick(_ word: String, at place: Int) {
+        picks[place] = word
+        failure = nil
+        guard check.allSatisfy({ picks[$0] != nil }) else { return }
+        let places = check, picked = check.compactMap { picks[$0] }
+        guard let secrets = spot.secrets else { return failure = SpotSecrets.missing }
+        Task {
+            if let failure = await secrets.confirm(places, picked) {
+                self.failure = failure
+                picks = [:]
+            } else {
+                step = nil
+                send("say", "Your words are backed up")
+            }
+        }
+    }
+
+    private func leaveSheet(_ facts: [String: String]) -> some View {
+        let place = facts["sync"] == "true" ? "all your Macs" : "this Mac"
+        let isSaved = facts["backedUp"] == "true"
+        return Group {
+            sheetTitle("Sign out of your account?", "It leaves \(place)." + (isSaved ? " Your 12 words sign you in again." : ""))
+            if !isSaved {
+                HStack {
+                    fact("You haven't saved its words", "exclamationmark.triangle", .red)
+                    Spacer()
+                    Button("Show My Words…") { step = .words }
+                }
+            }
+            HStack(spacing: 10) {
+                Spacer()
+                Button("Cancel") { step = nil }
+                    .keyboardShortcut(.cancelAction)
+                Button("Sign Out", role: .destructive) {
+                    step = nil
+                    send("sign-out")
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .controlSize(.large)
+            .padding(.top, 6)
+        }
+    }
+
+    /// Drops every word and phrase the steps held, once their sheet closes.
+    private func forgetWords() {
+        words = []
+        phrase = ""
+        picks = [:]
+        failure = nil
     }
 
     private func rowsPage(_ title: String, _ line: String, section: String) -> some View {

@@ -105,8 +105,8 @@ title = "Quit"
 [scripts.settings]
 title = "Settings"
 icon = "gearshape"
-detail = "Access, spots, keys and look"
-uses = ["app", "spots", "read"]
+detail = "Access, spots, keys, look and account"
+uses = ["app", "spots", "read", "account"]
 views = ["settings.swift"]
 window = "settings"
 edits = "settings"

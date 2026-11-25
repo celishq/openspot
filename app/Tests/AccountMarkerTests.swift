@@ -47,7 +47,7 @@ final class AccountMarkerTests: BuiltInCase {
         if !FileManager.default.fileExists(atPath: core.appendingPathComponent(SpotsFolder.appName).path) {
             try FileManager.default.copyItem(at: repoSpots.appendingPathComponent(SpotsFolder.appName), to: core.appendingPathComponent(SpotsFolder.appName))
         }
-        let ids = try SpotsFolder(url: spots, core: core).scan().scripts.filter(\.reachesAccountKey).map(\.id) + [AccountSheet.id]
+        let ids = try SpotsFolder(url: spots, core: core).scan().scripts.filter(\.reachesAccountKey).map(\.id)
         let command = tools.appendingPathComponent("openspot")
         var said: [String] = []
         for id in ids {
@@ -84,77 +84,45 @@ final class AccountMarkerTests: BuiltInCase {
     }
 
     func testTheWholeFlowLeavesNoWordWhereAScriptOrACallerReads() async throws {
-        let app = app, mac = mac
-        let sheet = AccountSheet(store: store, links: AccountSheet.Links(
-            allows: { await app.allows($0) },
-            copy: { mac.copied.append($0); return true },
-            publish: { false },
-            userName: { "Tony Pinkevych" }
-        ))
+        let settings = try spot("settings")
+        let app = app
+        let links = SecretLinks(account: Account(store: store, allows: { await app.allows($0) }), keep: { _, _, _ in nil }).input
+        let words = try XCTUnwrap(links["words"] as? () async -> ([String], String?))
+        let choices = try XCTUnwrap(links["choices"] as? ([Int]) -> [[String]])
+        let confirm = try XCTUnwrap(links["confirm"] as? ([Int], [String]) async -> String?)
+        let signIn = try XCTUnwrap(links["signIn"] as? (String) async -> String?)
         var lines: [String] = []
         var failures: [String] = []
-        let frame = { (arguments: [String], input: String?, page: String?) async -> String in
-            let value = arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? ""
-            let message = (arguments == ["show"] ? "input.event=sheet.open\n" : "") + value + (page.map { "input.route=\($0)\n" } ?? "") + (input ?? "")
+        let act = { (words: [String]) async in
             do {
-                let answer = try await sheet.answer(Array(arguments.prefix(1)), input: message)
-                lines.append("\(answer.effects)")
-                return answer.frame
+                lines.append(try await self.runs.answer(of: settings, "window", input: "input.value=\(words.joined(separator: "\t"))\n", limit: 60))
             } catch {
                 failures.append((error as? SpotError)?.reason ?? "\(error)")
-                return ""
             }
         }
-        let picks = { (text: String) -> [(place: Int, word: String)] in
-            text.split(separator: "\n").filter { $0.hasPrefix("button=pick-") }.map { line in
-                let rest = line.dropFirst("button=pick-".count)
-                return (Int(rest.prefix { $0 != "-" }) ?? 0, String(rest.drop { $0 != "-" }.dropFirst()))
-            }
-        }
-
-        let check = { (words: [String], wrongFirst: Bool) async throws in
-            _ = await frame(["about"], nil, nil)
-            let shown = await frame(["reveal"], nil, "about")
-            XCTAssertTrue(shown.contains("title=\(words[0])"), shown)
-            _ = await frame(["wrote"], nil, "about")
-            let asked = await frame(["show"], nil, "check")
-            let places = Array(Set(picks(asked).map(\.place))).sorted()
-            XCTAssertEqual(places.count, 2, asked)
-            if wrongFirst {
-                let wrong = try XCTUnwrap(picks(asked).first { $0.place == places[0] && $0.word != words[places[0] - 1] })
-                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, "check")
-                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, "check")
-                return
-            }
-            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, "check") }
+        let check = { (all: [String]) async in
+            let offered = choices([3, 9])
+            lines.append("\(offered.count)")
+            if let failure = await confirm([3, 9], [all[2], all[2] == "zoo" ? "abandon" : "zoo"]) { failures.append(failure) }
+            if let failure = await confirm([3, 9], [all[2], all[8]]) { failures.append(failure) }
         }
 
-        _ = await frame(["new"], nil, nil)
-        _ = await frame(["create"], "input.handle=tony\n", "handle")
+        await act(["new", "tony"])
         XCTAssertEqual(try store.record()?.handle, "tony")
-        let made = try XCTUnwrap(try store.key()?.words)
-        try await check(made, true)
-        XCTAssertFalse(try store.record()?.isBackedUp == true)
-        try await check(made, false)
+        let shown = await words()
+        XCTAssertEqual(shown.0, try store.key()?.words)
+        await check(shown.0)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
-        _ = await frame(["leave"], nil, nil)
-        _ = await frame(["sign_out"], nil, "leave")
+        await act(["sign-out"])
         XCTAssertNil(try store.key())
-        _ = await frame(["own"], nil, nil)
-        _ = await frame(["phrase", "abandon abandon"], nil, "restore")
-        _ = await frame(["sign_in"], "input.phrase=\(phrase)\n", "restore")
-        let words = try XCTUnwrap(try store.key()?.words)
-        XCTAssertEqual(words.joined(separator: " "), phrase)
-        try keepTheKey()
-        _ = await frame(["show"], nil, nil)
-        try await check(words, true)
-        try await check(words, false)
-        XCTAssertTrue(try store.record()?.isBackedUp == true)
+        if let failure = await signIn("abandon abandon") { failures.append(failure) }
+        if let failure = await signIn(phrase) { failures.append(failure) }
+        XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
+        await check(phrase.split(separator: " ").map(String.init))
         await app.set(allows: false)
-        _ = await frame(["reveal"], nil, "about")
-        _ = await frame(["sign_out"], nil, "leave")
+        if let failure = (await words()).1 { failures.append(failure) }
+        await act(["sign-out"])
         await app.set(allows: true)
-        _ = await frame(["new"], nil, "publish:evil")
 
         let verbs = await verbsSaid()
         let ran = try await runsSaid()

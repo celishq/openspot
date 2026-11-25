@@ -129,7 +129,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Only Openspot's Store can reach your account key.\n")
+        XCTAssertEqual(errors, "Only Openspot's own spots can reach your account key.\n")
         XCTAssertEqual(found.scripts.first?.uses, [])
     }
 

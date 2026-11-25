@@ -28,7 +28,7 @@ extension SpotsModel {
                 try await SpotSample.capture(of: spot, runs: runs)
                 shared = try await Task.detached(priority: .userInitiated) { try SpotPackage(sharing: spot, from: SpotsFolder(url: folder.url).scan()) }.value
             }
-            guard let released = try await release(shared, named: spot.name, publishing: id) else { return .failed }
+            guard let released = try await release(shared, named: spot.name) else { return .failed }
             try await Task.detached(priority: .userInitiated) { try released.write(to: store) }.value
         } catch {
             toast(.failure("\(spot.name) was not published. \(Self.reason(error))"))
@@ -38,8 +38,8 @@ extension SpotsModel {
         return .published
     }
 
-    func release(_ package: SpotPackage, named name: String, publishing id: String? = nil) async throws -> SpotPackage? {
-        guard let key = try await accountKey(publishing: id) else { return nil }
+    func release(_ package: SpotPackage, named name: String) async throws -> SpotPackage? {
+        guard let key = try await accountKey() else { return nil }
         if package.needsCompile { toast(.work("Compiling \(name)")) }
         let spots = folder.url
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
@@ -53,31 +53,11 @@ extension SpotsModel {
         (try? SpotsFolder(url: folder.url).scan())?.files.first { $0.id == id }?.spots.first
     }
 
-    func accountKey(publishing id: String?) async throws -> AccountKey? {
+    func accountKey() async throws -> AccountKey? {
         let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
         if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
-        if let account = entries.first(where: { $0.id == AccountSheet.id }) {
-            host.present()
-            _ = push(FlowSheet(spot: account.id))
-            waitingPublish = id
-            if id != nil { return nil }
-        }
         toast(.failure("Set up your account, then publish again."))
+        openSettings(at: "account")
         return nil
-    }
-
-    func publishWaiting() async -> Bool {
-        guard let id = waitingPublish else { return false }
-        waitingPublish = nil
-        await publish(id)
-        leaveAccount()
-        return true
-    }
-
-    private func leaveAccount() {
-        guard openSheetID == AccountSheet.id else { return }
-        let behind = flow.pages[...flow.index].reversed().prefix { $0.spot == AccountSheet.id }.count
-        guard behind <= flow.index else { return }
-        popPage(steps: behind)
     }
 }
