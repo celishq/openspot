@@ -91,13 +91,13 @@ final class SpotsPanel: NSPanel {
 
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: model.placements))
+        let height = model.gridHeight
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
     private func followSides() {
         guard let model else { return }
-        let panels = withObservationTracking { model.panels } onChange: { [weak self] in
+        let panels = withObservationTracking { model.columns } onChange: { [weak self] in
             Task { @MainActor in self?.followSides() }
         }
         let grown = (left: panels.leftExtent - place.left, right: panels.rightExtent - appliedRight)
@@ -121,8 +121,8 @@ final class SpotsPanel: NSPanel {
 
     func layOut() {
         guard let model else { return }
-        place.left = model.panels.leftExtent
-        appliedRight = model.panels.rightExtent
+        place.left = model.columns.leftExtent
+        appliedRight = model.columns.rightExtent
         let width = SpotTokens.panelWidth + place.left + appliedRight
         resize(to: NSRect(x: frame.minX, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
         takeBackdrop()

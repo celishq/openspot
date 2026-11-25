@@ -5,7 +5,7 @@ struct SpotMenuLayer: View {
     let model: SpotsModel
     let item: SpotMenuAnchor.Item?
     let fieldIsInSheet: Bool
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotColumns) private var panels
 
     var body: some View {
         GeometryReader { proxy in

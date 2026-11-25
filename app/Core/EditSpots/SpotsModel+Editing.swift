@@ -75,85 +75,62 @@ extension SpotsModel {
         }
     }
 
-    func moveSelectedSpot(by step: Int) {
-        let order = visible.map(\.id)
-        guard order.indices.contains(selected),
-              let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
-        moveSpot(order[selected], to: place)
+    func moveSelectedSpot(dx: Int, dy: Int) {
+        guard placements.indices.contains(selected), let entry = selectedEntry else { return }
+        let here = placements[selected]
+        moveSpot(entry.id, to: GridCell(row: here.row + dy, column: here.column + dx))
     }
 
-    public func moveSpot(_ id: String, to place: Int) {
-        var order = visible.map(\.id)
-        guard let from = order.firstIndex(of: id), order.indices.contains(place), place != from else { return }
-        order.remove(at: from)
-        order.insert(id, at: place)
-        saveArrangement({ $0.arrange(order) }, selecting: id)
+    public func moveSpot(_ id: String, to cell: GridCell) {
+        guard let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index),
+              let layout = columns.layout.moved(index, to: cell, size: placements[index].size, in: placements),
+              layout != placements else { return }
+        saveLayout(layout, selecting: id)
     }
 
     func stepSelectedSize() {
-        guard let entry = selectedEntry else { return }
-        let sizes = visible.map(\.size)
-        if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
-    }
-
-    func toggleSelectedOnGrid() {
-        guard let entry = selectedEntry else { return }
-        setOnGrid(!entry.isOnGrid, for: entry.id)
+        guard let entry = selectedEntry, placements.indices.contains(selected) else { return }
+        let choices = sizes(of: entry)
+        let here = placements[selected]
+        let start = choices.firstIndex(of: here.size) ?? -1
+        let next = (1..<max(choices.count, 1)).lazy
+            .map { choices[(start + $0 + choices.count) % choices.count] }
+            .compactMap { self.columns.layout.moved(self.selected, to: here.cell, size: $0, in: self.placements) }
+            .first
+        if let next { saveLayout(next, selecting: entry.id) }
     }
 
     public func prefer(_ size: SpotSize, for id: String) {
-        let order = visible.map(\.id)
-        saveArrangement({
-            $0.arrange(order)
-            $0.set(size: size, of: id)
-        }, selecting: id)
+        guard let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index),
+              let layout = columns.layout.moved(index, to: placements[index].cell, size: size, in: placements) else { return }
+        saveLayout(layout, selecting: id, also: { $0.set(size: size, of: id) })
     }
 
-    public func setOnGrid(_ isOn: Bool, for id: String) {
-        tip = nil
-        let order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
-        saveArrangement({
-            $0.arrange(order)
-            $0.set(isOnGrid: isOn, of: id)
-        }, selecting: id)
-    }
-
-    public func show(_ panel: GridPanel, _ isShown: Bool) {
+    public func set(columns next: GridColumns) {
         asOnePress {
-            guard panel.configKey != nil, panels[panel] != isShown, panelLeaving != panel else { return }
-            let apply: @MainActor () -> Void = { [self] in
-                panelLeaving = nil
-                do {
-                    try write(.panels) { $0.show(panel, isShown) }
-                } catch {
-                    return toast(.failure("Openspot could not save the panels. \(Self.reason(error))"))
-                }
-                if panels[panel] != isShown { panels[panel] = isShown }
+            guard next != columns else { return }
+            do {
+                try write(.columns) { $0.set(columns: next) }
+            } catch {
+                return toast(.failure("Openspot could not save the columns. \(Self.reason(error))"))
+            }
+            change(.edit) {
+                columns = next
                 updateVisible()
             }
-            let held = cards.filter { $0.panel == panel }.map(\.id)
-            guard !held.isEmpty else { return apply() }
-            let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
-            guard let first = leaving.first else {
-                guard save({ next in held.forEach { next.set(panel: .center, of: $0) } }) else { return }
-                rebuildEntries()
-                return apply()
-            }
-            let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
-            let order = onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id)
-            let isSaved = save { next in
-                held.forEach { next.set(panel: .center, of: $0) }
-                next.arrange(order)
-            }
-            guard isSaved else { return }
-            panelLeaving = panel
-            land(selecting: first, landed: apply)
         }
     }
 
-
-    func saveArrangement(_ edit: (inout SpotArrangement) -> Void, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
-        save(edit)
+    func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotArrangement) -> Void = { _ in }) {
+        let count = columns.count
+        let changes = layout.filter { visible.indices.contains($0.index) }.map { (visible[$0.index], $0) }
+        save { next in
+            for (entry, placement) in changes {
+                if entry.cell(in: columns) != placement.cell { next.set(cell: placement.cell, of: entry.id, columns: count) }
+                if entry.size != placement.size { next.set(size: placement.size, of: entry.id) }
+            }
+            also(&next)
+        }
         land(selecting: id, ending: ending, landed: landed)
     }
 

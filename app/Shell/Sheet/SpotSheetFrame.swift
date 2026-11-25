@@ -12,7 +12,7 @@ struct SpotSheetFrame: ViewModifier {
     var arrowBox: CGSize = .zero
     var step = SheetStep()
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotColumns) private var panels
 
     func body(content: Content) -> some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)

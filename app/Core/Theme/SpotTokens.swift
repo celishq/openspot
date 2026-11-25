@@ -15,7 +15,6 @@ public enum SpotTokens {
     public static let columns = 4
     public static let rows = 7
     public static var cell: CGFloat { layout.space.cell }
-    public static let groupTitleHeight: CGFloat = 16
     public static var glyph: CGFloat { layout.space.glyph }
     public static let glyphInset: CGFloat = 9
     public static let workMark: CGFloat = 16

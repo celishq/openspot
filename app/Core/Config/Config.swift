@@ -6,7 +6,7 @@ public struct Config: Equatable, Sendable {
         case spots
         case settings
         case careful
-        case panels
+        case columns
         case rest
     }
 
@@ -19,7 +19,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var stores: [Store] = []
     public private(set) var isCareful = false
     public private(set) var theme: String?
-    public private(set) var panels = GridPanels()
+    public private(set) var columns = GridColumns()
     private(set) var browsers = Browser.builtIn
     public private(set) var isReadable = true
     private var kept = ConfigDocument()
@@ -45,7 +45,7 @@ public struct Config: Equatable, Sendable {
         kept.tables = []
         let known = ["spots", "keys", "settings", "stores"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
-        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns", "left_panel", "right_panel"] + known).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
@@ -79,13 +79,10 @@ public struct Config: Equatable, Sendable {
                 }
             }
         }
-        for panel in GridPanel.allCases {
-            guard let key = panel.configKey else { continue }
-            switch document.values[key] {
-            case .boolean(let isOn)?: panels[panel] = isOn
-            case nil: break
-            default: faults.append("config.toml: \(key) is true or false.")
-            }
+        switch document.values["columns"] {
+        case .integer(let count)? where GridColumns.choices.contains(count): columns = GridColumns(count)
+        case nil: break
+        default: faults.append("config.toml: columns is 4, 6 or 8.")
         }
     }
 
@@ -102,7 +99,7 @@ public struct Config: Equatable, Sendable {
         if arrangement != other.arrangement { sections.insert(.spots) }
         if settings != other.settings { sections.insert(.settings) }
         if isCareful != other.isCareful { sections.insert(.careful) }
-        if panels != other.panels { sections.insert(.panels) }
+        if columns != other.columns { sections.insert(.columns) }
         same.panelKey = panelKey
         same.fixKey = fixKey
         same.keys = keys
@@ -110,7 +107,7 @@ public struct Config: Equatable, Sendable {
         same.settings = settings
         same.isCareful = isCareful
         same.theme = theme
-        same.panels = panels
+        same.columns = columns
         same.kept = kept
         same.kept.tables = other.kept.tables
         if same != self { sections.insert(.rest) }
@@ -136,10 +133,9 @@ public struct Config: Equatable, Sendable {
         kept.set("theme", to: .string(theme))
     }
 
-    public mutating func show(_ panel: GridPanel, _ isShown: Bool) {
-        guard let key = panel.configKey else { return }
-        panels[panel] = isShown
-        kept.set(key, to: .boolean(isShown))
+    public mutating func set(columns: GridColumns) {
+        self.columns = columns
+        kept.set("columns", to: .integer(columns.count))
     }
 
     public mutating func set(setting key: String, of spot: String, to value: String?) {
@@ -238,9 +234,19 @@ public struct Config: Equatable, Sendable {
             choice.key = ActionKey(text: text)
             if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
         }
-        if case .string(let name)? = table["side"] {
-            choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
-            if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
+        switch table["places"] {
+        case .table(let pairs)?:
+            var cells: [Int: GridCell] = [:]
+            for (name, value) in pairs {
+                guard let columns = Int(name), case .string(let text) = value, let cell = GridCell(text: text) else {
+                    faults.append("config.toml: \(id) places takes a row and a column for each width, such as places = { 4 = \"0 2\" }.")
+                    continue
+                }
+                cells[columns] = cell
+            }
+            choice.cells = cells
+        case nil: break
+        default: faults.append("config.toml: \(id) places takes a row and a column for each width, such as places = { 4 = \"0 2\" }.")
         }
         switch table["commands"] {
         case .table(let pairs)?:
@@ -256,7 +262,7 @@ public struct Config: Equatable, Sendable {
         case nil: break
         default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side", "commands"].contains(key) {
+        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side", "places", "commands"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

@@ -40,10 +40,10 @@ final class SampleSpotsTests: SampleSpotsCase {
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
-        let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
-        let rows = placements.map { $0.row + $0.size.rows }.max()
+        let shown = core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }
+        let placements = GridColumns().layout.place(shown.map { GridSpot(size: defaults.size(of: $0.id) ?? $0.size, cell: defaults.cells(of: $0.id)?[4]) })
 
-        XCTAssertLessThanOrEqual(rows ?? 0, 6)
+        XCTAssertEqual(placements.count, shown.count)
     }
 
     func testNoExampleTakesTheIdOfACoreSpot() throws {

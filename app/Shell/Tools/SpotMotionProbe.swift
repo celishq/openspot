@@ -593,7 +593,7 @@ final class SpotMotionProbe: NSObject {
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
             CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.cell / 2),
-            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
+            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotPlacement.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shotsFolder { return shoot(id, stops: stops, into: shotsFolder) }
@@ -661,7 +661,7 @@ final class SpotMotionProbe: NSObject {
         let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
         var log: [String] = []
         func note() {
-            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
+            log.append("drag \(model.drag.map { "\($0.id) at \($0.cell.row) \($0.cell.column)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
         }
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {

@@ -8,4 +8,10 @@ public struct GridCell: Hashable, Sendable {
         self.row = row
         self.column = column
     }
+
+    public init?(text: String) {
+        let parts = text.split(separator: " ").compactMap { Int($0) }
+        guard parts.count == 2, parts.allSatisfy({ $0 >= 0 }) else { return nil }
+        self.init(row: parts[0], column: parts[1])
+    }
 }

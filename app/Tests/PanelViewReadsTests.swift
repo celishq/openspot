@@ -44,39 +44,6 @@ final class PanelViewReadsTests: XCTestCase {
         try await wait("the open list") { model.transition.phase == .open && model.openSheetID == "list" && model.openItems?.shown.count == 2 }
     }
 
-    func testAScrollOfTheGridTellsNoReaderOfTheSheetsCardWhileNoSheetShows() async throws {
-        model.gridScrolled(to: 10)
-        nonisolated(unsafe) var changed = false
-        withObservationTracking { _ = model.cardScroll } onChange: { changed = true }
-
-        model.gridScrolled(to: 40)
-
-        XCTAssertFalse(changed)
-        XCTAssertEqual(model.gridScroll, 40)
-    }
-
-    func testASheetGrowsFromWhereItsCardWasScrolledToAndAScrollWhileItShowsTellsNoReader() async throws {
-        model.gridScrolled(to: 40)
-
-        try await openList()
-
-        XCTAssertEqual(model.cardScroll, 40)
-        nonisolated(unsafe) var changed = false
-        withObservationTracking { _ = model.cardScroll } onChange: { changed = true }
-        model.gridScrolled(to: 60)
-        XCTAssertFalse(changed)
-    }
-
-    func testASheetClosesToWhereItsCardIsScrolledToNow() async throws {
-        try await openList()
-        model.gridScrolled(to: 60)
-
-        model.transition.hide(moves: true)
-
-        XCTAssertEqual(model.transition.phase, .closing)
-        XCTAssertEqual(model.cardScroll, 60)
-    }
-
     private func showTwoCards() async throws -> (list: Int, other: Int) {
         try TestSpot(toml: "", body: "printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'").write(to: spots.spotFile("list"))
         try TestSpot(toml: "", body: "true").write(to: spots.spotFile("other"))

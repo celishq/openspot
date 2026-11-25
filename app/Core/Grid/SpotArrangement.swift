@@ -11,7 +11,7 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isInMenuBar: Bool?
         public var isWindow: Bool?
         public var key: ActionKey?
-        public var panel: GridPanel?
+        public var cells: [Int: GridCell]?
         public var commands: [String: String]?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
@@ -60,8 +60,8 @@ public struct SpotArrangement: Equatable, Sendable {
         choice(of: id)?.isFound
     }
 
-    public func panel(of id: String) -> GridPanel? {
-        choice(of: id)?.panel
+    public func cells(of id: String) -> [Int: GridCell]? {
+        choice(of: id)?.cells
     }
 
     public func isGlobal(of id: String) -> Bool? {
@@ -107,8 +107,12 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isOnGrid = isOnGrid }
     }
 
-    public mutating func set(panel: GridPanel, of id: String) {
-        change(id) { $0.panel = panel == .center ? nil : panel }
+    public mutating func set(cell: GridCell?, of id: String, columns: Int) {
+        change(id) { choice in
+            var cells = choice.cells ?? [:]
+            cells[columns] = cell
+            choice.cells = cells.isEmpty ? nil : cells
+        }
     }
 
     public mutating func set(isEnabled: Bool, of id: String) {
@@ -140,7 +144,7 @@ public struct SpotArrangement: Equatable, Sendable {
                 ("tray", choice.isInMenuBar.map { .boolean($0) }),
                 ("window", choice.isWindow.map { .boolean($0) }),
                 ("key", (choice.key?.text).map { .string($0) }),
-                ("side", (choice.panel?.rawValue).map { .string($0) }),
+                ("places", choice.cells.map { cells in .table(Dictionary(uniqueKeysWithValues: cells.map { (String($0.key), .string("\($0.value.row) \($0.value.column)")) })) }),
                 ("commands", choice.commands.map { .table($0.mapValues { .string($0) }) })
             ])
         }

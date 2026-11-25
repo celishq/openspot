@@ -156,7 +156,7 @@ private struct SheetFadeMask: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
     let isOpen: Bool
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotColumns) private var panels
 
     func body(content: Content) -> some View {
         content.mask {

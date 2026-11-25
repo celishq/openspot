@@ -7,19 +7,15 @@ public struct SpotResize: Sendable {
     public var size: SpotSize
     private let layouts: [(size: SpotSize, places: [SpotPlacement])]
 
-    public init(id: String, index: Int, sizes: [SpotSize], choices: [SpotSize], grid: SpotGrid = SpotGrid()) {
+    public init(id: String, index: Int, placements: [SpotPlacement], choices: [SpotSize], grid: GridLayout) {
         self.id = id
         self.index = index
-        start = sizes[index]
-        size = sizes[index]
-        let grid = grid.keeping(index)
-        let own = grid.place(sizes)
-        var layouts: [(size: SpotSize, places: [SpotPlacement])] = []
-        for choice in choices.contains(start) ? choices : [start] + choices {
-            var changed = sizes
-            changed[index] = choice
-            let places = choice == start ? own : grid.place(changed)
-            if choice != start, places == own || layouts.contains(where: { $0.places == places }) { continue }
+        let placement = placements.first { $0.index == index } ?? SpotPlacement(index: index, row: 0, column: 0, size: .small)
+        start = placement.size
+        size = placement.size
+        var layouts: [(size: SpotSize, places: [SpotPlacement])] = [(placement.size, placements)]
+        for choice in choices where choice != placement.size {
+            guard let places = grid.moved(index, to: placement.cell, size: choice, in: placements) else { continue }
             layouts.append((choice, places))
         }
         self.layouts = layouts

@@ -2,11 +2,11 @@ import OpenspotCore
 import SwiftUI
 
 struct PanelSpan: ViewModifier {
-    let panels: GridPanels
+    let columns: GridColumns
 
     func body(content: Content) -> some View {
         content
-            .frame(width: panels.frame.width, height: panels.frame.height, alignment: .topLeading)
-            .offset(x: panels.frame.minX)
+            .frame(width: columns.frame.width, height: columns.frame.height, alignment: .topLeading)
+            .offset(x: columns.frame.minX)
     }
 }

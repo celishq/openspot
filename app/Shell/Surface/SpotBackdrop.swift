@@ -9,8 +9,8 @@ struct SpotBackdrop: View {
 
     var body: some View {
         if drawsGlass, SpotTokens.backdrop.reach == .tiles {
-            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
-                .modifier(PanelSpan(panels: model.panels))
+            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.columns.frame.minX, dy: 0), foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
+                .modifier(PanelSpan(columns: model.columns))
                 .modifier(SpotShownFade(isShown: isShown))
                 .allowsHitTesting(false)
         }

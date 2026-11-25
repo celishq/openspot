@@ -8,7 +8,7 @@ struct SpotSurface: View {
     var marks: [FlowEdge] = []
     var markRoom: CGRect = .zero
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotColumns) private var panels
     @Environment(\.spotFade) private var fade
 
     var body: some View {
@@ -26,7 +26,7 @@ struct SpotSurface: View {
                 .opacity(isShown ? max(glass, MotionTokens.hiddenOpacity) * SpotTheme.glassStrength(at: fade) : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
-        .modifier(PanelSpan(panels: panels))
+        .modifier(PanelSpan(columns: panels))
         .allowsHitTesting(false)
     }
 

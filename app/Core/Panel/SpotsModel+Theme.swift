@@ -18,8 +18,6 @@ extension SpotsModel {
         heldLayout = nil
         guard layout != laidOut else { return }
         laidOut = layout
-        gridScroll = 0
-        cardScroll = 0
         SpotTokens.take(layout)
         takePlacements()
         for run in runs.sheets.values { run.layOut() }

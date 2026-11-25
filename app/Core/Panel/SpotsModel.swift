@@ -62,9 +62,7 @@ public final class SpotsModel {
         }
     }
     public internal(set) var visible: [Entry] = []
-    @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
-    @ObservationIgnored var laidOutGrid = SpotGrid()
     @ObservationIgnored var laidOutTop: CGFloat = 0
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
@@ -114,20 +112,17 @@ public final class SpotsModel {
     @ObservationIgnored var heldLayout: Theme.Layout?
     @ObservationIgnored var laidOut = Theme.Layout()
     @ObservationIgnored var takenTheme = Theme()
-    public internal(set) var groupBands: SpotGroupBands?
-    public internal(set) var panels = GridPanels() {
+    public internal(set) var columns = GridColumns() {
         didSet { spanBackdrop() }
     }
-    public internal(set) var backdropPanels = GridPanels()
+    public internal(set) var backdropColumns = GridColumns()
     public internal(set) var backdropSheet: SpotRun?
-    @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
-        let height = SpotTokens.contentHeight(gridHeight: max(SpotGrid.height(of: placements), laidOutTop))
+        let content = query.isEmpty ? columns.layout.height + laidOutTop : SpotPlacement.height(of: placements)
+        let height = SpotTokens.contentHeight(gridHeight: max(content, laidOutTop))
         if height != gridHeight { gridHeight = height }
-        let bands = SpotGroupBands(placements)
-        if bands != groupBands { groupBands = bands }
         takeShade()
     }
     public var selected = 0 {
@@ -150,7 +145,6 @@ public final class SpotsModel {
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
-            if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             holdBackdropSheet()
             if transition.phase != .closing, closingSheet != nil { closingSheet = nil }
             let shown = transition.shown
@@ -297,11 +291,8 @@ public final class SpotsModel {
     public internal(set) var carry: SpotCarry?
     public internal(set) var resize: SpotResize?
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
-    @ObservationIgnored var dragTarget: SpotDrag.Target?
+    @ObservationIgnored var dragTarget: GridCell?
     @ObservationIgnored var dragWait: Task<Void, Never>?
-    @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
-    public internal(set) var cardScroll: CGFloat = 0
-    @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
@@ -436,7 +427,7 @@ public final class SpotsModel {
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
         holdAssignedKeys(config)
-        if panels != config.panels { panels = config.panels }
+        if columns != config.columns { columns = config.columns }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()

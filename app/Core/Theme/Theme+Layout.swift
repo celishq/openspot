@@ -42,7 +42,7 @@ extension Theme {
             gridWidth = columns * space.cell + (columns - 1) * space.columnGap
             panelWidth = gridWidth + 2 * halo
             hintBlock = space.rowGap + Double(SpotTokens.hintPillHeight)
-            panelHeight = 2 * halo + 7 * space.cell + 6 * space.rowGap + hintBlock
+            panelHeight = 2 * halo + Double(SpotTokens.rows + 1) * space.cell + Double(SpotTokens.rows) * space.rowGap + hintBlock
             sheetMaxHeight = panelHeight - 2 * halo - hintBlock
             sheetFieldDrop = space.padding + space.glyph + space.rowGap
             sheetRowsTop = sheetFieldDrop + space.listRow + space.rowGap

@@ -1048,7 +1048,8 @@ final class SpotsModelTests: XCTestCase {
         try script("build", toml: "", "printf 'item=g\\ntitle=Guide\\n'")
         try script("picker", toml: "", "printf 'item=new\\ntitle=New spot\\n'")
         await model.reload()
-        model.setOnGrid(false, for: "build")
+        try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "build") }
+        await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.press("picker")

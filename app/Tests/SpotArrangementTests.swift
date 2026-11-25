@@ -158,34 +158,6 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.choices, arrangement.choices.reversed())
     }
 
-    func testASizeStepTakesTheNextSizeSinceTheGridKeepsIt() {
-        let sizes: [SpotSize] = [.small, .small]
-
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: sizes, among: [.small, .wide, .strip]), .wide)
-    }
-
-    func testASizeStepTurnsBackToTheFirstSize() {
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.strip], among: [.small, .wide, .strip]), .small)
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.large, .large], among: [.strip, .large]), .strip)
-    }
-
-    func testASizeStepFindsNoneForASpotWithNoSizes() {
-        XCTAssertNil(SpotGrid().nextSize(of: 0, in: [.large], among: []))
-    }
-
-    func testAMoveStepSkipsEachPlaceThatLeavesTheSpotWhereItIs() {
-        let sizes: [SpotSize] = [.square, .small, .small, .wide, .small]
-
-        XCTAssertEqual(SpotGrid().nextPlace(of: 0, in: sizes, step: 1), 1)
-        XCTAssertEqual(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small, .small, .square], step: 1), 3)
-        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small], step: 1))
-    }
-
-    func testAMoveStepFindsNoPlaceAtTheEndOfTheGrid() {
-        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.wide, .wide], step: 1))
-        XCTAssertNil(SpotGrid().nextPlace(of: 0, in: [.wide, .wide], step: -1))
-    }
-
     func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {
         let n = ActionKey(name: "n", isCommand: true)
         let defaults = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+n\"\n\n[[spots]]\nid = \"set\"\nkey = \"cmd+,\"\n").arrangement

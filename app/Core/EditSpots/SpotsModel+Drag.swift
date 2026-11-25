@@ -6,33 +6,27 @@ extension SpotsModel {
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let entry = visible[start]
-            let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
-            let targets = gridTargets(0...others) + (entry.item == nil && entry.spot.isFound ? (others...(visible.count - 1)).map(SpotDrag.Target.shelf) : [])
-            let home = SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid, panel: entry.isOnGrid ? panel(of: entry) : .center)
-            let lifted = SpotDrag(id: id, home: home, sizes: visible.map(\.size), targets: targets, grid: grid)
+            let lifted = SpotDrag(id: id, index: start, placements: placements, grid: columns.layout, choices: sizes(of: entry))
             stopDragWait()
-            scrollAtPress = gridScroll
             tip = nil
             change(.edit) {
                 drag = lifted
-                carry = SpotCarry(entry: entry, size: lifted.placement(at: lifted.home)?.size ?? entry.size)
+                carry = SpotCarry(entry: entry, size: lifted.start)
                 selected = start
             }
         }
         pointerMove = translation
         guard let drag else { return }
-        let move = inGrid(translation)
-        let moved = drag.capped(move, within: windowInGrid)
+        let moved = drag.capped(translation, within: windowInGrid)
         if lift.offset != moved { lift.offset = moved }
-        let corner = inPanel(drag.rect(at: drag.home).offsetBy(dx: moved.width, dy: moved.height).origin)
+        let corner = inPanel(drag.homeRect.offsetBy(dx: moved.width, dy: moved.height).origin)
         if lift.origin != corner { lift.origin = corner }
-        let centre = drag.centre(movedBy: move)
-        let target = drag.holds(centre) ? drag.nearest(to: drag.centre(movedBy: moved)) : drag.home
+        let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: moved) : drag.home
         follow(target, of: drag)
     }
 
-    private func follow(_ target: SpotDrag.Target, of drag: SpotDrag) {
-        guard target != drag.target else { return stopDragWait() }
+    private func follow(_ target: GridCell, of drag: SpotDrag) {
+        guard target != drag.cell else { return stopDragWait() }
         guard target != dragTarget else { return }
         stopDragWait()
         dragTarget = target
@@ -52,20 +46,11 @@ extension SpotsModel {
                 cancelDrag()
                 return turnOff(entry.id)
             }
-            let move = inGrid(translation)
-            let centre = drag.centre(movedBy: move)
-            let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
-            guard drag.holds(centre), target != drag.home else { return cancelDrag() }
+            let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home
+            guard let landed = drag.moved(to: target), target != drag.home else { return cancelDrag() }
             stopDragWait()
             pointerMove = nil
-            var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
-            order.removeAll { $0 == drag.id }
-            order.insert(drag.id, at: target.place)
-            saveArrangement({ next in
-                next.arrange(order)
-                if target.isOnGrid != drag.home.isOnGrid { next.set(isOnGrid: target.isOnGrid, of: drag.id) }
-                next.set(panel: target.panel, of: drag.id)
-            }, selecting: drag.id, ending: {
+            saveLayout(landed.layout, selecting: drag.id, ending: {
                 self.drag = nil
                 landing = drag.id
             }, landed: { self.endLanding(of: drag.id) })
@@ -80,7 +65,7 @@ extension SpotsModel {
             self.drag = nil
             landing = drag.id
             updateVisible()
-            selected = drag.start
+            selected = drag.index
             carryHome()
         }, completion: { self.endLanding(of: drag.id) })
     }
@@ -97,29 +82,13 @@ extension SpotsModel {
         if drag == nil, lift.offset != .zero { lift.offset = .zero }
     }
 
-    public func gridScrolled(to offset: CGFloat) {
-        guard gridScroll != offset else { return }
-        gridScroll = offset
-        if tip != nil { tip = nil }
-        guard let move = pointerMove else { return }
-        if let drag {
-            dragSpot(drag.id, by: move)
-        } else if let resize {
-            resizeSpot(resize.id, by: move)
-        }
-    }
-
-    func inGrid(_ translation: CGSize) -> CGSize {
-        CGSize(width: translation.width, height: translation.height + gridScroll - scrollAtPress)
-    }
-
     private var windowInGrid: CGRect {
         let origin = gridOrigin
         return windowInPanel.offsetBy(dx: -origin.x, dy: -origin.y)
     }
 
     private var windowInPanel: CGRect {
-        panels.frame.insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
+        columns.frame.insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
     }
 
     private func inPanel(_ point: CGPoint) -> CGPoint {
@@ -127,20 +96,12 @@ extension SpotsModel {
         return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
     }
 
-    func dragged(_ list: [Entry]) -> [Entry] {
-        guard let drag, let from = list.firstIndex(where: { $0.id == drag.id }) else { return list }
-        var list = list
-        let entry = list.remove(at: from)
-        list.insert(entry, at: min(drag.place, list.count))
-        return list
-    }
-
-    private func land(at target: SpotDrag.Target) {
+    private func land(at target: GridCell) {
         dragTarget = nil
+        guard let next = drag?.moved(to: target) else { return }
         change(.edit) {
-            drag?.target = target
+            drag = next
             updateVisible()
-            selected = target.place
         }
     }
 
@@ -150,15 +111,7 @@ extension SpotsModel {
         dragTarget = nil
     }
 
-    func panel(of entry: Entry) -> GridPanel {
-        panels.holding(entry.panel)
-    }
-
-    private func gridTargets(_ places: ClosedRange<Int>) -> [SpotDrag.Target] {
-        GridPanel.allCases.filter { panels[$0] }.flatMap { panel in places.map { SpotDrag.Target.onGrid($0, panel: panel) } }
-    }
-
     public var gridOrigin: CGPoint {
-        SpotTokens.gridOrigin(scrollOffset: gridScroll, left: panels.leftExtent)
+        SpotTokens.gridOrigin(left: columns.leftExtent)
     }
 }

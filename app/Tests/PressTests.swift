@@ -141,13 +141,13 @@ final class PressTests: PanelCase {
         model.reviewRead?.cancel()
     }
 
-    func testShowingAPanelWorksAStaleHintOutOnceByTheEndOfThePress() async throws {
+    func testChangingTheColumnsWorksAStaleHintOutOnceByTheEndOfThePress() async throws {
         try await showGrid("notes")
         model.beginEditing()
 
-        let takes = await takes(stale: true) { model.show(.left, true) }
+        let takes = await takes(stale: true) { model.set(columns: GridColumns(6)) }
 
-        XCTAssertTrue(model.panels[.left])
+        XCTAssertEqual(model.columns, GridColumns(6))
         XCTAssertEqual(takes, [1, 1])
     }
 

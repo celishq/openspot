@@ -11,12 +11,11 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell))
     }
 
-    func testTheBackdropOfTheGridEndsUnderItsLastCard() async throws {
+    func testTheBackdropOfTheGridEndsUnderItsLastRow() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
-        let cards = SpotGrid.height(of: model.placements)
-        XCTAssertGreaterThan(cards, 0)
+        let cards = model.columns.layout.height
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell + SpotTokens.rowGap + cards))
     }
 
@@ -54,8 +53,7 @@ final class PanelBackdropTests: PanelCase {
         model.placeMenu(frame)
         try await wait("the grow") { self.model.menuSession?.phase != .opening }
 
-        XCTAssertGreaterThan(frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock, model.gridHeight)
-        XCTAssertEqual(model.backdrop.height, frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock)
+        XCTAssertEqual(model.backdrop.height, max(frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock, model.gridHeight))
 
         model.closeMenu()
         try await wait("the closed menu") { self.model.menuSession == nil }
@@ -77,11 +75,11 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertFalse(told)
     }
 
-    func testTheBackdropSpansTheSidePanelsAndASearchNarrowsItToTheMainPanel() async throws {
+    func testTheBackdropSpansTheColumnsAndASearchNarrowsItToTheMiddleFour() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
-        model.panels = GridPanels(hasLeft: true, hasRight: true)
-        let side = SpotTokens.gridWidth + SpotTokens.columnGap
+        model.columns = GridColumns(8)
+        let side = 2 * (SpotTokens.cell + SpotTokens.columnGap)
 
         XCTAssertEqual(model.backdrop.minX, -side)
         XCTAssertEqual(model.backdrop.width, SpotTokens.panelWidth + 2 * side)

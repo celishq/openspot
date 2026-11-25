@@ -58,7 +58,7 @@ extension SpotsModel {
     }
 
     public func moveSelection(dx: Int, dy: Int) {
-        if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
+        if let next = columns.layout.neighbour(of: selected, in: placements, dx: dx, dy: dy) {
             selected = next
         }
     }

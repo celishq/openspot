@@ -21,12 +21,13 @@ struct SpotGridView: View {
     var body: some View {
         let placements = model.placements
         let drag = model.drag
-        let height = SpotGrid.height(of: placements)
+        let frame = model.columns.layout
+        let height = model.query.isEmpty ? frame.height : SpotPlacement.height(of: placements)
         let cards = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
-            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.home) } ?? placement : placement
+            let shown = isLifted ? drag.map { SpotPlacement(index: placement.index, row: $0.home.row, column: $0.home.column, size: placement.size) } ?? placement : placement
             return Card(
                 id: entry.id,
                 size: shown.size,
@@ -38,10 +39,9 @@ struct SpotGridView: View {
         }
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
-                SidePanelWells(panels: model.panels, height: height)
+                GridSlots(cells: frame.freeCells(around: placements))
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.width(columns: model.panels.columns), height: height)
-                groupTitles(model.groupBands)
+                    .frame(width: frame.width, height: height)
             }
             ForEach(Array(zip(placements, cards)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -75,7 +75,7 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
+        .frame(width: frame.width, height: height, alignment: .topLeading)
         .contentShape(Rectangle())
         .modifier(SpotPointerMove(at: { model.point(at: .grid($0)) }))
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
@@ -100,23 +100,8 @@ struct SpotGridView: View {
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
-    @ViewBuilder
-    private func groupTitles(_ bands: SpotGroupBands?) -> some View {
-        if let bands {
-            let center = model.panels.firstColumn(of: .center)
-            ZStack(alignment: .topLeading) {
-                GroupTitle(name: "On grid", count: bands.grid)
-                GroupTitle(name: "Search only", count: bands.shelf)
-                    .offset(y: bands.shelfTop)
-            }
-            .offset(x: center == 0 ? 0 : SpotTokens.width(columns: center) + SpotTokens.columnGap)
-            .frame(width: SpotTokens.width(columns: model.panels.columns), alignment: .topLeading)
-            .allowsHitTesting(false)
-        }
-    }
-
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
-        let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
+        let placement = placements.first { $0.index == (drag?.index ?? model.selected) }
         return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SurfaceEdge(card: placement?.size ?? .small).radius)
             .fill(SpotTheme.ink.opacity(SpotTheme.fill))
             .opacity(drag == nil ? MotionTokens.hiddenOpacity : 1)
@@ -134,38 +119,20 @@ struct SpotGridView: View {
     }
 }
 
-private struct SidePanelWells: View, Equatable {
-    let panels: GridPanels
-    let height: CGFloat
+private struct GridSlots: View, Equatable {
+    let cells: [GridCell]
 
     var body: some View {
-        let shape = SpotRoundShape(SurfaceEdge.sheet.inner())
+        let shape = SpotRoundShape(SurfaceEdge(card: .small))
         ZStack(alignment: .topLeading) {
-            ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
+            ForEach(cells, id: \.self) { cell in
+                let rect = SpotPlacement(index: 0, row: cell.row, column: cell.column, size: .small).rect
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
-                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.cell))
-                    .offset(x: CGFloat(panels.firstColumn(of: panel)) * (SpotTokens.cell + SpotTokens.columnGap))
+                    .frame(width: rect.width, height: rect.height)
+                    .offset(x: rect.minX, y: rect.minY)
             }
         }
         .allowsHitTesting(false)
-    }
-}
-
-private struct GroupTitle: View {
-    let name: String
-    let count: Int
-
-    var body: some View {
-        HStack(spacing: SpotTokens.groupTitleGap) {
-            Text(name)
-                .font(SpotType.title)
-                .foregroundStyle(SpotTheme.ink)
-            Text("\(count)")
-                .font(SpotType.body)
-                .modifier(SpotSecondaryText())
-        }
-        .frame(height: SpotTokens.groupTitleHeight)
-        .padding(.horizontal, SpotTokens.padding)
     }
 }

@@ -22,7 +22,7 @@ final class ThemeLayoutTests: XCTestCase {
         XCTAssertEqual(SpotTokens.cell, 64)
         XCTAssertEqual(SpotTokens.gridWidth, 289)
         XCTAssertEqual(SpotTokens.panelWidth, 469)
-        XCTAssertEqual(SpotTokens.panelHeight, 734)
+        XCTAssertEqual(SpotTokens.panelHeight, 734 + SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1), CGRect(x: 90, y: 90, width: 289, height: 166))
         XCTAssertEqual(SpotTokens.partsWidth, 263)
     }
@@ -36,7 +36,7 @@ final class ThemeLayoutTests: XCTestCase {
         XCTAssertEqual(SpotTokens.cardRadius, 30)
         XCTAssertEqual(SpotTokens.width(columns: 2), 155)
         XCTAssertEqual(SpotTokens.gridWidth, 325)
-        XCTAssertEqual(SpotTokens.gridOrigin(scrollOffset: 0, left: 0), CGPoint(x: 90, y: 172))
+        XCTAssertEqual(SpotTokens.gridOrigin(left: 0), CGPoint(x: 90, y: 172))
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).height, before.height + 14)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).width, 325)
         XCTAssertEqual(SurfaceEdge.sheet.radius, 30)

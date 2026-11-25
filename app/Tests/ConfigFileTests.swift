@@ -46,21 +46,23 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "fix-key = \"f\"\n").faults.count, 1)
     }
 
-    func testTheGridHasNoSidePanelsUntilTheFileAsksForThem() {
-        XCTAssertEqual(Config(text: "").panels, GridPanels())
-        XCTAssertEqual(Config(text: "left_panel = true\nright_panel = true\n").panels, GridPanels(hasLeft: true, hasRight: true))
-        XCTAssertEqual(Config(text: "left_panel = 1\n").faults, ["config.toml: left_panel is true or false."])
+    func testTheGridHasFourColumnsUntilTheFileAsksForSixOrEight() {
+        XCTAssertEqual(Config(text: "").columns, GridColumns(4))
+        XCTAssertEqual(Config(text: "columns = 8\n").columns, GridColumns(8))
+        XCTAssertEqual(Config(text: "columns = 5\n").faults, ["config.toml: columns is 4, 6 or 8."])
+        XCTAssertEqual(Config(text: "left_panel = true\n").faults, [])
     }
 
-    func testASpotKeepsItsSidePanel() throws {
+    func testASpotKeepsItsCellForEachWidth() throws {
         var arrangement = SpotArrangement()
-        arrangement.set(panel: .left, of: "a")
-        arrangement.set(panel: .center, of: "b")
+        arrangement.set(cell: GridCell(row: 2, column: 3), of: "a", columns: 4)
+        arrangement.set(cell: GridCell(row: 0, column: 7), of: "a", columns: 8)
         try file.write(arrangement)
 
-        XCTAssertEqual(file.read().arrangement.panel(of: "a"), .left)
-        XCTAssertNil(file.read().arrangement.panel(of: "b"))
-        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nside = \"up\"\n").faults, ["config.toml: a cannot use the side up."])
+        XCTAssertEqual(file.read().arrangement.cells(of: "a"), [4: GridCell(row: 2, column: 3), 8: GridCell(row: 0, column: 7)])
+        XCTAssertNil(file.read().arrangement.cells(of: "b"))
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nside = \"left\"\n").faults, [])
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nplaces = { 4 = \"up\" }\n").faults.count, 1)
     }
 
     func testTheBrowsersOfTheFileAddToTheBuiltInOnesAndMayChangeTheFamilyOfOne() {
@@ -287,7 +289,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\n").sections(differingFrom: config), [.spots])
         XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])
         XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [.careful])
-        XCTAssertEqual(Config(text: "left_panel = true\n").sections(differingFrom: config), [.panels])
+        XCTAssertEqual(Config(text: "columns = 6\n").sections(differingFrom: config), [.columns])
         XCTAssertEqual(Config(text: "look = \"dark\"\n").sections(differingFrom: config), [.rest])
         XCTAssertEqual(Config(text: "theme = \"Dusk\"\n").sections(differingFrom: config), [])
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\n").sections(differingFrom: config), [.rest])

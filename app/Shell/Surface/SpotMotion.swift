@@ -3,7 +3,7 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
-    @Entry var spotPanels = GridPanels()
+    @Entry var spotColumns = GridColumns()
     @Entry var spotFade = 1.0
     #if OPENSPOT_TOOLS
     @Entry var spotDrawsGlass = SpotMotionProbe.drawsGlass
