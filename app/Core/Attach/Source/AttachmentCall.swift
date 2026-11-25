@@ -56,13 +56,13 @@ enum AttachmentCall: NounCall {
             let blocks = TextBlock.blocks(in: await input())
             let fields = (blocks.first?.fields ?? []).filter { Self.keys.contains($0.key) }
             guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
-            let face: AttachmentFace?
+            let preview = Array(blocks.dropFirst())
             do {
-                face = try AttachmentFace(blocks: Array(blocks.dropFirst()))
+                try AttachmentPreview.check(preview)
             } catch {
                 return CommandAnswer(errors: "A preview after the value of `openspot attachment add` draws only text, number, series, picture and icon blocks, not \((error as? SpotError)?.reason ?? "").\n", code: 2)
             }
-            return await Self.add(fields, face: face, to: runs, from: caller)()
+            return await Self.add(fields, preview: preview, to: runs, from: caller)()
         }
     }
 
@@ -87,7 +87,7 @@ enum AttachmentCall: NounCall {
     private static let notes = ["title", "app", "icon"]
     private static let keys = ["file", "url", "text"] + notes
 
-    private static func add(_ fields: [TextBlock.Field], face: AttachmentFace? = nil, to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
+    private static func add(_ fields: [TextBlock.Field], preview: [TextBlock] = [], to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
         let kinds = Set(fields.map(\.key).filter { !notes.contains($0) })
         let title = fields.last { $0.key == "title" }?.value
         let app = fields.last { $0.key == "app" }?.value
@@ -102,7 +102,7 @@ enum AttachmentCall: NounCall {
             case "text": .text(values[0])
             default: .files(FileKinds.Disk().read(values))
             }
-            let value = AttachmentValue(payload, title: title, app: app, icon: icon, face: face)
+            let value = AttachmentValue(payload, title: title, app: app, icon: icon, preview: preview)
             _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()
         }

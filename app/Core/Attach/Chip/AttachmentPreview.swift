@@ -8,7 +8,10 @@ public struct AttachmentPreview: Hashable, Sendable {
     static let failedSymbol = "exclamationmark.triangle"
     static let reading = "Reading…"
 
-    public let face: AttachmentFace
+    static let kinds: [BlockKind] = [.text, .number, .series, .picture, .icon]
+
+    let blocks: [TextBlock]
+    public let tree: ViewTree
     public let lines: Int
     public let label: String
 
@@ -29,14 +32,15 @@ public struct AttachmentPreview: Hashable, Sendable {
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }
         label = text.isEmpty ? caption : text
-        if let face = value.face {
-            self.face = face
+        if !value.preview.isEmpty {
+            blocks = value.preview
             lines = SpotTokens.previewLines
         } else {
             let picture = Self.picture(of: value)
-            face = Self.face(text: text, caption: caption, symbol: value.kind.captionSymbol, picture: picture)
+            blocks = Self.blocks(text: text, caption: caption, symbol: value.kind.captionSymbol, picture: picture)
             lines = SpotTokens.attachmentValueLines(of: text, besidePicture: picture != nil)
         }
+        tree = Self.tree(of: blocks).tree
     }
 
     public init?(state chip: AttachmentChip) {
@@ -50,8 +54,26 @@ public struct AttachmentPreview: Hashable, Sendable {
 
     private init(caption: String, symbol: String) {
         label = caption
-        face = Self.face(text: "", caption: caption, symbol: symbol, picture: nil)
+        blocks = Self.blocks(text: "", caption: caption, symbol: symbol, picture: nil)
+        tree = Self.tree(of: blocks).tree
         lines = 0
+    }
+
+    static func check(_ blocks: [TextBlock]) throws {
+        if let fault = tree(of: blocks).errors.first { throw SpotError.fault(fault) }
+    }
+
+    private static func tree(of blocks: [TextBlock]) -> Frame {
+        Frame(grouped: Frame.grouping(blocks), kinds: kinds)
+    }
+
+    public static func == (one: AttachmentPreview, other: AttachmentPreview) -> Bool {
+        one.blocks == other.blocks && one.lines == other.lines && one.label == other.label
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(blocks.map(\.firstLine))
+        hasher.combine(label)
     }
 
     private static func picture(of value: AttachmentValue) -> String? {
@@ -60,7 +82,7 @@ public struct AttachmentPreview: Hashable, Sendable {
         return audioKinds.contains((path as NSString).pathExtension.lowercased()) ? audioSymbol : path
     }
 
-    private static func face(text: String, caption: String, symbol: String, picture: String?) -> AttachmentFace {
+    private static func blocks(text: String, caption: String, symbol: String, picture: String?) -> [TextBlock] {
         func block(_ kind: String, _ id: String, _ fields: [(String, String)]) -> TextBlock {
             TextBlock(fields: [.init(key: kind, value: id)] + fields.map { .init(key: $0.0, value: $0.1) }, firstLine: "\(kind)=\(id)")
         }
@@ -69,6 +91,6 @@ public struct AttachmentPreview: Hashable, Sendable {
         blocks.append(block("box", "lines", [("class", "flex-col grow")]))
         blocks.append(block("text", "caption", [("title", caption), ("icon", symbol), ("class", "font-detail text-secondary truncate"), ("parent", "lines")]))
         if !text.isEmpty { blocks.append(block("text", "words", [("title", text), ("class", "line-clamp-2"), ("parent", "lines")])) }
-        return AttachmentFace(blocks)
+        return blocks
     }
 }

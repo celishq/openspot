@@ -27,7 +27,7 @@ struct SpotAttachmentPreview: View {
     }
 
     private func words(of preview: AttachmentPreview) -> some View {
-        NodeTree(tree: preview.face.tree, pictureTimes: [:])
+        NodeTree(tree: preview.tree, pictureTimes: [:])
             .environment(\.spotNode, NodeContext(variants: Style.Variant.card(.strip)))
             .frame(width: SpotTokens.attachmentValueWidth, height: SpotTokens.attachmentFaceHeight, alignment: .topLeading)
             .clipped()

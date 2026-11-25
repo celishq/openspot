@@ -156,7 +156,7 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(log("errors"), ["`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."])
     }
 
-    private func faceSource(_ preview: String) throws {
+    private func previewSource(_ preview: String) throws {
         try script("tab", toml: "title = 'tab'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = true", """
         case "$1" in
           show) printf 'url=https://example.com/a\\ntitle=A\\n\\n\(preview)' | \(cli) attachment add 2>> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
@@ -166,21 +166,21 @@ final class AttachmentSourceTests: AttachmentCase {
 
     func testBlocksAfterTheValueDrawThePreviewInItsWholeRoom() async throws {
         try taker(takes: "'url'")
-        try faceSource("frame=\\nclass=gap-part\\n\\ntext=host\\ntitle=example.com\\n\\nnumber=views\\nvalue=42\\n")
+        try previewSource("frame=\\nclass=gap-part\\n\\ntext=host\\ntitle=example.com\\n\\nnumber=views\\nvalue=42\\n")
 
         await open()
         try await wait("the value") { self.chips.first?.value != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
 
-        XCTAssertEqual(model.preview?.face.tree.node("host")?.title, "example.com")
-        XCTAssertNotNil(model.preview?.face.tree.node("views"))
+        XCTAssertEqual(model.preview?.tree.node("host")?.title, "example.com")
+        XCTAssertNotNil(model.preview?.tree.node("views"))
         XCTAssertEqual(model.preview?.lines, SpotTokens.previewLines)
         XCTAssertEqual(chips.first?.value?.payload, .url("https://example.com/a"))
     }
 
     func testAPreviewWithABlockThatTakesAPressFailsWithExit2() async throws {
         try taker(takes: "'url'")
-        try faceSource("button=open\\ntitle=Open\\n")
+        try previewSource("button=open\\ntitle=Open\\n")
 
         await open()
 

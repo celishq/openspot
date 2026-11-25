@@ -4,7 +4,7 @@ import XCTest
 
 final class AttachmentPreviewTests: XCTestCase {
     private func node(_ id: String, of preview: AttachmentPreview?) -> ViewNode? {
-        preview?.face.tree.node(id)
+        preview?.tree.node(id)
     }
 
     func testAReadOfNoKnownAppSaysReading() {
