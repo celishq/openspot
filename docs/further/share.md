@@ -81,6 +81,9 @@ openspot spot add ~/Downloads/Ports.spot
 When you share a new version, adding it again updates the spot. An update that adds a use waits for their yes. One
 signed by another account says so.
 
+A spot that a friend installs from a store updates from it by itself, until they edit it. They see the day of each
+version, such as "Updated 3 Nov", never a hash.
+
 ## Next
 
 - [Signed releases](../../TRUST.md#signed-releases)

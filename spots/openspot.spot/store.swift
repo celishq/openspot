@@ -107,7 +107,8 @@ struct SpotView: View {
     }
 
     /// One spot of the store, from its item: its id, its name, what its button does, its origin, its description, its size,
-    /// whether it has sample data, and the folded words that a search compares, made once.
+    /// the day of its version, whether you edited it, whether it has sample data, and the folded words that a search
+    /// compares, made once.
     private struct Item: Identifiable {
         let id: String
         let name: String
@@ -116,6 +117,8 @@ struct SpotView: View {
         let store: String
         let detail: String
         let size: String
+        let updated: String
+        let isEdited: Bool
         let hasSample: Bool
         let words: String
 
@@ -123,6 +126,8 @@ struct SpotView: View {
             guard !row.id.isEmpty, let state = row["step"] else { return nil }
             (id, name, self.state, origin, detail, size) = (row.id, row["title"] ?? row.id, state, row["origin"] ?? "", row["detail"] ?? "", row["size"] ?? "")
             store = row["store"] ?? ""
+            updated = row["updated"] ?? ""
+            isEdited = row["copy"] == "edited"
             hasSample = row["sample"] == "true"
             words = [name, detail, Self.label(of: origin)].joined(separator: " ").folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
         }
@@ -501,7 +506,8 @@ struct SpotView: View {
                             .font(Self.text)
                             .foregroundStyle(.secondary)
                     }
-                    Text(folders.first { $0.id == item.store }.map { "From \($0.name)" } ?? Item.label(of: item.origin))
+                    Text(([folders.first { $0.id == item.store }.map { "From \($0.name)" } ?? Item.label(of: item.origin)]
+                        + (item.updated.isEmpty ? [] : ["Updated \(item.updated)"]) + (item.isEdited ? ["Edited, updates paused"] : [])).joined(separator: " · "))
                         .font(Self.caption)
                         .foregroundStyle(.secondary)
                 }

@@ -19,6 +19,10 @@ Every spot answers the same keys, so you learn them once.
   you install it again.
 - An install of a spot whose id your spots have already asks, as Finder does: Replace moves yours to the Trash, Keep
   Both installs the new one under a new id, such as `ports-2`, and Stop leaves both as they are.
+- A spot you installed updates from its store while you leave its files as they came. The Store shows the day of its
+  version, such as "Updated 3 Nov". An update that asks for a new use waits for your yes, and names only what it adds.
+  Once you edit the spot, it takes no update: the Store says "Edited, updates paused", and `openspot store revert`
+  moves your copy to the Trash and puts the store's version back. Its data stays.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
 - A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Edit Spots takes it off the grid.
 

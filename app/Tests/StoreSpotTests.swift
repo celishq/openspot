@@ -70,6 +70,18 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "clock" }?.value("store"), friends.path)
     }
 
+    func testAStoreSpotShowsTheDayOfItsVersionAndNoHash() async throws {
+        let shared = root.appendingPathComponent("examples/shared.spot")
+        let day = try XCTUnwrap(ISO8601DateFormatter().date(from: "2031-11-03T12:00:00Z"))
+        try FileManager.default.setAttributes([.modificationDate: day], ofItemAtPath: shared.appendingPathComponent("spot.toml").path)
+
+        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
+
+        let row = try XCTUnwrap(TextBlock.blocks(in: text).first { $0.value("item") == "shared" })
+        XCTAssertEqual(row.value("updated"), "3 Nov 2031")
+        XCTAssertFalse(text.contains(try SpotVersion(of: shared).hash))
+    }
+
     func testAddStoreRefusesAFolderWithNoSpot() async throws {
         let empty = root.appendingPathComponent("empty")
         try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)

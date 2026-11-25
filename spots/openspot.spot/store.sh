@@ -24,8 +24,8 @@ remove() {
 }
 
 # Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, an item for
-# each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
-# data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
+# each spot with its id, its name, its step, its origin, its store, its description, its size, the day of its version, whether
+# you edited it or its update waits, whether it has sample data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
   printf 'frame=\nclass=gap-part\n\nitems=spots\nclass=hidden\n\nstore=gallery\n'
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
@@ -42,6 +42,8 @@ gallery() {
       if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"
+      if (f["updated"] != "") rows = rows "updated=" f["updated"] "\n"
+      if (f["copy"] != "") rows = rows "copy=" f["copy"] "\n"
       if (f["sample"] == "true") rows = rows "sample=true\n" }
     END { if (want != "") printf "readme=%s\n%s", want, readme; printf "%s", rows }'
 }
