@@ -75,11 +75,11 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(chips.map(\.state), [.loading])
-        XCTAssertEqual(model.preview?.label, "Reading Safari…")
+        XCTAssertEqual(model.details?.label, "Reading Safari…")
         XCTAssertEqual(shown, [])
         unblock()
         try await wait("the rows of the value") { self.shown == ["keep"] }
-        XCTAssertEqual(model.preview?.label, "A")
+        XCTAssertEqual(model.details?.label, "A")
         try await wait("the end of the read") { !self.isReading }
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(escape))
@@ -97,7 +97,7 @@ final class AttachmentReadTests: AttachmentCase {
         try await wait("the empty chip") { self.chips.map(\.state) == [.empty("Nothing to attach from Safari")] }
         model.runSelected()
 
-        XCTAssertEqual(model.preview?.label, "Nothing to attach from Safari")
+        XCTAssertEqual(model.details?.label, "Nothing to attach from Safari")
         XCTAssertEqual(shown, [])
         XCTAssertTrue(model.attachments.isOn)
         XCTAssertEqual(log("keep-drops"), [])
@@ -138,7 +138,7 @@ final class AttachmentReadTests: AttachmentCase {
 
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the failure") { self.chips.map(\.state) == [.failed("Safari didn't answer")] }
-        XCTAssertEqual(model.preview?.label, "Safari didn't answer")
+        XCTAssertEqual(model.details?.label, "Safari didn't answer")
         XCTAssertFalse(isReading)
         XCTAssertEqual(log("done"), [])
         XCTAssertEqual(host.notes, [])
@@ -157,7 +157,7 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         try await wait("the failure") { if case .failed = self.chips.first?.state { true } else { false } }
-        let line = try XCTUnwrap(model.preview?.label)
+        let line = try XCTUnwrap(model.details?.label)
         XCTAssertTrue(line.contains("The tab is gone."), line)
         XCTAssertEqual(chips.map(\.state), [.failed(line)])
         XCTAssertEqual(shown, [])
@@ -218,7 +218,7 @@ final class AttachmentReadTests: AttachmentCase {
     func testARefusedReadOffersAllowAndReturnOpensAttachments() async throws {
         try await refuse()
 
-        XCTAssertEqual(model.preview?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
+        XCTAssertEqual(model.details?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
         XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   Esc Leave")
         XCTAssertEqual(shown, [])
         XCTAssertEqual(host.notes, [])
@@ -257,7 +257,7 @@ final class AttachmentReadTests: AttachmentCase {
         model.panelWillShow()
 
         XCTAssertEqual(chips.map(\.state), [.unread])
-        XCTAssertNil(model.preview)
+        XCTAssertNil(model.details)
         try await wait("the stop of the read") { !self.isReading }
         unblock()
         XCTAssertTrue(model.handleKey(tab))
@@ -272,7 +272,7 @@ final class AttachmentReadTests: AttachmentCase {
         await model.reload()
 
         XCTAssertEqual(chips.map(\.state), [.failed("Openspot can't read Safari. Allow it in Openspot's settings.")])
-        XCTAssertEqual(model.preview?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
+        XCTAssertEqual(model.details?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
         XCTAssertEqual(shown, [])
     }
 

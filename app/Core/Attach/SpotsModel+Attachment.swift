@@ -116,14 +116,14 @@ extension SpotsModel {
         if !next.isMoving { next.place() }
         guard next != attachments else { return }
         let turns = attachments.isOn != next.isOn || attachments.selectedChip != next.selectedChip
-        let shown = turns ? shownPreview(of: query, in: next) : preview
-        let motion = isShown ? previewMotion(to: shown, else: motion) : nil
+        let shown = turns ? shownDetails(of: query, in: next) : details
+        let motion = isShown ? detailsMotion(to: shown, else: motion) : nil
         let moves = !next.isMoving && motion != nil && next.layout != attachments.layout
         if moves { next.isMoving = true }
         change(motion, {
             attachments = next
             guard turns else { return }
-            takePreview(shown)
+            takeDetails(shown)
             selected = 0
             showVisible()
         }) { [weak self] in
@@ -194,19 +194,19 @@ extension SpotsModel {
         (stack ?? attachments).isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
     }
 
-    func shownPreview(of query: String, in stack: AttachmentStack? = nil) -> AttachmentPreview? {
+    func shownDetails(of query: String, in stack: AttachmentStack? = nil) -> AttachmentDetails? {
         let stack = stack ?? attachments
         guard showsAttachment(of: query, in: stack), let chip = stack.selectedChip, entry(chip.source) != nil else { return nil }
-        return chip.preview
+        return chip.details
     }
 
-    static func room(of preview: AttachmentPreview?) -> CGFloat {
-        preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
+    static func room(of details: AttachmentDetails?) -> CGFloat {
+        details.map { SpotTokens.detailsHeight(lines: $0.lines) } ?? 0
     }
 
-    func previewMotion(to shown: AttachmentPreview?, else motion: PanelMotion?) -> PanelMotion? {
+    func detailsMotion(to shown: AttachmentDetails?, else motion: PanelMotion?) -> PanelMotion? {
         let room = Self.room(of: shown)
-        return room == fieldRoom ? motion : .sheet(isOpen: room > fieldRoom)
+        return room == detailsRoom ? motion : .sheet(isOpen: room > detailsRoom)
     }
 
     func attachmentRows() -> [Entry] {
@@ -218,18 +218,18 @@ extension SpotsModel {
         }
     }
 
-    func takePreview(_ shown: AttachmentPreview?) {
-        if preview != shown { preview = shown }
+    func takeDetails(_ shown: AttachmentDetails?) {
+        if details != shown { details = shown }
     }
 
-    func takePreview() {
-        takePreview(shownPreview(of: query))
+    func takeDetails() {
+        takeDetails(shownDetails(of: query))
     }
 
-    func hold(_ shown: AttachmentPreview?, with rest: () -> Void = {}) {
-        guard shown != preview else { return rest() }
-        change(isShown ? previewMotion(to: shown, else: .edit) : nil) {
-            takePreview(shown)
+    func hold(_ shown: AttachmentDetails?, with rest: () -> Void = {}) {
+        guard shown != details else { return rest() }
+        change(isShown ? detailsMotion(to: shown, else: .edit) : nil) {
+            takeDetails(shown)
             rest()
         }
     }

@@ -42,7 +42,7 @@ private struct SpotAttachmentLabel: ViewModifier {
     let model: SpotsModel
 
     func body(content: Content) -> some View {
-        content.accessibilityLabel(model.preview?.label ?? "Attachments")
+        content.accessibilityLabel(model.details?.label ?? "Attachments")
     }
 }
 

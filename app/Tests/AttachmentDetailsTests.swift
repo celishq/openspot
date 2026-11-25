@@ -2,74 +2,74 @@ import ImageIO
 import XCTest
 @testable import OpenspotCore
 
-final class AttachmentPreviewTests: XCTestCase {
-    private func node(_ id: String, of preview: AttachmentPreview?) -> ViewNode? {
-        preview?.tree.node(id)
+final class AttachmentDetailsTests: XCTestCase {
+    private func node(_ id: String, of details: AttachmentDetails?) -> ViewNode? {
+        details?.tree.node(id)
     }
 
     func testAReadOfNoKnownAppSaysReading() {
         let chip = AttachmentChip(source: "tab", app: nil, look: .symbol("globe"), state: .loading)
 
-        XCTAssertEqual(node("caption", of: AttachmentPreview(state: chip))?.title, "Reading…")
+        XCTAssertEqual(node("caption", of: AttachmentDetails(state: chip))?.title, "Reading…")
     }
 
     func testALinkShowsItsTitleUnderItsHost() {
-        let preview = AttachmentPreview(AttachmentValue(url: "https://developer.apple.com/documentation/swiftui", title: "SwiftUI"))
+        let details = AttachmentDetails(AttachmentValue(url: "https://developer.apple.com/documentation/swiftui", title: "SwiftUI"))
 
-        XCTAssertEqual(node("words", of: preview)?.title, "SwiftUI")
-        XCTAssertEqual(node("caption", of: preview)?.title, "developer.apple.com")
-        XCTAssertEqual(node("caption", of: preview)?.icon, .symbol("arrow.up.right"))
-        XCTAssertEqual(preview.label, "SwiftUI")
+        XCTAssertEqual(node("words", of: details)?.title, "SwiftUI")
+        XCTAssertEqual(node("caption", of: details)?.title, "developer.apple.com")
+        XCTAssertEqual(node("caption", of: details)?.icon, .symbol("arrow.up.right"))
+        XCTAssertEqual(details.label, "SwiftUI")
     }
 
     func testATextShowsItsWordsOnOneRunOfLines() {
-        let preview = AttachmentPreview(AttachmentValue(text: "  one\n\ntwo   three ", title: "Selected text"))
+        let details = AttachmentDetails(AttachmentValue(text: "  one\n\ntwo   three ", title: "Selected text"))
 
-        XCTAssertEqual(node("words", of: preview)?.title, "one two three")
-        XCTAssertEqual(node("caption", of: preview)?.title, "Selected text")
-        XCTAssertEqual(node("caption", of: preview)?.icon, .symbol("textformat"))
+        XCTAssertEqual(node("words", of: details)?.title, "one two three")
+        XCTAssertEqual(node("caption", of: details)?.title, "Selected text")
+        XCTAssertEqual(node("caption", of: details)?.icon, .symbol("textformat"))
     }
 
     func testFilesShowTheirNamesAndTheirFolder() {
-        let preview = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/docs/one.md", "/a/docs/two.md"])))
+        let details = AttachmentDetails(AttachmentValue(files: FileKinds(["/a/docs/one.md", "/a/docs/two.md"])))
 
-        XCTAssertEqual(node("words", of: preview)?.title, "one.md, two.md")
-        XCTAssertEqual(node("caption", of: preview)?.title, "2 files in docs")
+        XCTAssertEqual(node("words", of: details)?.title, "one.md, two.md")
+        XCTAssertEqual(node("caption", of: details)?.title, "2 files in docs")
     }
 
     func testAFileShowsItselfAsAPictureAndAudioAWaveform() {
         func picture(_ path: String) -> Icon? {
-            node("picture", of: AttachmentPreview(AttachmentValue(files: FileKinds([path]))))?.icon
+            node("picture", of: AttachmentDetails(AttachmentValue(files: FileKinds([path]))))?.icon
         }
 
         XCTAssertEqual(picture("/a/shot.PNG"), .image("/a/shot.PNG"))
         XCTAssertEqual(picture("/a/talk.mov"), .file("/a/talk.mov"))
         XCTAssertEqual(picture("/a/notes.md"), .file("/a/notes.md"))
         XCTAssertEqual(picture("/a/song.mp3"), .symbol("waveform"))
-        XCTAssertNil(node("picture", of: AttachmentPreview(AttachmentValue(text: "words"))))
+        XCTAssertNil(node("picture", of: AttachmentDetails(AttachmentValue(text: "words"))))
     }
 
     func testAPictureKeepsTheHeightOfAPreviewWithoutOne() {
-        let picture = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.png"])))
-        let words = AttachmentPreview(AttachmentValue(text: "shot.png"))
+        let picture = AttachmentDetails(AttachmentValue(files: FileKinds(["/a/shot.png"])))
+        let words = AttachmentDetails(AttachmentValue(text: "shot.png"))
 
         XCTAssertEqual(picture.lines, words.lines)
     }
 
     func testWordsBesideAPictureWrapSooner() {
-        let name = String(repeating: "n", count: Int(SpotTokens.attachmentValueWidth / (CGFloat(SpotTokens.layout.type.body) * SpotTokens.glyphWidthShare))) + ".png"
+        let name = String(repeating: "n", count: Int(SpotTokens.detailsWidth / (CGFloat(SpotTokens.layout.type.body) * SpotTokens.glyphWidthShare))) + ".png"
 
-        XCTAssertEqual(SpotTokens.attachmentValueLines(of: name), 2)
-        XCTAssertEqual(SpotTokens.attachmentValueLines(of: String(name.dropLast(6))), 1)
-        XCTAssertEqual(SpotTokens.attachmentValueLines(of: String(name.dropLast(6)), besidePicture: true), 2)
+        XCTAssertEqual(SpotTokens.detailsLines(of: name), 2)
+        XCTAssertEqual(SpotTokens.detailsLines(of: String(name.dropLast(6))), 1)
+        XCTAssertEqual(SpotTokens.detailsLines(of: String(name.dropLast(6)), besidePicture: true), 2)
     }
 
     func testAClassWithTheDetailsPrefixAppliesInTheDetailsAndOneForStripCardsDoesNot() throws {
         let blocks = TextBlock.blocks(in: "frame=\nclass=flex-col\n\ntext=a\ntitle=A\nclass=details:hidden\n\ntext=b\ntitle=B\nclass=strip:hidden\n")
-        let preview = AttachmentPreview(AttachmentValue(.url("https://example.com"), preview: blocks))
+        let details = AttachmentDetails(AttachmentValue(.url("https://example.com"), details: blocks))
 
-        XCTAssertEqual(preview.tree.node("a")?.style.resolved(for: AttachmentPreview.variants).isHidden, true)
-        XCTAssertNotEqual(preview.tree.node("b")?.style.resolved(for: AttachmentPreview.variants).isHidden, true)
+        XCTAssertEqual(details.tree.node("a")?.style.resolved(for: AttachmentDetails.variants).isHidden, true)
+        XCTAssertNotEqual(details.tree.node("b")?.style.resolved(for: AttachmentDetails.variants).isHidden, true)
     }
 
     func testACopiedImageShowsASmallThumbnailSavedOnceFromItsBytes() throws {
@@ -79,7 +79,7 @@ final class AttachmentPreviewTests: XCTestCase {
         board.copy(image: try Self.png(width: 1200, height: 600), kind: "png")
         let value = try XCTUnwrap(Clipboard(board: board).value(count: board.count(), images: folder))
 
-        guard case .image(let path)? = node("picture", of: AttachmentPreview(value))?.icon else { return XCTFail("no thumbnail") }
+        guard case .image(let path)? = node("picture", of: AttachmentDetails(value))?.icon else { return XCTFail("no thumbnail") }
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
         let image = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))

@@ -44,7 +44,7 @@ public final class SpotsModel {
             spotListIsStale = true
             storeCards = nil
             askAnswers()
-            takePreview()
+            takeDetails()
             showVisible()
             prepareCardGlyphs()
         }
@@ -52,7 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            takePreview()
+            takeDetails()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -80,15 +80,15 @@ public final class SpotsModel {
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
     public private(set) var promptWord = SearchPrompt.grid
-    public internal(set) var preview: AttachmentPreview? {
+    public internal(set) var details: AttachmentDetails? {
         didSet {
-            let room = Self.room(of: preview)
-            if fieldRoom != room { fieldRoom = room }
-            if let preview, previewLook != preview { previewLook = preview }
+            let room = Self.room(of: details)
+            if detailsRoom != room { detailsRoom = room }
+            if let details, heldDetails != details { heldDetails = details }
         }
     }
-    public private(set) var previewLook: AttachmentPreview?
-    public private(set) var fieldRoom: CGFloat = 0
+    public private(set) var heldDetails: AttachmentDetails?
+    public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0

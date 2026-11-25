@@ -5,7 +5,7 @@ struct Clipboard {
     static let heldLength = 1_000_000
     static let changed = "The clipboard changed since the panel opened. Copy it again, then hand it on."
 
-    static var thumbnailPixels: Int { Int((SpotTokens.attachmentPicture * 2).rounded(.up)) }
+    static var thumbnailPixels: Int { Int((SpotTokens.detailsPicture * 2).rounded(.up)) }
 
     let board: any MacClipboard
 

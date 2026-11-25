@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AttachmentPreview: Hashable, Sendable {
+public struct AttachmentDetails: Hashable, Sendable {
     static let excerptLimit = 280
     static let audioKinds: Set<String> = ["mp3", "m4a", "wav", "aif", "aiff", "flac", "aac", "ogg", "opus", "caf"]
     static let audioSymbol = "waveform"
@@ -33,13 +33,13 @@ public struct AttachmentPreview: Hashable, Sendable {
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }
         label = text.isEmpty ? caption : text
-        if !value.preview.isEmpty {
-            blocks = value.preview
-            lines = SpotTokens.previewLines
+        if !value.details.isEmpty {
+            blocks = value.details
+            lines = SpotTokens.detailsLineLimit
         } else {
             let picture = Self.picture(of: value)
             blocks = Self.blocks(text: text, caption: caption, symbol: value.kind.captionSymbol, picture: picture)
-            lines = SpotTokens.attachmentValueLines(of: text, besidePicture: picture != nil)
+            lines = SpotTokens.detailsLines(of: text, besidePicture: picture != nil)
         }
         tree = Self.tree(of: blocks).tree
     }
@@ -68,7 +68,7 @@ public struct AttachmentPreview: Hashable, Sendable {
         Frame(grouped: Frame.grouping(blocks), kinds: kinds)
     }
 
-    public static func == (one: AttachmentPreview, other: AttachmentPreview) -> Bool {
+    public static func == (one: AttachmentDetails, other: AttachmentDetails) -> Bool {
         one.blocks == other.blocks && one.lines == other.lines && one.label == other.label
     }
 

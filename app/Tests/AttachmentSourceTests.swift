@@ -156,37 +156,37 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(log("errors"), ["`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."])
     }
 
-    private func previewSource(_ preview: String) throws {
+    private func detailsSource(_ details: String) throws {
         try script("tab", toml: "title = 'tab'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = true", """
         case "$1" in
-          show) printf 'url=https://example.com/a\\ntitle=A\\n\\n\(preview)' | \(cli) attachment add 2>> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
+          show) printf 'url=https://example.com/a\\ntitle=A\\n\\n\(details)' | \(cli) attachment add 2>> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
         esac
         """)
     }
 
     func testBlocksAfterTheValueDrawThePreviewInItsWholeRoom() async throws {
         try taker(takes: "'url'")
-        try previewSource("frame=\\nclass=gap-part\\n\\ntext=host\\ntitle=example.com\\n\\nnumber=views\\nvalue=42\\n")
+        try detailsSource("frame=\\nclass=gap-part\\n\\ntext=host\\ntitle=example.com\\n\\nnumber=views\\nvalue=42\\n")
 
         await open()
         try await wait("the value") { self.chips.first?.value != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
 
-        XCTAssertEqual(model.preview?.tree.node("host")?.title, "example.com")
-        XCTAssertNotNil(model.preview?.tree.node("views"))
-        XCTAssertEqual(model.preview?.lines, SpotTokens.previewLines)
+        XCTAssertEqual(model.details?.tree.node("host")?.title, "example.com")
+        XCTAssertNotNil(model.details?.tree.node("views"))
+        XCTAssertEqual(model.details?.lines, SpotTokens.detailsLineLimit)
         XCTAssertEqual(chips.first?.value?.payload, .url("https://example.com/a"))
     }
 
     func testAPreviewWithABlockThatTakesAPressFailsWithExit2() async throws {
         try taker(takes: "'url'")
-        try previewSource("button=open\\ntitle=Open\\n")
+        try detailsSource("button=open\\ntitle=Open\\n")
 
         await open()
 
         try await wait("the end of the source") { self.log("done").count == 1 }
         XCTAssertEqual(log("done"), ["2"])
-        XCTAssertEqual(log("errors"), ["A preview after the value of `openspot attachment add` draws only text, number, series, picture and icon blocks, not button=open."])
+        XCTAssertEqual(log("errors"), ["The details after the value of `openspot attachment add` take only text, number, series, picture and icon blocks, not button=open."])
         XCTAssertTrue(chips.isEmpty)
     }
 

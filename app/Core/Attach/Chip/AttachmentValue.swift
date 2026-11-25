@@ -17,19 +17,19 @@ public struct AttachmentValue: Equatable, Sendable {
     public let title: String?
     public let app: String?
     public let icon: Icon?
-    let preview: [TextBlock]
+    let details: [TextBlock]
     let wholeCopy: ClipboardCopy?
 
-    public init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil, preview: [TextBlock] = []) {
-        self.init(payload, title: title, app: app, icon: icon, preview: preview, wholeCopy: nil)
+    public init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil, details: [TextBlock] = []) {
+        self.init(payload, title: title, app: app, icon: icon, details: details, wholeCopy: nil)
     }
 
-    init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil, preview: [TextBlock] = [], wholeCopy: ClipboardCopy?) {
+    init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil, details: [TextBlock] = [], wholeCopy: ClipboardCopy?) {
         self.payload = payload
         self.title = title
         self.app = app
         self.icon = icon
-        self.preview = preview
+        self.details = details
         self.wholeCopy = wholeCopy
     }
 
