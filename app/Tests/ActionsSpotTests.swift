@@ -5,7 +5,7 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandFitsTheCardsOfItsOriginAndHasNoCard() throws {
         let actions = try spot("actions")
 
-        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Rearrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Delete"])
+        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Rearrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Remove"])
         XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine], [], [], [], [], [], [.mine]])
         XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫"])
         XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, nil, "hasIcon", nil])

@@ -51,7 +51,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
             return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
-        CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
+        CommandVerb("remove", "<id>", "Moves a spot that spot add or store get added to the Trash, and drops it from spots.lock. Its data stays.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
         CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
@@ -66,7 +66,7 @@ public enum SpotCall: NounCall {
         act(.edit, "Opens the file of a spot to edit, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "opened the file of a spot", inShow: .changes(window))),
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
-        act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
+        act(.delete, "Moves the folder of a spot to the Trash and keeps its data, as Remove in a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
         CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app or of a spot of a store, and what of it runs by itself. The review of a spot of a store ends with Install, which copies it as store get does.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 

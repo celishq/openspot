@@ -60,8 +60,9 @@ extension SpotsModel {
         let trash = files.trash
         let log = files.log
         let secrets = files.secrets
+        let lock = files.lock
         Task {
-            let failure = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, of: ids)
+            let failure = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, lock: lock, of: ids)
             await reload()
             if let failure {
                 toast(.failure("\(command.name) was not removed. \(failure)"))
@@ -73,10 +74,11 @@ extension SpotsModel {
 
     @concurrent
     private nonisolated static func discard(
-        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, of ids: Set<String>
+        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, lock: SpotLock, of ids: Set<String>
     ) async -> String? {
         do {
             try folder.remove(spot, discard: trash)
+            try lock.drop(SpotID(file: spot.url).description)
             log.remove(spot.id)
             try secrets.remove { ids.contains($0) }
             return nil

@@ -201,6 +201,15 @@ public struct SpotLock: Equatable, Sendable {
         return entry
     }
 
+    public func drop(_ id: String) throws {
+        let lock = try lockFile()
+        defer { close(lock) }
+        flock(lock, LOCK_EX)
+        let entries = try entries()
+        let kept = entries.filter { !$0.holds(id) }
+        if kept.count != entries.count { try write(kept) }
+    }
+
     private func locked<T>(_ work: () async throws -> T) async throws -> T {
         let lock = try lockFile()
         defer { close(lock) }

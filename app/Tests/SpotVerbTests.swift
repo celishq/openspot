@@ -708,6 +708,28 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(clock.isOnGrid)
     }
 
+    func testRemoveMovesAnInstalledSpotToTheTrashAndAReinstallGetsItsDataBack() async throws {
+        let friends = folder.appendingPathComponent("friends")
+        let body = "#!/bin/sh\nif [ -f \"$OPENSPOT_DATA/kept\" ]; then t=kept; else : > \"$OPENSPOT_DATA/kept\"; t=new; fi\nprintf 'item=a\\ntitle=%s\\n' \"$t\"\n"
+        try body.writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
+        _ = try model.files.config.change { $0.add(store: Store(url: friends)) }
+        let installed = try await call(["store", "get", "clock"])
+        XCTAssertEqual(installed.code, 0, installed.errors)
+        let first = try await call(["spot", "run", "clock"])
+        XCTAssertTrue(first.output.contains("title=new"), first.output)
+        await model.reload()
+
+        XCTAssertTrue(model.act(.delete, on: "clock"))
+        try await wait("the toast of the removal") { self.host.confirms.contains("Moved Clock to the Trash.") }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("clock.spot/clock.sh").path))
+        XCTAssertEqual(try model.files.lock.entries().map(\.paths), [])
+        let again = try await call(["store", "get", "clock"])
+        XCTAssertEqual(again.code, 0, again.errors)
+        let second = try await call(["spot", "run", "clock"])
+        XCTAssertTrue(second.output.contains("title=kept"), second.output)
+    }
+
     func testASpotThatACallWritesIsOnTheGridWhenTheCallAnswers() async throws {
         await model.reload()
 

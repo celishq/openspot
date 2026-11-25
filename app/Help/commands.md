@@ -72,9 +72,9 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot. A spot that comes with Openspot refuses it, and `spot edit`, `spot delete`, `spot remove` and `prompt change` too. |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
-| `openspot spot delete <id>`                        | Moves a spot to the Trash.                                                                      |
+| `openspot spot delete <id>`                        | Moves a spot's folder to the Trash, as Remove in its ⌘K menu does. Its data stays.              |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
-| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot spot remove <id>`                        | Moves a spot that `spot add` or `store get` added to the Trash. Its data stays.                 |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |

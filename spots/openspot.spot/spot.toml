@@ -1,7 +1,7 @@
 [scripts.actions]
 title = "Card actions"
 icon = "ellipsis.circle"
-detail = "Share, set, edit, rearrange, change the icon of or delete a spot"
+detail = "Share, set, edit, rearrange, change the icon of or remove a spot"
 uses = ["spots"]
 
 [scripts.actions.bindings]
@@ -47,7 +47,7 @@ close = false
 when = "hasIcon"
 
 [scripts.actions.actions.delete]
-title = "Delete"
+title = "Remove"
 shortcut = "cmd+backspace"
 close = false
 offers = ["actions mine"]
