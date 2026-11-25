@@ -115,22 +115,23 @@ extension SpotsModel {
         var next = stack
         if !next.isMoving { next.place() }
         guard next != attachments else { return }
-        let motion = isShown ? motion : nil
         let turns = attachments.isOn != next.isOn || attachments.selectedChip != next.selectedChip
+        let shown = turns ? shownPreview(of: query, in: next) : preview
+        let motion = isShown ? previewMotion(to: shown, else: motion) : nil
         let moves = !next.isMoving && motion != nil && next.layout != attachments.layout
         if moves { next.isMoving = true }
         change(motion, {
             attachments = next
-            if turns { takePreview() }
+            guard turns else { return }
+            if preview != shown { preview = shown }
+            selected = 0
+            showVisible()
         }) { [weak self] in
             guard moves, var landed = self?.attachments else { return }
             landed.isMoving = false
             self?.placeAttachment(landed, .edit)
         }
         hideAttachments()
-        guard turns else { return }
-        selected = 0
-        showVisible()
     }
 
     func give(to entry: Entry) {
@@ -189,13 +190,32 @@ extension SpotsModel {
         change(isShown ? .fade : nil) { isAttachmentHidden = isHidden }
     }
 
-    func showsAttachment(of query: String) -> Bool {
-        attachments.isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
+    func showsAttachment(of query: String, in stack: AttachmentStack? = nil) -> Bool {
+        (stack ?? attachments).isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
     }
 
-    func shownPreview(of query: String) -> AttachmentPreview? {
-        guard showsAttachment(of: query), let source = attachments.selected, entry(source) != nil else { return nil }
+    func shownPreview(of query: String, in stack: AttachmentStack? = nil) -> AttachmentPreview? {
+        let stack = stack ?? attachments
+        guard showsAttachment(of: query, in: stack), let chip = stack.selectedChip, entry(chip.source) != nil else { return nil }
+        return takeChipPreview(of: chip)
+    }
+
+    @discardableResult
+    func takeChipPreview(of chip: AttachmentChip?) -> AttachmentPreview? {
+        guard chip != chipPreviewSource else { return chipPreview }
+        previewBuilds += 1
+        chipPreviewSource = chip
+        chipPreview = chip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
         return chipPreview
+    }
+
+    static func room(of preview: AttachmentPreview?) -> CGFloat {
+        preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
+    }
+
+    func previewMotion(to shown: AttachmentPreview?, else motion: PanelMotion?) -> PanelMotion? {
+        let room = Self.room(of: shown)
+        return room == fieldRoom ? motion : .sheet(isOpen: room > fieldRoom)
     }
 
     func attachmentRows() -> [Entry] {
@@ -212,9 +232,12 @@ extension SpotsModel {
         if preview != shown { preview = shown }
     }
 
-    func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {
-        guard preview != self.preview else { return }
-        change(isShown ? motion : nil) { self.preview = preview }
+    func hold(_ preview: AttachmentPreview?, motion: PanelMotion?, with rest: () -> Void = {}) {
+        guard preview != self.preview else { return rest() }
+        change(isShown ? motion.flatMap { previewMotion(to: preview, else: $0) } : nil) {
+            self.preview = preview
+            rest()
+        }
     }
 
     static let chipActionLimit = 5

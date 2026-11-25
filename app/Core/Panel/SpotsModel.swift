@@ -74,20 +74,18 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
-            if attachments.selectedChip != oldValue.selectedChip {
-                previewBuilds += 1
-                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
-            }
+            takeChipPreview(of: attachments.selectedChip)
         }
     }
     @ObservationIgnored var chipPreview: AttachmentPreview?
+    @ObservationIgnored var chipPreviewSource: AttachmentChip?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
     public private(set) var promptWord = SearchPrompt.grid
     public internal(set) var preview: AttachmentPreview? {
         didSet {
-            let room = preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
+            let room = Self.room(of: preview)
             if fieldRoom != room { fieldRoom = room }
         }
     }

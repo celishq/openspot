@@ -24,8 +24,7 @@ extension SpotsModel {
     }
 
     public func updateVisible(holding motion: PanelMotion? = .edit) {
-        hold(shownPreview(of: query), motion: motion)
-        showVisible()
+        hold(shownPreview(of: query), motion: motion, with: showVisible)
     }
 
     func showVisible() {
