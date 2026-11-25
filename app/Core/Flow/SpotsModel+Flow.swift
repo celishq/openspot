@@ -3,7 +3,7 @@ import Foundation
 extension SpotsModel {
     @discardableResult
     public func open(_ id: String, at destination: String? = nil) -> Bool {
-        if let destination { sheets[id]?.destination = destination }
+        if let destination { runs.landings[id] = destination }
         return open(FlowSheet(spot: id))
     }
 
@@ -156,7 +156,6 @@ extension SpotsModel {
     func endFlow() {
         for page in flow.pages where page.route != nil { sheets[page.spot]?.show(FlowSheet(spot: page.spot)) }
         flow.clear()
-        waitingPublish = nil
         showEdges()
     }
 

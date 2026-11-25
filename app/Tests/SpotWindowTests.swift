@@ -103,4 +103,13 @@ final class SpotWindowTests: XCTestCase {
         XCTAssertEqual(host.windows, ["settings", "settings"])
         XCTAssertEqual(shows.filter { $0.hasSuffix("spot/notes") }.count, 1, "\(shows)")
     }
+
+    func testAPlaceGivenBeforeTheWindowCanOpenIsKeptForItsOpen() async throws {
+        XCTAssertFalse(model.open("settings", at: "access/screen"))
+        try await settingsSpot()
+
+        XCTAssertTrue(model.open("settings"))
+
+        try await wait("the show at the access") { self.shows.contains("show access/screen") }
+    }
 }

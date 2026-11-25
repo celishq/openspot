@@ -30,6 +30,15 @@ struct SettingCalls {
         }
     }
 
+    func remove(_ key: String, of spot: String) -> CommandAPI.Work {
+        CommandAnswer.work { [places, caller, app, secrets] in
+            if try secrets.read()[spot]?[key] != nil { try secrets.keep(nil, key: key, of: spot) }
+            let config = try places.config.change { $0.set(setting: key, of: spot, to: nil) }
+            await app?.configChanged(.value(spot: spot, caller: caller), to: config)
+            return ""
+        }
+    }
+
     func list(of spot: String?, _ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places, secrets, app, mac] in
             let config = places.config.read()

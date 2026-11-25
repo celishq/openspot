@@ -13,15 +13,4 @@ extension SpotTheme {
     static let markFill = 0.3
     static let liftShadowColor = ThemeColor(text: "#000000")!.color
     static let liftShadowDrop: CGFloat = 4
-
-    static let foilBase = ThemeColor(text: "#FFFFFF")!.color
-    static let publisherRim = ThemeColor(text: "#FFFFFF4D")!.color
-    static let publisherPill = 0.1
-    static let publisherPillHover = 0.18
-    static let publisherPillRing = 0.22
-    static let publisherPillShine = ThemeColor(text: "#FFFFFF73")!.color
-    static let engraveDark = ThemeColor(text: "#ECEEF4E6")!.color
-    static let engraveLight = ThemeColor(text: "#12141ACC")!.color
-    static let catchLightDark = ThemeColor(text: "#00000099")!.color
-    static let catchLightLight = ThemeColor(text: "#FFFFFF8C")!.color
 }

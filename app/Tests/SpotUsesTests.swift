@@ -112,6 +112,16 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(errors, "Script cannot allow a use. Only you can, with `openspot spot allow` in Terminal.\n")
     }
 
+    func testASpotCannotRemoveASetting() async throws {
+        try caller(toml: "uses = ['spots']", "setting remove --spot script token")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Script cannot remove a setting. Only you can, in Settings or with `openspot setting remove` in Terminal.\n")
+    }
+
     func testASpotOfThePersonThatNamesTheAccountUseCannotPublish() async throws {
         try caller(toml: "uses = ['account']", "store publish script")
         let found = try scanned()
@@ -119,7 +129,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Only Openspot's Store can reach your account key.\n")
+        XCTAssertEqual(errors, "Only Openspot's own spots can reach your account key.\n")
         XCTAssertEqual(found.scripts.first?.uses, [])
     }
 

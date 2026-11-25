@@ -327,8 +327,6 @@ public final class SpotsModel {
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
-    @ObservationIgnored public private(set) var account: AccountSheet!
-    @ObservationIgnored var waitingPublish: String?
     @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
@@ -351,13 +349,6 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
-        let environment = self.runs.environment
-        account = AccountSheet(store: files.account, links: AccountSheet.Links(
-            allows: { [weak self] reason in await self?.allows(reason) ?? false },
-            copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: environment)) != nil },
-            publish: { [weak self] in await self?.publishWaiting() ?? false },
-            userName: { NSFullUserName() }
-        ))
     }
 
     public var config: Config {
@@ -425,7 +416,7 @@ public final class SpotsModel {
         host.applyConfig(config)
         kept = next
         let folder = files.folder(config)
-        let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
+        let hosted = reviewed.map { [$0.spot] } ?? []
         guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.allowed != allowed }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
         var scan = ((try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))

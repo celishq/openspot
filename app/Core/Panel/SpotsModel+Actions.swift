@@ -18,8 +18,11 @@ extension SpotsModel {
     }
 
     func spot(openedBy key: ActionKey) -> String? {
-        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        let chosen = arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        return chosen ?? (key == Self.settingsKey ? settingsSpot : nil)
     }
+
+    static let settingsKey = ActionKey(name: ",", isCommand: true)
 
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
@@ -231,6 +234,15 @@ extension SpotsModel {
         } catch {
             toast(.failure("\(form.action.title) failed. \(Self.reason(error))"))
         }
+    }
+
+    public func keep(secret value: String, key: String, of spot: String) async -> String? {
+        if value.count < SecretStore.shortest {
+            return "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value."
+        }
+        if let failure = await Self.keep(value, key: key, of: spot, in: files.secrets) { return failure }
+        configChanged(.value(spot: spot, caller: nil), to: kept)
+        return nil
     }
 
     private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {

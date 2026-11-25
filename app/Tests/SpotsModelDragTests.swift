@@ -577,68 +577,20 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(host.notes.last, "A was not published. Touch ID didn't pass, so Openspot signed nothing.")
     }
 
-    func testAPublishWithNoAccountOpensAccountAndWaitsForTheKey() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+    func testAPublishWithNoAccountOpensSettingsAtTheAccountAndSaysWhy() async throws {
+        let landed = core.appendingPathComponent("landed")
+        try TestSpot(
+            toml: "title = 'Settings'\nwindow = 'settings'\nedits = 'settings'\n[on]\n\"sheet.open\" = true",
+            body: "sed -n 's/^input\\.at=//p' >> '\(landed.path)'\nprintf 'item=a\\ntitle=A\\n'"
+        ).write(to: core.appendingPathComponent("openspot.spot/settings.sh"))
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
         let result = await model.publish("a")
 
         XCTAssertEqual(result, .failed)
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id))
-        XCTAssertEqual(host.notes, [])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-
-        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-    }
-
-    func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\nprintf 'text=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "")
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        model.endEditing(moving: false)
-        model.isShown = true
-        model.panelWillShow()
-        XCTAssertTrue(model.open("b"))
-        try await wait("the sheet of b") { self.model.openSheetID == "b" }
-
-        _ = await model.publish("a")
-        try await wait("the account") { self.model.openSheetID == AccountSheet.id }
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=handle\ninput.handle=tony\n", limit: 60)
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-        try await wait("the sheet behind") { self.model.flow.current == FlowSheet(spot: "b") }
-    }
-
-    func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-
-        model.push(FlowSheet(spot: AccountSheet.id, route: "publish:a"))
-        _ = try await model.runs.answer(of: model.account.spot, "new", input: "route=publish:a\n", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=publish:a\ninput.handle=tony\n", limit: 60)
-
-        XCTAssertNotNil(try model.files.account.key())
-        XCTAssertNotEqual(model.flow.current?.route, "publish:a")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-        XCTAssertEqual(host.asked, [])
-    }
-
-    func testAPublishThatWaitsIsForgottenWhenItsSheetsClose() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        _ = await model.publish("a")
-
-        model.open(AccountSheet.id)
-        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
-
+        XCTAssertEqual(host.notes, ["Set up your account, then publish again."])
+        try await wait("Settings at the account") { (try? String(contentsOf: landed, encoding: .utf8))?.contains("account") == true }
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 

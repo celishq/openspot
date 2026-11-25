@@ -101,12 +101,13 @@ final class CommandClientTests: XCTestCase {
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
         _ = runs.callers.issue(for: account)
         let copied = ["OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"]
-        let refused = "Only Openspot's Store can reach your account key.\n"
+        let refused = "Only Openspot's own spots can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
         XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)
-        for verb in ["new", "sign-out", "sync"] {
-            XCTAssertEqual(try run(client, ["account", verb], variables: copied).code, 2, verb)
+        for arguments in [["account", "new", "tony"], ["account", "sign-out"], ["account", "sync", "off"]] {
+            XCTAssertEqual(try run(client, arguments).errors, refused, "\(arguments)")
+            XCTAssertEqual(try run(client, arguments, variables: copied).errors, refused, "\(arguments)")
         }
 
         let opened = await app.opened

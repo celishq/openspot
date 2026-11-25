@@ -125,6 +125,36 @@ final class CommandAPITests: XCTestCase {
         XCTAssertNil(ConfigFile.standard(environment: places).read().setting("key", of: "weather"))
     }
 
+    func testRemoveTakesAwayASecretAndAValueThatThePersonKept() async throws {
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try TestSpot(toml: "title = 'Weather'\n[settings]\ntoken = 'secret'\ncity = 'text'", body: "echo").write(to: spots.spotFile("weather"))
+        let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
+        try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+        _ = try await answer(["setting", "set", "--spot", "weather", "city", "Lisbon"], environment: places)
+
+        let secret = try await answer(["setting", "remove", "--spot", "weather", "token"], environment: places)
+        let value = try await answer(["setting", "remove", "--spot", "weather", "city"], environment: places)
+
+        XCTAssertEqual(secret, CommandAnswer(output: "", errors: "", code: 0))
+        XCTAssertEqual(value, CommandAnswer(output: "", errors: "", code: 0))
+        XCTAssertNil(try AppPlaces.test(places).secrets.read()["weather"]?["token"])
+        XCTAssertNil(ConfigFile.standard(environment: places).read().setting("city", of: "weather"))
+    }
+
+    func testAChoiceRowListsItsOptionsAndItsDefault() async throws {
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try TestSpot(toml: "title = 'Team clock'\n[settings]\nzone = { type = 'choice', title = 'City', options = ['Asia/Tokyo', 'Europe/London'], default = 'Asia/Tokyo' }", body: "echo").write(to: spots.spotFile("clock"))
+        let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
+
+        let list = try await answer(["setting", "list", "--spot", "clock"], environment: places)
+
+        let row = try XCTUnwrap(TextBlock.blocks(in: list.output).first { $0.value("item") == "clock/zone" })
+        XCTAssertEqual(row.value("kind"), "choice")
+        XCTAssertEqual(row.value("options"), "Asia/Tokyo,Europe/London")
+        XCTAssertEqual(row.value("default"), "Asia/Tokyo")
+        XCTAssertNil(row.value("value"))
+    }
+
     func testASheetOnStdinIsChecked() async throws {
         let answer = try await answer(["check", "sheet"], input: "frame=\ntitle=Hi\n")
 

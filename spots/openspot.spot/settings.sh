@@ -75,6 +75,12 @@ $1
 EOF
   case $verb in
     set) if [ -n "$three" ]; then call setting set --spot "$one" "$two" "$three"; else call setting set --spot "$one" "$two"; fi ;;
+    say) toast "$one" ;;
+    new) if [ -n "$one" ]; then call account new "$one"; else call account new; fi ;;
+    sign-out) call account sign-out ;;
+    sync) call account sync "$one" ;;
+    refresh) ;;
+    remove) call setting remove --spot "$one" "$two" ;;
     turn) call setting set --spot "$one" enabled "$two" ;;
     theme) call theme use "$one" ;;
     ask) ask "$one" ;;

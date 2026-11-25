@@ -21,8 +21,10 @@ public struct SettingRow: PrintedRecord, Equatable, Sendable {
     public let section: Section
     public let icon: String
     public let detail: String?
+    public let options: String?
+    public let `default`: String?
 
-    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: Section, icon: String, detail: String? = nil) {
+    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: Section, icon: String, detail: String? = nil, options: [String] = [], default: String? = nil) {
         item = "\(spot)/\(key)"
         self.spot = spot
         self.name = name
@@ -33,9 +35,11 @@ public struct SettingRow: PrintedRecord, Equatable, Sendable {
         self.section = section
         self.icon = icon
         self.detail = detail
+        self.options = options.isEmpty ? nil : options.joined(separator: ",")
+        self.default = `default`
     }
 
     var blocks: [[(String, String?)]] {
-        [[("item", item), ("spot", spot), ("name", name), ("key", key), ("title", title), ("value", value), ("kind", kind.rawValue), ("section", section.rawValue), ("icon", icon), ("detail", detail)]]
+        [[("item", item), ("spot", spot), ("name", name), ("key", key), ("title", title), ("value", value), ("kind", kind.rawValue), ("section", section.rawValue), ("icon", icon), ("detail", detail), ("options", options), ("default", `default`)]]
     }
 }

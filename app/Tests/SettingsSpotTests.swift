@@ -77,6 +77,17 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertNil(records(removed)["row:cups/open"]?.value("value"))
     }
 
+    func testRemoveSentByTheViewTakesAwayASecret() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'\n[settings]\ntoken = 'secret'")
+        try AppPlaces.test(TestEnvironment.values).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+
+        let text = try await send("remove", "weather", "token")
+
+        XCTAssertNil(try AppPlaces.test(TestEnvironment.values).secrets.read()["weather"]?["token"])
+        XCTAssertEqual(records(text)["row:weather/token"]?.value("form"), "secret")
+        XCTAssertNil(records(text)["row:weather/token"]?.value("value"))
+    }
+
     func testAToggleOfTheAppGoesToTheMac() async throws {
         offerLogin()
 
@@ -125,6 +136,48 @@ final class SettingsSpotTests: BuiltInCase {
 
         XCTAssertEqual(effects(), ["toast There is no theme named Gone. Run `openspot theme list` to see each one."])
         XCTAssertNotNil(records(text)["theme:Openspot"])
+    }
+
+    func testSayShowsWhatTheViewWasTold() async throws {
+        let effects = try recordEffects()
+
+        _ = try await send("say", "Openspot didn't keep this secret.")
+
+        XCTAssertEqual(effects(), ["toast Openspot didn't keep this secret."])
+    }
+
+    private var accountStore: AccountStore {
+        AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil)
+    }
+
+    func testNewSentByTheViewMakesTheAccountAndTheWindowShowsIt() async throws {
+        let signedOut = try await show()
+        let text = try await send("new", "tony")
+
+        XCTAssertEqual(records(signedOut)["account"]?.value("signedIn"), "false")
+        XCTAssertEqual(records(text)["account"]?.value("signedIn"), "true")
+        XCTAssertEqual(records(text)["account"]?.value("handle"), "tony")
+        XCTAssertEqual(try accountStore.record()?.handle, "tony")
+    }
+
+    func testAHandleThatBreaksTheRuleSaysTheRuleInAToast() async throws {
+        let effects = try recordEffects()
+
+        _ = try await send("new", "T")
+
+        XCTAssertEqual(effects(), ["toast \(AccountHandle.rule)"])
+        XCTAssertNil(try accountStore.key())
+    }
+
+    func testSignOutSentByTheViewAsksTouchIDThenRemovesTheKey() async throws {
+        _ = try accountStore.keyMadeOnce()
+
+        let text = try await send("sign-out")
+
+        XCTAssertNil(try accountStore.key())
+        XCTAssertEqual(records(text)["account"]?.value("signedIn"), "false")
+        let asked = await app.asked
+        XCTAssertEqual(asked, ["sign out of your account"])
     }
 
     func testUnknownWordsFail() async throws {

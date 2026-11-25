@@ -3,6 +3,7 @@ import Foundation
 public enum SettingCall: NounCall {
     case get(spot: String, key: String)
     case set(spot: String, key: String, value: String?)
+    case remove(spot: String, key: String)
     case list(spot: String?, form: PrintForm)
     case change(spot: String, key: String)
     case turn(spot: String, on: Bool)
@@ -24,6 +25,13 @@ public enum SettingCall: NounCall {
             "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar, window (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, slow (true or false), panel-key, fix-key and theme (the name of a theme)."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isInShow: words.isInShow) ?? Self.set(spot: spot, key: key, value: value) }
+        },
+        CommandVerb(
+            "remove", "[--spot id] <key>",
+            "Removes the value the person chose for the spot, a secret too. Only you can, in Settings or in Terminal; a spot cannot.",
+            rule: CallRule(use: .spots, used: "removed a setting", inShow: .changes("removes a setting"), onlyPerson: "cannot remove a setting. Only you can, in Settings or with `openspot setting remove` in Terminal.")
+        ) { words in
+            pair(words, sets: false) { spot, key, _ in Self.remove(spot: spot, key: key) }
         },
         CommandVerb(
             "list", "[--spot id] [--json]",
@@ -118,6 +126,7 @@ public enum SettingCall: NounCall {
         return switch self {
         case .get(let spot, let key): settings.get(key, of: spot)
         case .set(let spot, let key, let value): settings.set(key, of: spot, to: value)
+        case .remove(let spot, let key): settings.remove(key, of: spot)
         case .list(let spot, let form): settings.list(of: spot, form)
         case .change(let spot, let key): settings.change(key, of: spot)
         case .turn(let spot, let isOn): SpotCalls(context).turn([spot], on: isOn)
