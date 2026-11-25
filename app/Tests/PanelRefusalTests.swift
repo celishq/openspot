@@ -15,7 +15,7 @@ final class PanelRefusalTests: PanelCase {
         let go = folder.appendingPathComponent("go").path
         try script("tabs", toml: "title = 'Tabs'", """
         [ "$1" = press ] || { printf 'text=current\\ntitle=Snooze Current Tab\\nclose=false\\n'; exit 0; }
-        touch '\(started)'
+        echo > '\(started)'
         [ "$(sed -n 's/^input\\.item=//p')" = slow ] && while [ ! -f '\(go)' ]; do sleep 0.01; done
         echo 'Ghostty is not a browser' >&2
         exit 1
@@ -40,7 +40,7 @@ final class PanelRefusalTests: PanelCase {
         let entry = try XCTUnwrap(model.entry("tabs"))
 
         model.pick(SpotItem(title: "Later", run: "slow", staysOnPick: true), of: entry)
-        try await wait("the run") { FileManager.default.fileExists(atPath: self.folder.appendingPathComponent("started").path) }
+        try await wait("the run") { !self.lines(at: self.folder.appendingPathComponent("started").path).isEmpty }
         clock.advance(by: 1)
         FileManager.default.createFile(atPath: folder.appendingPathComponent("go").path, contents: nil)
 

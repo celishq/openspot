@@ -399,7 +399,7 @@ final class SpotsModelTests: XCTestCase {
         model.search("ban")
         model.runSelectedItem()
 
-        try await wait("the pick") { FileManager.default.fileExists(atPath: picks) }
+        try await wait("the pick") { self.lines(at: picks) == ["press b"] }
         XCTAssertEqual(try String(contentsOfFile: picks, encoding: .utf8), "press b\n")
     }
 
@@ -777,7 +777,7 @@ final class SpotsModelTests: XCTestCase {
           new)
             input=$(cat)
             if [ -z "$input" ]; then printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n'; exit 0; fi
-            touch '\(folder.appendingPathComponent("saving").path)'
+            echo > '\(folder.appendingPathComponent("saving").path)'
             n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
             printf 'b\\n' ;;
           edit) printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=e\\ntitle=E\\n' ;;
@@ -798,7 +798,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the form") { model.form != nil }
         model.setFormValue("x", for: "a")
         model.submitForm()
-        try await wait("the save") { FileManager.default.fileExists(atPath: self.folder.appendingPathComponent("saving").path) }
+        try await wait("the save") { !self.lines(at: self.folder.appendingPathComponent("saving").path).isEmpty }
 
         model.cancelForm()
         model.openForm(edit, on: (entry, nil))

@@ -162,7 +162,7 @@ final class DrawSpotTests: XCTestCase {
 
         sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "reveal" }), item: nil)
 
-        try await wait("the folder that Finder got") { FileManager.default.fileExists(atPath: home.appendingPathComponent("opened").path) }
+        try await wait("the folder that Finder got") { self.lines(at: home.appendingPathComponent("opened").path) == [boards.path] }
         XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("opened"), encoding: .utf8).trimmingCharacters(in: .newlines), boards.path)
     }
 

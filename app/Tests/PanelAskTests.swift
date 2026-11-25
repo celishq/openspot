@@ -12,20 +12,20 @@ final class PanelAskTests: PanelCase {
 
     func testASettingFormDoesNotOpenInAHiddenPanel() async throws {
         try script("editor", toml: "title = 'Editor'\n[settings]\neditor = { type = 'text' }", """
-        touch '\(called.path)'
+        echo > '\(called.path)'
         [ "$1" = editor ] && printf 'frame=\\ntitle=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
         """)
         await model.reload()
 
         XCTAssertTrue(model.changeSetting("editor", of: "editor"))
 
-        try await wait("the call") { FileManager.default.fileExists(atPath: self.called.path) }
+        try await wait("the call") { !self.lines(at: self.called.path).isEmpty }
         try await wait("the answer") { self.model.pendingAsk == nil }
         XCTAssertNil(model.form)
     }
 
     func testASettingWithOptionsIsAChoiceThatOpenspotKeepsWithNoCall() async throws {
-        try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "[ \"$1\" = show ] || touch '\(called.path)'")
+        try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "[ \"$1\" = show ] || echo > '\(called.path)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -44,7 +44,7 @@ final class PanelAskTests: PanelCase {
     func testAFailureShowsAfterItsAskWasLeft() async throws {
         try script("notes", toml: "title = 'Notes'", """
         [ "$1" = add ] || { printf 'text=a\\ntitle=A\\nopen.title=add\\n'; exit 0; }
-        touch '\(called.path)'
+        echo > '\(called.path)'
         while [ ! -f '\(go.path)' ]; do sleep 0.02; done
         echo 'No notes folder' >&2
         exit 3
@@ -57,7 +57,7 @@ final class PanelAskTests: PanelCase {
         model.ask(CommandAction(id: "add", title: "Add", scope: .spot), on: (entry, nil)) { [sheets = model.sheets] in
             try await sheets["notes"]?.change(CommandAction(id: "add", title: "Add", scope: .spot))
         }
-        try await wait("the call") { FileManager.default.fileExists(atPath: self.called.path) }
+        try await wait("the call") { !self.lines(at: self.called.path).isEmpty }
         model.closeSheet(moving: false)
         FileManager.default.createFile(atPath: go.path, contents: nil)
 

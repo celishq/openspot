@@ -11,13 +11,6 @@ app/Tests/CommandSocketTests.swift	Task.sleep
 app/Tests/DoomExampleTests.swift	Task.sleep
 app/Tests/LinksSpotTests.swift	Task.sleep
 app/Tests/LinksSpotTests.swift	Task.sleep
-app/Tests/LinksSpotTests.swift	Task.sleep
-app/Tests/LinksSpotTests.swift	Task.sleep
-app/Tests/LinksSpotTests.swift	Task.sleep
-app/Tests/NewSpotTests.swift	Task.sleep
-app/Tests/NewSpotTests.swift	Task.sleep
-app/Tests/NewSpotTests.swift	Task.sleep
-app/Tests/NewSpotTests.swift	Task.sleep
 app/Tests/PictureFileTests.swift	Task.sleep
 app/Tests/PictureFileTests.swift	Task.sleep
 app/Tests/SampleSpotsCase.swift	Task.sleep
@@ -36,7 +29,6 @@ app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunsCase.swift	Task.sleep
-app/Tests/StatsLogTests.swift	Task.sleep
 app/Tests/SpotsModelDragTests.swift	Task.sleep
 app/Tests/SpotsModelDragTests.swift	Task.sleep
 app/Tests/TestChildTests.swift	Task.sleep

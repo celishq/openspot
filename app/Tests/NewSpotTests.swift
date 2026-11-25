@@ -130,28 +130,27 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
+        let gate = root.appendingPathComponent("gate").path
+        try fake("sleep", "n=0; while [ ! -f '\(gate)' ] && [ $n -lt 3000 ]; do /bin/sleep 0.01; n=$((n + 1)); done")
         let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
         let sheet = runs.sheet(for: try newSpot())
         sheet.open {}
-        for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
+        try await wait("the sheet", seconds: 60) { sheet.panel != nil }
         let panel = try XCTUnwrap(sheet.panel)
         sheet.set(try XCTUnwrap(panel.parts.first), to: "Show the weather here")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
 
         sheet.press(try XCTUnwrap(panel.parts.last))
 
-        for _ in 0..<6000 where (try? saved("clipboard"))?.contains("what the spot runs on my computer.") != true {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        try await wait("the copied prompt", seconds: 60) { (try? self.saved("clipboard"))?.contains("what the spot runs on my computer.") == true }
         XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
-        for _ in 0..<6000 where sheet.panel?.parts.last?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertEqual(sheet.panel?.parts.last?.title, "✓ Copied")
+        try await wait("the copied button", seconds: 60) { sheet.panel?.parts.last?.title == "✓ Copied" }
         XCTAssertEqual(sheet.panel?.tree.look(of: "copy"), .strong)
         XCTAssertEqual(sheet.panel?.parts.last?.press, .line)
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
-        for _ in 0..<6000 where sheet.panel?.parts.last?.title != "Copy prompt" { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertEqual(sheet.panel?.parts.last?.title, "Copy prompt")
+        FileManager.default.createFile(atPath: gate, contents: nil)
+        try await wait("the button again", seconds: 60) { sheet.panel?.parts.last?.title == "Copy prompt" }
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
     }
 

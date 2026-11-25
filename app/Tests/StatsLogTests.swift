@@ -102,7 +102,7 @@ final class StatsLogTests: SpotRunsCase {
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
-        try await wait("the file of the day") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
+        try await wait("the file of the day") { self.placed(at: self.file("2026-11-11").path) }
         XCTAssertEqual(StatsLog(folder: stats, at: day).counts["a"]?.runs, 1)
     }
 
@@ -114,10 +114,7 @@ final class StatsLogTests: SpotRunsCase {
         usual.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         sooner.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
 
-        for _ in 0..<1_000 where !FileManager.default.fileExists(atPath: other.appendingPathComponent("2026-11-11.json").path) {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTAssertTrue(FileManager.default.fileExists(atPath: other.appendingPathComponent("2026-11-11.json").path))
+        try await wait("the file of the sooner log") { self.placed(at: other.appendingPathComponent("2026-11-11.json").path) }
         XCTAssertFalse(FileManager.default.fileExists(atPath: file("2026-11-11").path))
     }
 
@@ -159,7 +156,7 @@ final class StatsLogTests: SpotRunsCase {
 
         usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1, failure: .exit), at: day.addingTimeInterval(86_400))
 
-        try await wait("the file of the day that ended") { FileManager.default.fileExists(atPath: self.file("2026-11-11").path) }
+        try await wait("the file of the day that ended") { self.placed(at: self.file("2026-11-11").path) }
 
         XCTAssertEqual(StatsLog(folder: stats, at: day).counts["a"]?.runs, 1)
         XCTAssertEqual(usage.counts["a"]?.failures.count, 1)

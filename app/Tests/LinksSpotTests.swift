@@ -48,9 +48,7 @@ final class LinksSpotTests: SampleSpotsCase {
             try await self.savedLink("https://icons.test/deep/page", in: links)
             let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.png").path
 
-            for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
-                try await Task.sleep(nanoseconds: 100_000_000)
-            }
+            try await self.wait("the icon", seconds: 30) { self.placed(at: expected) }
             let items = try await links.items(timeout: 60).items
             let site = items.first { $0.title == "Site" }
 
@@ -65,9 +63,7 @@ final class LinksSpotTests: SampleSpotsCase {
             try await self.savedLink("https://none.test", in: links)
             let marker = folder.appendingPathComponent(".config/openspot/data/links/icons/none.test.none").path
 
-            for _ in 0..<50 where !FileManager.default.fileExists(atPath: marker) {
-                try await Task.sleep(nanoseconds: 100_000_000)
-            }
+            try await self.wait("the mark of no icon", seconds: 30) { self.placed(at: marker) }
             let before = try self.read("fetched", in: folder)
             let items = try await links.items(timeout: 60).items
             let site = items.first { $0.title == "Site" }
@@ -143,7 +139,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "input.title=Site\ninput.url=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
             let frames = save.start()
 
-            try await self.wait("sips") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("sips.pid").path) }
+            try await self.wait("sips") { !self.lines(at: folder.appendingPathComponent("sips.pid").path).isEmpty }
             save.stop()
             for try await _ in frames {}
             try await self.wait("the end of the save") { !save.isRunning }
@@ -219,11 +215,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let expected = data.appendingPathComponent("icons/icons.test.png").path
 
             _ = try await links.submit(edit, item: row, draft: draft, timeout: 60)
-            for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
-                try await Task.sleep(nanoseconds: 100_000_000)
-            }
-
-            XCTAssertTrue(FileManager.default.fileExists(atPath: expected))
+            try await self.wait("the icon", seconds: 30) { self.placed(at: expected) }
         }
     }
 

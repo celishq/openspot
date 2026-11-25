@@ -161,8 +161,8 @@ final class DictateExampleTests: SampleSpotsCase {
 
         var frames = script.start().makeAsyncIterator()
         script.send(text: "call=1\narg=press\ninput.item=whisper\n\n")
-        try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
-        let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
+        try await wait("curl") { !self.lines(at: pidFile.path).isEmpty }
+        let curl = try XCTUnwrap(pid_t(lines(at: pidFile.path)[0]))
         defer { kill(curl, SIGKILL) }
         script.send(text: "call=2\narg=show\n\n")
         let during = try await Self.collect(&frames, until: ["2"])
@@ -183,7 +183,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
     private func server(in folder: URL) async throws -> pid_t {
         let file = folder.appendingPathComponent("server")
-        try await wait("the server") { FileManager.default.fileExists(atPath: file.path) }
+        try await wait("the server") { self.placed(at: file.path) }
         return try XCTUnwrap(pid_t(try read("server", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
@@ -211,8 +211,8 @@ final class DictateExampleTests: SampleSpotsCase {
 
         var frames = script.start().makeAsyncIterator()
         script.send(text: "call=1\narg=dictate\n\n")
-        try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
-        let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
+        try await wait("curl") { !self.lines(at: pidFile.path).isEmpty }
+        let curl = try XCTUnwrap(pid_t(lines(at: pidFile.path)[0]))
         defer { kill(curl, SIGKILL) }
         script.send(text: "call=2\narg=press\ninput.item=whisper\n\n")
         _ = try await Self.collect(&frames, until: ["1", "2"])
@@ -226,7 +226,7 @@ final class DictateExampleTests: SampleSpotsCase {
         try """
         #!/bin/sh
         [ "$1 $2" = "clipboard paste" ] || exit 0
-        touch '\(folder.path)/pasting'
+        echo > '\(folder.path)/pasting'
         n=0; while [ ! -f '\(folder.path)/go' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
         """.writeScript(to: tools.appendingPathComponent("openspot"))
         var base = TestEnvironment.values
@@ -263,7 +263,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let name = board.name.rawValue
         async let fault = Self.paste("Spoken words", on: name, in: folder)
-        try await wait("the paste") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("pasting").path) }
+        try await wait("the paste") { !self.lines(at: folder.appendingPathComponent("pasting").path).isEmpty }
         let pasted = board.string(forType: .string)
         board.clearContents()
         board.setString("Mine", forType: .string)

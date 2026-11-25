@@ -49,7 +49,7 @@ final class ActionFormTests: PanelCase {
 
         model.setFormValue("https://good.example", for: "url")
         model.submitForm()
-        try await wait("the call") { FileManager.default.fileExists(atPath: given) && self.model.form == nil }
+        try await wait("the call") { (try? String(contentsOfFile: given, encoding: .utf8)) == "https://good.example 5 m false" && self.model.form == nil }
         XCTAssertEqual(try String(contentsOfFile: given, encoding: .utf8), "https://good.example 5 m false")
     }
 }

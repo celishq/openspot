@@ -292,7 +292,7 @@ final class SpotVerbTests: XCTestCase {
         model.menu?.select(try XCTUnwrap(menu.rows.last?.action))
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
 
-        try await wait("the call of the stars spot") { saved("calls") != nil }
+        try await wait("the call of the stars spot") { self.lines(at: calls) == ["star weather"] }
         XCTAssertEqual(saved("calls"), "star weather\n")
     }
 
@@ -315,14 +315,14 @@ final class SpotVerbTests: XCTestCase {
     func testAMenuRowThatAnotherSpotRunsKeepsTheMenuUntilItsRunEnds() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("weather", toml: "title = 'Weather'")
-        try "#!/bin/sh\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: core.appendingPathComponent("openspot.spot/stars.sh"), toml: "title = 'Stars'\n\n[actions.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']")
+        try "#!/bin/sh\n[ \"$1\" = star ] && echo > '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: core.appendingPathComponent("openspot.spot/stars.sh"), toml: "title = 'Stars'\n\n[actions.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']")
         _ = try await select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let row = try XCTUnwrap(model.menu?.rows.last)
         model.menu?.select(try XCTUnwrap(row.action))
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
-        try await wait("the run of the star") { FileManager.default.fileExists(atPath: gate + ".run") }
+        try await wait("the run of the star") { !self.lines(at: gate + ".run").isEmpty }
         XCTAssertNotNil(model.menu)
 
         try Data().write(to: URL(fileURLWithPath: gate))

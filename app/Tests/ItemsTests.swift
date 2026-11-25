@@ -198,7 +198,7 @@ final class ItemsTests: PanelCase {
         try script("slow", toml: "title = 'Slow'", """
         case "$1" in
           show) printf 'item=milk\\ntitle=Milk\\n' ;;
-          press) touch '\(started)'; n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done ;;
+          press) echo > '\(started)'; n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done ;;
         esac
         """)
         await model.reload()
@@ -208,7 +208,7 @@ final class ItemsTests: PanelCase {
         try await wait("the row") { self.model.openItems?.shown.map(\.run) == ["milk"] }
 
         model.runSelectedItem()
-        try await wait("the press") { FileManager.default.fileExists(atPath: started) }
+        try await wait("the press") { !self.lines(at: started).isEmpty }
         XCTAssertEqual(host.dismissals, 0)
         FileManager.default.createFile(atPath: gate, contents: Data())
 
