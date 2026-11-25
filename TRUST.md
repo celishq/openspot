@@ -146,8 +146,9 @@ account in another Nostr client.
 
 - `openspot account show` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle`
   it was made with, the day it was made (`since`), whether its words are backed up, and whether it syncs.
-- No call makes, changes or removes the account key, and none prints or takes the 12 words. Only the Account page of
-  Settings does, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
+- No call prints or takes the 12 words. `account new`, `account sign-out` and `account sync` answer only a spot of
+  `spots/openspot.spot` that names `account` in its uses. The Account page of Settings shows, checks and takes the words
+  inside the app, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
   minutes, and only for the act it was asked for. A Mac with neither a password nor Touch ID cannot unlock the key.
 - `store publish` signs with the key, so it answers only a spot of `spots/openspot.spot` that names `account` in its
   uses, and only while the app runs. Openspot removes `account` from the uses of any other spot, and

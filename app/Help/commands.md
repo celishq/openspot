@@ -78,7 +78,8 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot allow <id> <use>` | Lets a spot that `spot add` added make the calls of a use that its `spot.toml` doesn't name, and records the use in `spots.lock`, as an update with `--yes` does. Only the person can run it. |
 | `openspot spot allow <id>` | Opens Settings at a spot, and walks the person through each macOS access that it lacks, one at a time, beside System Settings. |
 | `openspot spot list [--core] [--json]` | Prints an `item=<id>` record for each spot: its `state=` (`ready`, `access`, `review` or `off`), its `uses=`, the macOS accesses it `needs=` that are denied or not asked yet, the uses it was `refused=`, the time of its last call of each use as `last.<use>=`, and the accesses that the calls of each use need as `access.<use>=`, or may need as `maybe.<use>=`. `--core` prints each spot that comes with Openspot, with `on=`. |
-| `openspot setting list [--spot <id>] [--json]` | Prints a record for each row of Settings, of the app and of each spot, or of one spot, `openspot` for the app: `item=`, `spot=`, `name=` (the spot's name), `key=` (what `setting set` takes), `title=`, `value=` (`set` for a secret), `kind=`, `section=`, `icon=` and `detail=`. |
+| `openspot setting list [--spot <id>] [--json]` | Prints a record for each row of Settings, of the app and of each spot, or of one spot, `openspot` for the app: `item=`, `spot=`, `name=` (the spot's name), `key=` (what `setting set` takes), `title=`, `value=` (`set` for a secret), `kind=`, `section=`, `icon=` and `detail=`, and for a choice its `options=` and `default=`. |
+| `openspot setting remove [--spot <id>] <key>` | Removes a value, a secret too. Only you can, in Settings or in Terminal; a spot cannot. |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |
@@ -124,3 +125,6 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot theme list [--json]` | Prints an `item=<name>` record for each theme, with `builtin=true` and `used=true` where they hold, and its colours: `dark.background=`, `dark.ink=`, `dark.accent=`, and the same of `light`. |
 | `openspot app restart` | Ends the running app and starts it again. A guided grant at a step that needs the start, such as Screen Recording, opens again at that step. |
 | `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish.                             |
+| `openspot account new [<handle>]` | Makes the account key, with the handle, and prints the account's record. Only Openspot's own spots can run it. |
+| `openspot account sign-out` | Removes the account key from this Mac. Only Openspot's own spots can run it. |
+| `openspot account sync on` | Keeps the account key in iCloud Keychain; `off` stops it. Only Openspot's own spots can run it. |

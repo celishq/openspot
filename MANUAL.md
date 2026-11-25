@@ -24,7 +24,7 @@ Every spot answers the same keys, so you learn them once.
 ## Change Settings
 
 Settings is one window with every setting of Openspot and of its spots. Search for Settings in the panel and press
-Return to open it. `⌘` Return on a card opens it at that spot.
+Return to open it, or press `⌘`, in the panel. `⌘` Return on a card opens it at that spot.
 
 Its sidebar holds seven sections:
 
