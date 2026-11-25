@@ -20,6 +20,22 @@ struct SpotClipboard: MacClipboard {
         NSPasteboard.general.string(forType: .string) ?? ""
     }
 
+    func types() -> Set<String> {
+        Set(NSPasteboard.general.types?.map(\.rawValue) ?? [])
+    }
+
+    func files() -> [URL] {
+        NSPasteboard.general.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+    }
+
+    func count() -> Int {
+        NSPasteboard.general.changeCount
+    }
+
+    func image() -> Data? {
+        NSPasteboard.general.data(forType: .png) ?? NSPasteboard.general.data(forType: .tiff)
+    }
+
     func paste() throws {
         guard AXIsProcessTrusted() else {
             throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", URL(string: Self.accessibility)!)

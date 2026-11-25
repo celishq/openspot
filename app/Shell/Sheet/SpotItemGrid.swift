@@ -237,6 +237,7 @@ private struct GridFollow: ViewModifier {
     }
 
     private func show(_ index: Int) {
+        guard items.indices.contains(index) else { return }
         let line = index / perLine * perLine
         SpotItemIcon.prepare(items[min(line, items.count)..<min(line + Self.linesAhead * perLine, items.count)], size: SpotTokens.listIconSize)
         guard reading.viewHeight > 0 else { return }

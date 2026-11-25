@@ -7,7 +7,7 @@ find app/Core app/Shell app/Client app/Shared -name '*.swift' | sort | while rea
   awk -v f="$file" '
     BEGIN {
       n = split(f, part, "/"); base = part[n]; sub(/\.swift$/, "", base); sub(/\+.*/, "", base)
-      disk = "FileManager\\.default\\.(fileExists|contents|attributesOfItem|enumerator|subpaths|destinationOfSymbolicLink|isReadable|isExecutable)|(Data|String|NSData|NSImage|NSDictionary)\\(contentsOf|contentsOfFile|resourceValues\\(|[^A-Za-z_.]l?stat\\(|\\.scan\\(\\)|\\.read\\(\\)"
+      disk = "FileManager\\.default\\.(fileExists|contents|attributesOfItem|enumerator|subpaths|destinationOfSymbolicLink|isReadable|isExecutable)|(Data|String|NSData|NSImage|NSDictionary)\\(contentsOf|contentsOfFile|resourceValues\\(|[^A-Za-z_.]l?stat\\(|\\.scan\\(\\)|\\.read\\(\\)|[^A-Za-z_.]fopen\\(|[^A-Za-z_.]fread\\(|[^A-Za-z_.]readPlist\\("
     }
     function count(s, c,  t) { t = s; return gsub(c, "", t) }
     depth > 0 {

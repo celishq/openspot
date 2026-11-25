@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 root="$PWD"
 tasks="$root/scripts/agent-eval"
 out="$root/.temp/agent-eval"
-real="$out/build/Build/Products/Debug/Openspot.app/Contents/Helpers/openspot"
+real="$out/build/Build/Products/Debug/Openspot Nightly.app/Contents/Helpers/openspot"
 
 if [ "$1" = "--run" ]; then
   set +e

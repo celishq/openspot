@@ -23,6 +23,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let base: [String: String]?
     private let folder: URL?
     private let stopPause: TimeInterval
+    private let clock: RunClock
     private let input = Pipe()
     private let output = Pipe()
     private let errorOutput = Pipe()
@@ -52,8 +53,9 @@ public final class ScriptProcess: @unchecked Sendable {
     var fix: @Sendable () -> URL? = { nil }
     var channel: RunChannel?
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, clock: RunClock = RunClock(), build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
+        self.clock = clock
         self.build = build
         building = build != nil
         self.base = base
@@ -171,7 +173,7 @@ public final class ScriptProcess: @unchecked Sendable {
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
-            lock.withLock { limitEnd = Date().addingTimeInterval(limit) }
+            lock.withLock { limitEnd = clock.now().addingTimeInterval(limit) }
             armLimit()
         }
         follow(output: output, errors: errors)
@@ -180,7 +182,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private func armLimit() {
         let (turn, end) = lock.withLock { (limitTurn, limitEnd) }
         guard let end else { return }
-        DispatchQueue.global().asyncAfter(deadline: .now() + max(0, end.timeIntervalSinceNow)) { [weak self] in
+        clock.after(end.timeIntervalSince(clock.now())) { [weak self] in
             guard let self, lock.withLock({ !hasFrame && limitHolds == 0 && limitTurn == turn }) else { return }
             stop(because: SpotError.timedOut)
         }
@@ -190,7 +192,7 @@ public final class ScriptProcess: @unchecked Sendable {
         lock.withLock {
             limitHolds += 1
             guard limitHolds == 1 else { return }
-            heldSince = Date()
+            heldSince = clock.now()
             limitTurn += 1
         }
     }
@@ -201,7 +203,7 @@ public final class ScriptProcess: @unchecked Sendable {
             guard limitHolds == 0, let since = heldSince else { return false }
             heldSince = nil
             limitTurn += 1
-            limitEnd = limitEnd?.addingTimeInterval(Date().timeIntervalSince(since))
+            limitEnd = limitEnd?.addingTimeInterval(clock.now().timeIntervalSince(since))
             return true
         }
         if isFree { armLimit() }

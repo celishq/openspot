@@ -2,7 +2,7 @@ import XCTest
 
 final class CheckScriptTests: XCTestCase {
     private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "shapes", "tools"]
-    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes", "shapes"]
+    private static let lists = ["names", "files", "getters", "test-pauses", "spot-clocks", "spot-state", "processes", "shapes", "test-clocks", "core-timers"]
 
     private static let breaches: [(check: String, file: String, text: String)] = [
         ("core", "app/Core/Panel.swift", "@preconcurrency import AppKit\n"),
@@ -10,6 +10,9 @@ final class CheckScriptTests: XCTestCase {
         ("tests", "app/Tests/PanelTests.swift", "let text = NSPasteboard" + ".general.string(forType: .string)\n"),
         ("tests", "app/Tests/PanelTests.swift", "try await Task" + ".sleep(for: .seconds(1))\n"),
         ("tests", "app/Tests/PanelTests.swift", "set" + "env(\"HOME\", \"/tmp\", 1)\n"),
+        ("tests", "app/Tests/PanelTests.swift", "await Task" + ".yield()\n"),
+        ("tests", "app/Tests/PanelTests.swift", "let start = Continuous" + "Clock.now\n"),
+        ("core", "app/Core/Panel.swift", "DispatchQueue.main.async" + "After(deadline: .now()) {}\n"),
         ("comments", "app/Core/Panel.swift", "struct Panel {}\n// a note\n"),
         ("comments", "scripts/build.sh", "#!/bin/sh\n# a note\necho\n"),
         ("motion", "app/Shell/Panel.swift", "withAnimation(." + "spring(duration: 0.3)) {}\n"),
@@ -96,7 +99,7 @@ final class CheckScriptTests: XCTestCase {
         for list in Self.lists {
             let root = try cleanTree()
             try "app/Core/Gone.swift\n".write(to: root.appendingPathComponent("scripts/breaks/\(list).txt"), atomically: true, encoding: .utf8)
-            let check = list.hasPrefix("spot") ? "spots" : list == "test-pauses" ? "tests" : list
+            let check = list.hasPrefix("spot") ? "spots" : list.hasPrefix("test-") ? "tests" : list == "core-timers" ? "core" : list
 
             XCTAssertEqual(try status(of: check, in: root), 1, list)
         }

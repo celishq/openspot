@@ -56,6 +56,7 @@ extension SpotsModel {
 
     public func sheetEntry(_ id: String?) -> Entry? {
         guard let id else { return nil }
+        if let held = leavingSheet(id) { return held.entry }
         if let entry = entry(id) { return entry }
         guard OwnedSheet.owner(of: id) != nil, let run = sheets[id] else { return nil }
         return Entry(spot: run.spot, run: run)
@@ -66,15 +67,17 @@ extension SpotsModel {
     }
 
     public func stepBack() -> Bool {
-        if !searchText.isEmpty {
-            searchText = ""
-        } else if popPage() {
-        } else if openSheetID != nil {
-            closeSheet(moving: isShown)
-        } else {
-            return false
+        asOnePress {
+            if !searchText.isEmpty {
+                search("")
+            } else if popPage() {
+            } else if openSheetID != nil {
+                closeSheet(moving: isShown)
+            } else {
+                return false
+            }
+            return true
         }
-        return true
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
@@ -96,8 +99,10 @@ extension SpotsModel {
     }
 
     public func openSettings() {
-        guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
-        pushFirst(id, moving: true)
+        asOnePress {
+            guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
+            pushFirst(id, moving: true)
+        }
     }
 
     @discardableResult
@@ -126,35 +131,47 @@ extension SpotsModel {
         present(id, moving: moving)
     }
 
+    func leavingSheet(_ id: String?) -> ClosingSheet? {
+        guard transition.phase == .closing, let held = closingSheet, held.id == id else { return nil }
+        return held
+    }
+
     func present(_ id: String, moving: Bool) {
-        closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
-        closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
-        pendingAsk = nil
-        keys.status = nil
-        askedAnswer = nil
-        stopRecording()
-        showSheet(nil, moving: moving) {
-            runs.closeOpen()
-            endFlow()
+        asOnePress {
+            let closing = moving ? openSheetID.flatMap { id in
+                sheets[id].map { ClosingSheet(id: id, page: SheetPage(run: $0, rect: $0.sheetRect, query: searchText), entry: sheetEntry(id)) }
+            } : nil
+            if closing != closingSheet { closingSheet = closing }
+            pendingAsk = nil
+            keys.status = nil
+            askedAnswer = nil
+            stopRecording()
+            showSheet(nil, moving: moving) {
+                runs.closeOpen()
+                endFlow()
+            }
         }
     }
 
     public func close(_ place: ViewPlace) {
-        switch place {
-        case .card, .sample: break
-        case .sheet(let id): if openSheetID == id { closeSheet(moving: true) }
-        case .detached(let id): if runs.floating.contains(id) { land(id) }
+        asOnePress {
+            switch place {
+            case .card, .sample: break
+            case .sheet(let id): if openSheetID == id { closeSheet(moving: true) }
+            case .detached(let id): if runs.floating.contains(id) { land(id) }
+            }
         }
     }
 
     public func panelDidHide() {
         isPanelHidden = true
         hiddenAt = runs.now()
+        isAttachmentOpen = false
         if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()
@@ -166,48 +183,50 @@ extension SpotsModel {
     }
 
     func showSheet(_ list: String?, moving: Bool, ending: () -> Void = {}) {
-        guard list != openSheetID else {
+        asOnePress {
+            guard list != openSheetID else {
+                dropWaitingPush()
+                return ending()
+            }
+            if let list, openSheetID != nil, transition.isOpen {
+                let swapped = takeWaitingPush { [weak self] in
+                    self?.transition.show(list, moves: true)
+                    self?.transition.settle(list)
+                }
+                guard !swapped else { return }
+                change(moving ? .sheet(isOpen: true) : nil, {
+                    transition.show(list, moves: true)
+                }) { [weak self] in
+                    self?.snap { self?.transition.settle(list) }
+                }
+                return
+            }
             dropWaitingPush()
-            return ending()
-        }
-        if let list, openSheetID != nil, transition.isOpen {
-            let swapped = takeWaitingPush { [weak self] in
-                self?.transition.show(list, moves: true)
-                self?.transition.settle(list)
+            guard moving, hasPlace(list ?? transition.id) else {
+                cutSheet(to: list)
+                return ending()
             }
-            guard !swapped else { return }
-            change(moving ? .sheet(isOpen: true) : nil, {
-                transition.show(list, moves: true)
-            }) { [weak self] in
-                self?.change(nil) { self?.transition.settle(list) }
+            guard let list else {
+                animate(isOpen: false) {
+                    transition.hide(moves: true)
+                    holdFieldDrop()
+                    ending()
+                }
+                return
             }
-            return
-        }
-        dropWaitingPush()
-        guard moving, hasPlace(list ?? transition.id) else {
-            cutSheet(to: list)
-            return ending()
-        }
-        guard let list else {
-            animate(isOpen: false) {
-                transition.hide(moves: true)
+            closeMenu(keepsFoot: true)
+            snap {
+                transition.show(list, moves: true, page: flow.current)
                 holdFieldDrop()
-                ending()
             }
-            return
-        }
-        closeMenu(keepsFoot: true)
-        change(nil) {
-            transition.show(list, moves: true, page: flow.current)
-            holdFieldDrop()
-        }
-        host.nextFrame { [weak self] in
-            self?.animate(isOpen: true) { self?.transition.start() }
+            host.nextFrame { [weak self] in
+                self?.animate(isOpen: true) { self?.transition.start() }
+            }
         }
     }
 
     func cutSheet(to list: String?) {
-        change(nil) {
+        snap {
             if let list { transition.show(list, moves: false, page: flow.current) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
@@ -228,7 +247,7 @@ extension SpotsModel {
         }) { [weak self] in
             guard let self else { return }
             let isInstall = transition.id != nil && transition.id == fieldSheet
-            change(nil) {
+            snap {
                 self.transition.finish(motion)
                 if isInstall, self.transition.phase == .open {
                     self.fieldDrop = nil
@@ -236,10 +255,7 @@ extension SpotsModel {
                 }
             }
             if isInstall, transition.phase == .closed { hideFieldDrop() }
-            if transition.phase == .closed {
-                endReview()
-                closingPage = nil
-            }
+            if transition.phase == .closed { endReview() }
         }
     }
 
@@ -277,6 +293,10 @@ extension SpotsModel {
         host.change(motion, body, completion: completion)
     }
 
+    func snap(_ body: () -> Void) {
+        host.change(nil, body, completion: {})
+    }
+
     public func moveItemToEdge(last: Bool) {
         openSheet?.list.moveToEdge(last: last)
     }
@@ -304,11 +324,13 @@ extension SpotsModel {
     }
 
     public func createFromSearch() {
-        guard let action = createAction, let entry = openEntry else { return }
-        let query = openItems?.query ?? ""
-        guard let typed = try? entry.spot.action(action.callName), let input = typed.textInput else { return }
-        guard typed.lacksInput else { return call(action, of: entry, query) }
-        show(.form(typed.itemForm(values: [input.name: query], title: action.title)), of: action, on: (entry, nil), prefill: "")
+        asOnePress {
+            guard let action = createAction, let entry = openEntry else { return }
+            let query = openItems?.query ?? ""
+            guard let typed = try? entry.spot.action(action.callName), let input = typed.textInput else { return }
+            guard typed.lacksInput else { return call(action, of: entry, query) }
+            show(.form(typed.itemForm(values: [input.name: query], title: action.title)), of: action, on: (entry, nil), prefill: "")
+        }
     }
 
     public func runItem(_ item: SpotItem) {
@@ -330,54 +352,56 @@ extension SpotsModel {
     }
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
-        if action == nil, !item.records, entry.spot.holdsSettings, let settings = entry.spot.settingsSheet, let key = settings.field(of: item.run) {
-            _ = changeSetting(key, of: settings.spot)
-            return
-        }
-        if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
-            push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
-            return
-        }
-        if place.isDetached {
-            if action == nil, item.records { return press(entry.id) }
-            remember(item, of: entry)
-            sheets[entry.id]?.list.select(run: item.run)
-        } else {
-            if action == nil, item.records {
-                toggleRecording(id: item.run)
+        asOnePress {
+            if action == nil, !item.records, entry.spot.holdsSettings, let settings = entry.spot.settingsSheet, let key = settings.field(of: item.run) {
+                _ = changeSetting(key, of: settings.spot)
                 return
             }
-            if action != nil || (entry.spot.pick == .close && !item.staysOnPick && !entry.spot.takesHandlers) {
-                closingPick = (item, entry)
-                if isShown {
-                    host.dismiss()
-                } else {
-                    finishPick()
+            if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
+                push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
+                return
+            }
+            if place.isDetached {
+                if action == nil, item.records { return press(entry.id) }
+                remember(item, of: entry)
+                sheets[entry.id]?.list.select(run: item.run)
+            } else {
+                if action == nil, item.records {
+                    toggleRecording(id: item.run)
+                    return
+                }
+                if action != nil || (entry.spot.pick == .close && !item.staysOnPick && !entry.spot.takesHandlers) {
+                    closingPick = (item, entry)
+                    if isShown {
+                        host.dismiss()
+                    } else {
+                        finishPick()
+                    }
                 }
             }
-        }
-        let closes = !place.isDetached && entry.spot.takesHandlers && entry.spot.pick == .close && !item.staysOnPick
-        if let action {
-            perform(action, on: (entry, item))
-        } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
-            if closes { closingPick = (item, entry) }
-            Task { [weak self] in
-                let answer = await sheet.answer(toPick: item, closes: closes)
-                guard let self else { return }
-                switch answer {
-                case .form, .stopped: if closingPick?.item == item { closingPick = nil }
-                default: break
+            let closes = !place.isDetached && entry.spot.takesHandlers && entry.spot.pick == .close && !item.staysOnPick
+            if let action {
+                perform(action, on: (entry, item))
+            } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
+                if closes { closingPick = (item, entry) }
+                Task { [weak self] in
+                    let answer = await sheet.answer(toPick: item, closes: closes)
+                    guard let self else { return }
+                    switch answer {
+                    case .form, .stopped: if closingPick?.item == item { closingPick = nil }
+                    default: break
+                    }
+                    guard case .form(let form) = answer else { return }
+                    let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
+                    switch place {
+                    case .window: toast(.failure("\(item.title) asks with a form, which a window does not show yet."))
+                    case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
+                    case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
+                    }
                 }
-                guard case .form(let form) = answer else { return }
-                let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
-                switch place {
-                case .window: host.notify("\(item.title) asks with a form, which a window does not show yet.")
-                case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
-                case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
-                }
+            } else {
+                sheets[entry.id]?.pick(item, closes: closes)
             }
-        } else {
-            sheets[entry.id]?.pick(item, closes: closes)
         }
     }
 }

@@ -6,13 +6,12 @@ public protocol SpotsHost: AnyObject {
     func show()
     func present()
     func takeFocus()
-    func notify(_ text: String)
-    func notify(_ text: String, fix: URL)
-    func confirm(_ text: String)
-    func work(_ text: String)
+    func toast(_ note: ToastNote, of spot: String)
+    func open(_ url: URL)
     func applyConfig(_ config: Config)
     func paint(_ colours: Theme.Colours)
     func layOut(_ layout: Theme.Layout)
+    func widen()
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
@@ -26,6 +25,7 @@ public protocol SpotsHost: AnyObject {
     var draggedPaths: [String] { get }
     var isMouseDown: Bool { get }
     var pastedPaths: [String] { get }
+    var frontApp: FrontApp? { get }
     func copy(_ file: URL)
     func prepare(_ items: [SpotItem], glyphs: [String]) async
     func prepareCards(glyphs: [String])
@@ -37,11 +37,17 @@ public protocol SpotsHost: AnyObject {
 }
 
 extension SpotsHost {
+    public func toast(_ note: ToastNote, of spot: String) {}
+
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
         change(motion, body) {
             completion()
             removal()
         }
+    }
+
+    public var frontApp: FrontApp? {
+        nil
     }
 
     public func nextFrame(_ body: @escaping @MainActor () -> Void) {

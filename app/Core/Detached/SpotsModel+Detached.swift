@@ -38,9 +38,11 @@ extension SpotsModel {
     }
 
     public func land(_ id: String) {
-        askedWindows.remove(id)
-        runs.land(id)
-        host.land(id)
+        asOnePress {
+            askedWindows.remove(id)
+            runs.land(id)
+            host.land(id)
+        }
     }
 
     public func handleFloatKey(_ key: ActionKey, in id: String) -> Bool {
@@ -91,10 +93,12 @@ extension SpotsModel {
     }
 
     public func pressFloatCard(_ id: String) {
-        guard let entry = card(id: id) else { return }
-        switch entry.kind {
-        case .toggle: sheets[id]?.pressCard()
-        case .launch, .list, .slider: break
+        asOnePress {
+            guard let entry = card(id: id) else { return }
+            switch entry.kind {
+            case .toggle: sheets[id]?.pressCard()
+            case .launch, .list, .slider: break
+            }
         }
     }
 }

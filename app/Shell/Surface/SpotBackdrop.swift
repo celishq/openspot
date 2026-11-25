@@ -9,8 +9,8 @@ struct SpotBackdrop: View {
 
     var body: some View {
         if drawsGlass, SpotTokens.backdrop.reach == .tiles {
-            BackdropShape(rect: model.backdrop.offsetBy(dx: -model.panels.frame.minX, dy: 0), foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
-                .modifier(PanelSpan(panels: model.panels))
+            BackdropShape(rect: model.backdrop, foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
+                .modifier(PanelSpan(grid: model.grid))
                 .modifier(SpotShownFade(isShown: isShown))
                 .allowsHitTesting(false)
         }
@@ -35,15 +35,16 @@ private struct BackdropShape: View, @preconcurrency Animatable {
     var body: some View {
         var rect = rect
         rect.size.height = motion.place(of: foot)
+        let isMoving = motion.progress != 0 && motion.progress != 1
         return ZStack(alignment: .topLeading) {
             switch style {
             case .blur:
-                SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect)
+                SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
             case .tint:
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect)
+                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
             case .veil:
-                SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect)
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect)
+                SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
+                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
             }
         }
     }

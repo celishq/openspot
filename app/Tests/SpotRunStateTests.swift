@@ -130,7 +130,7 @@ final class SpotRunStateTests: XCTestCase {
     func testAToggleThatFailsIsUndone() async throws {
         let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
@@ -354,7 +354,7 @@ final class SpotRunStateTests: XCTestCase {
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
         let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
 
         for _ in 0..<50 { sheet.pressKey("go") }
         XCTAssertEqual(toasts.count, 50 - SpotRun.waitingLimit)

@@ -34,7 +34,7 @@ prints each emoji as an item.
 A read, such as `show`, `search`, `every` or an event's handler, changes nothing and opens nothing, so these commands
 fail in it:
 
-- calls that wait for the person: `color pick` and `folder pick`;
+- calls that wait for the person: `color pick`, `folder pick` and `access ask`;
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
 - calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
   `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove`, `spot delete`,
@@ -52,14 +52,17 @@ can't show a view there.
 
 ## Commands
 
-[Try it from the terminal](../../docs/first-spot.md#try-it-from-the-terminal) shows how the commands that try a spot work together.
+[Try it from the terminal](../../docs/first-spot.md#try-it-from-the-terminal) shows how the commands that try a spot work together. In each command, an app is its bundle ID, such as `com.apple.Safari`.
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
-| `openspot toast <words>...`                        | Shows a short message, even when the panel is closed.                                           |
+| `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](../../docs/reference/commands.md#a-toast) has the options. |
+| `openspot toast --remove <id>`                     | Takes the spot's toast with the id away.                                                        |
 | `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |
+| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field as the spot's chip: `file=` once for each file, `url=` or `text=`. `icon=` takes what `icon` in spot.toml takes. |
+| `openspot attachment add clipboard [--within <age>]` | Puts what the clipboard holds in the panel's field: its files, a link, a text or an image, and nothing for a password. The chip keeps the first million characters of a longer text, and the spot that takes it gets the whole text, read when people hand it on. An image is saved to a file only then. With `--within`, it adds only a copy that Openspot first saw within the age, as `clipboard read` takes it. It needs `attachment` and `clipboard` in `uses`. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a route of the spot over the sheet that shows.                                   |
 | `openspot route back [--root]`                     | Goes back one sheet of the spot, or to its first sheet.                                         |
 | `openspot route close`                             | Takes each sheet of the spot off.                                                               |
@@ -71,7 +74,7 @@ can't show a view there.
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
-| `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
+| `openspot spot delete <id>`                        | Moves a spot to the Trash.                                                                      |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
@@ -107,6 +110,13 @@ can't show a view there.
 | `openspot import rayconfig <file> [--dry-run]`     | Opens a Raycast export with its passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints an item for each kind of data it holds, with what it added or why it skipped it. `--skip links` or `--skip snippets` leaves out a kind. `--dry-run` changes nothing. |
 | `openspot import extensions [folder]`              | Prints an item for each Raycast extension in `~/.config/raycast/extensions`, or in the folder: the spot that does its job, and whether you have it or can get it, or else that an agent can make one with `prompt convert`. It changes nothing. |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
+| `openspot browser tab <app>` | Prints the `url=`, `title=` and `app=` of the front tab of the browser `<app>`, or nothing when it is not running. |
+| `openspot browser tabs <app>` | Prints a record for each tab of each window of the browser `<app>`: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
+| `openspot selection read <app>` | Prints what is selected in the app `<app>`, and its `app=`: a `file=` for each file selected in Finder, or the `text=` selected in another app. It prints nothing when the app is not running or has no selection. |
+| `openspot front app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
+| `openspot clipboard read [--within <age>]` | Prints the text on the clipboard. With `--within`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
+| `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
+| `openspot access ask <app\|accessibility>` | Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

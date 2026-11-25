@@ -2,8 +2,6 @@ app/Tests/AgendaExampleTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
-app/Tests/CalculatorSpotTests.swift	Task.sleep
-app/Tests/CalculatorSpotTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep
@@ -39,6 +37,4 @@ app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunsCase.swift	Task.sleep
 app/Tests/StatsLogTests.swift	Task.sleep
-app/Tests/SpotsModelDragTests.swift	Task.sleep
-app/Tests/SpotsModelDragTests.swift	Task.sleep
 app/Tests/TestChildTests.swift	Task.sleep

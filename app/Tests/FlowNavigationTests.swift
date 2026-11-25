@@ -28,7 +28,7 @@ final class FlowNavigationTests: PanelCase {
     func testEscClearsTheSearchThenStepsBackThenClosesTheSheet() async throws {
         try await openList()
         try await openPage()
-        model.searchText = "de"
+        model.search("de")
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.searchText, "")
@@ -373,7 +373,7 @@ final class FlowNavigationTests: PanelCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        model.searchText = "hub"
+        model.search("hub")
         try await wait("the found hub") { self.model.visible.map(\.id) == ["hub"] }
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
         try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }

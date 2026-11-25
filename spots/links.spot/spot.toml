@@ -11,6 +11,12 @@ inputs.title = "text"
 inputs.links = { type = "text", required = true, description = "A JSON list of links, each with a title and a url" }
 outputs.added = { type = "text", required = true, description = "How many links it added, in words" }
 
+[actions.add]
+title = "Add to Links"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true, description = "The link to keep" }
+inputs.title = "text"
+
 [on]
 "panel.open" = true
 search = true

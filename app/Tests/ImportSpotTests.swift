@@ -125,7 +125,7 @@ final class ImportSpotTests: BuiltInCase {
         ])
         XCTAssertEqual(block("export", in: hub)?.value("detail"), "Enter the passphrase to open it")
         XCTAssertTrue(try sheet.takesFolders)
-        XCTAssertTrue(try sheet.accepts(FileKinds([export.path], kinds: [export.path: .file])))
+        XCTAssertTrue(try sheet.takes(AttachmentValue(files: FileKinds([export.path], kinds: [export.path: .file]))))
     }
 
     func testTheScriptsPageListsWhatItAddsAndImportsIt() async throws {

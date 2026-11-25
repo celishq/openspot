@@ -42,7 +42,7 @@ public final class PlaygroundPanel {
             try manager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
         }
         self.file = target
-        try model.files.config.change { $0.arrangement = SpotArrangement(choices: [SpotArrangement.Choice(id: id, isOnGrid: true)]) }
+        try model.files.config.change { $0.arrangement = SpotChoices(choices: [SpotChoices.Choice(id: id, isOnGrid: true)]) }
         await model.reload()
         model.panelWillShow()
         return id

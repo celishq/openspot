@@ -41,7 +41,7 @@ final class StatsLogTests: SpotRunsCase {
 
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
-        runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
+        runs = SpotRuns(showLimit: 2 * 24 * 60 * 60, clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
         try script(toml: "stay = true", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
@@ -109,7 +109,7 @@ final class StatsLogTests: SpotRunsCase {
     func testAChangeIsNotWrittenBeforeItsPauseOfAMinute() async throws {
         let usual = StatsLog(folder: stats, at: day)
         let other = folder.appendingPathComponent("other", isDirectory: true)
-        let sooner = StatsLog(folder: other, at: day, pause: 5.5)
+        let sooner = StatsLog(folder: other, at: day, pause: 0.5)
 
         usual.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
         sooner.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)

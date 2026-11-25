@@ -9,7 +9,7 @@ struct CallContext {
     let runs: SpotRuns?
     let account: Account?
     let secrets: SecretStore
-    let trash: @Sendable (URL) throws -> URL
+    let trash: @Sendable (URL) throws -> Void
     let raise: (@Sendable (AppSignal) async -> Void)?
     let caller: Spot?
     let spot: String?

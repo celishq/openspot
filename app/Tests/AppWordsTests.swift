@@ -50,6 +50,22 @@ final class AppWordsTests: XCTestCase {
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in [actions.share]: shortcut"])
     }
 
+    func testEverySpotMayOfferAnActionOnlyToAttachments() throws {
+        let folder = try temporaryFolder()
+        try write(folder.appendingPathComponent("mine/keep.spot/keep.sh"), toml: "title = 'Keep'\n[actions.add]\ntitle = 'Keep it'\noffers = ['attachments']\ninputs.url = { type = 'url', required = true }")
+        try write(folder.appendingPathComponent("mine/menu.spot/menu.sh"), toml: "title = 'Menu'\n[actions.go]\ntitle = 'Go'\noffers = ['actions']")
+
+        let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+        let keep = try XCTUnwrap(scan.spots.first)
+
+        XCTAssertEqual(scan.spots.map(\.id), ["keep"])
+        XCTAssertEqual(keep.commands.map(\.id), [])
+        XCTAssertNil(keep.soleCommand)
+        XCTAssertEqual(keep.offeredActions, [])
+        XCTAssertTrue(keep.isOnGrid)
+        XCTAssertEqual(scan.refused.map(\.reason), ["Menu has offers = [\"actions\"] in [actions.go]. A spot offers only offers = [\"attachments\"]"])
+    }
+
     func testAnOfferedActionOfASpotOfTheAppCallsItsHandlerWithTheCard() async throws {
         let folder = try temporaryFolder()
         let heard = folder.appendingPathComponent("heard")

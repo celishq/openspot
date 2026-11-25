@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 cd "$(dirname "$0")/.."
-app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}
+app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly}
 work=$PWD/.temp/docs-images
 echo "This shows each picture in the middle of the main screen and takes the keyboard focus for about a second per picture. A key typed then is lost."
 rm -rf "$work"

@@ -30,17 +30,22 @@ public struct ScreenPlace: Sendable {
     }
 
     public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?, window: CGRect?, pointer: CGPoint) -> CGPoint? {
+        guard let anchor = toastAnchor(inset: inset, under: item, window: window, pointer: pointer) else { return nil }
+        let x = item == nil ? anchor.midX - size.width / 2 : min(max(anchor.midX - size.width / 2, anchor.area.minX), anchor.area.maxX - size.width)
+        return CGPoint(x: x.rounded(.down), y: (anchor.top - size.height).rounded(.down))
+    }
+
+    public func toastAnchor(inset: CGFloat, under item: CGRect?, window: CGRect?, pointer: CGPoint) -> ToastAnchor? {
         guard let target = screen(window: window, pointer: pointer) else { return nil }
         let lift = inset - SpotTokens.toastGap
         let area = target.area
         guard let item, let home = screens.first(where: { $0.frame.intersects(item) }) else {
-            return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.maxY - size.height + lift).rounded(.down))
+            return ToastAnchor(midX: area.midX, top: area.maxY + lift, area: area)
         }
         let isHome = home.frame == target.frame
         let midX = isHome ? item.midX : item.midX + target.frame.maxX - home.frame.maxX
         let top = isHome ? item.minY : area.maxY
-        let x = min(max(midX - size.width / 2, area.minX), area.maxX - size.width)
-        return CGPoint(x: x.rounded(.down), y: (top - size.height + lift).rounded(.down))
+        return ToastAnchor(midX: midX, top: top + lift, area: area)
     }
 
     public static func toastWindow(panel: CGRect?, isPanelShown: Bool, isAppInFront: Bool, front: () -> CGRect?) -> CGRect? {

@@ -269,6 +269,20 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
+    func testAddToLinksKeepsTheLinkOfAChipUnderItsTitleOrItsLink() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { _ in
+            XCTAssertEqual(try links.action("add").title, "Add to Links")
+
+            try await links.perform("add", input: "input.url=https://github.com/a/b\ninput.title=Docs\n", timeout: 60)
+            try await links.perform("add", input: "input.url=https://example.com/c\n", timeout: 60)
+
+            let saved = try await links.items(timeout: 60).items
+            XCTAssertEqual(saved.suffix(2).map(\.title), ["Docs", "https://example.com/c"])
+            XCTAssertEqual(saved.suffix(2).map(\.subtitle), ["github.com", "example.com"])
+        }
+    }
+
     func testLinksRefusesALinkWithSpaces() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { _ in

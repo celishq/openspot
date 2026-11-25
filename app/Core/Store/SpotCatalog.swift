@@ -31,10 +31,10 @@ public struct SpotCatalog: Sendable {
 
     let published: URL
     let folder: SpotsFolder
-    let arrangement: SpotArrangement
+    let arrangement: SpotChoices
     let stores: [Store]
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store]) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotChoices, stores: [Store]) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement

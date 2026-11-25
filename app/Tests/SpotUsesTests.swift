@@ -18,7 +18,7 @@ final class SpotUsesTests: SpotRunsCase {
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
-            if case .toast(let text) = report { toasts.append(text) }
+            if case .toast(let note) = report { toasts.append(note.words) }
         }
     }
 
@@ -192,7 +192,7 @@ final class SpotUsesTests: SpotRunsCase {
         try script(toml: "uses = ['camera']")
 
         XCTAssertEqual(try SpotsFolder(url: folder).scan().refused.map(\.reason), [
-            "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files or timer"
+            "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment or read"
         ])
     }
 

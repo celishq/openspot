@@ -10,6 +10,11 @@ inputs.title = "text"
 inputs.snippets = { type = "text", required = true, description = "A JSON list of snippets, each with a title, a text and a keyword" }
 outputs.added = { type = "text", required = true, description = "How many snippets it added, in words" }
 
+[actions.save]
+title = "Save as a snippet"
+offers = ["attachments"]
+inputs.text = { type = "text", required = true, description = "The text to keep" }
+
 [on]
 "panel.open" = true
 search = true

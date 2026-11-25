@@ -6,4 +6,8 @@ if grep -rnE --include='*.swift' '^[[:space:]]*(@[[:alnum:]_]+(\([^)]*\))?[[:spa
   echo "app/Core imports a module outside its list; see Core and Shell in AGENTS.md." >&2
   exit 1
 fi
+found=$(mktemp)
+trap 'rm -f "$found"' EXIT
+grep -rEo --include='*.swift' 'asyncAfter' app/Core | grep -v '^app/Core/Run/RunClock\.swift:' | tr ':' '\t' >"$found"
+compare core-timers "$found" "app/Core arms a timer outside RunClock; take the clock of the runs, so that a test can move it:" || exit 1
 echo "Core check passed."

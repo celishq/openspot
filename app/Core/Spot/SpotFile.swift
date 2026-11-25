@@ -26,12 +26,18 @@ public struct SpotFile: Equatable, Sendable {
         if let key = manifest.unknownKey(isApp: isApp) {
             throw SpotError.fault("\(name) has an unknown key in its \(Manifest.fileName): \(key)")
         }
+        if let action = manifest.actions.first(where: { !isApp && $0.appKey == "offers" }) {
+            throw SpotError.fault("\(name) has offers = [\"\(action.offers.first ?? "")\"] in \(action.section). A spot offers only offers = [\"\(Manifest.Action.attachments)\"]")
+        }
         if let action = manifest.actions.first(where: { !isApp && $0.appKey != nil }) {
             throw SpotError.fault("\(name) has an unknown key in \(action.section): \(action.appKey ?? "")")
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
         try manifest.triggers.check(manifest, name: name)
         let uses = try SpotUse.set(manifest.uses, of: name)
+        if uses.contains(.attachment), manifest.triggers.filters[EventName.panelOpen] != nil {
+            throw SpotError.fault("\(name) uses attachment, so its [on] \"panel.open\" takes only true. Tie it to an app with \"attachment.pick\" = \"<regex>\"")
+        }
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         if isInline, manifest.stay == true {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no stay = true")
@@ -48,7 +54,7 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        let titled = manifest.actions.filter { $0.title != nil }
+        let titled = manifest.actions.filter { $0.title != nil && !$0.isChipOnly }
         let offeredActions = try OfferedAction.read(titled, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         let commands = titled.filter { !offeredIDs.contains($0.id) }
@@ -66,7 +72,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has `source = [\"\(source)\"]`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source = [\"model\"]`.")
         }
         let edits = manifest.edits.flatMap(SpotEdits.init(rawValue:))
-        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\".") }
+        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\" or edits = \"attachments\".") }
         let starts = manifest.starts.flatMap(SpotStart.init(rawValue:))
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")

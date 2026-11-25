@@ -71,7 +71,7 @@ final class CallInputTests: SpotRunsCase {
         var told: [String] = []
         runs.onReport = { _, report in
             switch report {
-            case .toast(let text), .failure(let text), .failureWithFix(let text, _): told.append(text)
+            case .toast(let note): told.append(note.words)
             default: break
             }
         }
@@ -119,7 +119,7 @@ final class CallInputTests: SpotRunsCase {
         let sheet = try sheet()
         try secrets(["token": marker])
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.run(CommandAction(id: "login", title: "Log in", scope: .spot), item: nil)
 

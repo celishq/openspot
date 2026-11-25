@@ -1,9 +1,11 @@
 import Foundation
 
 enum SpotEffect: Equatable, Sendable {
-    case toast(String)
+    case toast(ToastNote)
+    case dropToast(String)
     case select(String)
     case route(FlowMove)
+    case attachment(AttachmentValue)
 }
 
 extension SpotEffect {

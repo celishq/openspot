@@ -2,9 +2,17 @@ import Foundation
 
 extension SpotsModel {
     public struct Entry: Identifiable, Equatable {
+        public enum Role: Sendable {
+            case card
+            case item
+            case answer
+            case command
+            case action
+        }
+
         public let id: String
         public let item: SpotItem?
-        public let isAnswer: Bool
+        public let role: Role
         private let sizeChoice: SpotSize?
         private let defaultSize: SpotSize?
         private let run: SpotRun?
@@ -13,36 +21,36 @@ extension SpotsModel {
         private let gridChoice: Bool?
         private let searchChoice: Bool?
         private let wordChoices: [String: String]
-        public let panel: GridPanel
+        public let cells: [Int: GridCell]
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices()) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             searchChoice = choice.isFound(of: spot.id) ?? defaults.isFound(of: spot.id)
             wordChoices = choice.commands(of: spot.id) ?? defaults.commands(of: spot.id) ?? [:]
-            panel = choice.panel(of: spot.id) ?? .center
+            cells = choice.cells(of: spot.id) ?? defaults.cells(of: spot.id) ?? [:]
             item = nil
-            isAnswer = false
+            role = .card
             self.run = run
             fixedSpot = spot
             fixedState = spot.headerState
         }
 
-        public init(spot: Spot, item: SpotItem, isAnswer: Bool = false, detail: String? = nil) {
+        public init(spot: Spot, item: SpotItem, role: Role = .item, detail: String? = nil) {
             id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
             gridChoice = nil
             searchChoice = nil
             wordChoices = [:]
-            panel = .center
+            cells = [:]
             self.item = item
-            self.isAnswer = isAnswer
+            self.role = role
             run = nil
             fixedSpot = spot
-            fixedState = item.card ?? SpotState(title: item.title, subtitle: detail ?? (isAnswer ? item.subtitle ?? spot.name : item.path(in: spot)))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: role == .action ? detail : detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
         }
 
         @MainActor public var commandWords: [(name: String, word: String)] {
@@ -56,8 +64,8 @@ extension SpotsModel {
             run?.spot ?? fixedSpot
         }
 
-        public var isSizeChosen: Bool {
-            sizeChoice != nil
+        public func cell(in grid: GridLayout) -> GridCell? {
+            cells[grid.columns]
         }
 
         @MainActor public var size: SpotSize {
@@ -118,7 +126,7 @@ extension SpotsModel {
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
-            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel && lhs.defaultSize == rhs.defaultSize && lhs.isAnswer == rhs.isAnswer
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.cells == rhs.cells && lhs.defaultSize == rhs.defaultSize && lhs.role == rhs.role
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

@@ -32,7 +32,7 @@ public struct ActionKey: Hashable, Sendable {
     private init?(_ key: KeyText) {
         guard key.modifiers.isSubset(of: [.command, .shift]) else { return nil }
         let name = key.name
-        let isNamed = name == "return" || name == "backspace" || name == ","
+        let isNamed = name == "return" || name == "backspace" || name == "tab" || name == ","
         if name == "escape" {
             guard key.modifiers.isEmpty else { return nil }
         } else {

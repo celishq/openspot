@@ -31,7 +31,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertFalse(spot.triggers.showsOnPanel)
         XCTAssertTrue(spot.showsOfferedItems)
         XCTAssertTrue(spot.showsInSheet)
-        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
+        XCTAssertEqual(SpotChoices().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
     func testAReadStartsOneOpenspotAndNoJq() async throws {

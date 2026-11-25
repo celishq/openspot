@@ -119,6 +119,13 @@ public struct ConfigDocument: Equatable, Sendable {
         values[key] = value
     }
 
+    public mutating func remove(_ key: String) {
+        guard values[key] != nil else { return }
+        head.removeAll { $0.split(separator: "=", maxSplits: 1).first?.trimmingCharacters(in: .whitespaces) == key }
+        keys.removeAll { $0 == key }
+        values[key] = nil
+    }
+
     public var text: String {
         let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + sections.map { $0.text(opening: "[\($0.name)]") }
             + tables.map { $0.text(opening: "[[\($0.name)]]") }

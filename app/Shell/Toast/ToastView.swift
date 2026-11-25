@@ -5,29 +5,36 @@ struct ToastView: View {
     let toast: Toast
 
     var body: some View {
-        HStack(spacing: SpotTokens.toastGlyphGap) {
-            if toast.kind == .work {
-                SpotWorkMark(call: nil, side: SpotTokens.toastMarkSide)
-            } else if let symbol = toast.kind.symbol {
-                Image(systemName: symbol)
-                    .font(SpotType.strong)
+        content
+            .padding(.horizontal, SpotTokens.toastMargin)
+            .padding(.vertical, SpotTokens.toastPaddingY)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let tree = toast.note.tree {
+            NodeTree(tree: tree, pictureTimes: [:])
+                .environment(\.spotSurfaceEdge, SurfaceEdge(radius: SpotTokens.toastRadius).inner(by: SpotTokens.toastPaddingY))
+                .environment(\.spotNode, NodeContext(variants: [.toast]))
+                .fixedSize()
+                .allowsHitTesting(false)
+        } else {
+            HStack(spacing: SpotTokens.toastGlyphGap) {
+                if toast.note.kind == .work {
+                    SpotWorkMark(call: nil, side: SpotTokens.toastMarkSide)
+                } else if let symbol = toast.note.kind.symbol {
+                    Image(systemName: symbol)
+                        .font(SpotType.strong)
+                        .foregroundStyle(SpotTheme.ink)
+                }
+                Self.styled(toast.words)
+                    .textRenderer(ToastKeyFill(fill: SpotTheme.highlight.opacity(SpotTheme.track)))
+                    .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Self.styled(toast.message)
-                .textRenderer(ToastKeyFill(fill: SpotTheme.highlight.opacity(SpotTheme.track)))
-                .font(SpotType.body)
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, SpotTokens.toastMargin)
-        .padding(.vertical, SpotTokens.toastPaddingY)
-        .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
-        .contentShape(Rectangle())
-        .onTapGesture { toast.open?() }
-        .padding(SpotTokens.toastRoom)
-        .environment(\.spotIsShown, toast.isShown)
-        .id(SpotLoadedTheme.shared.layout)
     }
 
     static func styled(_ message: String) -> Text {

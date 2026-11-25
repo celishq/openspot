@@ -136,12 +136,12 @@ final class FlowMoveTests: PanelCase {
 
         try await wait("the close") { self.model.openSheetID == nil }
         XCTAssertNil(model.sheets["flow"]?.route)
-        XCTAssertEqual(model.closingPage?.route, "n0")
-        XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
+        XCTAssertEqual(model.closingSheet?.page.route, "n0")
+        XCTAssertEqual(model.closingSheet?.page.list.all.map(\.title), ["Page n0"])
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
         ends.forEach { $0() }
-        XCTAssertNil(model.closingPage)
+        XCTAssertNil(model.closingSheet)
     }
 
     func testCloseFromAPageGoesBackToTheSpotThatPushedItInOneStep() async throws {

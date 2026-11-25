@@ -1,39 +1,20 @@
 import Foundation
 
 extension SpotsModel {
-    var shelfStart: Int? {
-        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
-        return visible.count - hidden
-    }
-
-    var shelfCards: [Entry] {
-        cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.isFound && $0.spot.fault == nil }
-    }
-
-    var grid: SpotGrid {
-        var placed: [Int: GridPanel] = [:]
-        let split = shelfStart
-        if query.isEmpty {
-            for index in visible.indices where index < (split ?? visible.count) {
-                let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
-                if panel != .center { placed[index] = panel }
-            }
-        }
-        return SpotGrid(split: split, kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
-    }
-
     public func card(id: String) -> Entry? {
         id == fieldSheet ? nil : entry(id)
     }
 
     nonisolated static let unpickedRows = 3
 
-    struct SearchAsk: Sendable {
+    struct SearchAsk {
         let query: SearchQuery
         let lists: [ItemList]
         let search: MainSearch
         let limit: Int
+        let answers: [Entry]
+        let sources: [Spot]
+        let isWhole: Bool
 
         func found() -> (matches: [(list: Int, item: SpotItem)], search: MainSearch) {
             SearchRanks.meter?.add()
@@ -42,32 +23,43 @@ extension SpotsModel {
         }
     }
 
-    public func updateVisible() {
+    public func updateVisible(holding motion: PanelMotion? = .edit) {
+        hold(shownPreview(of: query), motion: motion)
+        showVisible()
+    }
+
+    func showVisible() {
         visibleUpdates += 1
         let text = query.trimmingCharacters(in: .whitespaces)
+        if showsAttachment(of: query) {
+            indexSpots()
+            if slash != nil { slash = nil }
+            content = .attachment
+            foundSpots = []
+            takeVisible(attachmentRows())
+            return
+        }
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
+            content = .cards
             foundSpots = []
-            return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
+            return takeVisible(cards.filter(\.isOnGrid))
         }
-        if spotListIsStale {
-            spotListIsStale = false
-            spotListBuilds += 1
-            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
-            commands = CommandIndex(cards)
-        }
+        indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
         if command != nil, slash == nil { commands = CommandIndex(cards) }
         let rows = command.map(commandEntries) ?? []
         let next = rows.isEmpty ? nil : command
         if slash != next { slash = next }
+        content = rows.isEmpty ? .search : .slash
         if !rows.isEmpty {
             foundSpots = []
-            return show(rows)
+            return takeVisible(rows)
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
-            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
+        let answering = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
+        let answers = answering
+            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, role: .answer) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
@@ -75,50 +67,84 @@ extension SpotsModel {
             query: runs.search(of: text),
             lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
             search: mainSearch,
-            limit: Self.searchLimit - answers.count
+            limit: Self.searchLimit - answers.count,
+            answers: Array(answers),
+            sources: sources.map(\.spot),
+            isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
-        land(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
+        takeFound(ask)
+    }
+
+    private func indexSpots() {
+        guard spotListIsStale else { return }
+        spotListIsStale = false
+        spotListBuilds += 1
+        spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
+        commands = CommandIndex(cards)
     }
 
     private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
         answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
-    private func land(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), answers: [Entry], sources: [Spot]) {
+    private func takeFound(_ ask: SearchAsk) {
+        let found = ask.found()
         mainSearch = found.search
-        let ids = Set(answers.map(\.id))
+        let ids = Set(ask.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let shown = Set(found.matches.filter { $0.list == 0 }.map(\.item.run))
         foundSpots = found.matches.compactMap { match -> Entry? in
             if match.list == 0 { return spots[match.item.run] }
             if match.item.fields.contains(where: { $0.key == "spot" && shown.contains($0.value) }) { return nil }
-            return Entry(spot: sources[match.list - 1], item: match.item)
+            return Entry(spot: ask.sources[match.list - 1], item: match.item)
         }
-        show(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        let next = Self.placed(ask.answers, around: foundSpots.filter { !ids.contains($0.id) })
+        if next.isEmpty, !ask.isWhole, !visible.isEmpty {
+            holdsRows = true
+            return
+        }
+        takeVisible(next)
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
-    private func show(_ next: [Entry]) {
-        if next != visible { visible = next }
-        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
-        let index = visible.firstIndex { $0.id == resize?.id }
-        let grid = index.map(self.grid.keeping) ?? self.grid
-        if sizes != laidOutSizes || grid != laidOutGrid {
-            laidOutSizes = sizes
-            laidOutGrid = grid
-            placements = grid.place(sizes)
+    private func takeVisible(_ next: [Entry]) {
+        holdsRows = false
+        let isFixed = content.isFixed
+        if isGridFixed != isFixed { isGridFixed = isFixed }
+        let top = fieldRoom
+        if isFixed, let gesture {
+            let shown = Set(visible.map(\.id))
+            if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
+                lay(gesture.layout, top: top)
+                return
+            }
+            dropGesture()
         }
-        if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
+        let laid = isFixed
+            ? grid.place(next.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })
+            : grid.list(next.map { $0.role == .answer && $0.size != .strip ? $0.size : grid.row })
+        let shown = laid.map { next[$0.index] }
+        if shown != visible { visible = shown }
+        if isFixed {
+            let placed = Set(shown.map(\.id))
+            let left = Set(next.map(\.id)).subtracting(placed)
+            if left != leftOut { leftOut = left }
+            runs.take(grid: placed)
+        }
+        lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
+    }
+
+    private func lay(_ next: [SpotPlacement], top: CGFloat) {
+        laidOutTop = top
+        let dropped = next.map { $0.dropped(by: top) }
+        if dropped != placements { placements = dropped }
     }
 
     func mayMove(_ id: String) -> Bool {
         guard let entry = entry(id) else { return false }
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-            guard isEditing, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else {
-                return entry.isOnGrid != visible.contains { $0.id == id }
-            }
-            return entry.isOnGrid == (placements[index].group == .shelf)
+            return entry.isOnGrid != (visible.contains { $0.id == id } || leftOut.contains(id))
         }
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }
@@ -126,6 +152,12 @@ extension SpotsModel {
     func noteMiss() {
         guard let search = missedSearch.take() else { return }
         runs.usage.missed(search, at: runs.now())
+    }
+
+    func takeQuery(_ text: String) {
+        hideAttachments(for: text)
+        hold(shownPreview(of: text), motion: .edit)
+        query = text
     }
 
     func askAnswers() {
@@ -143,18 +175,21 @@ extension SpotsModel {
     }
 
     public var searchText: String {
-        get { form?.draft.choices?.query ?? openSheet?.query ?? query }
-        set {
+        form?.draft.choices?.query ?? openSheet?.query ?? query
+    }
+
+    public func search(_ text: String) {
+        asOnePress {
             if form?.draft.choices != nil {
-                form?.draft.search(newValue)
-            } else if let file = SpotPackage.file(in: newValue) {
-                query = ""
+                form?.draft.search(text)
+            } else if let file = SpotPackage.file(in: text) {
+                takeQuery("")
                 openSheet?.search("")
                 DispatchQueue.main.async { self.review([file]) }
             } else if let openSheet {
-                openSheet.search(newValue)
+                openSheet.search(text)
             } else {
-                query = newValue
+                takeQuery(text)
             }
         }
     }

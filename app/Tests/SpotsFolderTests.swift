@@ -360,7 +360,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("a.sh", toml: "[on]\ndrop = [\"mov\", \"mkv\", \"folder\"]")
         try write("b.sh")
 
-        XCTAssertEqual(try scan.spots.map(\.triggers.drop), [["mov", "mkv", "folder"], []])
+        XCTAssertEqual(try scan.spots.map(\.triggers.drop), [DropKinds(["mov", "mkv", "folder"]), DropKinds()])
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {

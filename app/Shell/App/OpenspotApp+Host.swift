@@ -13,24 +13,8 @@ extension OpenspotApp: SpotsHost {
         if !model.isShown || model.isWarming { showPanel() }
     }
 
-    func notify(_ text: String) {
-        toast?.show(text, kind: .failure)
-    }
-
-    func notify(_ text: String, fix: URL) {
-        toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.config.fixKey)
-    }
-
-    func notifyKeyFault(_ text: String) {
-        toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.config.fixKey)
-    }
-
-    func confirm(_ text: String) {
-        toast?.show(text, kind: .confirm)
-    }
-
-    func work(_ text: String) {
-        toast?.show(text, kind: .work, for: nil)
+    func open(_ url: URL) {
+        NSWorkspace.shared.open(url)
     }
 
     func applyConfig(_ config: Config) {
@@ -43,6 +27,11 @@ extension OpenspotApp: SpotsHost {
 
     func layOut(_ layout: Theme.Layout) {
         SpotLoadedTheme.shared.lay(layout)
+        panel?.layOut()
+    }
+
+    func widen() {
+        SpotLoadedTheme.shared.widen()
         panel?.layOut()
     }
 
@@ -96,6 +85,11 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    var frontApp: FrontApp? {
+        let front = NSWorkspace.shared.frontmostApplication
+        return (front == .current ? previous.app : front).flatMap(FrontApp.init)
+    }
+
     func takeFocus() {
         panel?.makeKey()
     }
@@ -105,7 +99,7 @@ extension OpenspotApp: SpotsHost {
         let context = LAContext()
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
-            notify("Openspot cannot guard your account key on this Mac. Set a login password or Touch ID in System Settings, then try again.")
+            model.toast(.failure("Openspot cannot guard your account key on this Mac. Set a login password or Touch ID in System Settings, then try again."))
             return false
         }
         guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }
