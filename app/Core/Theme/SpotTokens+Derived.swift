@@ -127,8 +127,8 @@ extension SpotTokens {
 
     public static var gridTop: CGFloat { layout.gridTop }
 
-    public static func gridOrigin(left: CGFloat) -> CGPoint {
-        CGPoint(x: halo - left, y: gridTop)
+    public static func gridOrigin(scrollOffset: CGFloat = 0) -> CGPoint {
+        CGPoint(x: halo, y: gridTop - scrollOffset)
     }
 
     public static var menuTextInset: CGFloat { padding - menuPadding + 4 }

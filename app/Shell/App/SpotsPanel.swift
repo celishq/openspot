@@ -6,7 +6,6 @@ import SwiftUI
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
     let place = SpotsWindowPlace()
-    private var appliedRight: CGFloat = 0
     private var pressWatch: Task<Void, Never>?
     private var tap = ModifierTap()
     private var swipe = FlowSwipe()
@@ -56,7 +55,7 @@ final class SpotsPanel: NSPanel {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : SpotFrontWindow.frame(of: app)
-        let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
+        let center = NSSize(width: frame.width - place.left, height: frame.height)
         guard let origin = ScreenPlace(screens: screens).origin(of: center, window: window, pointer: NSEvent.mouseLocation) else { return }
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
     }
@@ -95,21 +94,6 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    private func followSides() {
-        guard let model else { return }
-        let panels = withObservationTracking { model.columns } onChange: { [weak self] in
-            Task { @MainActor in self?.followSides() }
-        }
-        let grown = (left: panels.leftExtent - place.left, right: panels.rightExtent - appliedRight)
-        guard grown.left != 0 || grown.right != 0 else { return }
-        let widened = { (frame: NSRect) in
-            NSRect(x: frame.minX - grown.left, y: frame.minY, width: frame.width + grown.left + grown.right, height: frame.height)
-        }
-        place.left = panels.leftExtent
-        appliedRight = panels.rightExtent
-        resize(to: widened(frame))
-    }
-
     private func resize(to frame: NSRect) {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -120,11 +104,8 @@ final class SpotsPanel: NSPanel {
     }
 
     func layOut() {
-        guard let model else { return }
-        place.left = model.columns.leftExtent
-        appliedRight = model.columns.rightExtent
-        let width = SpotTokens.panelWidth + place.left + appliedRight
-        resize(to: NSRect(x: frame.minX, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
+        let width = SpotTokens.panelWidth
+        resize(to: NSRect(x: frame.midX - width / 2, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
         takeBackdrop()
     }
 
@@ -332,7 +313,6 @@ final class SpotsPanel: NSPanel {
         panel.watchFrontApp(model: model)
         panel.watchInputSource(model: model)
         panel.center()
-        panel.followSides()
         panel.takeBackdrop()
         return panel
     }

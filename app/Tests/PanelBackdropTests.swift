@@ -11,11 +11,12 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell))
     }
 
-    func testTheBackdropOfTheGridEndsUnderItsLastRow() async throws {
+    func testTheBackdropOfTheGridEndsUnderItsLastCard() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
-        let cards = model.columns.layout.height
+        let cards = SpotPlacement.height(of: model.placements)
+        XCTAssertGreaterThan(cards, 0)
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell + SpotTokens.rowGap + cards))
     }
 
@@ -75,17 +76,19 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertFalse(told)
     }
 
-    func testTheBackdropSpansTheColumnsAndASearchNarrowsItToTheMiddleFour() async throws {
+    func testTheBackdropAndTheSearchSpanTheChosenColumns() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
+        let four = SpotTokens.panelWidth
         model.columns = GridColumns(8)
-        let side = 2 * (SpotTokens.cell + SpotTokens.columnGap)
+        defer { model.columns = GridColumns() }
 
-        XCTAssertEqual(model.backdrop.minX, -side)
-        XCTAssertEqual(model.backdrop.width, SpotTokens.panelWidth + 2 * side)
-
-        model.query = "zzz"
-
+        XCTAssertEqual(SpotTokens.panelWidth, four + 4 * (SpotTokens.cell + SpotTokens.columnGap))
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: model.gridHeight))
+
+        model.query = "list"
+
+        XCTAssertEqual(model.backdrop.width, SpotTokens.panelWidth)
+        XCTAssertEqual(model.placements.first?.size, SpotSize(columns: 8, rows: 1))
     }
 }

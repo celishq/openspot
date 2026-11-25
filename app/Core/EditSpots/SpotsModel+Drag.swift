@@ -106,6 +106,12 @@ extension SpotsModel {
         }
     }
 
+    public func gridScrolled(to offset: CGFloat) {
+        guard gridScroll != offset else { return }
+        gridScroll = offset
+        if tip != nil { tip = nil }
+    }
+
     func dropGesture() {
         stopDragWait()
         pointerMove = nil
@@ -123,6 +129,6 @@ extension SpotsModel {
     }
 
     public var gridOrigin: CGPoint {
-        SpotTokens.gridOrigin(left: columns.leftExtent)
+        SpotTokens.gridOrigin()
     }
 }

@@ -13,16 +13,11 @@ public struct GridColumns: Equatable, Sendable {
         GridLayout(columns: count)
     }
 
-    public var leftExtent: CGFloat {
-        let extra = (count - SpotTokens.columns) / 2
-        return CGFloat(extra) * (SpotTokens.cell + SpotTokens.columnGap)
-    }
-
-    public var rightExtent: CGFloat {
-        leftExtent
+    public var row: SpotSize {
+        SpotSize(columns: count, rows: 1)
     }
 
     public var frame: CGRect {
-        CGRect(x: -leftExtent, y: 0, width: SpotTokens.panelWidth + leftExtent + rightExtent, height: SpotTokens.panelHeight)
+        CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
     }
 }

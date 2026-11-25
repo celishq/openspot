@@ -20,7 +20,19 @@ final class ThemeReloadTests: PanelCase {
         XCTAssertEqual(host.layOuts, [roomy.layout])
         XCTAssertEqual(model.sheets["list"]?.sheetRect.height, sheet.height + 14)
         XCTAssertGreaterThan(model.gridHeight, grid)
-        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: model.columns.layout.height))
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: SpotPlacement.height(of: model.placements)))
+    }
+
+    func testAReloadOfTheSizesScrollsTheGridToTheTop() async throws {
+        try await openList()
+        host.dismiss()
+        model.gridScrolled(to: 120)
+        model.cardScroll = 120
+
+        model.take(roomy)
+
+        XCTAssertEqual(model.gridScroll, 0)
+        XCTAssertEqual(model.cardScroll, 0)
     }
 
     func testAReloadWhileShownWaitsForTheHide() async throws {

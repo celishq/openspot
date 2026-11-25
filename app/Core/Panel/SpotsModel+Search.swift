@@ -107,10 +107,11 @@ extension SpotsModel {
 
     private func takeVisible(_ next: [Entry]) {
         holdsRows = false
-        let isGrid = query.isEmpty
+        let isGrid = content == .cards
+        if isGridFixed != isGrid { isGridFixed = isGrid }
         let spots = isGrid
             ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: columns)) }
-            : next.map { GridSpot(size: $0.role == .answer ? $0.size : SpotSize.strip, cell: nil) }
+            : next.map { GridSpot(size: $0.role == .answer && $0.size != .strip ? $0.size : columns.row, cell: nil) }
         let top = fieldRoom
         if isGrid, drag != nil || resize != nil {
             let shown = Set(visible.map(\.id))
@@ -122,10 +123,9 @@ extension SpotsModel {
             }
             dropGesture()
         }
-        let side = (columns.count - SpotTokens.columns) / 2
         let laid = isGrid
             ? columns.layout.place(spots)
-            : GridLayout(columns: SpotTokens.columns).place(spots).map { SpotPlacement(index: $0.index, row: $0.row, column: $0.column + side, size: $0.size) }
+            : GridLayout(columns: columns.count, rows: spots.reduce(0) { $0 + $1.size.rows }).place(spots)
         let shown = laid.map { next[$0.index] }
         if shown != visible { visible = shown }
         if isGrid {

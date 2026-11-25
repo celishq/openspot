@@ -57,7 +57,6 @@ public final class SpotsModel {
             selected = 0
             askAnswers()
             showVisible()
-            spanBackdrop()
         }
     }
     public internal(set) var visible: [Entry] = []
@@ -112,17 +111,21 @@ public final class SpotsModel {
     @ObservationIgnored var laidOut = Theme.Layout()
     @ObservationIgnored var takenTheme = Theme()
     public internal(set) var columns = GridColumns() {
-        didSet { spanBackdrop() }
+        didSet {
+            guard columns != oldValue else { return }
+            let held = heldLayout?.with(columns: columns.count)
+            lay(laidOut.with(columns: columns.count))
+            heldLayout = held
+        }
     }
-    public internal(set) var backdropColumns = GridColumns()
     public internal(set) var backdropSheet: SpotRun?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
         let free = columns.layout.freeCells(around: placements)
         if free != freeCells { freeCells = free }
-        let content = query.isEmpty ? columns.layout.height + laidOutTop : SpotPlacement.height(of: placements)
-        let height = SpotTokens.contentHeight(gridHeight: max(content, laidOutTop))
+        let shown = content == .cards && isEditing ? columns.layout.height + laidOutTop : SpotPlacement.height(of: placements)
+        let height = SpotTokens.contentHeight(gridHeight: max(shown, laidOutTop))
         if height != gridHeight { gridHeight = height }
         takeShade()
     }
@@ -146,6 +149,7 @@ public final class SpotsModel {
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
+            if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             holdBackdropSheet()
             if transition.phase != .closing, closingSheet != nil { closingSheet = nil }
             let shown = transition.shown
@@ -282,12 +286,16 @@ public final class SpotsModel {
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
-        didSet { takeMode() }
+        didSet {
+            takeMode()
+            takePlacements()
+        }
     }
     @ObservationIgnored var isCommandHeld = false
     @ObservationIgnored var isCommandSpoiled = false
     @ObservationIgnored var leftOut: Set<String> = []
-    public private(set) var freeCells: [GridCell] = []
+    public internal(set) var freeCells: [GridCell] = []
+    public internal(set) var isGridFixed = true
     @ObservationIgnored var editsByKey = false
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
@@ -299,6 +307,8 @@ public final class SpotsModel {
     public internal(set) var resize: SpotResize?
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     @ObservationIgnored var dragTarget: GridCell?
+    @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
+    public internal(set) var cardScroll: CGFloat = 0
     @ObservationIgnored var dragWait: Task<Void, Never>?
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)

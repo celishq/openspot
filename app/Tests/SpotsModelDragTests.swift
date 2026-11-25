@@ -33,6 +33,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     override func tearDown() async throws {
         model.quit()
+        SpotTokens.take(SpotTokens.layout.with(columns: SpotTokens.columns))
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
@@ -413,9 +414,10 @@ final class SpotsModelDragTests: XCTestCase {
         model.moveSpot("d", to: GridCell(row: 4, column: 3))
 
         model.set(columns: GridColumns(8))
+        defer { model.columns = GridColumns() }
 
         XCTAssertEqual(files.config.read().columns, GridColumns(8))
-        XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - 2 * (SpotTokens.cell + SpotTokens.columnGap))
+        XCTAssertEqual(SpotTokens.gridWidth, SpotTokens.width(columns: 8))
         XCTAssertEqual(cells, [GridCell(row: 0, column: 0), GridCell(row: 0, column: 2), GridCell(row: 0, column: 4), GridCell(row: 0, column: 6)])
         model.moveSpot("a", to: GridCell(row: 3, column: 6))
         model.set(columns: GridColumns(4))
@@ -425,6 +427,15 @@ final class SpotsModelDragTests: XCTestCase {
 
     private var pointOnGrid: PointerTarget {
         .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY))
+    }
+
+    func testTheGridEndsAtItsLastRowAndEditingShowsAllSevenRows() {
+        let rows = SpotPlacement.height(of: model.placements)
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: model.columns.layout.height))
+
+        model.endEditing()
+
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: rows))
     }
 
     func testAHeldCommandAloneStartsNoEditing() {
@@ -523,6 +534,7 @@ final class SpotsModelDragTests: XCTestCase {
         model.dragSpot("d", by: move("d", to: row0))
 
         model.set(columns: GridColumns(8))
+        defer { model.columns = GridColumns() }
 
         XCTAssertNil(model.drag)
     }

@@ -36,7 +36,7 @@ final class ThemeLayoutTests: XCTestCase {
         XCTAssertEqual(SpotTokens.cardRadius, 30)
         XCTAssertEqual(SpotTokens.width(columns: 2), 155)
         XCTAssertEqual(SpotTokens.gridWidth, 325)
-        XCTAssertEqual(SpotTokens.gridOrigin(left: 0), CGPoint(x: 90, y: 172))
+        XCTAssertEqual(SpotTokens.gridOrigin(), CGPoint(x: 90, y: 172))
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).height, before.height + 14)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1).width, 325)
         XCTAssertEqual(SurfaceEdge.sheet.radius, 30)

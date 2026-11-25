@@ -8,10 +8,10 @@ extension SpotsModel {
         defer { takenTheme = theme }
         guard isPanelHidden else {
             if theme != takenTheme { toast(ToastNote(words: Self.openAgain)) }
-            heldLayout = theme.layout
+            heldLayout = theme.layout.with(columns: columns.count)
             return
         }
-        lay(theme.layout)
+        lay(theme.layout.with(columns: columns.count))
     }
 
     func lay(_ layout: Theme.Layout) {
@@ -19,6 +19,8 @@ extension SpotsModel {
         guard layout != laidOut else { return }
         laidOut = layout
         SpotTokens.take(layout)
+        gridScroll = 0
+        cardScroll = 0
         takePlacements()
         for run in runs.sheets.values { run.layOut() }
         host.layOut(layout)

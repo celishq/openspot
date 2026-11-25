@@ -164,7 +164,6 @@ private struct SheetFadeMask: ViewModifier {
                 fade.edges.gradient(height: height)
                 isOpen ? SpotTheme.mask : Color.clear
             }
-            .padding(.leading, panels.leftExtent)
             .offset(x: panels.frame.minX)
         }
     }

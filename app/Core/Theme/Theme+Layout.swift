@@ -7,15 +7,13 @@ extension Theme {
         public let type: TypeSizes
         public let motion: Motion
         public let backdrop: Backdrop
-        public let gridWidth: Double
-        public let panelWidth: Double
+        public private(set) var columns = SpotTokens.columns
         public let panelHeight: Double
         public let hintBlock: Double
         public let sheetMaxHeight: Double
         public let sheetFieldDrop: Double
         public let sheetRowsTop: Double
         public let gridTop: Double
-        public let partsWidth: Double
 
         static let exactKinds: [(String, ThemeKind)] = [
             "cell", "column-gap", "row-gap", "padding", "glyph", "list-row", "list-row-gap", "menu-row", "menu-padding",
@@ -37,17 +35,31 @@ extension Theme {
             type = TypeSizes(base: choices.number("look", "type") ?? TypeSizes.openspotBody, exact: exact)
             motion = Motion(speed: choices.number("look", "speed") ?? 1, exact: exact)
             backdrop = Backdrop(style: choices.word("look", "backdrop") ?? .blur, reach: choices.word("look", "reach") ?? .tiles, exact: exact)
-            let columns = Double(SpotTokens.columns)
             let halo = Double(SpotTokens.halo)
-            gridWidth = columns * space.cell + (columns - 1) * space.columnGap
-            panelWidth = gridWidth + 2 * halo
             hintBlock = space.rowGap + Double(SpotTokens.hintPillHeight)
             panelHeight = 2 * halo + Double(SpotTokens.rows + 1) * space.cell + Double(SpotTokens.rows) * space.rowGap + hintBlock
             sheetMaxHeight = panelHeight - 2 * halo - hintBlock
             sheetFieldDrop = space.padding + space.glyph + space.rowGap
             sheetRowsTop = sheetFieldDrop + space.listRow + space.rowGap
             gridTop = halo + space.cell + space.rowGap
-            partsWidth = gridWidth - 2 * space.padding
+        }
+
+        public var gridWidth: Double {
+            Double(columns) * space.cell + Double(columns - 1) * space.columnGap
+        }
+
+        public var panelWidth: Double {
+            gridWidth + 2 * Double(SpotTokens.halo)
+        }
+
+        public var partsWidth: Double {
+            gridWidth - 2 * space.padding
+        }
+
+        public func with(columns: Int) -> Layout {
+            var next = self
+            next.columns = columns
+            return next
         }
     }
 
