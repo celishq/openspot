@@ -180,6 +180,7 @@ struct SpotView: View {
     private struct Row: Identifiable {
         let id: String
         let spot: String
+        let name: String
         let key: String
         let title: String
         let value: String
@@ -265,7 +266,7 @@ struct SpotView: View {
                 case "row":
                     let title = item["title"] ?? ""
                     rows.append(Row(
-                        id: String(id.dropFirst(4)), spot: item["spot"] ?? "", key: item["key"] ?? "", title: title, value: item["value"] ?? "",
+                        id: String(id.dropFirst(4)), spot: item["spot"] ?? "", name: item["name"] ?? item["spot"] ?? "", key: item["key"] ?? "", title: title, value: item["value"] ?? "",
                         form: item["form"] ?? "", section: item["section"] ?? "", detail: item["detail"] ?? "", words: fold(title + " " + (item["detail"] ?? ""))
                     ))
                 case "theme":
@@ -299,7 +300,7 @@ struct SpotView: View {
         }
 
         func title(ofSpot id: String) -> String {
-            id == "openspot" ? "Openspot" : entry(id)?.title ?? id
+            entry(id)?.title ?? rows.first { $0.spot == id }?.name ?? id
         }
 
         /// The spots that can't run, the ones that need you first.
@@ -854,7 +855,7 @@ struct SpotView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(caps(clash[0].value).joined() + " does \(clash.count == 2 ? "two" : "\(clash.count)") things")
                         .fontWeight(.semibold)
-                    Text(clash.map { "\(book.title(ofSpot: $0.spot)) · \($0.title)" }.joined(separator: " and ") + ". Change one of them.")
+                    Text(clash.map { "\($0.name) · \($0.title)" }.joined(separator: " and ") + ". Change one of them.")
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -865,7 +866,7 @@ struct SpotView: View {
             group(nil) {
                 lines(keys) { row in
                     HStack(spacing: 12) {
-                        Text(book.title(ofSpot: row.spot))
+                        Text(row.name)
                             .foregroundStyle(.secondary)
                             .frame(width: 150, alignment: .leading)
                             .lineLimit(1)
@@ -1105,7 +1106,7 @@ struct SpotView: View {
                 group("Settings") {
                     lines(rows) { found in
                         row(action: { reveal(found) }) {
-                            Text("\(book.title(ofSpot: found.spot)) · \(found.title)")
+                            Text("\(found.name) · \(found.title)")
                                 .lineLimit(1)
                             Spacer(minLength: 8)
                             if found.form == "key" {
@@ -1153,10 +1154,16 @@ struct SpotView: View {
                     .frame(width: 220)
                     .onSubmit { set(row, drafts[row.id] ?? row.value) }
             case "secret":
-                SecureField(row.value.isEmpty ? "Not set" : "Set", text: draft(row, blank: true))
+                SecureField((pending[row.id] ?? row.value).isEmpty ? "Not set" : "Set", text: draft(row, blank: true))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 220)
                     .onSubmit { set(row, drafts[row.id] ?? "") }
+                    .onKeyPress(.delete) {
+                        guard (drafts[row.id] ?? "").isEmpty, !(pending[row.id] ?? row.value).isEmpty else { return .ignored }
+                        pending[row.id] = ""
+                        send("remove", row.spot, row.key)
+                        return .handled
+                    }
             default:
                 Text(display(row)).foregroundStyle(.secondary)
             }
