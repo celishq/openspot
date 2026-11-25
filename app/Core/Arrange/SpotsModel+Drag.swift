@@ -84,7 +84,7 @@ extension SpotsModel {
     }
 
     private var windowInGrid: CGRect {
-        let origin = gridOrigin
+        let origin = SpotTokens.gridOrigin()
         return windowInPanel.offsetBy(dx: -origin.x, dy: -origin.y)
     }
 
@@ -93,7 +93,7 @@ extension SpotsModel {
     }
 
     private func inPanel(_ point: CGPoint) -> CGPoint {
-        let origin = gridOrigin
+        let origin = SpotTokens.gridOrigin()
         return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
     }
 
@@ -125,9 +125,5 @@ extension SpotsModel {
         dragWait?.cancel()
         dragWait = nil
         dragTarget = nil
-    }
-
-    public var gridOrigin: CGPoint {
-        SpotTokens.gridOrigin()
     }
 }

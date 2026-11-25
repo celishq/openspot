@@ -23,7 +23,7 @@ public struct SpotDrag: Equatable, Sendable {
         homeLayout = placements
         others = placements.filter { $0.index != index }
         self.grid = grid
-        self.choices = choices.isEmpty ? [placement.size] : choices
+        self.choices = choices
     }
 
     public var placement: SpotPlacement? {

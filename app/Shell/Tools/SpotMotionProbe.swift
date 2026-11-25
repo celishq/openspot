@@ -388,7 +388,7 @@ final class SpotMotionProbe: NSObject {
             return finish(with: "no card to resize\n")
         }
         let id = model.visible[card].id
-        let grid = model.gridOrigin
+        let grid = SpotTokens.gridOrigin()
         let end = CGPoint(x: grid.x + model.placements[card].rect.maxX, y: grid.y + model.placements[card].rect.maxY)
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
