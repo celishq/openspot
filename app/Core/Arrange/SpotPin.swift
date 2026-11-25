@@ -24,10 +24,10 @@ public struct SpotPin: Equatable, Sendable {
     public private(set) var target: Target?
     let grid: GridLayout
     let placements: [SpotPlacement]
-    private let ids: [String]
+    private let ids: [String?]
     private let choices: [SpotSize]
 
-    init(id: String, start: CGPoint, size: SpotSize, choices: [SpotSize], grid: GridLayout, placements: [SpotPlacement], ids: [String]) {
+    init(id: String, start: CGPoint, size: SpotSize, choices: [SpotSize], grid: GridLayout, placements: [SpotPlacement], ids: [String?]) {
         self.id = id
         self.start = start
         self.size = size
@@ -56,10 +56,11 @@ public struct SpotPin: Equatable, Sendable {
         let centre = CGPoint(x: corner.x + half, y: corner.y + half)
         guard CGRect(x: 0, y: 0, width: grid.width, height: grid.height).insetBy(dx: -half, dy: -half).contains(centre) else { return nil }
         let cell = grid.cell(near: corner, for: .small)
-        if let card = placements.first(where: { covers($0, cell) }), ids.indices.contains(card.index) {
+        if let card = placements.first(where: { covers($0, cell) }) {
+            guard ids.indices.contains(card.index), let leaving = ids[card.index] else { return nil }
             let others = placements.filter { $0.index != card.index }
             let size = choices.contains(card.size) ? card.size : grid.fit(size, at: card.cell, among: others, choices: choices) ?? card.size
-            return .swap(ids[card.index], card.cell, size)
+            return .swap(leaving, card.cell, size)
         }
         return grid.fit(size, at: cell, among: placements, choices: choices).map { .slot(cell, $0) }
     }

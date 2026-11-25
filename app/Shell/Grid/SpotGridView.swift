@@ -39,9 +39,10 @@ struct SpotGridView: View {
         }
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
-                GridSlots(cells: model.freeCells)
+                GridSlots(cells: model.freeCells, marks: model.isArranging)
                 landing(of: drag, in: placements)
                     .frame(width: frame.width, height: height)
+                PinLanding(model: model)
             }
             ForEach(Array(zip(placements, cards)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -119,8 +120,21 @@ struct SpotGridView: View {
     }
 }
 
+private struct PinLanding: View {
+    let model: SpotsModel
+
+    var body: some View {
+        if let rect = model.pin?.landing {
+            SpotSurfaceShape(rect: rect, radius: SurfaceEdge(card: model.pin?.target?.size ?? .small).radius)
+                .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+                .allowsHitTesting(false)
+        }
+    }
+}
+
 private struct GridSlots: View, Equatable {
     let cells: [GridCell]
+    let marks: Bool
 
     var body: some View {
         let shape = SpotRoundShape(SurfaceEdge(card: .small))
@@ -129,6 +143,13 @@ private struct GridSlots: View, Equatable {
                 let rect = SpotPlacement(index: 0, row: cell.row, column: cell.column, size: .small).rect
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                    .overlay {
+                        if marks {
+                            Image(systemName: "plus")
+                                .font(SpotType.glyph)
+                                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+                        }
+                    }
                     .frame(width: rect.width, height: rect.height)
                     .offset(x: rect.minX, y: rect.minY)
             }

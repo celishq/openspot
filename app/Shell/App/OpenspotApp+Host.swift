@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         panel?.layOut()
     }
 
+    func arrange(_ isOn: Bool) {
+        panel?.arrange(isOn)
+    }
+
     func widen() {
         SpotLoadedTheme.shared.widen()
         panel?.layOut()

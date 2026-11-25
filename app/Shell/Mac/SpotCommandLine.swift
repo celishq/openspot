@@ -43,7 +43,9 @@ enum SpotCommandLine {
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case RenderCall.card(let size, let path) as RenderCall:
             SpotCardPicture.run(text: standardInput, size: size, path: path)
-        case RenderCall.panel(let path) as RenderCall:
+        case RenderCall.panel(let path, let scene) as RenderCall where scene.isArranging:
+            SpotArrangePicture.run(path: path, scene: scene)
+        case RenderCall.panel(let path, _) as RenderCall:
             SpotPanelPicture.run(path: path)
         case RenderCall.store(let path, let place, let spot, let review) as RenderCall:
             SpotStorePicture.run(path: path, place: place, spot: spot, review: review)

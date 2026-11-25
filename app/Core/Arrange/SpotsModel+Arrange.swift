@@ -62,7 +62,7 @@ extension SpotsModel {
                 choices: sizes(of: entry),
                 grid: self.grid,
                 placements: placements,
-                ids: visible.map(\.id)
+                ids: visible.map { self.takesOffGrid($0) ? $0.id : nil }
             )
             tip = nil
             change(.edit) {

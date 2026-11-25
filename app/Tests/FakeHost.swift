@@ -14,6 +14,7 @@ final class FakeHost: SpotsHost {
     var motions: [PanelMotion?] = []
     var floats: [String] = []
     var landings: [String] = []
+    var arranged: [Bool] = []
     var windows: [String] = []
     var phases: [SheetTransition.Phase] = []
     var openings: [String?] = []
@@ -165,6 +166,10 @@ final class FakeHost: SpotsHost {
 
     var isChanging: Bool {
         changeDepth > 0
+    }
+
+    func arrange(_ isOn: Bool) {
+        arranged.append(isOn)
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

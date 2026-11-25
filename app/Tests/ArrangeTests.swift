@@ -71,6 +71,7 @@ final class ArrangeTests: PanelCase {
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertFalse(model.isEditing)
         XCTAssertEqual(model.arrangeQuery, "")
+        XCTAssertEqual(host.arranged, [true, false])
     }
 
     func testASpotDraggedOntoAFreeSlotIsPinnedThereInTheSizeOfTheSlot() async throws {
@@ -155,5 +156,13 @@ final class ArrangeTests: PanelCase {
 
         XCTAssertEqual(model.offGrid.count, 1)
         XCTAssertEqual(model.pin(left), .full)
+    }
+
+    func testACardThatCannotLeaveTheGridTakesNoSwap() {
+        let card = SpotPlacement(index: 0, row: 0, column: 0, size: .wide)
+        let pin = SpotPin(id: "zeta", start: .zero, size: .wide, choices: SpotSize.all, grid: GridLayout(), placements: [card], ids: [nil])
+
+        XCTAssertNil(pin.moved(by: .zero).target)
+        XCTAssertEqual(pin.moved(by: CGSize(width: card.rect.maxX + SpotTokens.columnGap, height: 0)).target?.cell, GridCell(row: 0, column: 2))
     }
 }

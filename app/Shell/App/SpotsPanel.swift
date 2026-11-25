@@ -12,6 +12,7 @@ final class SpotsPanel: NSPanel {
     private var pressStage = 0
     private var isForceDragging = false
     private var screenBackdrop: SpotScreenBackdrop?
+    private var restFrame: NSRect?
 
     override var canBecomeKey: Bool { true }
 
@@ -109,6 +110,23 @@ final class SpotsPanel: NSPanel {
         takeBackdrop()
     }
 
+    func arrange(_ isOn: Bool) {
+        if isOn {
+            guard restFrame == nil, let area = (screen ?? NSScreen.main)?.visibleFrame else { return }
+            restFrame = frame
+            place.left = frame.minX - area.minX
+            place.top = area.maxY - frame.maxY
+            place.screen = area.size
+            resize(to: area)
+        } else if let rest = restFrame {
+            restFrame = nil
+            place.left = 0
+            place.top = 0
+            place.screen = nil
+            resize(to: rest)
+        }
+    }
+
     func hide(then done: (() -> Void)? = nil) {
         model?.panelWillHide()
         DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
@@ -195,7 +213,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func panelPoint(of event: NSEvent) -> CGPoint {
-        CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
+        CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y - place.top)
     }
 
     private func takeSwipe(_ event: NSEvent) -> Bool {

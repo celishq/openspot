@@ -17,6 +17,7 @@ extension SpotsModel {
             closeMenu()
             missedSearch.drop()
             hold(nil, motion: .edit)
+            if session == .arrange { host.arrange(true) }
             change(.edit) {
                 editing = session
                 query = ""
@@ -79,7 +80,8 @@ extension SpotsModel {
         asOnePress {
             guard isEditing else { return }
             stopDragWait()
-            change(moving ? .edit : nil) {
+            let wasArranging = isArranging
+            change(moving ? .edit : nil, {
                 editing = nil
                 tip = nil
                 gesture = nil
@@ -90,7 +92,9 @@ extension SpotsModel {
                 selected = 0
                 clearArrange()
                 updateVisible()
-            }
+            }, completion: { [self] in
+                if wasArranging, !isArranging { host.arrange(false) }
+            })
         }
     }
 

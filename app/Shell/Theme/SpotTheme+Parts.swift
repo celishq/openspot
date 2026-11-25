@@ -13,6 +13,9 @@ extension SpotTheme {
     static let markFill = 0.3
     static let liftShadowColor = ThemeColor(text: "#000000")!.color
     static let liftShadowDrop: CGFloat = 4
+    static let arrangeCover = ThemeColor(text: "#00000059")!.color
+    static let shelfShadow: CGFloat = 6
+    static let shelfShadowDrop: CGFloat = 2
 
     static let foilBase = ThemeColor(text: "#FFFFFF")!.color
     static let publisherRim = ThemeColor(text: "#FFFFFF4D")!.color
