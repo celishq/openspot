@@ -194,21 +194,20 @@ extension SpotTokens {
     public static let settingsSidebarIdeal: CGFloat = 240
     public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
-    public static let settingsPageGap: CGFloat = 22
     public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
+    public static var settingsHeadingReveal: CGFloat { settingsPagePadding + settingsTitleLine }
+    public static let settingsTitleLine: CGFloat = 32
+    public static let settingsHeadingGap: CGFloat = 20
+    public static let settingsFormWidth: CGFloat = 640
     public static let settingsBarFade: CGFloat = 14
     public static let settingsSectionTile: CGFloat = 20
-    public static let settingsRowTile: CGFloat = 28
+    public static let settingsRowTile: CGFloat = 22
     public static let settingsHeaderTile: CGFloat = 52
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44
     public static let settingsTileCorner: CGFloat = 0.225
     public static let settingsBadge: CGFloat = 18
-    public static let settingsRowPadding: CGFloat = 12
-    public static let settingsRowHeight: CGFloat = 44
-    public static let settingsLineHeight: CGFloat = 40
     public static let settingsRowGap: CGFloat = 10
-    public static let settingsUseRowPadding: CGFloat = 9
     public static let settingsCorner: CGFloat = 10
     public static let settingsRim: CGFloat = 0.5
     public static let settingsGroupGap: CGFloat = 8
@@ -260,7 +259,6 @@ extension SpotTokens {
     public static let settingsSwitchFrame: CGFloat = 8
     public static let settingsAppIcon: CGFloat = 22
     public static let settingsDot: CGFloat = 7
-    public static let settingsBannerPadding: CGFloat = 14
     public static let settingsDetailGap: CGFloat = 2
 
     public static let builtIn = Theme.Layout()

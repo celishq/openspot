@@ -2,15 +2,11 @@ import OpenspotCore
 import SwiftUI
 
 extension SpotTheme {
-    static let settingsFill = 0.045
     static let settingsRim = 0.08
     static let settingsQuietFill = 0.06
     static let settingsQuieterFill = 0.04
-    static let settingsIconFill = 0.08
     static let settingsCapRim = 0.3
     static let settingsStepFill = 0.12
-    static let settingsBannerFill = 0.12
-    static let settingsBannerRim = 0.45
     static let settingsTarget = 0.15
     static let settingsDim = Color.black.opacity(0.18)
     static let settingsSheetShadow = Color.black.opacity(0.25)
@@ -28,6 +24,12 @@ extension SpotTheme {
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
     static let settingsLookWallDark = [Color(red: 0.13, green: 0.17, blue: 0.33), Color(red: 0.29, green: 0.20, blue: 0.42)]
     static let settingsLookWallLight = [Color(red: 0.74, green: 0.84, blue: 0.97), Color(red: 0.86, green: 0.80, blue: 0.96)]
+
+    static let settingsSpotColours: [Color] = [.blue, .indigo, .purple, .pink, .red, .orange, .yellow, .green, .mint, .teal, .cyan, .brown, .gray]
+
+    static func settingsSpot(_ id: String) -> Color {
+        settingsSpotColours[id.unicodeScalars.reduce(0) { $0 + Int($1.value) } % settingsSpotColours.count]
+    }
 
     static func settings(_ section: SettingsPage.Section) -> Color {
         switch section {

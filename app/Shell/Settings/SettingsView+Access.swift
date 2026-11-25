@@ -27,9 +27,12 @@ extension SettingsView {
                     lines(needed) { access in
                         row(open: .accessOf(access.id)) {
                             SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-                            titled(access.id.title, access.spots.map(facts.title(ofSpot:)).joined(separator: ", "))
+                            Text(access.id.title)
+                                .lineLimit(1)
                             Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
+                            if !access.isAllowed {
+                                Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
+                            }
                             chevron
                         }
                     }
@@ -40,9 +43,9 @@ extension SettingsView {
                     lines(rest) { access in
                         row(open: .accessOf(access.id)) {
                             SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-                            titled(access.id.title, access.maybe.isEmpty ? "" : "Sometimes used by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
+                            Text(access.id.title)
+                                .lineLimit(1)
                             Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            Text(access.status.word).foregroundStyle(.secondary)
                             chevron
                         }
                     }

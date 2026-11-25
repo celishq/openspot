@@ -6,7 +6,7 @@ extension SettingsView {
         Group {
             pageHeader(.spots)
             group(nil) {
-                lines(facts.standings) { spotLine($0, detail: $0.detail) }
+                lines(facts.standings) { spotLine($0) }
             }
         }
     }
@@ -30,35 +30,34 @@ extension SettingsView {
             ForEach(facts.groups(of: standing.id)) { rows in
                 group(rows.id) { lines(rows.rows) { settingLine($0) } }
             }
-            HStack {
-                Spacer()
-                if standing.isOff {
-                    Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
-                } else {
-                    Button("Turn Off", role: .destructive) { act { await $0.turn(standing.id, on: false) } }
+            Section {
+                HStack {
+                    titled(standing.isOff ? "This spot is off" : "Turn off this spot", standing.isOff ? "It doesn’t show in the panel or run." : "It stops showing in the panel and stops running.")
+                    Spacer(minLength: SpotTokens.settingsTrailingGap)
+                    if standing.isOff {
+                        Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
+                    } else {
+                        Button("Turn Off", role: .destructive) { act { await $0.turn(standing.id, on: false) } }
+                    }
                 }
             }
-            .controlSize(.large)
         }
     }
 
     private func banner(_ standing: SpotStanding, _ title: String, _ line: String) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return HStack(spacing: SpotTokens.settingsValueGap) {
-            VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
-                Text(title).fontWeight(.semibold)
-                Text(line).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if standing.isOff {
-                Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
-            } else {
-                fix(standing)
+        Section {
+            HStack(spacing: SpotTokens.settingsRowGap) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(SpotTheme.settingsLate)
+                titled(title, line)
+                Spacer(minLength: SpotTokens.settingsTrailingGap)
+                if standing.isOff {
+                    Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
+                } else {
+                    fix(standing)
+                }
             }
         }
-        .padding(SpotTokens.settingsBannerPadding)
-        .background(SpotTheme.settingsLate.opacity(SpotTheme.settingsBannerFill), in: shape)
-        .overlay(shape.strokeBorder(SpotTheme.settingsLate.opacity(SpotTheme.settingsBannerRim), lineWidth: SpotTokens.settingsRim))
     }
 
     private func useLine(_ use: SpotStanding.Use) -> some View {
@@ -66,60 +65,51 @@ extension SettingsView {
         let first = accesses.first
         return HStack(spacing: SpotTokens.settingsRowGap) {
             SettingsTile(use: use.id, access: use.needs.first, side: SpotTokens.settingsRowTile)
-            VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
-                Text(use.id.title)
-                Text(use.id.purpose)
-                    .font(SpotType.settingsLine)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let needs = use.needsLine {
-                    Text(needs)
-                        .font(SpotType.settingsLine)
-                        .foregroundStyle(.tertiary)
-                }
-            }
+            Text(use.id.title)
+                .lineLimit(1)
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             if let first {
-                Text(first.status.word).foregroundStyle(SpotTheme.settings(first.status))
+                Text(first.id.title).foregroundStyle(.secondary)
+                if !first.isAllowed {
+                    Text(first.status.word).foregroundStyle(SpotTheme.settings(first.status))
+                }
                 chevron
             }
         }
-        .padding(.horizontal, SpotTokens.settingsRowPadding)
-        .padding(.vertical, SpotTokens.settingsUseRowPadding)
-        .frame(minHeight: SpotTokens.settingsRowHeight)
+        .help([use.id.purpose, use.needsLine].compactMap { $0 }.joined(separator: " "))
         .contentShape(Rectangle())
         .onTapGesture { if let first { book.go(.accessOf(first.id)) } }
         .accessibilityAddTraits(first == nil ? [] : .isButton)
     }
 
-    func spotLine(_ standing: SpotStanding, detail: String? = nil) -> some View {
+    func spotLine(_ standing: SpotStanding, line: String = "") -> some View {
         row(open: .spotOf(standing.id)) {
             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
-            titled(standing.title, detail ?? (standing.lacks ? standing.lack : ""))
+            titled(standing.title, line)
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             if standing.lacks {
                 Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
+                Text(standing.readiness.word)
+            } else if standing.isOff {
+                Text(standing.readiness.word).foregroundStyle(.secondary)
             }
-            Text(standing.readiness.word).foregroundStyle(standing.lacks ? Color.primary : Color.secondary)
             chevron
         }
     }
 
     var keysPage: some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return Group {
+        Group {
             pageHeader(.keys)
-            ForEach(Array(facts.clashes.enumerated()), id: \.offset) { _, clash in
-                VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
-                    Text(clash.title)
-                        .fontWeight(.semibold)
-                    Text(clash.line)
-                        .foregroundStyle(.secondary)
+            if !facts.clashes.isEmpty {
+                Section {
+                    ForEach(Array(facts.clashes.enumerated()), id: \.offset) { _, clash in
+                        HStack(spacing: SpotTokens.settingsRowGap) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(SpotTheme.settingsClash)
+                            titled(clash.title, clash.line)
+                        }
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SpotTokens.settingsBannerPadding)
-                .background(SpotTheme.settingsClash.opacity(SpotTheme.settingsBannerFill), in: shape)
-                .overlay(shape.strokeBorder(SpotTheme.settingsClash.opacity(SpotTheme.settingsBannerRim), lineWidth: SpotTokens.settingsRim))
             }
             ForEach(facts.keyGroups) { keys in
                 group(keys.id) {
@@ -130,9 +120,7 @@ extension SettingsView {
                             Spacer(minLength: SpotTokens.settingsTrailingGap)
                             keycaps(row)
                         }
-                        .padding(.horizontal, SpotTokens.settingsRowPadding)
-                        .frame(minHeight: SpotTokens.settingsLineHeight)
-                        .background(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : .clear)
+                        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
                         .id(row.item)
                     }
                 }

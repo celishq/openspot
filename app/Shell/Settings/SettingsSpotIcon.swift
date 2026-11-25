@@ -6,19 +6,16 @@ struct SettingsSpotIcon: View {
     let side: CGFloat
 
     var body: some View {
-        ZStack {
-            if let icon = spot.fileIcon {
-                SpotItemIcon(icon: icon, glyph: nil, symbol: nil, size: side)
-            } else {
-                SpotRoundShape(radius: side * SpotTokens.settingsTileCorner)
-                    .fill(Color.primary.opacity(SpotTheme.settingsIconFill))
-                if let glyph = spot.glyph {
-                    Text(glyph).font(SpotType.settingsGlyph(side: side))
-                } else {
-                    Image(systemName: spot.symbol).font(SpotType.settingsSymbol(side: side))
-                }
-            }
+        if let icon = spot.fileIcon {
+            SpotItemIcon(icon: icon, glyph: nil, symbol: nil, size: side)
+                .frame(width: side, height: side)
+        } else if let glyph = spot.glyph {
+            SpotRoundShape(radius: side * SpotTokens.settingsTileCorner)
+                .fill(SpotTheme.settingsSpot(spot.id).gradient)
+                .frame(width: side, height: side)
+                .overlay(Text(glyph).font(SpotType.settingsGlyph(side: side)))
+        } else {
+            SettingsTile(symbol: spot.symbol, color: SpotTheme.settingsSpot(spot.id), side: side)
         }
-        .frame(width: side, height: side)
     }
 }

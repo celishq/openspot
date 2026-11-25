@@ -21,7 +21,7 @@ extension SettingsView {
             }
             if !found.standings.isEmpty {
                 group("Spots") {
-                    lines(found.standings) { spotLine($0, detail: $0.detail) }
+                    lines(found.standings) { spotLine($0) }
                 }
             }
             if !found.rows.isEmpty {
@@ -83,9 +83,7 @@ extension SettingsView {
                 Text(book.display(row)).foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, SpotTokens.settingsRowPadding)
-        .frame(minHeight: SpotTokens.settingsLineHeight)
-        .background(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : .clear)
+        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
         .id(row.item)
     }
 
@@ -105,7 +103,7 @@ extension SettingsView {
     }
 
     func pageHeader(_ section: SettingsPage.Section) -> some View {
-        header(SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsHeaderTile), section.title, section.page.line) {}
+        heading(section.title, section.page.line)
     }
 
     func header<Trailing: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing) -> some View {
@@ -113,81 +111,72 @@ extension SettingsView {
     }
 
     func header<Trailing: View, Accessory: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing, @ViewBuilder accessory: () -> Accessory) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
-            icon
-            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                Text(title)
-                    .font(SpotType.settingsHeader)
-                if !text.isEmpty {
-                    Text(text)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+        Section {
+            HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
+                icon
+                VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                    Text(title)
+                        .font(SpotType.settingsHeader)
+                    if !text.isEmpty {
+                        Text(text)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    trailing()
                 }
-                trailing()
+                Spacer(minLength: 0)
+                accessory()
             }
-            Spacer(minLength: 0)
-            accessory()
+            .padding(.vertical, SpotTokens.settingsHeaderPadding)
         }
-        .padding(SpotTokens.settingsHeaderPadding)
-        .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
-        .overlay(shape.strokeBorder(Color.primary.opacity(SpotTheme.settingsRim), lineWidth: SpotTokens.settingsRim))
+        .id(Self.top)
     }
 
     func heading(_ title: String, _ line: String) -> some View {
-        VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-            Text(title)
-                .font(SpotType.settingsTitle)
-            Text(line)
-                .foregroundStyle(.secondary)
+        Section {} header: {
+            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                Text(title)
+                    .font(SpotType.settingsTitle)
+                    .foregroundStyle(.primary)
+                if !line.isEmpty {
+                    Text(line)
+                        .font(SpotType.settingsPageLine)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, SpotTokens.settingsHeadingGap)
+            .textCase(nil)
         }
+        .id(Self.top)
     }
 
     func group<Rows: View>(_ title: String?, @ViewBuilder _ rows: () -> Rows) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return VStack(alignment: .leading, spacing: SpotTokens.settingsGroupGap) {
-            if let title {
-                Text(title)
-                    .fontWeight(.semibold)
-            }
-            VStack(spacing: 0) {
-                rows()
-            }
-            .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
-            .overlay(shape.strokeBorder(Color.primary.opacity(SpotTheme.settingsRim), lineWidth: SpotTokens.settingsRim))
+        Section {
+            rows()
+        } header: {
+            if let title { Text(title) }
         }
     }
 
     func folding<Rows: View>(_ title: String, isFolded: Binding<Bool>, @ViewBuilder _ rows: () -> Rows) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return VStack(alignment: .leading, spacing: SpotTokens.settingsGroupGap) {
+        Section {
+            if !isFolded.wrappedValue {
+                rows()
+            }
+        } header: {
             HStack {
                 Text(title)
-                    .fontWeight(.semibold)
                 Spacer(minLength: SpotTokens.settingsTrailingGap)
                 Button(isFolded.wrappedValue ? "Show" : "Hide") {
                     withAnimation(SpotMotion.fade(isShown: isFolded.wrappedValue)) { isFolded.wrappedValue.toggle() }
                 }
                 .buttonStyle(.link)
             }
-            if !isFolded.wrappedValue {
-                VStack(spacing: 0) {
-                    rows()
-                }
-                .background(Color.primary.opacity(SpotTheme.settingsFill), in: shape)
-                .overlay(shape.strokeBorder(Color.primary.opacity(SpotTheme.settingsRim), lineWidth: SpotTokens.settingsRim))
-                .transition(.opacity)
-            }
         }
     }
 
-    func lines<Item: Identifiable, Line: View>(_ items: [Item], first: Bool = false, @ViewBuilder _ line: @escaping (Item) -> Line) -> some View {
-        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-            if index > 0 || first {
-                Divider().padding(.leading, SpotTokens.settingsRowPadding)
-            }
-            line(item)
-        }
+    func lines<Item: Identifiable, Line: View>(_ items: [Item], @ViewBuilder _ line: @escaping (Item) -> Line) -> some View {
+        ForEach(items) { line($0) }
     }
 
     func row<Content: View>(open page: SettingsPage, @ViewBuilder _ content: () -> Content) -> some View {
@@ -198,8 +187,6 @@ extension SettingsView {
         HStack(spacing: SpotTokens.settingsRowGap) {
             content()
         }
-        .padding(.horizontal, SpotTokens.settingsRowPadding)
-        .frame(minHeight: SpotTokens.settingsRowHeight)
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .accessibilityAddTraits(.isButton)
@@ -208,8 +195,6 @@ extension SettingsView {
     func plain(_ text: String) -> some View {
         Text(text)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, SpotTokens.settingsRowPadding)
-            .frame(maxWidth: .infinity, minHeight: SpotTokens.settingsLineHeight, alignment: .leading)
     }
 
     func titled(_ title: String, _ line: String) -> some View {

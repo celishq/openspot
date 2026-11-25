@@ -56,12 +56,14 @@ enum ThemeCall: NounCall, Equatable {
         let isBuiltIn: Bool
         let isUsed: Bool
         let colours: Theme.Colours
+        let layout: Theme.Layout
     }
 
     static func listed(_ themes: ThemeFolder) -> [Listed] {
         let used = themes.readInUse()
         return themes.scan().items.map { item in
-            Listed(name: item.name, isBuiltIn: item.isBuiltIn, isUsed: item.name == used, colours: ThemeFolder.read(builtIn: themes.builtIn, copy: item.file).colours)
+            let theme = ThemeFolder.read(builtIn: themes.builtIn, copy: item.file)
+            return Listed(name: item.name, isBuiltIn: item.isBuiltIn, isUsed: item.name == used, colours: theme.colours, layout: theme.layout)
         }
     }
 

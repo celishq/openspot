@@ -11,8 +11,9 @@ struct SettingsView: View {
     @State private var isTitleShown = false
     @State private var isScrolled = false
     @State private var barHeight: CGFloat = 0
-    @State private var position = ScrollPosition(edge: .top)
     @Environment(\.colorScheme) var scheme
+
+    static let top = "settings-top"
 
     var book: SettingsBook {
         model.settingsBook
@@ -28,16 +29,19 @@ struct SettingsView: View {
                 .navigationSplitViewColumnWidth(min: SpotTokens.settingsSidebarMin, ideal: SpotTokens.settingsSidebarIdeal, max: SpotTokens.settingsSidebarMax)
                 .toolbar(removing: .sidebarToggle)
         } detail: {
-            ScrollView {
-                VStack(alignment: .leading, spacing: SpotTokens.settingsPageGap) {
+            ScrollViewReader { proxy in
+                Form {
                     content
                 }
-                .padding(SpotTokens.settingsPagePadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .formStyle(.grouped)
+                .frame(maxWidth: SpotTokens.settingsFormWidth)
+                .frame(maxWidth: .infinity)
+                .onChange(of: [book.page.place, book.query, book.target]) {
+                    proxy.scrollTo(book.target ?? Self.top, anchor: book.target == nil ? .top : .center)
+                }
             }
-            .scrollPosition($position)
             .scrollEdgeEffectStyle(.soft, for: .top)
-            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
+            .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { _, isPast in
                 withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
             })
             .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { _, isPast in
@@ -58,13 +62,6 @@ struct SettingsView: View {
                     .offset(y: -barHeight)
                     .opacity(isScrolled ? 1 : MotionTokens.hiddenOpacity)
                     .allowsHitTesting(false)
-            }
-            .onChange(of: [book.page.place, book.query, book.target]) {
-                if let target = book.target {
-                    position.scrollTo(id: target, anchor: .center)
-                } else {
-                    position.scrollTo(edge: .top)
-                }
             }
             .onChange(of: book.recording == nil) { _, isIdle in HotKey.pause(!isIdle) }
             .onDisappear { HotKey.pause(false) }
@@ -93,6 +90,13 @@ struct SettingsView: View {
         .overlay { book.grant.map { SettingsGrantSheet(book: book, grant: $0) } }
         .sheet(isPresented: $isAboutShown) { about }
         .sheet(isPresented: Binding(get: { step != nil }, set: { if !$0 { step = nil } })) { SettingsAccountSheet(book: book, step: $step) }
+    }
+
+    private var reveal: CGFloat {
+        switch book.page {
+        case .access, .accessOf, .spotOf, .account: SpotTokens.settingsTitleReveal
+        default: SpotTokens.settingsHeadingReveal
+        }
     }
 
     private var sidebar: some View {

@@ -27,8 +27,6 @@ extension SettingsView {
                                 Button("Copy") { copy(fact.value) }
                             }
                         }
-                        .padding(.horizontal, SpotTokens.settingsRowPadding)
-                        .frame(minHeight: SpotTokens.settingsLineHeight)
                     }
                 }
                 group("Backup") {
@@ -41,9 +39,6 @@ extension SettingsView {
                                 .labelsHidden()
                                 .controlSize(.small)
                         }
-                        .padding(.horizontal, SpotTokens.settingsRowPadding)
-                        .frame(minHeight: SpotTokens.settingsLineHeight)
-                        Divider().padding(.leading, SpotTokens.settingsRowPadding)
                     }
                     HStack {
                         titled("Recovery words", "12 words bring your key back on any Mac.")
@@ -51,17 +46,17 @@ extension SettingsView {
                         saved(account)
                         Button("Show My Words…") { step = .words }
                     }
-                    .padding(.horizontal, SpotTokens.settingsRowPadding)
-                    .frame(minHeight: SpotTokens.settingsRowHeight)
                 }
                 if !rows.isEmpty {
                     group(nil) { lines(rows) { settingLine($0) } }
                 }
-                HStack {
-                    Spacer()
-                    Button("Sign Out…") { step = .leave }
+                Section {
+                    HStack {
+                        titled("Sign out", "Removes your key from this Mac.")
+                        Spacer(minLength: SpotTokens.settingsValueGap)
+                        Button("Sign Out…") { step = .leave }
+                    }
                 }
-                .controlSize(.large)
             } else {
                 header(tile, SettingsPage.account.section.title, "You need a key to publish. " + SettingsPage.account.line) {
                     HStack(spacing: SpotTokens.settingsRowGap) {

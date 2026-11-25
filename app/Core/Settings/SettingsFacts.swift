@@ -6,6 +6,7 @@ public struct SettingsFacts: Equatable, Sendable {
         public let isUsed: Bool
         public let isBuiltIn: Bool
         public let colours: Theme.Colours
+        public let layout: Theme.Layout
 
         public var word: String {
             isUsed ? "In use" : isBuiltIn ? "Built in" : "Yours"
@@ -86,7 +87,7 @@ public struct SettingsFacts: Equatable, Sendable {
         self.rows = rows
         rowWords = rows.map { Self.fold($0.title + " " + ($0.detail ?? "")) }
         accessWords = accesses.map { Self.fold($0.id.title) }
-        self.looks = looks.map { Look(id: $0.name, isUsed: $0.isUsed, isBuiltIn: $0.isBuiltIn, colours: $0.colours) }
+        self.looks = looks.map { Look(id: $0.name, isUsed: $0.isUsed, isBuiltIn: $0.isBuiltIn, colours: $0.colours, layout: $0.layout) }
         self.account = account.map { status in
             Account(isSignedIn: status.signedIn, handle: status.handle, npub: status.npub, since: status.since, isBackedUp: status.backedUp == true, sync: status.sync)
         }

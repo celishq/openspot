@@ -59,6 +59,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(try row("cups/key.fill").title, "Fill")
         XCTAssertEqual(facts.looks.first { $0.isUsed }?.id, "Openspot")
         XCTAssertEqual(facts.looks.first { $0.id == "Dracula" }?.colours.dark.accent.text, "#BD93F9")
+        XCTAssertLessThan(try XCTUnwrap(facts.looks.first { $0.id == "Retro Deck" }).layout.radius.card, try XCTUnwrap(facts.looks.first { $0.id == "Openspot" }).layout.radius.card)
         XCTAssertEqual(facts.account?.isSignedIn, false)
     }
 

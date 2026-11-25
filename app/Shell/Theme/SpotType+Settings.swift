@@ -9,17 +9,13 @@ extension SpotType {
     static let settingsNumber = Font.system(size: 12, weight: .semibold)
     static let settingsTitle = Font.largeTitle.weight(.bold)
     static let settingsHeader = Font.largeTitle.weight(.bold)
+    static let settingsPageLine = Font.body
     static let settingsPageTitle = Font.system(size: 15, weight: .semibold)
     static let settingsTileShare: CGFloat = 0.52
-    static let settingsSymbolShare: CGFloat = 0.5
     static let settingsGlyphShare: CGFloat = 0.55
 
     static func settingsTile(side: CGFloat) -> Font {
         .system(size: side * settingsTileShare, weight: .medium)
-    }
-
-    static func settingsSymbol(side: CGFloat) -> Font {
-        .system(size: side * settingsSymbolShare)
     }
 
     static func settingsGlyph(side: CGFloat) -> Font {
