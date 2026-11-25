@@ -55,15 +55,31 @@ public struct SpotCheck: Sendable {
             return [Finding(spot: nil, file: folder.url.path, fault: "Cannot read \(folder.url.path).")]
         }
         var findings = scan.refused.map { Finding(spot: $0.file, file: SpotID($0.file).file(in: folder.url)?.path, fault: $0.reason) }
-        var unbuilt = Set<String>()
-        for script in scan.scripts where !script.sources.isEmpty {
-            guard !Task.isCancelled else { return findings }
+        let compiled = scan.scripts.filter { !$0.sources.isEmpty }
+        let viewed = scan.scripts.flatMap { script in script.views.values.sorted().map { (spot: script.id, view: $0) } }
+        async let programFaults = Self.each(compiled) { [programs] script -> String? in
             do {
                 _ = try await programs.built(script.url, with: script.sources)
+                return nil
             } catch {
-                unbuilt.insert(script.id)
-                findings.append(Finding(spot: script.id, file: script.url.path, fault: Self.reason(error)))
+                return Self.reason(error)
             }
+        }
+        async let viewFaults = Self.each(viewed) { [views] pair -> String? in
+            do {
+                _ = try await views.library(of: URL(fileURLWithPath: pair.view))
+                return nil
+            } catch {
+                return Self.reason(error)
+            }
+        }
+        let (builds, libraries) = await (programFaults, viewFaults)
+        guard !Task.isCancelled else { return findings }
+        var unbuilt = Set<String>()
+        for (script, fault) in zip(compiled, builds) {
+            guard let fault = fault ?? nil else { continue }
+            unbuilt.insert(script.id)
+            findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         let runs = await SpotRuns(environment: environment, swift: programs, callers: callers ?? SpotCallers())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
@@ -101,17 +117,32 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: view, fault: fault))
             }
         }
-        for script in scan.scripts {
-            guard !Task.isCancelled else { return findings }
-            for view in script.views.values.sorted() {
-                do {
-                    _ = try await views.library(of: URL(fileURLWithPath: view))
-                } catch {
-                    findings.append(Finding(spot: script.id, file: view, fault: Self.reason(error)))
-                }
-            }
+        for (pair, fault) in zip(viewed, libraries) {
+            guard let fault = fault ?? nil else { continue }
+            findings.append(Finding(spot: pair.spot, file: pair.view, fault: fault))
         }
         return findings
+    }
+
+    private static func each<Item: Sendable, Answer: Sendable>(_ items: [Item], _ work: @escaping @Sendable (Item) async -> Answer) async -> [Answer?] {
+        await withTaskGroup(of: (Int, Answer).self) { group in
+            var answers = [Answer?](repeating: nil, count: items.count)
+            let width = max(1, ProcessInfo.processInfo.activeProcessorCount)
+            var next = 0
+            while next < min(width, items.count) {
+                let index = next
+                group.addTask { (index, await work(items[index])) }
+                next += 1
+            }
+            while let (index, answer) = await group.next() {
+                answers[index] = answer
+                guard next < items.count, !Task.isCancelled else { continue }
+                let added = next
+                group.addTask { (added, await work(items[added])) }
+                next += 1
+            }
+            return answers
+        }
     }
 
     static func moveFaults(of output: Frame, in script: Spot) -> [String] {
