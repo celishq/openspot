@@ -105,6 +105,11 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
+            ForEach(GridColumns.choices, id: \.self) { count in
+                SpotRoundButton(icon: .glyph("\(count)"), label: "\(count) columns", look: model.columns.count == count ? .strong : .plain) {
+                    model.set(columns: GridColumns(count))
+                }
+            }
             SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
