@@ -36,7 +36,7 @@ struct StorePageView: View {
                         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                 }
                 Spacer(minLength: 0)
-                if page.hasSample, model != nil {
+                if page.hasSample {
                     Picker("Show", selection: $isTrying) {
                         Text("About").tag(false)
                         Text("Try").tag(true)

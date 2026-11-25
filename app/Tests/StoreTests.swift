@@ -221,6 +221,21 @@ final class StoreTests: XCTestCase {
         return file
     }
 
+    func testASpotWithSampleDataOffersTryOnItsPage() async throws {
+        try "text=Stand-up\n".write(to: examples.appendingPathComponent("clock.spot/sample.frame"), atomically: true, encoding: .utf8)
+        await store.read()
+        store.choose(.source(examples))
+
+        await store.open("clock")
+        let sampled = try XCTUnwrap(store.page)
+        await store.open("paste")
+        let plain = try XCTUnwrap(store.page)
+
+        XCTAssertTrue(sampled.hasSample)
+        XCTAssertFalse(sampled.runsSample)
+        XCTAssertFalse(plain.hasSample)
+    }
+
     func testAnOpenedSpotFileShowsItsPageWithItsTrustLines() async throws {
         let file = try spotFile("cups", "#!/bin/sh\npbcopy\n", toml: "title = 'Cups'\nuses = ['clipboard']")
 
