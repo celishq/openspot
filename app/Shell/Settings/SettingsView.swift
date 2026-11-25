@@ -127,7 +127,7 @@ struct SettingsView: View {
     private var chosen: Binding<SettingsPage.Section?> {
         Binding(
             get: { book.query.isEmpty ? book.page.section : nil },
-            set: { if let section = $0 { book.go(section.page) } }
+            set: { if let section = $0 { book.go(.top(section)) } }
         )
     }
 
@@ -137,15 +137,14 @@ struct SettingsView: View {
             results
         } else {
             switch book.page {
-            case .access: accessPage
+            case .top(.access): accessPage
+            case .top(.spots): spotsPage
+            case .top(.keys): keysPage
+            case .top(.look): lookPage
+            case .top(.account): accountPage
+            case .top(let section): rowsPage(section)
             case .accessOf(let id): book.access.access(id).map { accessPage(of: $0) }
-            case .spots: spotsPage
             case .spotOf(let id): book.spots.standing(id).map { spotPage(of: $0) }
-            case .keys: keysPage
-            case .look: lookPage
-            case .account: accountPage
-            case .general: rowsPage(.general)
-            case .developer: rowsPage(.developer)
             case .row, .search: EmptyView()
             }
         }

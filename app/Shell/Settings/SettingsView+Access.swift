@@ -6,7 +6,7 @@ extension SettingsView {
         let needed = book.access.needed
         let rest = book.access.unneeded
         return Group {
-            title(.header, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
+            title(.header, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.Section.access.title, SettingsPage.Section.access.line) {
                 Button("About Access…") { isAboutShown = true }
                     .buttonStyle(.link)
             }

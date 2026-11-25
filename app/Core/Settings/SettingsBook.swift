@@ -151,7 +151,7 @@ public final class SettingsBook {
     }
 
     public func reveal(_ row: SettingRow) {
-        land(row.spot == ReservedSetting.appSpot ? row.section.page : spots.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
+        land(row.spot == ReservedSetting.appSpot ? .top(row.section) : spots.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
         target = row.item
     }
 

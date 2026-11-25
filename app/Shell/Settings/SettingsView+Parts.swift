@@ -103,7 +103,7 @@ extension SettingsView {
     }
 
     func title(of section: SettingsPage.Section) -> some View {
-        title(.heading, EmptyView(), section.title, section.page.line) {}
+        title(.heading, EmptyView(), section.title, section.line) {}
     }
 
     @ViewBuilder
