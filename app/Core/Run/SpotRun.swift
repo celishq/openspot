@@ -251,6 +251,7 @@ public final class SpotRun {
     @ObservationIgnored var showsAgain = false
     @ObservationIgnored var sheetAgain = false
     @ObservationIgnored var eventAgain: ShowEvent?
+    @ObservationIgnored var destination: String?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?

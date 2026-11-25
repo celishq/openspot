@@ -80,6 +80,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather"])?.value as? SpotCall, .run(id: "weather", arguments: []))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather", "open", "today"])?.value as? SpotCall, .run(id: "weather", arguments: ["open", "today"]))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "weather", "--select"])?.value as? SpotCall, .show("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "settings", "--at", "spot/notes"])?.value as? SpotCall, .open("settings", at: "spot/notes"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "edit", "weather"])?.value as? SpotCall, .act(.edit, "weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "prompt", "weather"])?.value as? SpotCall, .act(.prompt, "weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "share", "weather"])?.value as? SpotCall, .act(.share, "weather"))

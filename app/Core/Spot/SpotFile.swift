@@ -77,6 +77,11 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
+        let window = manifest.window.flatMap(WindowSize.init(rawValue:))
+        guard manifest.window == nil || window != nil else {
+            let sizes = WindowSize.allCases.map { "window = \"\($0.rawValue)\"" }.joined(separator: " or ")
+            throw SpotError.fault("\(name) has window = \"\(manifest.window ?? "")\", a size Openspot does not have. Use \(sizes).")
+        }
         let isFound = !triggers.answersOnly && (offeredActions.isEmpty || triggers.lists)
         var command = Spot(
             id: id,
@@ -101,7 +106,8 @@ public struct SpotFile: Equatable, Sendable {
             keywords: manifest.keywords,
             sample: Self.sample(beside: url),
             edits: edits,
-            starts: starts
+            starts: starts,
+            window: window
         )
         command.actions = manifest.actions
         command.bindings = manifest.bindings

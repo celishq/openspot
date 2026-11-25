@@ -81,7 +81,8 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
+        if entry(id)?.spot.window != nil { return .window }
+        return arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
     func presentSheet(of id: String, showingPanel: () -> Void = {}) {

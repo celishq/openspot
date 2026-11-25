@@ -57,8 +57,8 @@ actor FakeRunningApp: RunningApp {
         themes.append(theme)
     }
 
-    func open(_ id: String) -> Bool {
-        opened.append("open \(id)")
+    func open(_ id: String, at: String?) -> Bool {
+        opened.append((["open", id] + (at.map { ["at", $0] } ?? [])).joined(separator: " "))
         return id != "gone"
     }
 
