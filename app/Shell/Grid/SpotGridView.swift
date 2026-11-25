@@ -39,7 +39,7 @@ struct SpotGridView: View {
         }
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
-                GridSlots(model: model, cells: model.freeCells, picks: !model.isArranging)
+                GridSlots(model: model, cells: model.freeCells)
                 landing(of: drag, in: placements)
                     .frame(width: frame.width, height: height)
                 PinLanding(model: model)
@@ -135,10 +135,9 @@ private struct PinLanding: View {
 private struct GridSlots: View, @MainActor Equatable {
     let model: SpotsModel
     let cells: [GridCell]
-    let picks: Bool
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.model === rhs.model && lhs.cells == rhs.cells && lhs.picks == rhs.picks
+        lhs.model === rhs.model && lhs.cells == rhs.cells
     }
 
     var body: some View {
@@ -158,7 +157,6 @@ private struct GridSlots: View, @MainActor Equatable {
                     .onTapGesture { model.openSlotPick(at: cell) }
                     .accessibilityAddTraits(.isButton)
                     .accessibilityLabel("Pin a spot here")
-                    .allowsHitTesting(picks)
                     .offset(x: rect.minX, y: rect.minY)
             }
             if let pick = model.slotPick {

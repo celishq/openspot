@@ -6,24 +6,8 @@ struct SpotArrangeBar: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        ZStack {
-            HStack(spacing: SpotTokens.arrangeBarGap) {
-                Text("Arranging spots")
-                    .font(SpotType.input)
-                    .foregroundStyle(SpotTheme.ink)
-                Spacer(minLength: 0)
-                Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
-                    ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
-            }
-            field
-        }
-        .padding(.horizontal, SpotTokens.arrangeMargin)
-        .onAppear { isFocused = true }
+        field
+            .onAppear { isFocused = true }
     }
 
     private var field: some View {

@@ -10,7 +10,7 @@ struct SpotArrangeView: View {
     var drawsCover = true
 
     var body: some View {
-        let layout = ShelfLayout(screen: size, panel: CGRect(origin: panelOrigin, size: CGSize(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)))
+        let layout = ShelfLayout(screen: size, panel: CGRect(origin: panelOrigin, size: CGSize(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)), sizes: model.shelf.map(\.size))
         ZStack(alignment: .topLeading) {
             if drawsCover {
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur)

@@ -29,7 +29,6 @@ extension SpotsModel {
         guard next != offGrid else { return }
         offGrid = next
         offGridWords = next.map { Self.fold(([$0.spot.name] + $0.spot.keywords).joined(separator: " ")) }
-        shelfNames = Dictionary(next.map { ($0.id, ShelfName($0.spot.name)) }, uniquingKeysWith: { first, _ in first })
         takeShelf()
     }
 

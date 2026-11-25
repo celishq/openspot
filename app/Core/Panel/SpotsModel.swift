@@ -297,7 +297,6 @@ public final class SpotsModel {
     public internal(set) var offGrid: [Entry] = []
     @ObservationIgnored var offGridWords: [String] = []
     public internal(set) var shelf: [Entry] = []
-    public internal(set) var shelfNames: [String: ShelfName] = [:]
     public internal(set) var slotPick: SlotPick?
     @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []

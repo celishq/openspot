@@ -8,26 +8,26 @@ struct SpotShelf: View {
 
     var body: some View {
         let spots = model.shelf
-        let rows = (0..<layout.rows(of: spots.count)).map { row in
-            Array(spots.indices.clamped(to: (row * layout.perRow)..<((row + 1) * layout.perRow)))
-        }
+        let pitch = SpotTokens.height(rows: 2) + SpotTokens.rowGap
+        let chunks = Dictionary(grouping: spots.indices.filter { layout.rects.indices.contains($0) }) { Int(layout.rects[$0].minY / pitch) }
+        let count = max(Int((layout.height / pitch).rounded(.up)), 1)
         ScrollView(showsIndicators: false) {
-            LazyVStack(alignment: .leading, spacing: SpotTokens.shelfRowGap) {
-                ForEach(rows, id: \.first) { row in
+            LazyVStack(spacing: 0) {
+                ForEach(0..<count, id: \.self) { chunk in
                     ZStack(alignment: .topLeading) {
-                        ForEach(row, id: \.self) { index in
+                        ForEach(chunks[chunk] ?? [], id: \.self) { index in
                             let id = spots[index].id
-                            SpotShelfCard(entry: spots[index], name: model.shelfNames[id] ?? ShelfName(spots[index].spot.name))
+                            let rect = layout.rects[index]
+                            SpotCardView(entry: spots[index], size: layout.sizes[index], index: -1, isPressed: false, takesDrag: false, isDropTarget: false, model: model, onTap: {})
                                 .equatable()
                                 .modifier(ShelfCarry(model: model, id: id))
-                                .offset(x: layout.x(of: index))
-                                .gesture(drag(of: id))
+                                .offset(x: rect.minX, y: rect.minY - CGFloat(chunk) * pitch)
+                                .gesture(drag(of: id, at: rect))
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: SpotTokens.shelfCard.height, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, minHeight: chunk == count - 1 ? layout.height - CGFloat(chunk) * pitch : pitch, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
-            .padding(.vertical, SpotTokens.shelfRowGap)
         }
         .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
             model.shelfScrolled(to: offset)
@@ -35,11 +35,10 @@ struct SpotShelf: View {
         .mask(ShelfFade(height: layout.band.upperBound - layout.band.lowerBound))
     }
 
-    private func drag(of id: String) -> some Gesture {
+    private func drag(of id: String, at rect: CGRect) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotArrangeView.space))
             .onChanged { value in
-                let half = SpotTokens.cell / 2
-                let origin = CGPoint(x: value.startLocation.x - panelOrigin.x - half, y: value.startLocation.y - panelOrigin.y - half)
+                let origin = CGPoint(x: rect.minX - panelOrigin.x, y: layout.band.lowerBound + rect.minY - model.arrangeScroll - panelOrigin.y)
                 var still = Transaction()
                 still.tracksVelocity = false
                 withTransaction(still) { model.dragShelfSpot(id, from: origin, by: value.translation) }

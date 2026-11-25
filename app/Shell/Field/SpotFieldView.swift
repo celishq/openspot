@@ -18,7 +18,6 @@ struct SpotFieldView: View {
         ZStack(alignment: .topLeading) {
             if isGlass {
                 glass
-                    .opacity(model.isArranging ? MotionTokens.hiddenOpacity : 1)
                     .modifier(FieldPlace(isShown: model.isShown))
                     .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
             } else {
@@ -30,8 +29,8 @@ struct SpotFieldView: View {
                     .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
                 editHeader
                     .modifier(SpotFaded())
-                    .opacity(model.isEditing && !model.isArranging ? 1 : MotionTokens.hiddenOpacity)
-                    .allowsHitTesting(model.isEditing && !model.isArranging)
+                    .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(model.isEditing)
             }
         }
         .modifier(FieldDim(isDim: model.dimsField))
@@ -102,7 +101,7 @@ struct SpotFieldView: View {
 
     private var editHeader: some View {
         HStack {
-            Text("Edit Spots")
+            Text(model.isArranging ? "Arranging spots" : "Edit Spots")
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
