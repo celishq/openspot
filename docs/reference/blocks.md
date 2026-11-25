@@ -130,7 +130,7 @@ lines, then your settings as `setting.<name>=` lines.
 
 | Word                 | Comes                                              | Inputs                                               |
 | -------------------- | -------------------------------------------------- | ---------------------------------------------------- |
-| `show`               | When Openspot needs what to show.                  | `event`: `panel.open`, `sheet.open`, `spot.want` or `spot.change`; `route`, the page, empty for the first. |
+| `show`               | When Openspot needs what to show.                  | `event`: `panel.open`, `sheet.open`, `spot.want` or `spot.change`; `route`, the page, empty for the first; `at`, where `openspot spot open --at` asked the sheet to land. |
 | `press`              | When people press a row.                           | `item`, and `item.<key>` for each key of the row.    |
 | `drag`               | When people drag rows that have a `file` out.      | `item`, once for each row.                           |
 | `search`             | At each text of the panel's search that matches.   | `text`; `alt`, the texts people may have meant, such as in another keyboard layout. |
@@ -144,7 +144,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |
 | `<field>`, `<switch>`, `<choice>` | When its value changes.               | `value`, the new value.                              |
-| `<setting>`          | When people press Return on a setting that isn't a `secret` and has no `options`. | none              |
+| `<setting>`          | When `openspot setting change <setting>` runs, for a setting that isn't a `secret` and has no `options`. | none |
 
 ## Environment variables
 

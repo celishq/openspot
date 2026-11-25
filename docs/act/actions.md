@@ -79,8 +79,8 @@ An action with a `title` runs from the panel's search, from your spot's `⌘K` m
 Water's actions have titles, so Water has no sheet, and pressing its card runs its first action, Drink a glass. A spot
 like this gets a sheet only when `[on]` names an event, `every` or `search = true`.
 
-It also starts off the panel's grid. Add it in Edit Spots, then press `⌘` Return on its card. Its Settings list a key
-for each action.
+It also starts off the panel's grid. Add it in Edit Spots, then press `⌘` Return on its card. Settings opens at Water,
+with a key for each action.
 
 ## The keys of an action
 
