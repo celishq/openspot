@@ -9,6 +9,7 @@ struct SpotView: View {
     @State private var book = Book()
     @State private var page = Page.access
     @State private var back: [Page] = []
+    @State private var forward: [Page] = []
     @State private var query = ""
     @State private var isFolded = true
     @State private var isAboutShown = false
@@ -42,6 +43,18 @@ struct SpotView: View {
             case .account: "person.crop.circle"
             case .general: "gearshape"
             case .developer: "chevron.left.forwardslash.chevron.right"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .access: .blue
+            case .spots: .purple
+            case .keys: .gray
+            case .look: Color(white: 0.15)
+            case .account: .indigo
+            case .general: .gray
+            case .developer: Color(white: 0.3)
             }
         }
 
@@ -349,10 +362,13 @@ struct SpotView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
+        NavigationSplitView {
             sidebar
-            Divider()
+                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
+                .toolbar(removing: .sidebarToggle)
+        } detail: {
             VStack(spacing: 0) {
+                titleBar
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
@@ -370,6 +386,7 @@ struct SpotView: View {
                 footer
             }
         }
+        .navigationSplitViewStyle(.balanced)
         .focusable()
         .focusEffectDisabled()
         .focused($isListening)
@@ -387,7 +404,7 @@ struct SpotView: View {
     // MARK: The frame
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
@@ -401,18 +418,18 @@ struct SpotView: View {
                         .help("Clear the search")
                 }
             }
-            .padding(.horizontal, 8)
-            .frame(height: 28)
-            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             .padding(.horizontal, 10)
-            VStack(spacing: 2) {
+            .frame(height: 30)
+            .background(.quaternary.opacity(0.6), in: Capsule())
+            .overlay(Capsule().strokeBorder(.separator.opacity(0.6)))
+            .padding(.horizontal, 10)
+            .padding(.top, 40)
+            .padding(.bottom, 6)
+            List(selection: chosen) {
                 ForEach(Section.allCases) { section in
-                    let isChosen = query.isEmpty && page.section == section
                     let count = section == .access ? book.waiting.count : 0
                     HStack(spacing: 8) {
-                        Image(systemName: section.symbol)
-                            .foregroundStyle(isChosen ? Color.primary : Color.secondary)
-                            .frame(width: 20)
+                        tile(section.symbol, section.color, size: 20)
                         Text(section.rawValue)
                         Spacer(minLength: 0)
                         if count > 0 {
@@ -420,22 +437,46 @@ struct SpotView: View {
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .frame(minWidth: 18, minHeight: 18)
-                                .background(Color.orange, in: Capsule())
+                                .background(Color.red, in: Circle())
                         }
                     }
-                    .padding(.horizontal, 8)
-                    .frame(height: 30)
-                    .background(isChosen ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .contentShape(Rectangle())
-                    .onTapGesture { open(section) }
-                    .accessibilityAddTraits(isChosen ? [.isButton, .isSelected] : .isButton)
+                    .tag(section)
                 }
             }
-            .padding(.horizontal, 10)
+            .listStyle(.sidebar)
+        }
+    }
+
+    private var chosen: Binding<Section?> {
+        Binding(
+            get: { query.isEmpty ? page.section : nil },
+            set: { if let section = $0 { open(section) } }
+        )
+    }
+
+    private var titleBar: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 0) {
+                Button { goBack() } label: { Image(systemName: "chevron.left").frame(width: 30, height: 26) }
+                    .disabled(back.isEmpty)
+                    .help("Back")
+                Divider().frame(height: 16)
+                Button { goForward() } label: { Image(systemName: "chevron.right").frame(width: 30, height: 26) }
+                    .disabled(forward.isEmpty)
+                    .help("Forward")
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 14, weight: .medium))
+            .padding(.horizontal, 4)
+            .background(.background.opacity(0.6), in: Capsule())
+            .overlay(Capsule().strokeBorder(.separator.opacity(0.6)))
+            Text(query.isEmpty ? title(of: page) : "Search")
+                .font(.system(size: 15, weight: .semibold))
+                .lineLimit(1)
             Spacer(minLength: 0)
         }
-        .padding(.top, 40)
-        .frame(width: 220)
+        .padding(.horizontal, 16)
+        .frame(height: 52)
     }
 
     private var footer: some View {
@@ -474,12 +515,6 @@ struct SpotView: View {
         if !query.trimmingCharacters(in: .whitespaces).isEmpty {
             results
         } else {
-            if let last = back.last {
-                Button { goBack() } label: { Label(title(of: last), systemImage: "chevron.left") }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, -10)
-            }
             switch page {
             case .access: accessPage
             case .accessOf(let id): book.access(id).map { accessPage(of: $0) }
@@ -1737,16 +1772,13 @@ struct SpotView: View {
     }
 
     private func open(_ section: Section) {
-        query = ""
-        recording = nil
-        target = nil
-        back = []
-        page = section.page
+        go(section.page)
     }
 
     private func go(_ next: Page) {
         guard next != page || !query.isEmpty else { return }
-        if query.isEmpty { back.append(page) } else { back = [] }
+        if query.isEmpty { back.append(page) }
+        forward = []
         query = ""
         recording = nil
         target = nil
@@ -1754,9 +1786,19 @@ struct SpotView: View {
     }
 
     private func goBack() {
+        guard let last = back.popLast() else { return }
+        forward.append(page)
         recording = nil
         target = nil
-        page = back.popLast() ?? .access
+        page = last
+    }
+
+    private func goForward() {
+        guard let next = forward.popLast() else { return }
+        back.append(page)
+        recording = nil
+        target = nil
+        page = next
     }
 
     /// Lands on the page that `at` names: a section such as `keys`, `access/<id>`, `spot/<id>`, `spot/<id>/<key>` at one

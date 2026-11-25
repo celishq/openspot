@@ -6,6 +6,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
     private var isPresent = false
+    private var declared: CGSize?
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
@@ -19,6 +20,10 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         if !isPresent {
             isPresent = true
             AppPresence.open()
+            if let declared {
+                setContentSize(declared)
+                center()
+            }
         }
         contentView?.layoutSubtreeIfNeeded()
         NSApp.activate(ignoringOtherApps: true)
@@ -41,6 +46,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
         let size = entry.spot.window
         let window = make(
+            remembers: size == nil,
             title: entry.spot.name,
             name: "spot-window-\(entry.id)",
             size: size?.size ?? SpotTokens.windowSize,
@@ -49,10 +55,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         )
         window.model = model
         window.id = entry.id
+        window.declared = size?.size
         return window
     }
 
-    static func make(title: String, name: String, size: CGSize = SpotTokens.windowSize, minSize: CGSize = SpotTokens.windowMinSize, content: some View) -> SpotSheetWindow {
+    static func make(remembers: Bool = true, title: String, name: String, size: CGSize = SpotTokens.windowSize, minSize: CGSize = SpotTokens.windowMinSize, content: some View) -> SpotSheetWindow {
         let window = SpotSheetWindow(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -69,7 +76,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.minSize = minSize
         window.delegate = window
-        window.setFrameAutosaveName(name)
+        if remembers { window.setFrameAutosaveName(name) }
         let host = NSHostingController(rootView: content)
         host.sizingOptions = []
         window.contentViewController = host
