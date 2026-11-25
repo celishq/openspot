@@ -99,21 +99,17 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertTrue(frame.contains("step=get\n"), frame)
     }
 
-    func testACoreSpotAndYourOwnSpotWithAScheduleAreAddedAndAGetChangesNothing() async throws {
+    func testACoreSpotAndYourOwnSpotWithAScheduleAreAddedAndAGetChangesNothing() throws {
         try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("daily.spot/daily.sh"), toml: "title = 'Daily'\n[on]\nschedule = ['0 9 * * *']")
         XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "publish")
 
-        let item = try await list().get("timer", lock: AppPlaces.test().lock)
-
-        XCTAssertEqual(item.spot.name, "Timer")
+        XCTAssertNil(try list().install("timer", in: AppPlaces.test()))
+        XCTAssertNil(try list().install("daily", in: AppPlaces.test()))
         XCTAssertEqual(config.read().arrangement.choices, [])
     }
 
-    func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() async {
-        do {
-            _ = try await list().get("gone", lock: AppPlaces.test().lock)
-            XCTFail("a get of a missing spot passed")
-        } catch {
+    func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() {
+        XCTAssertThrowsError(try list().install("gone", in: AppPlaces.test())) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "`gone` is not a spot of the store. Run `openspot store list` to see each one.")
         }
     }

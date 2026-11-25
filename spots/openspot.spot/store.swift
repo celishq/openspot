@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The store, laid out on 16 columns of the grid: a sidebar of 4 with the search, a row for All, Core and Yours, a row for each store
 /// folder, the built-in Openspot first, and Add Store…, and 12 with each spot as its card at the size it takes on the grid, under the title of
-/// its group. A plus on a card gets the spot, and a click opens a sheet with its readme, which it asks for then, and, when
+/// its group. A plus on a card opens the review of the spot, whose Install copies it, and a click opens a sheet with its readme, which it asks for then, and, when
 /// it has sample data, its sheet to try. A store whose folder is gone shows Locate… and Remove. A footer holds a hint, the
 /// sort and Done. Each spot is an item of the frame.
 struct SpotView: View {
@@ -447,9 +447,9 @@ struct SpotView: View {
     /// The footer's line, which says where the spots of the chosen store come from, and what a card does.
     private var hint: String {
         guard let folder = chosenFolder else {
-            return "Click a spot to read about it and try it. The plus adds it to your grid."
+            return "Click a spot to read about it and try it. The plus shows what it does, then installs it."
         }
-        if folder.isBuiltIn { return "Examples that come with Openspot. The plus adds one to your grid." }
+        if folder.isBuiltIn { return "Examples that come with Openspot. The plus shows what one does, then installs it." }
         if !folder.isFound { return "The folder of \(folder.name) moved or was deleted." }
         return "From \((folder.id as NSString).abbreviatingWithTildeInPath). The plus copies a spot into your spots, and the folder stays as it is."
     }
@@ -560,12 +560,12 @@ struct SpotView: View {
         let running = pending
         switch item.state {
         case "get":
-            Button(running == "get:\(item.id)" ? "Getting…" : "Get") { send("get:\(item.id)") }
+            Button(running == "get:\(item.id)" ? "Opening…" : "Install") { send("get:\(item.id)") }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
                 .disabled(running != nil)
-                .help("Add \(item.name) to your grid")
+                .help("Review \(item.name), then install it")
         case "publish":
             Button(running == "publish:\(item.id)" ? "Publishing…" : "Publish") { send("publish:\(item.id)") }
                 .buttonStyle(.borderedProminent)
@@ -623,7 +623,7 @@ struct SpotView: View {
     @ViewBuilder
     private func control(_ item: Item) -> some View {
         switch item.state {
-        case "get": corner("plus", label: "Add \(item.name) to your grid", item: item) { send("get:\(item.id)") }
+        case "get": corner("plus", label: "Review \(item.name), then install it", item: item) { send("get:\(item.id)") }
         case "publish": corner("arrow.up", label: "Publish the changes of \(item.name)", item: item) { send("publish:\(item.id)") }
         default: EmptyView()
         }

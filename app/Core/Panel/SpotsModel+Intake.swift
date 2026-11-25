@@ -140,11 +140,11 @@ extension SpotsModel {
     }
 
     @discardableResult
-    public func reviewCore(_ id: String) async -> Bool {
+    public func review(spot id: String) async -> Bool {
         let wasShown = isShown
         let open = flow.current
         do {
-            guard let review = try await Self.review(core: id, in: folder).get() else { return false }
+            guard let review = try await Self.review(spot: id, in: folder, catalog: catalog, places: files).get() else { return false }
             guard isShown == wasShown, flow.current == open else { return true }
             closeSheet(moving: isShown)
             show(review)
@@ -155,10 +155,12 @@ extension SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func review(core id: String, in folder: SpotsFolder) async -> Result<ReviewSpot?, Error> {
+    private nonisolated static func review(spot id: String, in folder: SpotsFolder, catalog: SpotCatalog, places: AppPlaces) async -> Result<ReviewSpot?, Error> {
         Result {
             let scan = try folder.scan()
-            guard let command = scan.spots.first(where: { folder.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
+            guard let command = scan.spots.first(where: { folder.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else {
+                return try? catalog.install(id, in: places)?.review()
+            }
             return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core, canAdd: false)
         }
     }

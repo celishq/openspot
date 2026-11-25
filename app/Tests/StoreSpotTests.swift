@@ -118,14 +118,15 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
     }
 
-    func testGetCopiesASpotOfAStoreFolder() async throws {
+    func testGetOpensTheReviewOfASpotAndCopiesNothingYet() async throws {
         let friends = try friends()
         _ = try file.change { $0.add(store: Store(url: friends)) }
 
         try await call(["gallery", "get:clock"])
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot/clock.sh").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: friends.appendingPathComponent("clock.spot/clock.sh").path))
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["review clock"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
     }
 
     func testItOpensInAWindowWithItsGalleryView() throws {
@@ -145,16 +146,8 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
     }
 
-    func testGetAddsAStoredSpotAndLeavesACoreOneAsItIs() async throws {
-        try await call(["gallery", "get:timer"])
-        XCTAssertEqual(file.read().arrangement.choices, [])
-
-        try await call(["gallery", "get:shared"])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("shared.spot/shared.sh").path))
-    }
-
     func testAFailedGetSaysWhyInAToast() async throws {
-        _ = try await runs.answer(of: store, "gallery", input: "input.value=get:nothing\n", limit: 60)
+        _ = try await runs.answer(of: store, "gallery", input: "input.value=get:gone\n", limit: 60)
 
         XCTAssertEqual(effects().map { $0.hasPrefix("toast ") }, [true])
     }

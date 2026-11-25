@@ -17,6 +17,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private let canAdd: Bool
     private var source: URL?
     private var lock: SpotLock?
+    private var install: SpotInstall?
 
     public init(spot: SpotPackage, folder: URL, core: URL? = nil, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
@@ -77,7 +78,20 @@ public struct ReviewSpot: Equatable, Sendable {
         self.lock = lock
     }
 
+    init(installing install: SpotInstall) throws {
+        try self.init(spot: SpotPackage(paths: [install.source.lastPathComponent], in: install.source.deletingLastPathComponent()), folder: install.spots, core: install.core)
+        self.install = install
+    }
+
+    public var summary: String {
+        "\(name)\n\n\(trust)" + (Self.section("Files", shared.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") }) ?? "")
+    }
+
     func add() async throws -> HostAnswer {
+        if let install {
+            let said = try await install.run(isConfirmed: true)
+            return HostAnswer(frame: "", effects: [.toast(ToastNote(words: said.trimmingCharacters(in: .newlines)))])
+        }
         guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
         _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
         return HostAnswer(frame: "", effects: [.toast("\(name) added")])
@@ -104,7 +118,7 @@ public struct ReviewSpot: Equatable, Sendable {
             reviewPart.text,
             TextBlock(fields: [
                 .init(key: "button", value: Self.installPart),
-                .init(key: "title", value: "Add"),
+                .init(key: "title", value: install == nil ? "Add" : "Install"),
                 .init(key: "shortcut", value: "cmd+return"),
                 .init(key: "class", value: "bg-accent")
             ]).text

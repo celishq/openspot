@@ -83,18 +83,21 @@ public struct SpotCatalog: Sendable {
         )
     }
 
-    public func add(_ item: Item, lock: SpotLock) async throws {
-        guard let package = item.package else { return }
-        _ = try await lock.add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
-    }
-
-    public func get(_ id: String, lock: SpotLock) async throws -> Item {
-        guard let item = item(id) else {
-            throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
+    public func install(_ id: String, in places: AppPlaces) throws -> SpotInstall? {
+        if item(id)?.isCore == true { return nil }
+        let found = stores.lazy.compactMap { store in
+            ((try? SpotsFolder(url: store.url).scan())?.files ?? []).first { $0.id == id }?.spots.first
+        }.first
+        guard let found else {
+            guard item(id) != nil else {
+                throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
+            }
+            return nil
         }
-        guard !item.isAdded else { return item }
-        try await add(item, lock: lock)
-        return item
+        return SpotInstall(
+            id: id, name: found.name, source: found.url.deletingLastPathComponent(), spots: folder.url, core: folder.core, lock: places.lock,
+            config: places.config, trash: places.trash
+        )
     }
 
     static func publications(of scan: ScanResult, in store: URL) -> [String: SpotPublication] {

@@ -64,6 +64,10 @@ and never blocks the add. A bound spot that isn't installed and doesn't come wit
   has no Command Line Tools, where the review has said that the program may not match its source. On a Mac with the
   tools, a spot that you added runs only what Openspot built there from the source you can read. A share never passes a
   carried program on: it builds a new one from the sources it ships.
+- An install from a store, the Store's plus or `openspot store get`, shows the same review before it copies the spot's
+  folder. In the app, the review comes first, and only its Install copies. `openspot store get` prints the title, the
+  uses, Binds, Can also, Runs by itself and each file. When the review names any of them but the files, it copies
+  nothing until `--yes`.
 - An update with no new use and no new binding applies quietly. An update with a new use or a new binding waits for
   `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
   required with no default, and the review names each such spot.

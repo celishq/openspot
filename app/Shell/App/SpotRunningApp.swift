@@ -76,7 +76,7 @@ struct SpotRunningApp: RunningApp {
     }
 
     func review(_ id: String) async -> Bool {
-        await model.reviewCore(id)
+        await model.review(spot: id)
     }
 
     func editGrid() async {

@@ -684,6 +684,30 @@ final class SpotVerbTests: XCTestCase {
         return await work()
     }
 
+    private func friends(_ toml: String = "title = 'Clock'") throws {
+        let friends = folder.appendingPathComponent("friends")
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: toml)
+        _ = try model.files.config.change { $0.add(store: Store(url: friends)) }
+    }
+
+    func testTheReviewOfASpotOfAStoreShowsBeforeACopyAndItsInstallMakesItSearchableOffTheGrid() async throws {
+        try friends()
+        await model.reload()
+
+        let answer = try await call(["spot", "review", "clock"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(model.reviewed?.name, "Clock")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
+
+        _ = try await XCTUnwrap(model.reviewed).add()
+        await model.reload()
+
+        let clock = try XCTUnwrap(model.entries.first { $0.id == "clock" })
+        XCTAssertTrue(clock.isFound)
+        XCTAssertFalse(clock.isOnGrid)
+    }
+
     func testASpotThatACallWritesIsOnTheGridWhenTheCallAnswers() async throws {
         await model.reload()
 

@@ -6,9 +6,9 @@ toast() {
   openspot toast "$(printf '%s\n' "$1" | tail -n 1)"
 }
 
-# Gets spot $1 from the store, and says in a toast that it did, or why it did not.
+# Opens the review of spot $1 in the panel, whose Install copies it into your spots, and says in a toast why it did not open.
 get() {
-  if said=$(openspot store get "$1" 2>&1); then toast "$said"; else toast "$said"; return 1; fi
+  said=$(openspot spot review "$1" 2>&1) || { toast "$said"; return 1; }
 }
 
 # Asks for a folder and adds it as a store, and says in a toast that it did, or why it did not.

@@ -77,25 +77,27 @@ public struct SpotLock: Equatable, Sendable {
         isConfirmed: Bool = false,
         replaces: [String] = [],
         expecting: SpotPackage? = nil,
+        naming: String? = nil,
+        asking: String? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
-            let old = try entries().first { $0.source == source.text }
+            let old = try entries().first { $0.source == source.text && (naming == nil || $0.paths == [naming]) }
             var facts: Facts?
-            let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
+            let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, naming: naming, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
                 if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
                 let new = try Self.facts(of: paths, in: work)
                 if old == nil, !isConfirmed {
-                    let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
+                    let confirm = asking ?? "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
                         review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder, core: SpotsFolder.core(environment: environment))
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
-                    if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
+                    if !review.trust.isEmpty { throw SpotError.fault("\(review.summary)\(confirm)") }
                 }
                 if let old, !isConfirmed, let key = old.key, new.release?.publicKey != key {
                     throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
@@ -111,7 +113,7 @@ public struct SpotLock: Equatable, Sendable {
                 facts = new
             }
             let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
-            try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
+            try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && (naming != nil || $0.source != source.text) } + [entry])
             return old == nil ? entry.addedLine : entry.updatedLine
         }
     }
@@ -129,7 +131,7 @@ public struct SpotLock: Equatable, Sendable {
             do {
                 let place = URL(fileURLWithPath: "/", isDirectory: true)
                 var facts: Facts?
-                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, base: environment, check: { work, paths in
+                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, base: environment, naming: entry.paths.first, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash {
                         try Self.refuseGrowth(from: entry.uses, entry.canDo, to: new, confirm: "openspot spot add --yes")
@@ -137,13 +139,13 @@ public struct SpotLock: Equatable, Sendable {
                     facts = new
                 })
                 entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
-                changed[entry.source] = entries[index]
+                changed[entry.paths.first ?? entry.source] = entries[index]
                 added += entry.addedLine
             } catch {
                 faults += "\(entry.name): \((error as? SpotError)?.reason ?? error.localizedDescription)\n"
             }
         }
-        if !changed.isEmpty { try write(try self.entries().map { changed[$0.source] ?? $0 }) }
+        if !changed.isEmpty { try write(try self.entries().map { changed[$0.paths.first ?? $0.source] ?? $0 }) }
         if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the spots folder.\n" }
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }

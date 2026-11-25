@@ -175,7 +175,7 @@ struct SpotCalls {
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {
-            guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
+            guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot or a spot of a store. Run `openspot store list` to see each one.") }
             return ""
         }
     }
