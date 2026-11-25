@@ -21,10 +21,10 @@ extension SpotsModel {
     func takeOffGridSpots(placed: Set<String>) {
         let next = cards
             .filter { !placed.contains($0.id) && arranges($0) }
-            .sorted { $0.spot.name.localizedStandardCompare($1.spot.name) == .orderedAscending }
+            .sorted { $0.spot.comesBefore($1.spot) }
         guard next != offGrid else { return }
         offGrid = next
-        offGridWords = next.map { Self.fold(([$0.spot.name] + $0.spot.keywords).joined(separator: " ")) }
+        offGridWords = next.map { ([$0.spot.name] + $0.spot.keywords).joined(separator: " ").folded }
         takeShelf()
     }
 
@@ -34,15 +34,15 @@ extension SpotsModel {
     }
 
     func shelfMatches(of text: String) -> [Entry] {
-        let words = Self.fold(text.trimmingCharacters(in: .whitespaces))
+        let words = text.trimmingCharacters(in: .whitespaces).folded
         return words.isEmpty ? offGrid : zip(offGrid, offGridWords).filter { $0.1.contains(words) }.map(\.0)
     }
 
     public func gridSpots() -> [ArrangedSpot] {
         let placed = Set(laidGrid().spots.map(\.id))
-        let spots = cards.filter(arranges).sorted { $0.spot.name.localizedStandardCompare($1.spot.name) == .orderedAscending }
+        let spots = cards.filter(arranges).sorted { $0.spot.comesBefore($1.spot) }
         let listed = { (entry: Entry) in
-            ArrangedSpot(id: entry.id, name: entry.spot.name, icon: entry.spot.image ?? entry.spot.file ?? entry.spot.glyph ?? entry.spot.symbol, isOnGrid: placed.contains(entry.id))
+            ArrangedSpot(id: entry.id, name: entry.spot.name, icon: entry.spot.picture, isOnGrid: placed.contains(entry.id))
         }
         return spots.filter { !placed.contains($0.id) }.map(listed) + spots.filter { placed.contains($0.id) }.map(listed)
     }
@@ -57,10 +57,6 @@ extension SpotsModel {
         if !shelfQuery.isEmpty { shelfQuery = "" }
         shelfScroll = 0
         takeShelf()
-    }
-
-    private static func fold(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
     }
 
     public func dragShelfSpot(_ id: String, from origin: CGPoint, by translation: CGSize) {

@@ -98,6 +98,14 @@ public struct Spot: Equatable, Sendable {
         chosenIcon ?? header.facts.headerIcon
     }
 
+    public var picture: String {
+        self.image ?? self.file ?? self.glyph ?? self.symbol
+    }
+
+    public func comesBefore(_ other: Spot) -> Bool {
+        self.name.localizedStandardCompare(other.name) == .orderedAscending
+    }
+
     public var symbol: String {
         icon?.symbol ?? header.facts.baseSymbol
     }
@@ -162,7 +170,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     private var settingKeys: [SpotSettings.Key] {
-        let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
+        let icon = picture
         let commands = self.commands.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
         return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
     }

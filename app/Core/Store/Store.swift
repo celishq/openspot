@@ -49,7 +49,7 @@ public final class Store {
         await read()
         if let text {
             query = text
-            let folded = StoreCard.fold(text.trimmingCharacters(in: .whitespaces))
+            let folded = text.trimmingCharacters(in: .whitespaces).folded
             let matched = (placesInOrder.dropFirst() + [.mine]).first { place in shelves[place]?.contains { $0.words.contains(folded) } == true }
             choose(matched ?? .mine)
             refilter()
@@ -177,7 +177,7 @@ public final class Store {
     }
 
     private func refilter() {
-        let folded = StoreCard.fold(query.trimmingCharacters(in: .whitespaces))
+        let folded = query.trimmingCharacters(in: .whitespaces).folded
         let next = (shelves[place] ?? []).filter { folded.isEmpty || $0.words.contains(folded) }
         if next != cards { cards = next }
     }
@@ -208,7 +208,7 @@ public final class Store {
         for source in sources {
             cards[.source(source.url)] = source.spots().compactMap { file in
                 file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil) }
-            }.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
+            }.sorted { $0.spot.comesBefore($1.spot) }
         }
         return StoreRead(sources: sources, missing: Set(sources.filter { $0.canRemove && !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)
     }

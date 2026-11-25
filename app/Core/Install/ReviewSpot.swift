@@ -23,6 +23,8 @@ public struct ReviewSpot: Equatable, Sendable {
     private var install: SpotInstall?
     private var clashes = false
 
+    static let noFolder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)
+
     public init(spot: SpotPackage, folder: URL, core: URL? = nil, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let logs = try spot.roots.map { try spot.releaseLog(in: $0) }

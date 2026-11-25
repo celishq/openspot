@@ -59,7 +59,7 @@ public struct SpotUpdate: Sendable {
         guard let source = lock.origin(of: entry).find() else { return [] }
         let review = try ReviewSpot(
             spot: SpotPackage(paths: [source.lastPathComponent], in: source.deletingLastPathComponent()),
-            folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)
+            folder: ReviewSpot.noFolder
         )
         let added = review.uses.filter { !entry.uses.contains($0) }
         return (added.isEmpty ? [] : ["Uses \(added.map(\.rawValue).joined(separator: ", "))"]) + review.canDo.filter { !entry.canDo.contains($0) }

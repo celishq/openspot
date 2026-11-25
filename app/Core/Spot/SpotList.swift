@@ -61,7 +61,7 @@ struct SpotList {
             Loaded(
                 id: script.id,
                 name: script.name,
-                icon: Self.picture(of: script),
+                icon: script.picture,
                 detail: script.subtitle,
                 buttons: script.commands.map { offer in
                     Loaded.Offer(id: offer.id, title: offer.title ?? "", icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
@@ -77,12 +77,12 @@ struct SpotList {
     }
 
     func core(_ form: PrintForm) throws -> String {
-        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
+        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: $0.spot.picture, detail: $0.spot.subtitle, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
     }
 
     private var choices: [(id: String, spot: Spot, own: Bool)] {
         let own = folder.scanOwnIDs()
-        return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
+        return folder.coreChoices().sorted { $0.comesBefore($1) }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
             return (id, spot, own.contains(id))
         }
@@ -91,9 +91,5 @@ struct SpotList {
     func values(_ form: PrintForm, secrets: SecretStore.Values) throws -> String {
         let hidden = secrets.sorted { $0.key < $1.key }.flatMap { spot, values in values.keys.sorted().map { Value(spot: spot, key: $0, value: FieldValues.hidden) } }
         return try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) } + hidden)
-    }
-
-    private static func picture(of spot: Spot) -> String {
-        spot.image ?? spot.file ?? spot.glyph ?? spot.symbol
     }
 }

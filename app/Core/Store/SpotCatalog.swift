@@ -67,7 +67,7 @@ public struct SpotCatalog: Sendable {
             }
         }
         var seen = Set<String>()
-        return (core + mine + stored).filter { seen.insert($0.id).inserted }.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
+        return (core + mine + stored).filter { seen.insert($0.id).inserted }.sorted { $0.spot.comesBefore($1.spot) }
     }
 
     public func item(_ id: String) -> Item? {
@@ -122,7 +122,7 @@ public struct SpotCatalog: Sendable {
         init(_ item: Item, now: Date) {
             id = item.id
             name = item.spot.name
-            icon = item.spot.image ?? item.spot.file ?? item.spot.glyph ?? item.spot.symbol
+            icon = item.spot.picture
             detail = item.spot.subtitle
             size = item.size.name
             origin = item.origin.rawValue

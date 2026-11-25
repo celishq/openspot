@@ -190,7 +190,7 @@ public struct SpotLock: Equatable, Sendable {
         let canDo: [String]
         do {
             guard let spot else { throw unread ?? SpotError.fault("This file holds no spot.") }
-            canDo = try ReviewSpot(spot: spot, folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+            canDo = try ReviewSpot(spot: spot, folder: ReviewSpot.noFolder).canDo
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }

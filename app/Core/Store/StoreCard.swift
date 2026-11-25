@@ -10,10 +10,6 @@ public struct StoreCard: Identifiable, Equatable, Sendable {
         self.id = id
         self.spot = spot
         self.mark = mark
-        words = Self.fold(([spot.name, spot.subtitle ?? ""] + spot.keywords).joined(separator: " "))
-    }
-
-    static func fold(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        words = ([spot.name, spot.subtitle ?? ""] + spot.keywords).joined(separator: " ").folded
     }
 }
