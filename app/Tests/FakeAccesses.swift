@@ -10,7 +10,14 @@ final class FakeAccesses: MacAccesses, @unchecked Sendable {
         statusValues = statuses
     }
 
+    private var askValues: [MacAccess] = []
+
     var reads: [MacAccess] { lock.withLock { readValues } }
+    var asks: [MacAccess] { lock.withLock { askValues } }
+
+    func ask(for access: MacAccess) async {
+        lock.withLock { askValues.append(access) }
+    }
 
     func set(_ access: MacAccess, to status: ReadAccess) {
         lock.withLock { statusValues[access] = status }

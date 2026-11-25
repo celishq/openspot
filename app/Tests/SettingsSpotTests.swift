@@ -103,13 +103,19 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(records(text)["theme:Dracula"]?.value("used"), "true")
     }
 
-    func testAllowAsksForTheAccessibilityThatASpotLacks() async throws {
+    func testAllowStartsTheGuidedGrantAndTheWindowShowsItsStepUntilNotNowEndsIt() async throws {
         try "#!/bin/sh\nopenspot clipboard paste\n".writeScript(to: spots.spotFile("paste"), toml: "title = 'Paste'\nuses = ['clipboard']")
         reads.set(trust: .unasked)
 
-        _ = try await send("allow", "paste")
+        let text = try await send("allow", "paste")
+        let ended = try await send("grant", "end")
 
-        XCTAssertTrue(reads.asks.contains("accessibility true"), reads.asks.joined(separator: ", "))
+        let grants = await app.grants
+        XCTAssertEqual(grants, ["paste accessibility"])
+        XCTAssertEqual(records(text)["grant"]?.value("kind"), "grant")
+        XCTAssertEqual(records(text)["grant"]?.value("step"), "accessibility")
+        XCTAssertEqual(records(text)["grant"]?.value("place"), "Privacy & Security › Accessibility")
+        XCTAssertNil(records(ended)["grant"])
     }
 
     func testFailedWordsShowWhyInAToastAndTheWindowStays() async throws {

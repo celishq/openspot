@@ -109,6 +109,7 @@ detail = "Access, spots, keys and look"
 uses = ["app", "spots", "read"]
 views = ["settings.swift"]
 window = "settings"
+edits = "settings"
 
 [scripts.settings.on]
 "sheet.open" = true

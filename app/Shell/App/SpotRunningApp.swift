@@ -103,4 +103,24 @@ struct SpotRunningApp: RunningApp {
         await model.allows(reason)
     }
 
+    func grant(_ id: String, needs: [MacAccess]) async -> Bool {
+        await model.grant(id, needs: needs)
+    }
+
+    func grant() async -> AccessGrant? {
+        await model.grant
+    }
+
+    func endGrant() async {
+        await model.endGrant()
+    }
+
+    func restart() async -> Bool {
+        await MainActor.run {
+            guard let app = NSApp.delegate as? OpenspotApp else { return false }
+            app.restart(after: Self.answerPause)
+            return true
+        }
+    }
+
 }

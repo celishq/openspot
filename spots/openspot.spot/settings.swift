@@ -210,6 +210,17 @@ struct SpotView: View {
         let id: String
     }
 
+    /// The guided grant that runs: the spot, each macOS access it walks in a row, the one it waits on, the ones done, where
+    /// the switch of that one is in System Settings, and whether Openspot must start again to use it.
+    private struct Grant {
+        let spot: String
+        let steps: [String]
+        let step: String
+        let done: Set<String>
+        let place: String
+        let restarts: Bool
+    }
+
     /// Every record of the script, read once for each of its answers.
     private struct Book {
         var accesses: [Access] = []
@@ -217,6 +228,7 @@ struct SpotView: View {
         var rows: [Row] = []
         var looks: [Look] = []
         var account: [(String, String)] = []
+        var grant: Grant?
         var images: [String: NSImage] = [:]
         var symbols: Set<String> = []
         var clashes: [[Row]] = []
@@ -261,6 +273,11 @@ struct SpotView: View {
                         Swatch(background: Self.color(item["\(name).background"]), ink: Self.color(item["\(name).ink"]), accent: Self.color(item["\(name).accent"]))
                     }
                     looks.append(Look(id: String(id.dropFirst(6)), isUsed: item["used"] == "true", isBuiltIn: item["builtin"] == "true", dark: swatch("dark"), light: swatch("light")))
+                case "grant":
+                    grant = Grant(
+                        spot: item["spot"] ?? "", steps: list(item["steps"]), step: item["step"] ?? "", done: Set(list(item["done"])),
+                        place: item["place"] ?? "", restarts: item["restart"] == "true"
+                    )
                 case "account":
                     account = ["signedIn", "handle", "npub", "since", "backedUp", "sync"].compactMap { key in item[key].map { (key, $0) } }
                 default:
@@ -345,6 +362,7 @@ struct SpotView: View {
         .focusEffectDisabled()
         .focused($isListening)
         .onKeyPress(phases: .down) { press in record(press) }
+        .overlay { book.grant.map(grantSheet) }
         .sheet(isPresented: $isAboutShown) { about }
         .onChange(of: spot.answers, initial: true) {
             book = Book(spot.items)
@@ -572,6 +590,123 @@ struct SpotView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(24)
         .frame(width: 460)
+    }
+
+    // MARK: The guided grant
+
+    /// The step sheet of the guided grant: each access in a row, the one it waits on with the switch to turn on in System
+    /// Settings, and Not now. Openspot moves it on once macOS gives the access.
+    private func grantSheet(_ grant: Grant) -> some View {
+        let name = book.entry(grant.spot)?.title ?? grant.spot
+        return ZStack(alignment: .top) {
+            Color.black.opacity(0.18)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(grant.steps.count == 1 ? "\(name) needs \(names(grant.steps))" : "\(name) needs \(grant.steps.count) accesses")
+                        .font(.title3.weight(.semibold))
+                    Text(grant.steps.count == 1 ? "Turn it on in System Settings. This moves on by itself." : "Turn each on in System Settings. This moves on by itself.")
+                        .foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(grant.steps.enumerated()), id: \.element) { index, id in
+                        if index > 0 { Divider().padding(.vertical, 10) }
+                        grantStep(id, number: index + 1, of: grant)
+                    }
+                }
+                HStack(spacing: 10) {
+                    Spacer()
+                    Button("Not now") { send("grant", "end") }
+                        .keyboardShortcut(.cancelAction)
+                    if grant.restarts {
+                        Button("Restart Openspot") { send("restart") }
+                            .buttonStyle(.borderedProminent)
+                    } else {
+                        Button("Open System Settings") { send("pane", grant.step) }
+                            .buttonStyle(.borderedProminent)
+                    }
+                }
+                .controlSize(.large)
+            }
+            .padding(22)
+            .frame(width: 460, alignment: .leading)
+            .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.25), radius: 24, y: 10)
+            .padding(.top, 52)
+        }
+    }
+
+    /// One step of the grant: a number that turns into a tick once macOS gives the access, its name and what it does, and
+    /// for the step it waits on, the switch to find.
+    private func grantStep(_ id: String, number: Int, of grant: Grant) -> some View {
+        let access = book.access(id)
+        let isDone = grant.done.contains(id)
+        let isNow = id == grant.step
+        return HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle().fill(isDone ? Color.green : isNow ? Color.accentColor : Color.primary.opacity(0.12))
+                if isDone {
+                    Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                } else {
+                    Text("\(number)").font(.system(size: 12, weight: .semibold)).foregroundStyle(isNow ? Color.white : Color.secondary)
+                }
+            }
+            .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(access?.title ?? id)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(isNow ? Color.primary : Color.secondary)
+                    if isNow {
+                        Text(access?.purpose ?? "")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                if isNow {
+                    systemSwitch(grant.place)
+                    if grant.restarts {
+                        Text("Openspot must start again to use it. Turn it on, then restart; Settings opens here again.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// The row of Openspot as System Settings draws it, with its switch still off, and where to find it.
+    private func systemSwitch(_ place: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 22, height: 22)
+                Text("Openspot")
+                Spacer(minLength: 8)
+                Toggle("", isOn: .constant(false))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .padding(3)
+                    .overlay(Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5))
+                    .allowsHitTesting(false)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 38)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text("System Settings › \(place)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("In System Settings, \(place), turn on Openspot")
     }
 
     // MARK: Spots
