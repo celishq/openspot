@@ -214,9 +214,6 @@ extension SpotsModel {
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
             .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
-            KeyRow("z", command: true) { [self] _ in
-                openSheetID == nil && searchText.isEmpty && undoRemoval() ? true : nil
-            },
             settingsRow,
         ]
         let parts = openParts

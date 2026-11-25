@@ -58,11 +58,6 @@ public final class SecretStore: Equatable, Sendable {
         }
     }
 
-    func putBack(_ gone: Values) throws {
-        guard !gone.isEmpty else { return }
-        _ = try change { all in all.merge(gone) { kept, _ in kept } }
-    }
-
     private func change<Result: Sendable>(_ work: (inout Values) -> Result) throws -> Result {
         try kept.withLock { values in
             var all = try values ?? load()

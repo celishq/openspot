@@ -317,8 +317,6 @@ public final class SpotsModel {
         }
     }
     @ObservationIgnored private(set) var gridBuilds = 0
-    @ObservationIgnored var removal: Removal?
-    @ObservationIgnored var removals = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
 
     @ObservationIgnored public unowned let host: SpotsHost
