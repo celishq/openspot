@@ -14,6 +14,8 @@ final class CheckScriptTests: XCTestCase {
         ("tests", "app/Tests/PanelTests.swift", "let start = Continuous" + "Clock.now\n"),
         ("tests", "app/Tests/PanelTests.swift", "try await wait(\"the run\") { FileManager.default.file" + "Exists(atPath: path) }\n"),
         ("tests", "app/Tests/PanelTests.swift", "try await wait(\"the call\") { saved(\"calls\") " + "!= nil }\n"),
+        ("tests", "app/Tests/PanelTests.swift", "let found = try await ScriptProcess.output(url: URL(fileURLWithPath: \"/usr/bin/pg" + "rep\"), arguments: [\"-f\", path])\n"),
+        ("tests", "app/Tests/PanelTests.swift", "let count = proc_list" + "allpids(nil, 0)\n"),
         ("tests", "app/Tests/PanelTests.swift", "try await wait(\"the pid\") { (try? String(contentsOf: file, encoding: .utf8)) " + "!= nil }\n"),
         ("core", "app/Core/Panel.swift", "DispatchQueue.main.async" + "After(deadline: .now()) {}\n"),
         ("comments", "app/Core/Panel.swift", "struct Panel {}\n// a note\n"),

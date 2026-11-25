@@ -279,6 +279,9 @@ interaction.
   marker that a child makes write a line. `placed(at:)` waits for a file that its writer moves into place whole.
 - A test never catches a state that a span of real time ends, such as a frame that a `sleep` replaces. A gate that the test
   opens holds it, such as a fake `sleep` on the `PATH` that waits for a file, or the test checks the record of each change.
+- A test finds only its own processes: its children by program or by arguments (`children(running:)`,
+  `children(matching:)`), or a helper that outlives its parent by a tag unique to the test (`processes(tagged:)`),
+  since tests in parallel run the same programs.
 - A time limit in a test catches a hang or a slow algorithm, not a slow Mac. Give it ten times the normal time or more.
 - A test is independent. It writes only in its own folder, ends each process that it starts before it returns, and passes
   alone, in any order and beside any other test class.
@@ -291,7 +294,8 @@ interaction.
 - A time that decides an outcome, such as a limit, comes from the clock of the runs (`RunClock`), which a test moves with
   `FakeClock`. A test proves a fact, not a speed: a speed goes to `make perf` or a bench.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
-  blocks its thread with a sleep, on a wait for a file that exists or reads, and on a new `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
+  blocks its thread with a sleep, on a wait for a file that exists or reads, on a look for processes outside
+  `XCTestCase+Processes.swift`, and on a new `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
   `Date().timeIntervalSince` outside the shared helpers. `scripts/check-core.sh` fails on a new `asyncAfter` in `Core/`
   outside `RunClock`.
 

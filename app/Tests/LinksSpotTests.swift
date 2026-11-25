@@ -190,17 +190,7 @@ final class LinksSpotTests: SampleSpotsCase {
     }
 
     private func readsEnded(of spot: Spot) async throws {
-        for _ in 0..<3000 {
-            let pgrep = Process()
-            pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-            pgrep.arguments = ["-f", "\(spot.url.path) read"]
-            pgrep.standardOutput = FileHandle.nullDevice
-            try pgrep.run()
-            pgrep.waitUntilExit()
-            if pgrep.terminationStatus != 0 { return }
-            try await Task.sleep(nanoseconds: 20_000_000)
-        }
-        XCTFail("a read of \(spot.name) still runs")
+        try await wait("the end of each read of \(spot.name)", seconds: 60) { self.children(matching: "\(spot.url.path) read").isEmpty }
     }
 
     func testAnEditFetchesTheIconOfItsSite() async throws {

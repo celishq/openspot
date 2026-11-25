@@ -9,6 +9,10 @@ if grep -rEn --include='*.swift' '(wait\(|for _ in .* where ).*(fileExists\(|(sa
   echo "A test waits for a file to exist, but a child makes a file before it writes it; wait for its whole lines with lines(at:); see Tests in AGENTS.md." >&2
   exit 1
 fi
+if grep -rEn --include='*.swift' 'pgrep|proc_listallpids' app/Tests | grep -v '^app/Tests/XCTestCase+Processes\.swift:' | grep -v 'pgrep -P \$\$'; then
+  echo "A test looks for processes outside its own; find them with children(running:), children(matching:) or processes(tagged:); see Tests in AGENTS.md." >&2
+  exit 1
+fi
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
 grep -rEo --include='*.swift' 'Task\.sleep|setenv\(' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '(' >"$found"

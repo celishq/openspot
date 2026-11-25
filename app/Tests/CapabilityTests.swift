@@ -39,8 +39,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     private func helpers() async -> [pid_t] {
-        let found = (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/pgrep"), arguments: ["-f", "helper \(label)"], limit: 30)) ?? ""
-        return found.split(separator: "\n").compactMap { pid_t($0) }
+        await processes(tagged: "helper \(label)")
     }
 
     private func field(_ key: String, in answer: String) throws -> Int {

@@ -1009,6 +1009,7 @@
 		DFB0D3A249DB9FEA3D9A2334 /* TestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */; };
 		DFB915E7831E17F4C14BBB56 /* MessageBlockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701D4202AEBB487641654B83 /* MessageBlockTests.swift */; };
 		E004233F621658F2873FF9B8 /* ChannelDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 795525E5896143D79A05BD30 /* ChannelDescriptor.swift */; };
+		E012DAC554C5A058E0557C4F /* XCTestCase+Processes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B6CAFB0441567662429A69 /* XCTestCase+Processes.swift */; };
 		E02CD965412D11E6C18A8AB7 /* SpotWindowFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3202F54E6C15F0563F44D7D4 /* SpotWindowFooter.swift */; };
 		E088060F61BA4632900BFF49 /* SpotPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09293884216E1C8854E71BDC /* SpotPalette.swift */; };
 		E0BA4EA47FA798E1FE627F03 /* SpotCardPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 944E30DC365277055D4AAE56 /* SpotCardPlace.swift */; };
@@ -1974,6 +1975,7 @@
 		A769BFF266DBAAC33C71AA84 /* FrontCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontCall.swift; sourceTree = "<group>"; };
 		A7CE7F9E5C5FC31CAE686DBC /* SpotFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFetchTests.swift; sourceTree = "<group>"; };
 		A8AA79552F8EF1E73EF00C95 /* MotionTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTokensTests.swift; sourceTree = "<group>"; };
+		A8B6CAFB0441567662429A69 /* XCTestCase+Processes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCTestCase+Processes.swift"; sourceTree = "<group>"; };
 		A8E4E1C1772A88D5998AAD4B /* ViewVariantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewVariantTests.swift; sourceTree = "<group>"; };
 		A90598FEA2B59546EDC4575E /* SpotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardView.swift; sourceTree = "<group>"; };
 		A916743FB5C26B3DA7BCFE08 /* MenuBarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHost.swift; sourceTree = "<group>"; };
@@ -3402,6 +3404,7 @@
 				7D5C81464286C36C5C388552 /* WireTests.swift */,
 				FBDEB1C28AC5D94CF343F230 /* WorkWindowsTests.swift */,
 				CE31E257927FD6CF51E689FE /* XCTestCase+Files.swift */,
+				A8B6CAFB0441567662429A69 /* XCTestCase+Processes.swift */,
 				4311EE079F79465D8455F824 /* XCTestCase+TemporaryFolder.swift */,
 				773DCE4301A6063239652B19 /* XCTestCase+Wait.swift */,
 			);
@@ -5808,6 +5811,7 @@
 				6A67F4E385F4197C646A9A9B /* WireTests.swift in Sources */,
 				E0D69DF3A6CF6D4983DAD8E2 /* WorkWindowsTests.swift in Sources */,
 				B3F29D45421051E7AEBF6B92 /* XCTestCase+Files.swift in Sources */,
+				E012DAC554C5A058E0557C4F /* XCTestCase+Processes.swift in Sources */,
 				3F7BAC9FB0163BC75EC056E0 /* XCTestCase+TemporaryFolder.swift in Sources */,
 				85A2545FF4A64C2A739A4ABC /* XCTestCase+Wait.swift in Sources */,
 			);

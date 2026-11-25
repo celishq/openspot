@@ -88,18 +88,6 @@ final class DrawSpotTests: XCTestCase {
         return built.resolvingSymlinksInPath().path
     }
 
-    private func processes(of program: String) -> [pid_t] {
-        var ids = [pid_t](repeating: 0, count: Int(proc_listallpids(nil, 0)) + 64)
-        let count = Int(proc_listallpids(&ids, Int32(ids.count * MemoryLayout<pid_t>.size)))
-        var buffer = [UInt8](repeating: 0, count: Int(MAXPATHLEN))
-        return ids.prefix(max(count, 0)).filter { id in
-            var info = proc_bsdinfo()
-            guard proc_pidinfo(id, PROC_PIDTBSDINFO, 0, &info, Int32(MemoryLayout<proc_bsdinfo>.size)) > 0, info.pbi_ppid == getpid() else { return false }
-            let length = proc_pidpath(id, &buffer, UInt32(buffer.count))
-            return length > 0 && URL(fileURLWithPath: String(decoding: buffer[..<Int(length)], as: UTF8.self)).resolvingSymlinksInPath().path == program
-        }
-    }
-
     private func ended(_ arguments: [String]) -> Bool {
         let item = arguments.dropFirst().first.map { "input.item=\($0)" }
         return records.contains { record in record.arguments == [arguments[0]] && item.map { (record.input ?? "").contains($0) } ?? true }
@@ -192,7 +180,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertTrue(sheet.calls.isEmpty)
         runs.quit()
         let program = try await program(of: spot)
-        try await wait("the end of Draw") { self.processes(of: program).isEmpty }
+        try await wait("the end of Draw") { self.children(running: program).isEmpty }
         XCTAssertEqual(try Data(contentsOf: file), Self.bad)
     }
 
@@ -202,8 +190,8 @@ final class DrawSpotTests: XCTestCase {
         try write("Plan", id: "plan", age: 60)
         let sheet = try await opened(spot)
         let program = try await program(of: spot)
-        try await wait("one Draw") { self.processes(of: program).count == 1 }
-        let first = processes(of: program)
+        try await wait("one Draw") { self.children(running: program).count == 1 }
+        let first = children(running: program)
 
         sheet.pick(try row("flows", in: sheet))
         try await wait("the rows of the next turn, which the call that waits prints") { sheet.list.shown.first?.run == "1:new" }
@@ -217,7 +205,7 @@ final class DrawSpotTests: XCTestCase {
         sheet.pick(try row("plan", in: sheet))
         try await wait("the end of the second open") { self.ended(["press", "1:plan"]) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.id])
-        XCTAssertEqual(processes(of: program), first)
+        XCTAssertEqual(children(running: program), first)
         XCTAssertTrue(sheet.acts.isEmpty)
 
         sheet.pick(SpotItem(title: "New board", run: "1:new"))
@@ -229,7 +217,7 @@ final class DrawSpotTests: XCTestCase {
         runs.panelClosed()
         sheet.stop(held)
 
-        try await wait("the end of Draw") { self.processes(of: program).isEmpty }
+        try await wait("the end of Draw") { self.children(running: program).isEmpty }
         XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertFalse(sheet.isWanted)
         XCTAssertEqual(try figures(of: boards.appendingPathComponent("flows.json")), 1)
@@ -244,11 +232,11 @@ final class DrawSpotTests: XCTestCase {
         try await wait("the call that waits") { sheet.list.shown.first?.run == "1:new" }
         sheet.close()
         runs.panelClosed()
-        try await wait("one Draw") { self.processes(of: program).count == 1 }
+        try await wait("one Draw") { self.children(running: program).count == 1 }
 
         runs.quit()
 
-        try await wait("the end of Draw") { self.processes(of: program).isEmpty }
+        try await wait("the end of Draw") { self.children(running: program).isEmpty }
         XCTAssertEqual(try shownFiles(), ["flows.json"])
     }
 
@@ -256,12 +244,12 @@ final class DrawSpotTests: XCTestCase {
         let spot = try draw()
         let sheet = try await opened(spot)
         let program = try await program(of: spot)
-        try await wait("one Draw") { self.processes(of: program).count == 1 }
+        try await wait("one Draw") { self.children(running: program).count == 1 }
 
         sheet.close()
         runs.panelClosed()
 
-        try await wait("the end of Draw") { self.processes(of: program).isEmpty }
+        try await wait("the end of Draw") { self.children(running: program).isEmpty }
     }
 
     func testASecondOpenspotChangesNoBoardWhileTheFirstHasOneOpenAndSaysSo() async throws {
@@ -273,7 +261,7 @@ final class DrawSpotTests: XCTestCase {
         try await wait("the call that waits") { first.list.shown.first?.run == "1:new" }
         let program = try await program(of: spot)
         let second = try await opened(spot)
-        try await wait("two Draws") { self.processes(of: program).count == 2 }
+        try await wait("two Draws") { self.children(running: program).count == 2 }
         let item = try row("flows", in: second)
         let rename = try XCTUnwrap(second.spot.frameActions.first { $0.id == "rename" })
         guard case .form(let form) = await second.answer(to: rename, item: item) else { return XCTFail("Rename asked with no form") }
