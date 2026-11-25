@@ -17,7 +17,7 @@ struct SpotShelf: View {
                     ZStack(alignment: .topLeading) {
                         ForEach(row, id: \.self) { index in
                             let id = spots[index].id
-                            SpotShelfCard(entry: spots[index])
+                            SpotShelfCard(entry: spots[index], name: model.shelfNames[id] ?? ShelfName(spots[index].spot.name))
                                 .equatable()
                                 .modifier(ShelfCarry(model: model, id: id))
                                 .offset(x: layout.x(of: index))
