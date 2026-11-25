@@ -16,15 +16,12 @@ extension SpotTokens {
     public static let pictureRimLine: CGFloat = 0.5
     public static let offScreen = CGPoint(x: -9000, y: -9000)
     public static let scrollFadeLength = 56.0
-    public static let shelfCardRadius: CGFloat = 12
     public static let arrangeMargin: CGFloat = 24
-    public static let arrangeBar: CGFloat = 64
+    public static let arrangeBar: CGFloat = 96
     public static let arrangeFoot: CGFloat = 72
     public static let arrangeSearchWidth: CGFloat = 340
     public static let arrangeButton: CGFloat = 34
     public static let arrangeButtonPadding: CGFloat = 16
-    public static let slotPickWidth: CGFloat = 220
-    public static let slotPickPadding: CGFloat = 6
     public static let scrollFadeDistance = 24.0
     public static let textLeading: CGFloat = 3
     public static let textLineGap: CGFloat = 1

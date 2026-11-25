@@ -128,6 +128,28 @@ final class ArrangeTests: PanelCase {
         XCTAssertNotEqual(model.files.config.read().arrangement.isOnGrid(of: "b"), false)
     }
 
+    func testAfterAPinAndAResizeTheNextSpotStillDragsIn() async throws {
+        try await arrangeWithOff(["yak", "zeta"], on: ["a"])
+        let slot = GridCell(row: 1, column: 0)
+        model.dragShelfSpot("zeta", from: start, by: toward(slot))
+        model.dropShelfSpot(by: toward(slot))
+        try await wait("zeta lands", until: { model.landing == nil && model.carry == nil })
+
+        model.resizeSpot("zeta", by: CGSize(width: -SpotTokens.cell, height: 0))
+        model.dropResize()
+        XCTAssertEqual(place(of: "zeta")?.size, .small)
+        try await wait("the resize lands", until: { model.gesture == nil && model.landing == nil && model.carry == nil })
+
+        model.dragShelfSpot("yak", from: start, by: toward(GridCell(row: 2, column: 0)))
+        XCTAssertEqual(model.pin?.id, "yak")
+        XCTAssertNotNil(model.pin?.target)
+        model.dropShelfSpot(by: toward(GridCell(row: 2, column: 0)))
+        XCTAssertTrue(order.contains("yak"))
+
+        model.dragSpot("zeta", by: CGSize(width: SpotTokens.cell * 2, height: 0))
+        XCTAssertEqual(model.drag?.id, "zeta")
+    }
+
     func testADragThatLeavesTheGridPutsThePushedCardsBack() async throws {
         try await arrangeWithOff(["zeta"], on: ["a", "b"])
         let cell = try XCTUnwrap(place(of: "b")).cell

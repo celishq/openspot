@@ -53,10 +53,12 @@ final class ArrangeHoldTests: PanelCase {
         try await spots(["a"], off: ["b"])
         holdOverTheGrid()
         model.openSlotPick(at: GridCell(row: 3, column: 0))
+        XCTAssertTrue(model.gridShade.dims(0))
 
         XCTAssertTrue(model.handleKey(escape))
 
         XCTAssertNil(model.slotPick)
+        XCTAssertFalse(model.gridShade.isOn)
         XCTAssertEqual(order, ["a"])
     }
 
