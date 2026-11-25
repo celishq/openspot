@@ -298,6 +298,7 @@
 		42EBDF57378288FF91153162 /* PlaygroundPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC669B26F525901897FDF679 /* PlaygroundPanel.swift */; };
 		431DCA26C85455536800E593 /* PanelFoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635D38E59A39B15F3B5563A5 /* PanelFoot.swift */; };
 		433CF6740190BC31E3E431E6 /* SpotRunsCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72638E1D79E36A1B4B4F9038 /* SpotRunsCallTests.swift */; };
+		444156BD703751F4FFA7BC68 /* CallLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA32C18963C1A0249E133A5C /* CallLimit.swift */; };
 		44545D2B4F6847DE8EA37CD6 /* SourceSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5949EBCA6BDA8DA00E26B5 /* SourceSpotTests.swift */; };
 		4460477FB53CCE9B411D2E42 /* SheetPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26873FF3438F703F6D50E357 /* SheetPage.swift */; };
 		447082408043BBB085EC71D5 /* TestSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464948DCFF0FC33897C14FB8 /* TestSpot.swift */; };
@@ -2205,6 +2206,7 @@
 		D90D63EDCEA1A048E23A6DF0 /* SpotRuns+Bindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Bindings.swift"; sourceTree = "<group>"; };
 		D979AA33BA3AF2AA448F7AA6 /* FirstLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchTests.swift; sourceTree = "<group>"; };
 		DA0055869671071E03A6137B /* SpotFieldFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFieldFocus.swift; sourceTree = "<group>"; };
+		DA32C18963C1A0249E133A5C /* CallLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallLimit.swift; sourceTree = "<group>"; };
 		DA8F981AACA0636A82B3B23F /* SpotSelectionRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSelectionRing.swift; sourceTree = "<group>"; };
 		DA9A2D73F1178DA6CC737545 /* ScanResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResult.swift; sourceTree = "<group>"; };
 		DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRoundButton.swift; sourceTree = "<group>"; };
@@ -3425,6 +3427,7 @@
 			children = (
 				C0AAD68C6DB9C2600F8A0A85 /* AskingCalls.swift */,
 				D6910599F29033D190D37EB5 /* CallAnswer.swift */,
+				DA32C18963C1A0249E133A5C /* CallLimit.swift */,
 				2EBCB63F00EF616CD63884A9 /* CallOutcome.swift */,
 				5D94BE43CEBE87BD3CC9D8BE /* FirstFrame.swift */,
 				D51AEF5593DDBC73EEB5C287 /* HostMode.swift */,
@@ -4727,6 +4730,7 @@
 				C58C7B87F5B01D991170835E /* CallAnswer.swift in Sources */,
 				C4972577E73971DABC316A2F /* CallContext.swift in Sources */,
 				4A29849EB7FB856CF6BE2BB3 /* CallFault.swift in Sources */,
+				444156BD703751F4FFA7BC68 /* CallLimit.swift in Sources */,
 				9F4ACEC00AE7D055EB3FBA4B /* CallLog.swift in Sources */,
 				FD1058E3D11BEF564A6E18FD /* CallOutcome.swift in Sources */,
 				C849E5A68BE1AC1F565B905C /* CallRule.swift in Sources */,

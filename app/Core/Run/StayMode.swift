@@ -7,9 +7,7 @@ final class StayMode: ScriptMode {
         let call: OpenCall
         var isDropped = false
         var isPictured = false
-        var timer: Task<Void, Never>?
-        var deadline: Date?
-        var left: TimeInterval?
+        var limit: CallLimit?
 
         init(_ call: OpenCall) {
             self.call = call
@@ -214,52 +212,33 @@ final class StayMode: ScriptMode {
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
         guard isTimed else { return }
-        if isHeld || !script.hasStarted {
-            record.left = runs.showLimit
-        } else {
-            arm(id, record, for: runs.showLimit, on: script)
+        let limit = CallLimit(seconds: runs.showLimit, clock: runs.clock) { [weak self, weak script] in
+            Task { @MainActor in if let script { self?.timeOut(id, of: script) } }
         }
-    }
-
-    private func arm(_ id: Int, _ record: Record, for limit: TimeInterval, on script: ScriptProcess) {
-        record.deadline = runs.now().addingTimeInterval(limit)
-        record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in
-            try? await sleep(.seconds(limit), .seconds(limit / 10))
-            guard !Task.isCancelled, let script else { return }
-            self?.timeOut(id, of: script)
-        }
+        record.limit = limit
+        if isHeld { limit.hold() }
+        if script.hasStarted { limit.start() }
     }
 
     func holdLimit() {
+        guard !isHeld else { return }
         isHeld = true
-        let now = runs.now()
-        for record in records.values where !record.isDropped {
-            guard let timer = record.timer, let deadline = record.deadline else { continue }
-            timer.cancel()
-            record.timer = nil
-            record.left = max(0, deadline.timeIntervalSince(now))
-        }
+        records.values.forEach { $0.limit?.hold() }
     }
 
     func releaseLimit() {
-        isHeld = false
-        if let script, script.hasStarted { armLeft(on: script) }
+        if isHeld {
+            isHeld = false
+            records.values.forEach { $0.limit?.release() }
+        }
         guard asksAfterHold else { return }
         asksAfterHold = false
         run?.askAnswer()
     }
 
     private func started(_ started: ScriptProcess) {
-        guard script === started, !isHeld else { return }
-        armLeft(on: started)
-    }
-
-    private func armLeft(on script: ScriptProcess) {
-        for (id, record) in records where !record.isDropped {
-            guard let left = record.left else { continue }
-            record.left = nil
-            arm(id, record, for: left, on: script)
-        }
+        guard script === started else { return }
+        records.values.forEach { $0.limit?.start() }
     }
 
     private func noteReason() {
@@ -293,8 +272,7 @@ final class StayMode: ScriptMode {
         guard let record = records[id] else { return }
         record.call.made.stop()
         record.isDropped = true
-        record.timer?.cancel()
-        record.timer = nil
+        record.limit?.end()
         let dropped = records.filter(\.value.isDropped).keys
         if dropped.count > Self.droppedLimit, let oldest = dropped.min() {
             records[oldest] = nil
@@ -304,7 +282,7 @@ final class StayMode: ScriptMode {
     }
 
     private func remove(_ id: Int) {
-        records.removeValue(forKey: id)?.timer?.cancel()
+        records.removeValue(forKey: id)?.limit?.end()
         noteReason()
     }
 
@@ -314,7 +292,7 @@ final class StayMode: ScriptMode {
 
     private func loseAll(_ end: ScriptCall.End, errors: String = "") {
         let lost = records.sorted { $0.key < $1.key }.map(\.value)
-        lost.forEach { $0.timer?.cancel() }
+        lost.forEach { $0.limit?.end() }
         records = [:]
         printing = nil
         noteReason()

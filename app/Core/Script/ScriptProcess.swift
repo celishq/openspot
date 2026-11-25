@@ -15,7 +15,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let name: String?
     private let arguments: [String]
     private let mode: Mode
-    private let limit: TimeInterval?
+    private var limit: CallLimit?
     private let dataName: String?
     private let sandbox: Sandbox?
     private let variables: [String: String]
@@ -31,15 +31,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private let exit = DispatchSemaphore(value: 0)
     private let lock = NSLock()
     private var continuation: AsyncThrowingStream<String, Error>.Continuation?
-    private var hasFrame = false
     private var stopped = false
     private var building: Bool
     private var ended = false
     private var lateKill: Int?
-    private var limitEnd: Date?
-    private var limitHolds = 0
-    private var heldSince: Date?
-    private var limitTurn = 0
     private var stops = 0
     private var id: pid_t = 0
     private var waitStatus: Int32?
@@ -68,8 +63,10 @@ public final class ScriptProcess: @unchecked Sendable {
         self.url = url
         self.arguments = arguments
         self.mode = mode
-        self.limit = limit
         self.stopPause = stopPause
+        self.limit = limit.map { seconds in
+            CallLimit(seconds: seconds, clock: clock) { [weak self] in self?.stop(because: SpotError.timedOut) }
+        }
     }
 
     static let locale = "en_US.UTF-8"
@@ -172,41 +169,16 @@ public final class ScriptProcess: @unchecked Sendable {
         watchExit(of: started)
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
-        if let limit {
-            lock.withLock { limitEnd = clock.now().addingTimeInterval(limit) }
-            armLimit()
-        }
+        limit?.start()
         follow(output: output, errors: errors)
     }
 
-    private func armLimit() {
-        let (turn, end) = lock.withLock { (limitTurn, limitEnd) }
-        guard let end else { return }
-        clock.after(end.timeIntervalSince(clock.now())) { [weak self] in
-            guard let self, lock.withLock({ !hasFrame && limitHolds == 0 && limitTurn == turn }) else { return }
-            stop(because: SpotError.timedOut)
-        }
-    }
-
     func holdLimit() {
-        lock.withLock {
-            limitHolds += 1
-            guard limitHolds == 1 else { return }
-            heldSince = clock.now()
-            limitTurn += 1
-        }
+        limit?.hold()
     }
 
     func releaseLimit() {
-        let isFree = lock.withLock {
-            limitHolds = max(0, limitHolds - 1)
-            guard limitHolds == 0, let since = heldSince else { return false }
-            heldSince = nil
-            limitTurn += 1
-            limitEnd = limitEnd?.addingTimeInterval(clock.now().timeIntervalSince(since))
-            return true
-        }
-        if isFree { armLimit() }
+        limit?.release()
     }
 
     public func send(_ message: Message, id: Int) {
@@ -394,18 +366,18 @@ public final class ScriptProcess: @unchecked Sendable {
     private func yield(_ frame: String) {
         let continuation: AsyncThrowingStream<String, Error>.Continuation? = lock.withLock {
             guard !stopped else { return nil }
-            hasFrame = true
             return self.continuation
         }
+        limit?.end()
         continuation?.yield(frame)
     }
 
     private func finish(throwing error: Error?) {
         let continuation: AsyncThrowingStream<String, Error>.Continuation? = lock.withLock {
             ended = true
-            hasFrame = true
             return self.continuation
         }
+        limit?.end()
         continuation?.finish(throwing: error)
     }
 

@@ -507,10 +507,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the row") { sheet.list.shown.count == 1 }
         let link = try XCTUnwrap(sheet.link as? StayMode)
         sheet.show(need: .change)
-        let timer = try XCTUnwrap(link.records.values.first?.timer)
+        XCTAssertNotNil(link.records.values.first?.limit)
 
         link.end()
-        await timer.value
         clock.advance(by: 60)
 
         XCTAssertTrue(link.records.isEmpty)
@@ -531,15 +530,14 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the row") { sheet.list.shown.count == 1 }
         let link = try XCTUnwrap(sheet.link as? StayMode)
         sheet.show(need: .change)
-        let timer = try XCTUnwrap(link.records.values.first?.timer)
-        try await wait("the sleep of the timer") { clock.isSleeping(for: 10) }
+        let limit = try XCTUnwrap(link.records.values.first?.limit)
+        try await wait("the limit of the read") { limit.due == clock.time.addingTimeInterval(10) }
 
         clock.advance(by: 9)
         XCTAssertEqual(told(), [])
         clock.advance(by: 1)
-        await timer.value
 
-        XCTAssertEqual(told(), ["Script took too long, so Openspot stopped it."])
+        try await wait("the failure") { told() == ["Script took too long, so Openspot stopped it."] }
         XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(link.records.values.map(\.isDropped), [true])
     }

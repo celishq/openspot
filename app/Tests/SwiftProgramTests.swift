@@ -551,13 +551,13 @@ final class SwiftProgramTests: XCTestCase {
         defer { form.cancel() }
         try await wait("the call of the form") { link.records.values.contains { $0.isForm } }
         let record = try XCTUnwrap(link.records.values.first { $0.isForm })
-        XCTAssertNil(record.timer)
+        XCTAssertEqual(record.limit?.isRunning, false)
         clock.advance(by: 60)
         FileManager.default.createFile(atPath: release, contents: Data())
-        try await wait("the limit armed once the program runs") { record.timer != nil }
+        try await wait("the limit armed once the program runs") { record.limit?.isRunning == true }
 
         XCTAssertFalse(record.isDropped)
-        XCTAssertEqual(record.deadline, runs.now().addingTimeInterval(10))
+        XCTAssertEqual(record.limit?.due, runs.now().addingTimeInterval(10))
     }
 
     func testASwiftSpotIsBuiltFromItsFileAndEachSourceItsHeaderNames() async throws {
