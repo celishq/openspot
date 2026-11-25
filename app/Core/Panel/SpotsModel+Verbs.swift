@@ -71,12 +71,12 @@ extension SpotsModel {
 
     @concurrent
     private nonisolated static func discard(
-        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> URL, log: CallLog, secrets: SecretStore, of ids: Set<String>
+        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, of ids: Set<String>
     ) async -> String? {
         do {
-            try folder.remove(spot) { url in _ = try trash(url) }
+            try folder.remove(spot, discard: trash)
             log.remove(spot.id)
-            _ = try secrets.remove { ids.contains($0) }
+            try secrets.remove { ids.contains($0) }
             return nil
         } catch {
             return reason(error)

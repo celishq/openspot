@@ -128,9 +128,9 @@ final class ThemeFolderTests: XCTestCase {
         try themes.use("Night")
         var trashed: [String] = []
 
-        XCTAssertEqual(try themes.delete("Dusk") { trashed.append($0.lastPathComponent); try FileManager.default.removeItem(at: $0); return $0 }, false)
+        XCTAssertEqual(try themes.delete("Dusk") { trashed.append($0.lastPathComponent); try FileManager.default.removeItem(at: $0) }, false)
         XCTAssertEqual(themes.readInUse(), "Night")
-        XCTAssertEqual(try themes.delete("Night") { trashed.append($0.lastPathComponent); try FileManager.default.removeItem(at: $0); return $0 }, true)
+        XCTAssertEqual(try themes.delete("Night") { trashed.append($0.lastPathComponent); try FileManager.default.removeItem(at: $0) }, true)
 
         XCTAssertEqual(trashed, ["Dusk.theme", "Night.theme"])
         XCTAssertEqual(themes.scan().names, ["Openspot"])

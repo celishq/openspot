@@ -43,9 +43,7 @@ final class SpotVerbTests: XCTestCase {
             home: folder,
             defaults: defaults,
             trash: { url in
-                let place = trash.appendingPathComponent(url.lastPathComponent)
-                try FileManager.default.moveItem(at: url, to: place)
-                return place
+                try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
             }
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))

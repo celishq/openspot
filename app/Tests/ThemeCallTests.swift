@@ -8,9 +8,7 @@ final class ThemeCallTests: XCTestCase {
         let trash = config.appendingPathComponent("Trash")
         let places = AppPlaces(environment: ["OPENSPOT_CONFIG": config.path], home: config, defaults: UserDefaults(suiteName: "openspot-test-\(UUID().uuidString)") ?? .standard, trash: { url in
             try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
-            let place = trash.appendingPathComponent(url.lastPathComponent)
-            try FileManager.default.moveItem(at: url, to: place)
-            return place
+            try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
         }, defaultConfig: nil)
         return CommandAPI(mac: Mac(theme: theme ?? alone(in: config)), places: places, app: app)
     }

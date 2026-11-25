@@ -40,9 +40,7 @@ final class PanelDiskTests: PanelCase {
             defaults: defaults,
             trash: { url in
                 discards.add()
-                let place = trash.appendingPathComponent(url.lastPathComponent)
-                try FileManager.default.moveItem(at: url, to: place)
-                return place
+                try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
             },
             kinds: { paths in
                 reads.add()

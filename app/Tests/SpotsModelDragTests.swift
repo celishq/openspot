@@ -57,9 +57,7 @@ final class SpotsModelDragTests: XCTestCase {
             defaults: defaults,
             trash: { url in
                 try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
-                let place = trash.appendingPathComponent(url.lastPathComponent)
-                try FileManager.default.moveItem(at: url, to: place)
-                return place
+                try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
             },
             defaultConfig: folder.appendingPathComponent("defaults.toml")
         )

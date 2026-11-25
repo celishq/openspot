@@ -50,11 +50,9 @@ public final class SecretStore: Equatable, Sendable {
         _ = try change { $0[spot, default: [:]][key] = value }
     }
 
-    func remove(where isGone: (String) -> Bool) throws -> Values {
+    func remove(where isGone: (String) -> Bool) throws {
         try change { all in
-            let gone = all.filter { isGone($0.key) }
-            for spot in gone.keys { all[spot] = nil }
-            return gone
+            for spot in all.keys where isGone(spot) { all[spot] = nil }
         }
     }
 

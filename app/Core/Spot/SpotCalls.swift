@@ -56,7 +56,7 @@ struct SpotCalls {
     func remove(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [places, app, secrets] in
             let removed = try places.lock.remove(id, from: places.spots.url).name
-            _ = try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
+            try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
             return "Removed \(removed).\n"
         }
