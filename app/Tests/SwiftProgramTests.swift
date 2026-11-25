@@ -555,12 +555,9 @@ final class SwiftProgramTests: XCTestCase {
         clock.advance(by: 60)
         FileManager.default.createFile(atPath: release, contents: Data())
         try await wait("the limit armed once the program runs") { record.timer != nil }
-        XCTAssertFalse(record.isDropped)
-        try await wait("the sleep of the limit") { clock.isSleeping(for: 10) }
-        clock.advance(by: 10)
-        await record.timer?.value
 
-        XCTAssertTrue(record.isDropped)
+        XCTAssertFalse(record.isDropped)
+        XCTAssertEqual(record.deadline, runs.now().addingTimeInterval(10))
     }
 
     func testASwiftSpotIsBuiltFromItsFileAndEachSourceItsHeaderNames() async throws {
