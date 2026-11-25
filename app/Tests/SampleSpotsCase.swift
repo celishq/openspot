@@ -130,6 +130,17 @@ class SampleSpotsCase: XCTestCase {
             echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -D > "$out"
             printf 'image/png'
             ;;
+          https://vector.test/)
+            echo '<head><link rel="icon" href="/a.png" sizes="16x16"><link rel="icon" type="image/svg+xml" href="/b.svg" data-base-href="/b"></head>'
+            ;;
+          https://vector.test/a.png)
+            echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -D > "$out"
+            printf 'image/png'
+            ;;
+          https://vector.test/b.svg)
+            echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="8"/></svg>' > "$out"
+            printf 'image/svg+xml'
+            ;;
           *)
             exit 22
             ;;
