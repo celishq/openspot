@@ -80,7 +80,7 @@ final class PressTests: PanelCase {
         model.panelWillShow()
         model.press("list")
         try await wait("the open list") { self.model.openSheetID == "list" && self.model.openItems?.shown.count == 1 }
-        model.searchText = "45"
+        model.type("45")
         try await wait("the row that makes the action") { self.model.createAction != nil }
 
         let takes = await takes { model.createFromSearch() }

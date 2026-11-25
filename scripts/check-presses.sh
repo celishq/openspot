@@ -6,19 +6,50 @@ fast=scripts/fast-signals.txt
 found=$(mktemp)
 methods=$(mktemp)
 presses=$(mktemp)
-trap 'rm -f "$found" "$methods" "$presses"' EXIT
+helpers=$(mktemp)
+trap 'rm -f "$found" "$methods" "$presses" "$helpers"' EXIT
+grep -lE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' $(find app/Core -name '*.swift' | sort) | xargs awk '
+  function count(s, c,  t) { t = s; return gsub(c, "", t) }
+  /^    [a-z@ ]*func [A-Za-z_]/ {
+    fn = $0; sub(/.*func /, "", fn); sub(/[^A-Za-z0-9_].*/, "", fn)
+    depth = count($0, "\\{") - count($0, "\\}")
+    body = $0; sub(/.*func [A-Za-z0-9_]*/, "", body)
+  }
+  fn != "" {
+    line = FNR == 0 ? "" : $0
+    if (line ~ /(^|[^A-Za-z0-9_.])change\([^)]/ && fn != "change") direct[fn] = 1
+    s = line
+    while (match(s, /(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9_]*\(/)) {
+      m = substr(s, RSTART, RLENGTH - 1); sub(/^[^A-Za-z_]/, "", m)
+      if (m != fn) calls[fn, m] = 1
+      s = substr(s, RSTART + RLENGTH)
+    }
+    if (!/^    [a-z@ ]*func [A-Za-z_]/) depth += count($0, "\\{") - count($0, "\\}")
+    if (depth <= 0 && /\}/) fn = ""
+  }
+  END {
+    for (n in direct) helper[n] = 1
+    for (more = 1; more;) {
+      more = 0
+      for (k in calls) { split(k, p, SUBSEP); if (!(p[1] in helper) && (p[2] in helper)) { helper[p[1]] = 1; more = 1 } }
+    }
+    for (n in helper) print n
+  }
+' >"$helpers"
 find app/Core -name '*.swift' | sort | while read -r file; do
-  awk -v f="$file" '
+  grep -qE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' "$file" && shared="$helpers" || shared=/dev/null
+  awk -v f="$file" -v shared="$shared" '
     function count(s, c,  t) { t = s; return gsub(c, "", t) }
     function changes(s,  m) {
       if (s ~ /(^|[^A-Za-z0-9_])change\(/) return 1
-      while (match(s, /[A-Za-z_][A-Za-z0-9_]*\(/)) {
-        m = substr(s, RSTART, RLENGTH - 1)
+      while (match(s, /(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9_]*\(/)) {
+        m = substr(s, RSTART, RLENGTH - 1); sub(/^[^A-Za-z_]/, "", m)
         if (m in helper) return 1
         s = substr(s, RSTART + RLENGTH)
       }
       return 0
     }
+    BEGIN { while ((getline n < shared) > 0) helper[n] = 1 }
     FNR == NR {
       if (fdepth > 0) {
         if ($0 ~ /(^|[^A-Za-z0-9_.])change\([^)]/) helper[fname] = 1

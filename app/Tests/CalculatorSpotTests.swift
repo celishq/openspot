@@ -136,11 +136,11 @@ final class CalculatorSpotTests: SampleSpotsCase {
         defer { defaults.removePersistentDomain(forName: suite) }
         let model = try await panel(in: folder, defaults: defaults, frameWait: .seconds(10))
         defer { model.quit() }
-        model.searchText = "2+2"
+        model.type("2+2")
         try await wait("the loaded calculator") { model.visible.first?.id == "calculator\n4" }
-        model.searchText = ""
+        model.type("")
 
-        model.searchText = "12*(3+4)"
+        model.type("12*(3+4)")
 
         XCTAssertEqual(model.visible.first?.id, "calculator\n84")
     }
@@ -157,7 +157,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let model = try await panel(in: folder, defaults: defaults, fetch: Fetch(configuration: FakeWeb.configuration, wait: 30))
         defer { model.quit() }
 
-        model.searchText = "15 usd in eur"
+        model.type("15 usd in eur")
 
         try await wait("the answer from the fetched rates") { model.visible.first?.id == "calculator\n13.46" }
         XCTAssertEqual(FakeWeb.asked.withLock { $0.filter { $0.url?.absoluteString == source }.count }, 1)

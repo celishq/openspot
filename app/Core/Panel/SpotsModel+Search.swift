@@ -166,20 +166,21 @@ extension SpotsModel {
     }
 
     public var searchText: String {
-        get { form?.draft.choices?.query ?? openSheet?.query ?? query }
-        set {
-            asOnePress {
-                if form?.draft.choices != nil {
-                    form?.draft.search(newValue)
-                } else if let file = SpotPackage.file(in: newValue) {
-                    takeQuery("")
-                    openSheet?.search("")
-                    DispatchQueue.main.async { self.review([file]) }
-                } else if let openSheet {
-                    openSheet.search(newValue)
-                } else {
-                    takeQuery(newValue)
-                }
+        form?.draft.choices?.query ?? openSheet?.query ?? query
+    }
+
+    public func type(_ text: String) {
+        asOnePress {
+            if form?.draft.choices != nil {
+                form?.draft.search(text)
+            } else if let file = SpotPackage.file(in: text) {
+                takeQuery("")
+                openSheet?.search("")
+                DispatchQueue.main.async { self.review([file]) }
+            } else if let openSheet {
+                openSheet.search(text)
+            } else {
+                takeQuery(text)
             }
         }
     }

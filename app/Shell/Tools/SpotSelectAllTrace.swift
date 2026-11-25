@@ -62,7 +62,7 @@ final class SpotSelectAllTrace: NSObject {
         switch step {
         case .type(let code): post(code, flags: [])
         case .selectAll: post(0, flags: .maskCommand)
-        case .clear: model.searchText = ""
+        case .clear: model.type("")
         case .mark(let name): log("--- \(name)")
         case .wait(let seconds): return DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { self.play(rest) }
         }

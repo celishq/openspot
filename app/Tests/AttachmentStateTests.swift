@@ -42,13 +42,13 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         XCTAssertFalse(model.isAttachmentHidden)
 
-        model.searchText = "k"
+        model.type("k")
         XCTAssertTrue(model.isAttachmentHidden)
-        model.searchText = ""
+        model.type("")
         XCTAssertFalse(model.isAttachmentHidden)
 
         XCTAssertTrue(model.handleKey(tab))
-        model.searchText = "k"
+        model.type("k")
         XCTAssertFalse(model.isAttachmentHidden)
     }
 
@@ -65,7 +65,7 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         let writes = host.hiddenWrites.count
 
-        model.searchText = "k"
+        model.type("k")
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertFalse(model.isAttachmentHidden)
@@ -77,7 +77,7 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         let writes = host.hiddenWrites.count
 
-        model.searchText = "k"
+        model.type("k")
 
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.query), [""])
         XCTAssertEqual(model.query, "k")
@@ -110,7 +110,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
         let writes = host.previewWrites.count
 
-        model.searchText = "/"
+        model.type("/")
 
         XCTAssertNil(model.preview)
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
@@ -219,7 +219,7 @@ final class AttachmentStateTests: AttachmentCase {
         let builds = model.previewBuilds
 
         for text in ["s", "sa", "sav"] {
-            model.searchText = text
+            model.type(text)
         }
 
         XCTAssertEqual(model.commands.fits, fits)

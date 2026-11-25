@@ -1,0 +1,2 @@
+app/Core/Panel/SpotsModel.swift	setter of entries
+app/Core/Panel/SpotsModel.swift	setter of query

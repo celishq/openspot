@@ -68,7 +68,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         asOnePress {
             if !searchText.isEmpty {
-                searchText = ""
+                type("")
             } else if popPage() {
             } else if openSheetID != nil {
                 closeSheet(moving: isShown)
