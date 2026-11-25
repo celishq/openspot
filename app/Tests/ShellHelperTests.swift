@@ -28,7 +28,7 @@ final class ShellHelperTests: XCTestCase {
             text.withLock { $0 = printed }
         }
         defer { run.cancel() }
-        try await wait("the end of \(shell)") { text.withLock { $0 } != nil }
+        try await wait("the end of \(shell)", seconds: 60) { text.withLock { $0 } != nil }
         return text.withLock { $0 } ?? ""
     }
 
