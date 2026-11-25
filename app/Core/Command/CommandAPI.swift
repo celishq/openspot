@@ -6,10 +6,10 @@ public final class CommandAPI: @unchecked Sendable {
     let mac: Mac
     let access = KeptAccess()
     private let raise: (@Sendable (AppSignal) async -> Void)?
-    private let app: (any RunningApp)?
-    private let places: AppPlaces
-    private let account: Account?
-    private weak var runs: SpotRuns?
+    let app: (any RunningApp)?
+    let places: AppPlaces
+    let account: Account?
+    private(set) weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
     private let nouns: [CommandNoun]

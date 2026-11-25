@@ -51,6 +51,20 @@ enum ThemeCall: NounCall, Equatable {
         }
     }
 
+    struct Listed: Equatable, Sendable {
+        let name: String
+        let isBuiltIn: Bool
+        let isUsed: Bool
+        let colours: Theme.Colours
+    }
+
+    static func listed(_ themes: ThemeFolder) -> [Listed] {
+        let used = themes.readInUse()
+        return themes.scan().items.map { item in
+            Listed(name: item.name, isBuiltIn: item.isBuiltIn, isUsed: item.name == used, colours: ThemeFolder.read(builtIn: themes.builtIn, copy: item.file).colours)
+        }
+    }
+
     func work(in context: CallContext) -> CommandAPI.Work? {
         let themes = ThemeFolder(config: context.places.config, builtIn: context.mac.theme)
         let app = context.app
@@ -63,10 +77,8 @@ enum ThemeCall: NounCall, Equatable {
         return switch self {
         case .list(let form):
             CommandAnswer.work {
-                let used = themes.readInUse()
-                return try form.text(of: themes.scan().items.map { item in
-                    let colours = ThemeFolder.read(builtIn: themes.builtIn, copy: item.file).colours
-                    return PrintedTheme(theme: item.name, builtin: item.isBuiltIn, used: item.name == used, dark: .init(colours.dark), light: .init(colours.light))
+                try form.text(of: Self.listed(themes).map { listed in
+                    PrintedTheme(theme: listed.name, builtin: listed.isBuiltIn, used: listed.isUsed, dark: .init(listed.colours.dark), light: .init(listed.colours.light))
                 })
             }
         case .use(let name):

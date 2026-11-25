@@ -40,30 +40,32 @@ struct SettingCalls {
     }
 
     func list(of spot: String?, _ form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places, secrets, app, mac] in
-            let config = places.config.read()
-            let isApp = spot == ReservedSetting.appSpot
-            var rows: [SettingRow] = []
-            if spot == nil || isApp {
-                rows += AppSettings(
-                    panelKey: (config.panelKey ?? .standard).text,
-                    fixKey: (config.fixKey ?? .fix).text,
-                    slow: await app?.slowMotion(nil) ?? nil,
-                    login: mac.login()?.isOn(),
-                    link: mac.link()?.isOn,
-                    theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
-                ).rows
-            }
-            if !isApp {
-                var scan = try places.folder(config).scan()
-                scan.addSettings(in: places.config, read: config, defaults: places.readDefaultArrangement())
-                let sheets = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.settingsSheet)
-                if let spot, sheets.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
-                let kept = try secrets.read()
-                rows += sheets.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
-            }
-            return try form.text(of: rows)
+        CommandAnswer.work { [self] in try form.text(of: try await rows(of: spot)) }
+    }
+
+    func rows(of spot: String?) async throws -> [SettingRow] {
+        let config = places.config.read()
+        let isApp = spot == ReservedSetting.appSpot
+        var rows: [SettingRow] = []
+        if spot == nil || isApp {
+            rows += AppSettings(
+                panelKey: (config.panelKey ?? .standard).text,
+                fixKey: (config.fixKey ?? .fix).text,
+                slow: await app?.slowMotion(nil) ?? nil,
+                login: mac.login()?.isOn(),
+                link: mac.link()?.isOn,
+                theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
+            ).rows
         }
+        if !isApp {
+            var scan = try places.folder(config).scan()
+            scan.addSettings(in: places.config, read: config, defaults: places.readDefaultArrangement())
+            let sheets = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.settingsSheet)
+            if let spot, sheets.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+            let kept = try secrets.read()
+            rows += sheets.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
+        }
+        return rows
     }
 
     func window(of spot: String, _ isWindow: Bool) -> CommandAPI.Work {

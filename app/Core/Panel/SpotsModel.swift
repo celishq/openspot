@@ -334,6 +334,7 @@ public final class SpotsModel {
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
+    @ObservationIgnored public let settingsBook = SettingsBook()
     @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
@@ -356,6 +357,7 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
+        settingsBook.model = self
     }
 
     public var config: Config {
@@ -448,6 +450,7 @@ public final class SpotsModel {
             toast(.failure(problems.joined(separator: " ")))
         }
         self.problems = problems
+        settingsBook.refresh()
     }
 
     public func spotsChanged() async {

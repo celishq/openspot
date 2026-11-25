@@ -18,6 +18,7 @@ extension SpotsModel {
         grantWatch?.cancel()
         grantWatch = nil
         grant = nil
+        settingsBook.grant = nil
         keepGrant()
         readWaiting()
         if let settings = settingsSpot { sheets[settings]?.show(need: .change) }
@@ -35,6 +36,7 @@ extension SpotsModel {
         guard settingsSpot != nil else { return false }
         grantWatch?.cancel()
         grant = next.step == nil ? nil : next
+        settingsBook.grant = grant
         keepGrant()
         openSettings(at: "spot/\(next.spot)")
         guard grant != nil else { return true }
@@ -48,6 +50,7 @@ extension SpotsModel {
         next.take(statuses)
         guard next != grant else { return }
         grant = next
+        settingsBook.grant = next
         let settings = settingsSpot
         if let settings { host.focusWindow(settings) }
         guard next.step != nil else { return endGrant() }

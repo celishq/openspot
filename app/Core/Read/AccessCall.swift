@@ -41,15 +41,10 @@ enum AccessCall: NounCall {
     }
 
     private func list(in context: CallContext) -> CommandAPI.Work {
-        let (kept, mac, places, runs) = (context.api.access, context.mac, context.places, context.runs)
+        let api = context.api
         return ReadSources.work(in: context, asks: false) { _, _ in
-            let config = places.config.read()
-            let (statuses, apps) = await kept.read(from: mac, browsers: config.browsers)
-            let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
-            let spots = try places.folder(config).scan().scripts.map { spot in
-                (id: spot.id, access: SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array((last[spot.id] ?? [:]).keys)))
-            }
-            return AccessList(statuses: statuses, spots: spots).blocks + apps
+            let read = try await api.accessList()
+            return read.list.blocks + read.apps
         }
     }
 }
