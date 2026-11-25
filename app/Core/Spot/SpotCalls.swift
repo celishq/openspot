@@ -104,6 +104,7 @@ struct SpotCalls {
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
         { [places, folder, runs, caller] in
             let spots = places.spots
+            let id = caller.map { places.lock.meant(id, by: $0.id) } ?? id
             let found: Spot?
             do {
                 found = try spots.scan().scripts.first { $0.id == id }

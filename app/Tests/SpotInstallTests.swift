@@ -160,6 +160,27 @@ final class SpotInstallTests: XCTestCase {
         XCTAssertEqual(try places.lock.entries().map(\.paths), [["clock-3.spot"]])
     }
 
+    func testAKeptBothCopyThatRunsItsOldIDRunsTheCopy() async throws {
+        try "#!/bin/sh\necho \"tick from $(basename \"$(dirname \"$0\")\")\"\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
+        try mine()
+        _ = try await install("clock", .keepBoth, isConfirmed: true)
+        let copy = try XCTUnwrap(try SpotsFolder(url: spots).scan().scripts.first { $0.id == "clock-2" })
+
+        let answer = try await Self.run(["spot", "run", "clock", "tick"], as: copy, in: places, root: root)
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "tick from clock-2.spot\n")
+    }
+
+    @MainActor
+    private static func run(_ words: [String], as spot: Spot, in places: AppPlaces, root: URL) async throws -> CommandAnswer {
+        let runs = SpotRuns(cache: SpotCache(folder: root.appendingPathComponent("cache")))
+        defer { runs.quit() }
+        let api = CommandAPI(mac: Mac(), places: places, app: FakeRunningApp(), runs: runs)
+        let request = CommandRequest(arguments: words, folder: root.path, caller: SpotCaller(spot: spot))
+        return await (try XCTUnwrap(api.work(for: request, input: { "" })))()
+    }
+
     func testTheReviewOfAnIDInYourSpotsAsksReplaceKeepBothOrStopInTheWordsOfFinder() async throws {
         try mine()
         let review = try XCTUnwrap(try catalog.install("clock", in: places)).review()

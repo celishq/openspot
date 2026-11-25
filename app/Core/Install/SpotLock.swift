@@ -211,6 +211,15 @@ public struct SpotLock: Equatable, Sendable {
         return entry
     }
 
+    public func meant(_ id: String, by caller: String) -> String {
+        guard let entry = (try? entries())?.first(where: { $0.holds(caller) }), let copy = entry.paths.first else { return id }
+        let former = SpotID(path: URL(fileURLWithPath: entry.source).lastPathComponent).name
+        let named = SpotID(path: copy).name
+        let target = SpotID(id)
+        guard former != named, target.name == former else { return id }
+        return target.script == former ? named : "\(named)/\(target.script)"
+    }
+
     public func drop(_ id: String) throws {
         let lock = try lockFile()
         defer { close(lock) }
