@@ -300,7 +300,7 @@ interaction.
   `FakeClock`. A test proves a fact, not a speed: a speed goes to `make perf` or a bench.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
   blocks its thread with a sleep, on a wait for a file that exists or reads, on a wrapper of `fileExists`, on a look for processes outside
-  `XCTestCase+Processes.swift`, on a CPU time bounded by a number, and on a new `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
+  `XCTestCase+Processes.swift`, on a CPU time bounded by a number, and on any `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
   `Date().timeIntervalSince` outside the shared helpers. `scripts/check-core.sh` fails on a new `asyncAfter` in `Core/`
   outside `RunClock`.
 

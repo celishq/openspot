@@ -1,5 +1,3 @@
 app/Core/Command/CommandConnection.swift	asyncAfter
 app/Core/Command/CommandConnection.swift	asyncAfter
-app/Core/Script/ScriptProcess.swift	asyncAfter
-app/Core/Script/ScriptProcess.swift	asyncAfter
 app/Core/Stats/StatsLog.swift	asyncAfter

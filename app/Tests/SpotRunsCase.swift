@@ -89,10 +89,6 @@ class SpotRunsCase: XCTestCase {
         FileManager.default.createFile(atPath: path("release"), contents: Data())
     }
 
-    func pause(_ seconds: Double = 0.2) async throws {
-        try await Task.sleep(for: .seconds(seconds))
-    }
-
     @discardableResult
     func staying(toml: String = "stay = true", head: String = "", frame: String = "item=a\\ntitle=A\\n") throws -> URL {
         try script(toml: toml, """
