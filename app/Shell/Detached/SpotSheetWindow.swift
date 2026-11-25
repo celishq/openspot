@@ -56,6 +56,10 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.model = model
         window.id = entry.id
         window.declared = size?.size
+        if size != nil {
+            window.toolbar = NSToolbar(identifier: "spot-window-\(entry.id)")
+            window.toolbarStyle = .unified
+        }
         return window
     }
 

@@ -385,6 +385,7 @@ struct SpotView: View {
                 Divider()
                 footer
             }
+            .ignoresSafeArea(.container, edges: .top)
         }
         .navigationSplitViewStyle(.balanced)
         .focusable()
@@ -423,7 +424,7 @@ struct SpotView: View {
             .background(.quaternary.opacity(0.6), in: Capsule())
             .overlay(Capsule().strokeBorder(.separator.opacity(0.6)))
             .padding(.horizontal, 10)
-            .padding(.top, 40)
+            .padding(.top, 2)
             .padding(.bottom, 6)
             List(selection: chosen) {
                 ForEach(Section.allCases) { section in
