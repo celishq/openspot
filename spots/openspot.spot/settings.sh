@@ -75,6 +75,7 @@ $1
 EOF
   case $verb in
     set) if [ -n "$three" ]; then call setting set --spot "$one" "$two" "$three"; else call setting set --spot "$one" "$two"; fi ;;
+    remove) call setting remove --spot "$one" "$two" ;;
     turn) call setting set --spot "$one" enabled "$two" ;;
     theme) call theme use "$one" ;;
     ask) ask "$one" ;;

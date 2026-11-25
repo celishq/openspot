@@ -125,6 +125,22 @@ final class CommandAPITests: XCTestCase {
         XCTAssertNil(ConfigFile.standard(environment: places).read().setting("key", of: "weather"))
     }
 
+    func testRemoveTakesAwayASecretAndAValueThatThePersonKept() async throws {
+        let spots = folder.appendingPathComponent("spots", isDirectory: true)
+        try TestSpot(toml: "title = 'Weather'\n[settings]\ntoken = 'secret'\ncity = 'text'", body: "echo").write(to: spots.spotFile("weather"))
+        let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
+        try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+        _ = try await answer(["setting", "set", "--spot", "weather", "city", "Lisbon"], environment: places)
+
+        let secret = try await answer(["setting", "remove", "--spot", "weather", "token"], environment: places)
+        let value = try await answer(["setting", "remove", "--spot", "weather", "city"], environment: places)
+
+        XCTAssertEqual(secret, CommandAnswer(output: "", errors: "", code: 0))
+        XCTAssertEqual(value, CommandAnswer(output: "", errors: "", code: 0))
+        XCTAssertNil(try AppPlaces.test(places).secrets.read()["weather"]?["token"])
+        XCTAssertNil(ConfigFile.standard(environment: places).read().setting("city", of: "weather"))
+    }
+
     func testASheetOnStdinIsChecked() async throws {
         let answer = try await answer(["check", "sheet"], input: "frame=\ntitle=Hi\n")
 

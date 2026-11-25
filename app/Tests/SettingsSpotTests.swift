@@ -77,6 +77,17 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertNil(records(removed)["row:cups/open"]?.value("value"))
     }
 
+    func testRemoveSentByTheViewTakesAwayASecret() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'\n[settings]\ntoken = 'secret'")
+        try AppPlaces.test(TestEnvironment.values).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
+
+        let text = try await send("remove", "weather", "token")
+
+        XCTAssertNil(try AppPlaces.test(TestEnvironment.values).secrets.read()["weather"]?["token"])
+        XCTAssertEqual(records(text)["row:weather/token"]?.value("form"), "secret")
+        XCTAssertNil(records(text)["row:weather/token"]?.value("value"))
+    }
+
     func testAToggleOfTheAppGoesToTheMac() async throws {
         offerLogin()
 
