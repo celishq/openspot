@@ -103,6 +103,19 @@ final class SnippetsSpotTests: SampleSpotsCase {
         }
     }
 
+    func testSaveAsASnippetKeepsTheTextOfAChipNamedByItsFirstLine() async throws {
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
+        try await withPrivateHome { _ in
+            XCTAssertEqual(try snippets.action("save").title, "Save as a snippet")
+
+            try await snippets.perform("save", input: "input.text=  Dear Ann, thanks\n", timeout: 60)
+
+            let saved = try await snippets.items(timeout: 60).items
+            XCTAssertEqual(saved.map(\.title), ["Dear Ann, thanks"])
+            XCTAssertEqual(saved.map(\.subtitle), [" Dear Ann, thanks"])
+        }
+    }
+
     func testACopyOfAMissingSnippetFails() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { _ in

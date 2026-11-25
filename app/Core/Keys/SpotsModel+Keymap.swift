@@ -1,0 +1,380 @@
+import Foundation
+
+extension SpotsModel {
+    func takeMode() {
+        let next: PanelMode = recording != nil ? .recording : isMenuOpen ? .menu : isEditing ? .edit : form != nil ? .form : openSheetID != nil ? .sheet : .grid
+        if next != mode { mode = next }
+    }
+
+    public func handleKey(_ key: ActionKey) -> Bool {
+        spoilCommand(by: key)
+        return take(key, in: keyRows(of: mode))
+    }
+
+    public func handleSearchKey(_ key: ActionKey) -> Bool {
+        guard mode == .sheet || mode == .grid, showsSearch, openParts?.selectedPart == nil else { return false }
+        return take(key, in: searchRows)
+    }
+
+    private func take(_ key: ActionKey, in rows: [KeyRow]) -> Bool {
+        asOnePress {
+            for row in rows where row.takes(key) {
+                if let handled = row.act(key) { return handled }
+            }
+            return false
+        }
+    }
+
+    public func pressHint(_ label: String) {
+        asOnePress {
+            guard let key = ActionKey(label: label) else { return }
+            if !handleKey(key) { _ = handleSearchKey(key) }
+        }
+    }
+
+    func keyRows(of mode: PanelMode) -> [KeyRow] {
+        switch mode {
+        case .recording: recordingRows
+        case .menu: menuRows
+        case .edit: editRows
+        case .form: formRows
+        case .sheet, .grid: spotRows
+        }
+    }
+
+    private var recordingRows: [KeyRow] {
+        let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
+            let field = recordsField ? recording : nil
+            stopRecording()
+            if let field { focusAfterRecording(field) }
+            return true
+        }
+        return [cancel]
+    }
+
+    private var menuRows: [KeyRow] {
+        let close: @MainActor (ActionKey) -> Bool? = { [self] _ in
+            closeMenu()
+            return true
+        }
+        let move = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] _ in
+                menu?.move(by: step)
+                return true
+            }
+        }
+        return [
+            KeyRow("k", command: true, act: close),
+            KeyRow("escape", act: close),
+            KeyRow("up", act: move(-1)),
+            KeyRow("down", act: move(1)),
+            KeyRow("return") { [self] _ in
+                pressMenu()
+                return true
+            },
+            KeyRow("right") { [self] _ in
+                guard menu?.selectedRow?.children.isEmpty == false else { return nil }
+                _ = menu?.enterSelected()
+                return true
+            },
+            KeyRow("left") { [self] _ in
+                guard menu?.parent != nil else { return nil }
+                _ = menu?.back()
+                return true
+            },
+            .any { [self] key in
+                let types = menu?.isSearchable == true && !key.isCommand
+                guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
+                menu?.select(action)
+                pressMenu()
+                return true
+            },
+        ]
+    }
+
+    private var editRows: [KeyRow] {
+        let always = { (work: @escaping @MainActor () -> Void) -> @MainActor (ActionKey) -> Bool? in
+            { _ in
+                work()
+                return true
+            }
+        }
+        let shifted = { [self] (name: String, dx: Int, dy: Int, glyph: String?) in
+            KeyRow(name, command: nil, shift: true, glyph: glyph, words: glyph.map { _ in "Move" }, act: always { self.moveSelectedSpot(dx: dx, dy: dy) })
+        }
+        let plain = { [self] (name: String, dx: Int, dy: Int) in
+            KeyRow(name, command: nil, shift: false, act: always { self.moveSelection(dx: dx, dy: dy) })
+        }
+        return [
+            .any { [self] key in
+                guard gesture != nil || carry != nil else { return nil }
+                if key.name == "escape" {
+                    cancelDrag()
+                    cancelResize()
+                }
+                return true
+            },
+            .any { [self] key in openSheet(on: key) ? true : nil },
+            KeyRow("s", command: nil, shift: nil, words: "Size", act: always { [self] in stepSelectedSize() }),
+            shifted("left", -1, 0, "⇧ Arrows"),
+            shifted("up", 0, -1, nil),
+            shifted("right", 1, 0, nil),
+            shifted("down", 0, 1, nil),
+            KeyRow("escape", command: nil, shift: nil, words: "Done", act: always { [self] in endEditing() }),
+            plain("left", -1, 0),
+            plain("right", 1, 0),
+            plain("up", 0, -1),
+            plain("down", 0, 1),
+            .any { _ in true },
+        ]
+    }
+
+    var formRows: [KeyRow] {
+        guard let form else { return [] }
+        let isList = form.draft.choices != nil
+        let isMultiple = form.draft.isMultiple
+        let writesLines = !isList && form.draft.focusedField?.type == .multiline
+        let returnWords = writesLines ? nil : returnWords(of: form.draft)
+        let move = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] _ in
+                if isList {
+                    self.form?.draft.move(by: step)
+                    return true
+                }
+                guard let draft = self.form?.draft, draft.focusedField?.type != .multiline else { return nil }
+                let next = draft.focus(movedBy: step)
+                if next != draft.focus { self.form?.draft.focus(on: next) }
+                return true
+            }
+        }
+        let jump = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] key in isList ? nil : move(step * form.draft.stops.count)(key) }
+        }
+        let turn = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] _ in
+                guard !isList, var draft = self.form?.draft, draft.turn(by: step) else { return nil }
+                if draft != self.form?.draft { self.form?.draft = draft }
+                return true
+            }
+        }
+        return [
+            KeyRow("return", words: returnWords) { [self] _ in
+                guard !writesLines else { return nil }
+                pressReturn()
+                return true
+            },
+            KeyRow("return", command: true, words: returnWords == "Save" || isList ? nil : "Save") { [self] _ in
+                submitForm()
+                return true
+            },
+            KeyRow("a", command: true, shift: true, words: isMultiple ? "Select all" : nil) { [self] _ in
+                guard isMultiple else { return nil }
+                if let all = form.draft.selectingAll() { send(form, all) }
+                return true
+            },
+            KeyRow("up", act: move(-1)),
+            KeyRow("down", act: move(1)),
+            KeyRow("up", command: true, act: jump(-1)),
+            KeyRow("down", command: true, act: jump(1)),
+            KeyRow("left", act: turn(-1)),
+            KeyRow("right", act: turn(1)),
+            KeyRow("backspace", command: true, words: form.draft.removable && searchText.isEmpty ? "Delete" : nil) { [self] _ in
+                guard searchText.isEmpty, var draft = self.form?.draft, draft.removePick() else { return nil }
+                self.form?.draft = draft
+                return true
+            },
+            KeyRow("escape", words: isMultiple || form.draft.pickedField?.picks != nil ? "Done" : form.draft.picking != nil ? "Back" : "Cancel") { [self] _ in
+                if form.draft.choices?.query.isEmpty == false {
+                    self.form?.draft.search("")
+                } else if form.draft.picking != nil {
+                    self.form?.draft.endPicking()
+                } else {
+                    cancelForm()
+                }
+                return true
+            },
+        ]
+    }
+
+    private func returnWords(of draft: FormDraft) -> String {
+        if let field = draft.pickedField { return field.picks == nil ? "Choose" : "Tick" }
+        if draft.choices != nil { return draft.isMultiple ? "Select" : "Save" }
+        switch draft.focusedField?.type {
+        case .choice: return draft.focusedField.flatMap { draft.options[$0.name] }?.isEmpty == false ? "Choose" : "Save"
+        case .switch: return "Switch"
+        case .text, .secret: return draft.stops.count > 2 ? "Next" : "Save"
+        default: return "Save"
+        }
+    }
+
+    private func pressReturn() {
+        guard var draft = form?.draft else { return }
+        if draft.picking != nil { return takeFormPick() }
+        if draft.choices != nil { return submitForm() }
+        switch draft.focusedField?.type {
+        case .choice:
+            guard draft.pick() else { return submitForm() }
+        case .switch:
+            _ = draft.turn(by: 1)
+        case .text?, .secret?:
+            guard draft.stops.count > 2 else { return submitForm() }
+            draft.focus(on: draft.focus(movedBy: 1))
+        default:
+            return submitForm()
+        }
+        if draft != form?.draft { form?.draft = draft }
+    }
+
+    var escapeWords: String {
+        flow.behind == nil ? "Close" : "Back"
+    }
+
+    var escapeRow: KeyRow {
+        KeyRow("escape", words: escapeWords) { [self] _ in
+            if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
+                run(action, on: target)
+            } else if !stepBack() {
+                host.dismiss()
+            }
+            return true
+        }
+    }
+
+    var settingsRow: KeyRow {
+        let shows = target.map { openSheetID == nil && $0.item == nil && settingsSheet(of: $0.entry) != nil } ?? false
+        return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
+            openSelectedSettings() ? true : nil
+        }
+    }
+
+    private var spotRows: [KeyRow] {
+        var rows: [KeyRow] = [
+            .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
+            settingsRow,
+        ]
+        let parts = openParts
+        let partKey = KeyRow.any { [self] key in
+            guard let part = parts?.parts.first(where: { $0.key == key }) else { return nil }
+            pressPart(part)
+            return true
+        }
+        if let parts, !parts.showsRows {
+            let scroll = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+                { [self] _ in
+                    guard parts.scrollsByArrows else { return nil }
+                    openSheet?.scrollPanel(by: step)
+                    return true
+                }
+            }
+            return rows + [
+                partKey,
+                KeyRow("k", command: true) { [self] _ in
+                    guard let target else { return nil }
+                    openMenu(on: target)
+                    return menu != nil
+                },
+                KeyRow("escape") { [self] _ in
+                    if !stepBack() { host.dismiss() }
+                    return true
+                },
+                KeyRow("up", act: scroll(-1)),
+                KeyRow("down", act: scroll(1)),
+                .any { [self] key in
+                    guard let part = parts.selectedPart else { return false }
+                    return handleFocusKey(key, part)
+                },
+            ]
+        }
+        if let parts {
+            rows.append(.any { [self] key in handleRowsPanelKey(key, parts) ? true : nil })
+            rows.append(partKey)
+        }
+        rows += [
+            KeyRow("tab", shift: nil) { [self] key in takeTab(back: key.isShift) },
+            KeyRow("escape") { [self] _ in
+                guard attachments.isOn, openSheetID == nil else { return nil }
+                leaveAttachment()
+                return true
+            },
+            escapeRow,
+            KeyRow("k", command: true) { [self] _ in
+                guard let target else { return nil }
+                guard actionMenu(on: target)?.holdsMore == true else { return false }
+                openMenu(on: target)
+                return menu != nil
+            },
+            .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
+            .any { [self] key in openSheet(on: key) ? true : nil },
+        ]
+        return rows
+    }
+
+    var confirmRow: KeyRow {
+        KeyRow("return", shift: nil, words: waitingWords) { [self] _ in runConfirmed() ? true : nil }
+    }
+
+    private var searchRows: [KeyRow] {
+        [
+            confirmRow,
+            KeyRow("return", shift: nil) { [self] _ in
+                runSelected()
+                return true
+            },
+            KeyRow("down", command: nil, shift: nil) { [self] key in moveLine(by: 1, toEdge: key.isCommand) },
+            KeyRow("up", command: nil, shift: nil) { [self] key in moveLine(by: -1, toEdge: key.isCommand) },
+            KeyRow("left", command: nil, shift: nil) { [self] _ in moveAlong(by: -1) },
+            KeyRow("right", command: nil, shift: nil) { [self] _ in moveAlong(by: 1) },
+        ]
+    }
+
+    private func runAction(with key: ActionKey, on target: Target) -> Bool? {
+        let typesKey = !searchText.isEmpty && Self.editsText(key)
+        var none = HookAnswers()
+        if !typesKey, !target.entry.spot.frameActions(for: target.item).contains(where: { $0.key == key }),
+           let offer = offered(on: target, answers: &none, asks: false).first(where: { $0.action.key == key }) {
+            if offer.action.confirm != nil {
+                openMenu(on: target)
+                menu?.select(offer.action)
+                pressMenu()
+            } else {
+                run(offer.action, offeredBy: offer.owner, on: target)
+            }
+            return true
+        }
+        let quiet = typesKey ? [] : extras(on: target)
+        guard let action = (target.entry.spot.frameActions(for: target.item) + quiet).first(where: { $0.key == key }) else { return nil }
+        if action.confirm != nil {
+            openMenu(on: target)
+            menu?.select(action)
+            pressMenu()
+        } else {
+            run(action, on: target)
+        }
+        return true
+    }
+
+    private func moveLine(by step: Int, toEdge: Bool) -> Bool {
+        if openSheetID == nil {
+            moveSelection(dx: 0, dy: step)
+        } else if toEdge {
+            moveItemToEdge(last: step > 0)
+        } else {
+            moveItemLine(by: step)
+        }
+        return true
+    }
+
+    private func moveAlong(by step: Int) -> Bool? {
+        if openSheetID != nil {
+            guard (openItems?.perLine ?? 1) > 1 else { return false }
+            moveItem(by: step)
+        } else if !query.isEmpty {
+            return false
+        } else if selectedIsSlider {
+            adjustSelected(by: Double(5 * step))
+        } else {
+            moveSelection(dx: step, dy: 0)
+        }
+        return true
+    }
+}

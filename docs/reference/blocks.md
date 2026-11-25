@@ -139,7 +139,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `every`              | Each `every` seconds.                              | none                                                 |
 | `schedule`           | At each cron line.                                 | `cron`, the line; `late`, the seconds since it was due. |
 | `command`            | At `/<word>` in the panel's search.                | `name`, the word; `text`, the rest of the line.      |
-| `drop`               | When people drop files on your card.               | `file`, once for each file.                          |
+| `drop`               | When people drop files on your card, or hand it files with Tab. | `file`, once for each file.                          |
 | `<event>`            | When an event of `[on]` comes.                     | `value`, the event's value.                          |
 | `sheet.text`         | At each change of your sheet's search field.       | `value`, the text; `alt`.                            |
 | `<binding>.<event>`  | When a spot you bind sends the event.              | The event's values.                                  |

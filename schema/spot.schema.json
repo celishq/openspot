@@ -62,6 +62,9 @@
         ]
       },
       "properties" : {
+        "attachment.pick" : {
+          "type" : "string"
+        },
         "command" : {
           "items" : {
             "type" : "string"
@@ -116,6 +119,9 @@
                 "type" : "string"
               },
               "type" : "array"
+            },
+            "pattern" : {
+              "type" : "string"
             },
             "required" : {
               "type" : "boolean"

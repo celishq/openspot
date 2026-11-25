@@ -7,6 +7,14 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(SpotTokens.toastRoom, SpotTokens.toastMargin)
     }
 
+    func testTheFieldIsOneRowAndGrowsDownByTheRoomItHolds() {
+        let row = SpotTokens.fieldRect(room: 0)
+        let held = SpotTokens.fieldRect(room: 40)
+
+        XCTAssertEqual(row, CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.cell))
+        XCTAssertEqual(held, CGRect(x: row.minX, y: row.minY, width: row.width, height: row.height + 40))
+    }
+
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRow)), SpotTokens.listIconSize)

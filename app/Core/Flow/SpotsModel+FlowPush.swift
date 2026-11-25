@@ -40,7 +40,7 @@ extension SpotsModel {
     private func step(_ swap: () -> SpotRun?) {
         var loading: SpotRun?
         let target = flow
-        change(nil) {
+        snap {
             standEdges()
             loading = swap()
         }
@@ -63,7 +63,7 @@ extension SpotsModel {
 
     private func settleEdges(_ step: Int) {
         guard step == edgeStep else { return }
-        if flowEdges.settled != flowEdges { change(nil) { flowEdges = flowEdges.settled } }
+        if flowEdges.settled != flowEdges { snap { flowEdges = flowEdges.settled } }
         showQueued()
     }
 

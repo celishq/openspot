@@ -108,6 +108,7 @@ extension SpotRun {
             onReport(.listChange)
         }
         guard !isAnswering else { return }
+        if query != nil { onReport(.answered) }
         let waiting = answerWaiters
         answerWaiters = []
         waiting.forEach { $0() }

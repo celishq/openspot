@@ -61,6 +61,15 @@ case "$1" in
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
     openspot select "$id"
     ;;
+  save)
+    # Keeps the text that was handed to it, named by its first line.
+    text=$(value input.text; printf x)
+    title=$(printf '%s' "${text%x}" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q;}' | cut -c 1-40)
+    [ -n "$title" ] || exit 0
+    id=$(uuidgen)
+    load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
+    openspot select "$id"
+    ;;
   edit)
     title=$(value input.title)
     text=$(value input.content; printf x)

@@ -11,7 +11,9 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private let filter: NSObject?
         private var radius: CGFloat
         private var area: CGRect?
-        private var drawn: (radius: CGFloat, fade: SpotBackdropFade)?
+        private var isMoving = false
+        private let mask = SpotBackdropMask()
+        private var drawn: (radius: CGFloat, fade: SpotBackdropFade, isMoving: Bool)?
 
         init(radius: CGFloat, area: CGRect?) {
             self.radius = radius
@@ -56,10 +58,11 @@ struct SpotBackdropBlur: NSViewRepresentable {
             nil
         }
 
-        func take(radius next: CGFloat, area nextArea: CGRect?) {
-            guard next != radius || nextArea != area else { return }
+        func take(radius next: CGFloat, area nextArea: CGRect?, isMoving moving: Bool) {
+            guard next != radius || nextArea != area || moving != isMoving else { return }
             radius = next
             area = nextArea
+            isMoving = moving
             applyBlur(reports: false)
         }
 
@@ -84,10 +87,10 @@ struct SpotBackdropBlur: NSViewRepresentable {
             if drawn?.radius != radius {
                 backdrop.setValue(radius, forKeyPath: "filters.\(Self.kind).inputRadius")
             }
-            if drawn?.fade != fade {
-                backdrop.setValue(fade.image(), forKeyPath: "filters.\(Self.kind).inputMaskImage")
+            if drawn?.fade != fade || drawn?.isMoving != isMoving {
+                backdrop.setValue(mask.image(of: fade, isMoving: isMoving), forKeyPath: "filters.\(Self.kind).inputMaskImage")
             }
-            drawn = (radius, fade)
+            drawn = (radius, fade, isMoving)
         }
 
         private static func report(_ cause: String) {
@@ -99,15 +102,18 @@ struct SpotBackdropBlur: NSViewRepresentable {
 
     let radius: CGFloat
     let area: CGRect?
+    let isMoving: Bool
 
     init(radius: CGFloat) {
         self.radius = radius
         area = nil
+        isMoving = false
     }
 
-    init(radius: CGFloat, fadingIn area: CGRect) {
+    init(radius: CGFloat, fadingIn area: CGRect, isMoving: Bool) {
         self.radius = radius
         self.area = area
+        self.isMoving = isMoving
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
@@ -124,6 +130,6 @@ struct SpotBackdropBlur: NSViewRepresentable {
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
-        surface.take(radius: radius, area: area)
+        surface.take(radius: radius, area: area, isMoving: isMoving)
     }
 }

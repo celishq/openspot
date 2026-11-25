@@ -59,11 +59,11 @@ final class ItemListTests: XCTestCase {
     func testTheSameItemsAgainTakeNoNewWork() {
         let rows = (0..<6000).map { SpotItem(title: "Ключ настройки \($0)", subtitle: "Системные настройки", run: "\($0)", keywords: ["громкость", "звук", "экран"]) }
         var list = ItemList(items: rows)
-        let started = Date()
 
-        for _ in 0..<10 { list.replace(rows) }
+        let again = list.ready(rows, search: list.search)
+        list.replace(again)
 
-        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+        XCTAssertNil(again.index)
         XCTAssertEqual(list.shown.count, 6000)
     }
 

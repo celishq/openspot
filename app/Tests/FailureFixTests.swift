@@ -29,8 +29,8 @@ final class FailureFixTests: SpotRunsCase {
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
             switch report {
-            case .failure(let text): told.append((text, nil))
-            case .failureWithFix(let text, let fix): told.append((text, fix))
+            case .toast(let note) where note.kind == .failure:
+                if case .url(let fix) = note.fix { told.append((note.words, fix)) } else { told.append((note.words, nil)) }
             default: break
             }
         }

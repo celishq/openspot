@@ -24,28 +24,14 @@ final class PanelDiskTests: PanelCase {
         }
     }
 
-    private final class Slow: Sendable {
-        private let held = Mutex<(name: String, gate: DispatchSemaphore)?>(nil)
-
-        func hold(_ name: String, behind gate: DispatchSemaphore) {
-            held.withLock { $0 = (name, gate) }
-        }
-
-        func wait(for file: String) {
-            if let held = held.withLock({ $0 }), file.hasPrefix(held.name) { held.gate.wait() }
-        }
-    }
-
     private let reads = Reads()
     private let discards = Reads()
-    private let slow = Slow()
 
     override func setUp() async throws {
         try await super.setUp()
         model.quit()
         let reads = reads
         let discards = discards
-        let slow = slow
         let trash = folder.appendingPathComponent("trash", isDirectory: true)
         try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
         let files = AppPlaces(
@@ -54,10 +40,7 @@ final class PanelDiskTests: PanelCase {
             defaults: defaults,
             trash: { url in
                 discards.add()
-                slow.wait(for: url.lastPathComponent)
-                let place = trash.appendingPathComponent(url.lastPathComponent)
-                try FileManager.default.moveItem(at: url, to: place)
-                return place
+                try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
             },
             kinds: { paths in
                 reads.add()
@@ -139,44 +122,39 @@ final class PanelDiskTests: PanelCase {
         XCTAssertEqual(host.presents, 0)
     }
 
-    func testCommandZRightAfterADeleteNeverUndoesAnOlderRemoval() async throws {
-        try script("first", toml: "title = 'First'", "true")
-        try script("second", toml: "title = 'Second'", "true")
+    func testAWriteOfTheDraggedSpotOrOfThePointerMakesNoChangeOfItsOwn() async throws {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        XCTAssertTrue(model.act(.delete, on: "first"))
-        try await wait("the first toast") { self.host.confirms.contains { $0.hasPrefix("Moved First") } }
-        let gate = DispatchSemaphore(value: 0)
-        slow.hold("second", behind: gate)
+        let drop = SpotDrop(paths: [file("broken.spot")], folder: folder)
+        let changes = host.motions.count
 
-        XCTAssertTrue(model.act(.delete, on: "second"))
-        XCTAssertFalse(model.handleKey(ActionKey(name: "z", isCommand: true)))
-        gate.signal()
+        model.isPointerOverDrop = true
+        model.draggedSpot = drop
+        model.isPointerOverDrop = false
+        model.draggedSpot = nil
 
-        try await wait("the second toast") { self.host.confirms.contains { $0.hasPrefix("Moved Second") } }
-        XCTAssertNil(model.card(id: "first"))
+        XCTAssertEqual(host.motions.count, changes)
     }
 
-    func testOnlyTheLatestDeleteIsTheOneThatCommandZPutsBack() async throws {
-        try script("first", toml: "title = 'First'", "true")
-        try script("second", toml: "title = 'Second'", "true")
+    func testASpotFileOverThePanelGrowsItsDropAndShrinksItWhenThePointerLeaves() async throws {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        let gate = DispatchSemaphore(value: 0)
-        slow.hold("first", behind: gate)
+        let package = folder.appendingPathComponent("broken.spot").path
+        FileManager.default.createFile(atPath: package, contents: Data("no zip".utf8))
+        host.draggedPaths = [package]
+        host.isMouseDown = true
+        host.isPointerOverDrop = true
 
-        XCTAssertTrue(model.act(.delete, on: "first"))
-        XCTAssertTrue(model.act(.delete, on: "second"))
-        try await wait("the second toast") { self.host.confirms.contains { $0.hasPrefix("Moved Second") } }
-        gate.signal()
-        try await wait("the first toast") { self.host.confirms.contains { $0.hasPrefix("Moved First") } }
+        model.followDrag()
+        try await wait("the drop") { self.model.showsFieldDrop }
+        host.isPointerOverDrop = false
+        try await wait("the drop gone") { !self.model.showsFieldDrop }
+        host.isMouseDown = false
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
-        try await wait("the spot again") { self.host.confirms.last == "Put Second back." }
-        XCTAssertNotNil(model.card(id: "second"))
-        XCTAssertNil(model.card(id: "first"))
+        XCTAssertEqual(host.fieldDropWrites.map(\.motion), [.sheet(isOpen: true), .sheet(isOpen: false)])
+        XCTAssertEqual(host.fieldDropWrites.map(\.depth), [0, 0])
     }
 
     func testASpotFileOverThePanelIsOpenedAwayFromThePress() async throws {
@@ -210,7 +188,7 @@ final class PanelDiskTests: PanelCase {
         try await wait("the reason") { self.host.notes == ["This file is not a spot."] }
     }
 
-    func testDeleteMovesTheFilesAwayFromTheMainThreadAndCommandZPutsThemBack() async throws {
+    func testDeleteMovesTheFilesAwayFromTheMainThread() async throws {
         try script("gone", toml: "title = 'Gone'", "true")
         await model.reload()
         model.isShown = true
@@ -224,9 +202,5 @@ final class PanelDiskTests: PanelCase {
         XCTAssertNil(model.card(id: "gone"))
         XCTAssertGreaterThan(discards.count, 0)
         XCTAssertEqual(discards.countOnMain, 0)
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
-        try await wait("the spot again") { self.host.confirms.last == "Put Gone back." }
-        XCTAssertNotNil(model.card(id: "gone"))
     }
 }

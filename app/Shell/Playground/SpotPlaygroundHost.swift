@@ -11,13 +11,12 @@ final class SpotPlaygroundHost: SpotsHost {
     func show() {}
     func present() {}
     func takeFocus() {}
-    func notify(_ text: String) { onNote(text) }
-    func notify(_ text: String, fix: URL) { onNote(text) }
-    func confirm(_ text: String) { onNote(text) }
-    func work(_ text: String) { onNote(text) }
+    func toast(_ note: ToastNote, of spot: String) { onNote(note.words) }
+    func open(_ url: URL) {}
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) {}
     func layOut(_ layout: Theme.Layout) {}
+    func widen() {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}

@@ -8,7 +8,8 @@ extension Manifest {
         static let schedule = ScriptEntry.schedule.name
         static let every = ScriptEntry.every.name
         static let drop = ScriptEntry.drop.name
-        static let keys = [command, search, schedule, every, drop]
+        static let pick = EventName.attachmentPick
+        static let keys = [command, search, schedule, every, drop, pick]
         static let events = EventName.declarable
         private static let named = [ScriptEntry.show, .press, .drag]
         static let cache = "cache"
@@ -20,7 +21,8 @@ extension Manifest {
         public let lists: Bool
         public let schedule: [CronLine]
         public let every: Int?
-        public let drop: [String]
+        public let drop: DropKinds
+        public let pick: AttachmentPick?
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
@@ -30,7 +32,7 @@ extension Manifest {
         public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
-            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: [String] = [], commands: [String] = [],
+            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), pick: AttachmentPick? = nil, commands: [String] = [],
             schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = [], fills: [String: TimeInterval] = [:]
         ) {
             self.commands = commands
@@ -39,6 +41,7 @@ extension Manifest {
             self.schedule = schedule
             self.every = every
             self.drop = drop
+            self.pick = pick
             self.events = events
             self.filters = filters
             self.bindings = bindings
@@ -52,7 +55,8 @@ extension Manifest {
             var lists = false
             var schedule: [CronLine] = []
             var every: Int?
-            var drop: [String] = []
+            var drop = DropKinds()
+            var pick: AttachmentPick?
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
             var bindings: [BoundEvent] = []
@@ -88,7 +92,14 @@ extension Manifest {
                     every = seconds
                 case Self.drop:
                     guard case .strings(let kinds)? = value else { throw fault(name, "takes a list of file types, such as drop = [\"png\", \"folder\"].") }
-                    drop = kinds
+                    guard !kinds.contains(where: { [AttachmentValue.Kind.url.rawValue, AttachmentValue.Kind.text.rawValue].contains($0.lowercased()) }) else {
+                        throw fault(name, "takes files. Take a link or text with an action that has a url or text input.")
+                    }
+                    drop = DropKinds(kinds)
+                case Self.pick:
+                    guard case .string(let text)? = value else { throw fault(name, "takes \"browsers\", or a regular expression of the bundle ID of the front app, such as \"attachment.pick\" = \"^com\\\\.apple\\\\.Safari$\".") }
+                    guard let found = AttachmentPick(text) else { throw fault(name, "is not a regular expression: \(text).") }
+                    pick = found
                 case let event where Self.events.contains(event):
                     switch value {
                     case .boolean(let isOn)?:
@@ -115,10 +126,10 @@ extension Manifest {
                     throw SpotError.fault("\(Manifest.fileName): \(section) has an unknown event: \(name). Use \(known), or <binding>.<event>.")
                 }
             }
-            self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
+            self.init(events: events, every: every, search: search, lists: lists, drop: drop, pick: pick, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
-        private static func age(_ text: String) -> TimeInterval? {
+        static func age(_ text: String) -> TimeInterval? {
             guard let unit = text.last.flatMap({ ages[$0] }), let count = Int(text.dropLast()), count > 0 else { return nil }
             return TimeInterval(count) * unit
         }
@@ -129,7 +140,8 @@ extension Manifest {
             if search != nil { handlers.append(.search) }
             if !schedule.isEmpty { handlers.append(.schedule) }
             if every != nil { handlers.append(.every) }
-            if !drop.isEmpty { handlers.append(.drop) }
+            if drop.isDeclared { handlers.append(.drop) }
+            if pick != nil { handlers.append(.event(Self.pick)) }
             handlers += fills.keys.sorted().map { ScriptEntry.event(Self.cache + "." + $0) }
             return handlers
         }
@@ -142,6 +154,16 @@ extension Manifest {
 
         public var showsOnPanel: Bool {
             events.contains(EventName.panelOpen)
+        }
+
+        public func opens(over front: String?) -> Bool {
+            guard let filter = filters[EventName.panelOpen] else { return showsOnPanel }
+            return front.map(filter.matches) ?? false
+        }
+
+        func picks(over front: String?, browsers: [Browser]) -> Bool {
+            guard let pick, let front else { return false }
+            return pick.matches(front, browsers: browsers)
         }
 
         public var opensSheet: Bool {
@@ -168,7 +190,7 @@ extension Manifest {
 
         func answering(_ order: String?) -> Triggers {
             let ordered = order == "last" ? search?.last() : order == "card" ? search?.card() : search
-            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
+            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, pick: pick, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
         var showing: Triggers {

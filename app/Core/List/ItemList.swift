@@ -179,7 +179,7 @@ public struct ItemList: Equatable, Sendable {
         fileprivate let items: [SpotItem]
         fileprivate let base: [SpotItem]
         fileprivate let search: ItemSearch
-        fileprivate let index: SearchIndex?
+        let index: SearchIndex?
     }
 
     public func ready(_ items: [SpotItem], search: ItemSearch) -> Rows {

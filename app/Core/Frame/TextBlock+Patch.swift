@@ -3,14 +3,26 @@ import Foundation
 extension TextBlock {
     static func patching(_ base: [TextBlock], with blocks: [TextBlock], id: (TextBlock) -> String?) -> [TextBlock] {
         var merged = base
+        var places = firstPlaces(of: merged, id: id)
         for block in blocks {
-            if let key = id(block), let index = merged.firstIndex(where: { id($0) == key }) {
+            let key = id(block)
+            if let key, let index = places[key] {
                 merged[index] = merged[index].patched(by: block)
+                if id(merged[index]) != key { places = firstPlaces(of: merged, id: id) }
             } else {
+                if let key { places[key] = merged.count }
                 merged.append(block)
             }
         }
         return merged
+    }
+
+    private static func firstPlaces(of blocks: [TextBlock], id: (TextBlock) -> String?) -> [String: Int] {
+        var places: [String: Int] = [:]
+        for (index, block) in blocks.enumerated() {
+            if let key = id(block), places[key] == nil { places[key] = index }
+        }
+        return places
     }
 
     func patched(by block: TextBlock) -> TextBlock {

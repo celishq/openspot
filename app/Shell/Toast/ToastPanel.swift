@@ -2,76 +2,81 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-final class ToastPanel: NSPanel {
-    private static let duration: TimeInterval = 5
-
-    let toast = Toast()
-    private lazy var measure = NSHostingController(rootView: ToastView(toast: Toast()))
-    private var shows = 0
+final class ToastPanel: NSPanel, ToastWindow {
+    private(set) var toasts: Toasts?
     private var fixKey: HotKey.Registration?
+    private let nextFrames = NextFrame()
+    private lazy var pointer = ToastPointer(area: { [weak self] in self?.surface ?? .zero }) { [weak self] inside in
+        self?.ignoresMouseEvents = !inside
+        self?.toasts?.hold(inside)
+    }
+    private var anchor: ToastAnchor?
     weak var item: OpenspotItem?
     var front: () -> CGRect? = { nil }
 
-    func show(_ message: String, kind: ToastKind, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
-        shows += 1
-        let current = shows
-        toast.kind = kind
-        let held = hold(fix: fix, key: key)
-        toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
-        let copy = Toast()
-        copy.message = toast.message
-        copy.kind = kind
-        measure.rootView = ToastView(toast: copy)
-        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width)
-        let size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
-        let screens = ScreenPlace.Screen.all
-        let window = screens.count < 2 ? nil : front()
-        let place = ScreenPlace(screens: screens)
-        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastRoom, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
-            setFrame(NSRect(origin: origin, size: size), display: true)
+    func measure(_ toast: Toast) -> CGSize {
+        let measure = NSHostingController(rootView: ToastView(toast: toast.copy))
+        measure.sizingOptions = []
+        return Toast.size { measure.sizeThatFits(in: NSSize(width: $0, height: .greatestFiniteMagnitude)) }
+    }
+
+    func reach(_ height: CGFloat) {
+        if anchor == nil {
+            let screens = ScreenPlace.Screen.all
+            anchor = ScreenPlace(screens: screens).toastAnchor(inset: SpotTokens.toastRoom, under: item?.frame, window: screens.count < 2 ? nil : front(), pointer: NSEvent.mouseLocation)
         }
+        guard let anchor else { return }
+        let tall = height + 2 * SpotTokens.toastRoom
+        guard !isVisible || tall > frame.height else { return }
+        let size = CGSize(width: SpotTokens.toastMaxWidth, height: isVisible ? max(tall, frame.height) : tall)
+        setFrame(NSRect(origin: CGPoint(x: (anchor.midX - size.width / 2).rounded(.down), y: (anchor.top - size.height).rounded(.down)), size: size), display: true)
+        pointer.check()
+    }
+
+    func shift(for width: CGFloat) -> CGFloat {
+        anchor?.shift(for: width) ?? 0
+    }
+
+    private var surface: CGRect {
+        guard let toasts, isVisible else { return .zero }
+        let size = toasts.frontSize
+        return CGRect(x: frame.midX + toasts.frontShift - size.width / 2, y: frame.maxY - SpotTokens.toastRoom - size.height, width: size.width, height: size.height)
+    }
+
+    func bringToFront() {
         orderFrontRegardless()
         contentView?.layoutSubtreeIfNeeded()
-        DispatchQueue.main.async {
-            if self.shows == current { self.toast.isShown = true }
-        }
-        guard let duration else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            if self.shows == current { self.hide() }
-        }
+        pointer.start()
     }
 
-    func hide() {
-        shows += 1
-        let current = shows
-        hold(fix: nil, key: nil)
-        toast.isShown = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
-            if self.shows == current { self.orderOut(nil) }
-        }
+    func putAway() {
+        anchor = nil
+        pointer.stop()
+        ignoresMouseEvents = true
+        orderOut(nil)
     }
 
-    @discardableResult
-    private func hold(fix: (@MainActor @Sendable () -> Void)?, key: Shortcut?) -> Shortcut? {
+    func nextFrame(_ body: @escaping @MainActor () -> Void) {
+        nextFrames.run(in: contentView, body)
+    }
+
+    func holdFixKey(_ key: Shortcut, press: @escaping @MainActor @Sendable () -> Void) -> Bool {
+        fixKey = HotKey.register(key, action: { DispatchQueue.main.async(execute: press) })
+        return fixKey != nil
+    }
+
+    func dropFixKey() {
         fixKey.map(HotKey.unregister)
         fixKey = nil
-        ignoresMouseEvents = fix == nil
-        guard let fix else {
-            toast.open = nil
-            return nil
-        }
-        let open: @MainActor @Sendable () -> Void = { [weak self] in
-            fix()
-            self?.hide()
-        }
-        toast.open = open
-        fixKey = key.flatMap { HotKey.register($0) { DispatchQueue.main.async(execute: open) } }
-        return fixKey == nil ? nil : key
     }
 
-    static func make() -> ToastPanel {
+    func move(_ body: () -> Void) {
+        withAnimation(SpotMotion.move, body)
+    }
+
+    static func make(toasts: Toasts) -> ToastPanel {
         let panel = ToastPanel(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.toastMaxSize),
+            contentRect: .zero,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -82,9 +87,12 @@ final class ToastPanel: NSPanel {
         panel.hidesOnDeactivate = false
         panel.level = .statusBar
         panel.ignoresMouseEvents = true
+        panel.acceptsMouseMovedEvents = true
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        let view = NSHostingView(rootView: ToastView(toast: panel.toast))
+        panel.toasts = toasts
+        toasts.window = panel
+        let view = NSHostingView(rootView: ToastsView(toasts: toasts))
         view.sizingOptions = []
         panel.contentView = view
         return panel

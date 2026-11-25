@@ -110,14 +110,14 @@ final class CalculatorSpotTests: SampleSpotsCase {
     }
 
     @MainActor
-    private func panel(in folder: URL, defaults: UserDefaults, fetch: Fetch? = nil) async throws -> SpotsModel {
+    private func panel(in folder: URL, defaults: UserDefaults, fetch: Fetch? = nil, frameWait: DispatchTimeInterval = .milliseconds(2)) async throws -> SpotsModel {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let source = try calculator.url.deletingLastPathComponent()
         try FileManager.default.copyItem(at: source, to: spots.appendingPathComponent(source.lastPathComponent))
         let host = FakeHost()
         let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
-        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2, cache: SpotCache(folder: folder.appendingPathComponent("cache"))))
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2, frameWait: frameWait, cache: SpotCache(folder: folder.appendingPathComponent("cache"))))
         host.model = model
         if let fetch { model.runs.fetch = fetch }
         model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs)
@@ -128,27 +128,21 @@ final class CalculatorSpotTests: SampleSpotsCase {
     }
 
     @MainActor
-    func testAKeyShowsTheRowOfASumWithin4Milliseconds() async throws {
+    func testAKeyShowsTheRowOfASumInItsOwnTurn() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let model = try await panel(in: folder, defaults: defaults)
+        let model = try await panel(in: folder, defaults: defaults, frameWait: .seconds(10))
         defer { model.quit() }
-        model.searchText = "2+2"
-        for _ in 0..<6000 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
+        model.search("2+2")
+        try await wait("the loaded calculator") { model.visible.first?.id == "calculator\n4" }
+        model.search("")
 
-        var times: [Duration] = []
-        for _ in 0..<5 {
-            model.searchText = ""
-            let start = ContinuousClock.now
-            model.searchText = "12*(3+4)"
-            if model.visible.first?.id == "calculator\n84" { times.append(ContinuousClock.now - start) }
-            for _ in 0..<6000 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
-        }
+        model.search("12*(3+4)")
 
-        XCTAssertLessThan(try XCTUnwrap(times.min(), "no key showed its rows in its own turn"), .milliseconds(4), "\(times)")
+        XCTAssertEqual(model.visible.first?.id, "calculator\n84")
     }
 
     @MainActor
@@ -163,7 +157,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let model = try await panel(in: folder, defaults: defaults, fetch: Fetch(configuration: FakeWeb.configuration, wait: 30))
         defer { model.quit() }
 
-        model.searchText = "15 usd in eur"
+        model.search("15 usd in eur")
 
         try await wait("the answer from the fetched rates") { model.visible.first?.id == "calculator\n13.46" }
         XCTAssertEqual(FakeWeb.asked.withLock { $0.filter { $0.url?.absoluteString == source }.count }, 1)

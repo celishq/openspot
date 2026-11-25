@@ -29,7 +29,7 @@ struct SpotHintLine: View {
         }
         .frame(width: SpotTokens.panelWidth)
         .allowsHitTesting(isShown)
-        .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+        .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
     }
 
     private var sheetWords: HintWords {

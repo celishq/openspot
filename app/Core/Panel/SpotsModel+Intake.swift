@@ -5,21 +5,21 @@ extension SpotsModel {
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openSheetID == nil : runs.floating.contains(id)
         guard isOpenToDrops, !paths.isEmpty, runs.dragged.paths == paths, let spot = sheets[id]?.spot else { return false }
-        return spot.accepts(runs.dragged)
+        return spot.takes(AttachmentValue(files: runs.dragged))
     }
 
     private func read(_ paths: [String]) {
         readPaths = paths
         dragRead?.cancel()
         if runs.dragged != FileKinds() { runs.dragged = FileKinds() }
-        if draggedSpot != nil { draggedSpot = nil }
+        if draggedSpot != nil { moveDrop { draggedSpot = nil } }
         guard !paths.isEmpty else { return }
         let kinds = files.kinds
         let folder = folder.url
         dragRead = Task { [weak self] in
             let (kinds, drop) = await Self.read(paths, kinds, folder)
             guard !Task.isCancelled, let self, readPaths == paths else { return }
-            if let drop { draggedSpot = drop } else { runs.dragged = kinds }
+            if let drop { moveDrop { draggedSpot = drop } } else { runs.dragged = kinds }
         }
     }
 
@@ -41,13 +41,13 @@ extension SpotsModel {
         guard paths != dragPaths else { return }
         dragPaths = paths
         read(paths)
-        isPointerOverDrop = host.isPointerOverDrop
+        moveDrop { isPointerOverDrop = host.isPointerOverDrop }
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
                 try? await Task.sleep(for: Self.dragWatchPause)
                 if Task.isCancelled { return }
-                if let self { isPointerOverDrop = host.isPointerOverDrop }
+                if let self { moveDrop { isPointerOverDrop = host.isPointerOverDrop } }
             }
             try? await Task.sleep(for: Self.dropPause)
             guard !Task.isCancelled, let self else { return }
@@ -60,31 +60,43 @@ extension SpotsModel {
         isPointerOverDrop ? draggedSpot : nil
     }
 
+    private func moveDrop(_ write: () -> Void) {
+        let old = spotDrop
+        write()
+        followSpotDrop(from: old)
+    }
+
     private func endDrag() {
         dragPaths = []
         read([])
     }
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: runs.dragged) == true else { return false }
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(AttachmentValue(files: runs.dragged)) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
+        settleGive(on: id)
+        return true
+    }
+
+    func settleGive(on id: String) {
         guard entry(id)?.spot.opensOnReturn == true else {
             if isShown { host.dismiss() }
-            return true
+            return
         }
         presentSheet(of: id) {
             isSettlingDrop = true
             host.present()
         }
-        return true
     }
 
     public func dragOut(_ items: [SpotItem], of id: String) {
-        guard let sheet = sheets[id] else { return }
-        sheet.dragged(items)
-        let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
-        if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
+        asOnePress {
+            guard let sheet = sheets[id] else { return }
+            sheet.dragged(items)
+            let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
+            if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
+        }
     }
 
     public func prepareForDrag() {
@@ -95,27 +107,29 @@ extension SpotsModel {
     }
 
     public func review(_ urls: [URL]) {
-        guard let url = urls.first else { return }
-        dragWatch?.cancel()
-        endDrag()
-        finishPick()
-        closeMenu()
-        form = nil
-        closeSheet(moving: isShown)
-        endReview()
-        let folder = folder.url
-        let lock = files.lock
-        let wasShown = isShown
-        reviewRead?.cancel()
-        reviewRead = Task { [weak self] in
-            let review = await Self.review(url, folder, lock)
-            guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
-            switch review {
-            case .success(let review):
-                show(review)
-                if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
-            case .failure(let error):
-                host.notify(Self.reason(error))
+        asOnePress {
+            guard let url = urls.first else { return }
+            dragWatch?.cancel()
+            endDrag()
+            finishPick()
+            closeMenu()
+            form = nil
+            closeSheet(moving: isShown)
+            endReview()
+            let folder = folder.url
+            let lock = files.lock
+            let wasShown = isShown
+            reviewRead?.cancel()
+            reviewRead = Task { [weak self] in
+                let review = await Self.review(url, folder, lock)
+                guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
+                switch review {
+                case .success(let review):
+                    show(review)
+                    if urls.count > 1 { toast(.failure("Openspot installs one spot at a time.")) }
+                case .failure(let error):
+                    toast(.failure(Self.reason(error)))
+                }
             }
         }
     }
@@ -135,7 +149,7 @@ extension SpotsModel {
             closeSheet(moving: isShown)
             show(review)
         } catch {
-            host.notify(Self.reason(error))
+            toast(.failure(Self.reason(error)))
         }
         return true
     }
@@ -192,9 +206,9 @@ extension SpotsModel {
                 guard let released = try await release(package, named: spot.name) else { return }
                 let file = try await Self.zipped(released, named: spot.name).get()
                 host.copy(file)
-                host.confirm(released.notice(name: spot.name))
+                toast(ToastNote(words: released.notice(name: spot.name)))
             } catch {
-                host.notify("\(spot.name) was not copied. \(Self.reason(error))")
+                toast(.failure("\(spot.name) was not copied. \(Self.reason(error))"))
             }
         }
     }

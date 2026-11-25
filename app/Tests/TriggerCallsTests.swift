@@ -183,7 +183,7 @@ final class TriggerCallsTests: SpotRunsCase {
         let file = folder.appendingPathComponent("a.txt")
         try "a".write(to: file, atomically: true, encoding: .utf8)
 
-        XCTAssertTrue(sheet.drop([file.path]))
+        XCTAssertTrue(sheet.drop(paths: [file.path]))
 
         try await wait("the drop") { self.calls.first == "drop|input.file=\(file.path) " }
     }

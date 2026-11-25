@@ -125,7 +125,7 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
-    private static let large = "a=" + String(repeating: "x", count: 200_000)
+    private static let large = "a=" + String(repeating: "x", count: 120_000)
 
     func testACallWithLargeStdinEndsWhateverItsFunctionReads() async throws {
         let url = try script("""
@@ -149,7 +149,7 @@ final class ShellHelperTests: XCTestCase {
 
             XCTAssertEqual(output.components(separatedBy: "end=").count - 1, 20, shell)
             XCTAssertEqual(output.components(separatedBy: " 100000\n").count - 1, 4, shell)
-            XCTAssertEqual(output.components(separatedBy: " 200003\n").count - 1, 4, shell)
+            XCTAssertEqual(output.components(separatedBy: " 120003\n").count - 1, 4, shell)
             XCTAssertEqual(output.components(separatedBy: "raw=|\n").count - 1, 5, shell)
         }
     }

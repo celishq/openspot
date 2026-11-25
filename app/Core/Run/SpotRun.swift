@@ -5,17 +5,18 @@ import Observation
 @Observable
 public final class SpotRun {
     public enum Report: Sendable {
-        case toast(String)
-        case failure(String)
-        case failureWithFix(String, URL)
+        case toast(ToastNote)
+        case dropToast(String)
         case frame(String)
         case parts
         case listChange
+        case answered
         case landed
         case closed
         case move(FlowMove)
         case refused(String?)
         case done
+        case attachment(AttachmentValue)
     }
 
     public enum ShowNeed: Sendable {
@@ -40,10 +41,11 @@ public final class SpotRun {
         var keeping: String?
         var showsAfter = true
         var undo: SpotState?
-        var ended: (() -> Void)?
+        var ended: ((ScriptCall.End) -> Void)?
         var first: FirstFrame?
         var started: Date?
         var closes = false
+        var tells = true
     }
 
     enum Purpose {
@@ -329,7 +331,7 @@ public final class SpotRun {
     func layOut() {
         if var next = parts {
             next.place(top: top)
-            panel = next
+            if next != panel { panel = next }
         }
         settle()
     }

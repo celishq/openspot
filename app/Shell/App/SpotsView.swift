@@ -32,24 +32,25 @@ struct SpotsView: View {
                     push: push(from: card),
                     dropTarget: $dropTarget
                 )
-                    .modifier(GridCardsMove(model: model))
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, SpotTokens.gridTop)
                     .padding(.bottom, Self.gridBottom)
             }
+            .scrollDisabled(model.isGridFixed)
             .scrollPosition($scroll)
             .modifier(GridSelectionFollow(model: model, scroll: $scroll))
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
                 model.gridScrolled(to: offset)
             })
-            .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
-            .modifier(PanelSpan(panels: model.panels))
+            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetOpacity(at: $0) }
+            .modifier(PanelSpan(grid: model.grid))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
+                .id(model.grid.columns)
+            field(card: card, motion: motion, isGlass: true)
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
             }
@@ -65,21 +66,13 @@ struct SpotsView: View {
                     fadeHeight: cardHeight,
                     showsField: showsSearchField && fieldIsInSheet
                 )
+                .id(model.grid.columns)
             }
-            SpotFieldView(
-                model: model,
-                isOpen: sheetOpen,
-                isInSheet: fieldIsInSheet,
-                isInstall: isInstall,
-                showsField: showsSearchField,
-                surfaceIsOut: surfaceIsOut,
-                sheet: fieldSheet(on: card, motion: motion)
-            )
-            .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+            field(card: card, motion: motion, isGlass: false)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
-                    .modifier(PanelSpan(panels: model.panels))
+                    .modifier(PanelSpan(grid: model.grid))
                     .onTapGesture { model.closeMenu() }
             }
         }
@@ -94,10 +87,25 @@ struct SpotsView: View {
         .background(alignment: .topLeading) { SpotBackdrop(model: model, motion: motion) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotViewPlace, SpotViewPlace(model: model))
-        .environment(\.spotPanels, model.panels)
+        .environment(\.spotGrid, model.grid)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
+    }
+
+    private func field(card: SpotSheetCard?, motion: SheetMotion, isGlass: Bool) -> some View {
+        SpotFieldView(
+            model: model,
+            isOpen: sheetOpen,
+            isInSheet: fieldIsInSheet,
+            isInstall: isInstall,
+            showsField: showsSearchField,
+            surfaceIsOut: surfaceIsOut,
+            sheet: fieldSheet(on: card, motion: motion),
+            isGlass: isGlass
+        )
+        .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+        .id(model.grid.columns)
     }
 
     private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {
@@ -107,14 +115,14 @@ struct SpotsView: View {
 
     private func morph(of card: SpotSheetCard?, at frame: CGRect?) -> SheetMorph? {
         guard sheetID != nil else { return nil }
-        guard card != nil, let frame else { return SheetMorph(card: SpotFieldView.rect, sheet: sheetRect, source: .field) }
+        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.fieldRoom), sheet: sheetRect, source: .field) }
         return SheetMorph(card: frame, sheet: sheetRect)
     }
 
     private func push(from card: SpotSheetCard?) -> SheetPush? {
         guard sheetID != nil, !isInstall else { return nil }
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll, left: model.panels.leftExtent)
-        let panel = model.panels.frame
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.cardScroll)
+        let panel = SpotTokens.panelFrame
         let window = CGRect(x: panel.minX - origin.x, y: SpotTokens.halo - origin.y, width: panel.width, height: panel.height - SpotTokens.halo)
         return SheetPush(open: card?.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window, foot: model.pushFoot.moved(by: -SpotTokens.halo - origin.y))
     }
@@ -176,38 +184,6 @@ private struct FlowFieldHide: ViewModifier {
     }
 }
 
-private struct GridEdgeScroll: ViewModifier {
-    let model: SpotsModel
-    @Binding var scroll: ScrollPosition
-
-    func body(content: Content) -> some View {
-        content.task(id: model.drag?.id) {
-            var last = ContinuousClock.now
-            while !Task.isCancelled, model.drag != nil {
-                try? await Task.sleep(for: .milliseconds(8))
-                let now = ContinuousClock.now
-                let seconds = (now - last) / .seconds(1)
-                last = now
-                step(seconds: seconds)
-            }
-        }
-    }
-
-    private func step(seconds: Double) {
-        guard let drag = model.drag else { return }
-        let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
-            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
-            viewHeight: SpotTokens.panelHeight,
-            contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
-        )
-        let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
-        guard point - model.gridScroll < SpotTokens.panelHeight else { return }
-        let next = window.offset(scrolling: point, from: model.gridScroll, by: MotionTokens.edgeScrollSpeed * seconds, over: SpotTokens.scrollFadeLength)
-        if next != model.gridScroll { scroll.scrollTo(y: next) }
-    }
-}
-
 private struct GridFadeMask: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
@@ -233,7 +209,7 @@ private struct GridSelectionFollow: ViewModifier {
             top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
             viewHeight: SpotTokens.panelHeight,
-            contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
+            contentHeight: SpotTokens.gridTop + SpotPlacement.height(of: model.placements) + SpotsView.gridBottom
         )
         let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: model.gridScroll)
         guard offset != model.gridScroll else { return }

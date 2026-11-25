@@ -110,8 +110,8 @@ final class DoomExampleTests: SampleSpotsCase {
 
     @MainActor
     private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [String]?)] {
-        var time = Date(timeIntervalSince1970: 1000)
-        let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock { time }, stopPause: 0.2)
+        let clock = FakeClock()
+        let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock(now: { [clock] in clock.time }), stopPause: 0.2)
         defer { runs.quit() }
         runs.take(try SpotsFolder(url: spots).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom"])
@@ -119,7 +119,7 @@ final class DoomExampleTests: SampleSpotsCase {
         var pictures: [(picture: String?, sheet: [String]?)] = []
         for change in [{}] + changes {
             try change()
-            time += 10
+            clock.advance(by: 10)
             let before = log.frames.count
             runs.panelOpened()
             for _ in 0..<6000 where log.frames.count == before {

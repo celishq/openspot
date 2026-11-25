@@ -134,4 +134,56 @@ final class PanelSearchTests: PanelCase {
 
         XCTAssertEqual(shown, grid)
     }
+
+    private func slowAnswer(gate: URL, rows: String) throws {
+        try script("make", toml: "title = 'Make'\n[on]\nsearch = '\\S'", "[ \"$1\" = search ] || exit 0\nwhile [ ! -f '\(gate.path)' ]; do sleep 0.01; done\n\(rows)")
+    }
+
+    func testAKeyWhoseOnlyRowsAreOnTheirWayKeepsTheLastRowsUntilTheyLand() async throws {
+        let gate = folder.appendingPathComponent("gate")
+        try slowAnswer(gate: gate, rows: "printf 'item=3\\ntitle=Make a spot\\n'")
+        try await showGrid()
+        let grid = shown
+
+        model.query = "3"
+
+        XCTAssertEqual(shown, grid)
+        FileManager.default.createFile(atPath: gate.path, contents: Data())
+        try await wait("the late row") { self.model.visible.map(\.item?.title) == ["Make a spot"] }
+    }
+
+    func testALateRowLandsInOnePressSoTheHintComesWithIt() async throws {
+        let gate = folder.appendingPathComponent("gate")
+        try slowAnswer(gate: gate, rows: "printf 'item=3\\ntitle=Make a spot\\n'")
+        try await showGrid()
+        model.query = "3"
+        nonisolated(unsafe) var inPress: Bool?
+        withObservationTracking { _ = model.visible } onChange: { [model] in
+            MainActor.assumeIsolated { inPress = model!.pressDepth > 0 }
+        }
+
+        FileManager.default.createFile(atPath: gate.path, contents: Data())
+
+        try await wait("the late row") { inPress != nil }
+        XCTAssertEqual(inPress, true)
+    }
+
+    func testAKeyWhoseLateAnswerIsEmptyShowsNoRowsOnceItLands() async throws {
+        let gate = folder.appendingPathComponent("gate")
+        try slowAnswer(gate: gate, rows: "true")
+        try await showGrid()
+
+        model.query = "3"
+        FileManager.default.createFile(atPath: gate.path, contents: Data())
+
+        try await wait("no rows") { self.model.visible.isEmpty }
+    }
+
+    func testASearchThatFindsNothingKeepsTheKeysOfTheFooter() async throws {
+        try await showGrid()
+
+        model.query = "zzz"
+
+        XCTAssertFalse(model.hint.contains("Type /"))
+    }
 }

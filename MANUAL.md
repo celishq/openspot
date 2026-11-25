@@ -33,12 +33,48 @@ Each spot has its own Settings, which open when you press `⌘` Return on its ca
 
 ## Choose where a spot shows
 
-Put any spot on the grid, in the menu bar, in a float or in a window, from its Settings and from Edit Spots.
+Put any spot in the menu bar, in a float or in a window from its Settings.
+
+Arrange the grid in Edit Spots: hold `⌘` and move the pointer over the grid, or press `⌘K` on a card and choose
+Rearrange. A release of `⌘` ends it; Rearrange stays until Done. The grid has 7 rows and 4, 6 or 8 columns, which the
+header switches. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a
+bigger card pushes the others on. A spot with no room is found by search.
 
 - A float shows the spot in a small window at the pointer, which a key or a shake opens, and which stays while you work
   in other apps.
 - A window opens the sheet in a normal window, which you move, resize and close.
 - A spot with `every` or an action with a title starts off the grid, so a new spot doesn't fill the panel.
+
+## Hand what you work on to a spot
+
+Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to turn it on or off.
+`⌘` Return opens the Settings of one that is on. Under Access, each app it reads says whether macOS lets Openspot read
+it, and Return asks for access or opens the pane of System Settings that gives it. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
+changes until you press Tab.
+
+| Key        | Does                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------- |
+| Tab        | Shows the front card's preview and each action that takes it, then turns to the next card. |
+| `⇧` Tab    | Turns to the card before.                                                             |
+| Return     | Runs the selected action with the card, such as Add to Links with a link.             |
+| Esc        | Brings back the grid. A second Esc closes the panel.                                  |
+
+- Typing filters the actions that take the card. Backspace edits only the text.
+- When the text starts with `/`, Tab completes the slash command instead.
+- A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
+
+Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
+Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in
+`~/.config/openspot/config.toml`:
+
+```toml
+[browsers]
+"company.thebrowser.dia" = "chromium"
+"com.kagi.kagimacOS" = "safari"
+```
+
+A browser of the Chromium family answers as Chrome does, and one of the Safari family as Safari does. A line for a
+browser that Openspot already reads changes its family.
 
 ## Rename a slash command
 

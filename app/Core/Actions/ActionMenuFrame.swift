@@ -33,7 +33,7 @@ public struct ActionMenuFrame: Equatable, Sendable {
         side = isOnLeft ? .left : .right
     }
 
-    public static func bounds(under top: CGFloat, in panel: CGRect = GridPanels().frame) -> CGRect {
+    public static func bounds(under top: CGFloat, in panel: CGRect = SpotTokens.panelFrame) -> CGRect {
         let bottom = SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock
         return CGRect(x: panel.minX + SpotTokens.menuMargin, y: top, width: panel.width - 2 * SpotTokens.menuMargin, height: bottom - top)
     }

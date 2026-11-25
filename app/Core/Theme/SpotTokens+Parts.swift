@@ -7,7 +7,6 @@ extension SpotTokens {
     public static let tipWidth: CGFloat = 280
     public static let tipLines = 4
     public static let submenuGap: CGFloat = 4
-    public static let groupTitleGap: CGFloat = 6
     public static let cardLineReach: CGFloat = 6
     public static var mediaRadius: CGFloat { layout.radius.media }
     public static let wordsTileCircleShare: CGFloat = 0.36
@@ -22,11 +21,86 @@ extension SpotTokens {
     public static let textLineGap: CGFloat = 1
 
     public static let toastMargin: CGFloat = 16
-    public static let toastMaxSize = CGSize(width: 560, height: 120)
+    public static let toastMaxWidth: CGFloat = 560
     public static let toastGlyphGap: CGFloat = 8
     public static let toastMarkSide: CGFloat = 16
     public static let toastPaddingY: CGFloat = 10
     public static let toastKeySpace: CGFloat = 2
+
+    public static let attachmentCard: CGFloat = 28
+    public static var attachmentCardRadius: CGFloat { min(attachmentCard * 0.25 * cardRadius / builtIn.radius.card, attachmentCard / 2) }
+    public static let attachmentInset: CGFloat = 1.5
+    public static var attachmentIcon: CGFloat { attachmentCard - 2 * attachmentInset }
+    public static var attachmentIconRadius: CGFloat { min(attachmentIcon * 0.224 * cardRadius / builtIn.radius.card, attachmentIcon / 2) }
+    public static var attachmentSymbol: CGFloat { attachmentIcon * 0.5 }
+    public static let attachmentBorder: CGFloat = 1
+    public static var attachmentStep: CGFloat { attachmentCard * 0.25 }
+    public static let attachmentShrink: CGFloat = 0.1
+    public static let attachmentQuietIcon: CGFloat = 20
+    public static var attachmentQuietScale: CGFloat { attachmentQuietIcon / attachmentIcon }
+    public static var attachmentQuietRadius: CGFloat { attachmentIconRadius * attachmentQuietScale }
+    public static var attachmentEdge: CGFloat { (cell - attachmentCard) / 2 }
+    public static let attachmentCardFade = 0.3
+    public static var attachmentSpreadGap: CGFloat { attachmentCard * 0.42 }
+    public static var attachmentPitch: CGFloat { attachmentCard + attachmentSpreadGap }
+    public static var attachmentBadge: CGFloat { (attachmentCard * attachmentCard / 6).squareRoot() }
+    public static var attachmentBadgeGlyph: CGFloat { attachmentBadge * 0.72 }
+    public static let attachmentBadgeNudge: CGFloat = 0.5
+    public static let attachmentNearShadowRadius: CGFloat = 2.5
+    public static let attachmentNearShadowDrop: CGFloat = 2
+    public static let attachmentFarShadowRadius: CGFloat = 7
+    public static let attachmentFarShadowDrop: CGFloat = 6
+    public static let attachmentDot: CGFloat = 4
+    public static let attachmentDotGap: CGFloat = 3
+    public static let attachmentValueRise: CGFloat = 8
+    public static let attachmentGap: CGFloat = 8
+    public static let previewLines = 2
+    public static let previewCaptionGap: CGFloat = 4
+
+    public static let attachmentValuePadding: CGFloat = 9
+    public static var attachmentValueFoot: CGFloat { padding + glyphInset }
+    public static let attachmentValueLineGap: CGFloat = 1
+    static let lineShare: CGFloat = 1.25
+    static let glyphWidthShare: CGFloat = 0.55
+
+    public static var attachmentValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
+    public static var attachmentPicture: CGFloat { attachmentValueRoom(lines: 1) - attachmentValuePadding - attachmentValueFoot }
+    public static var attachmentPictureRadius: CGFloat { min(attachmentPicture * 0.224 * cardRadius / builtIn.radius.card, attachmentPicture / 2) }
+    public static let attachmentPictureGap: CGFloat = 8
+
+    public static func attachmentValueLines(of text: String, besidePicture: Bool = false) -> Int {
+        guard !text.isEmpty else { return besidePicture ? 1 : 0 }
+        let width = CGFloat(text.count) * CGFloat(layout.type.body) * glyphWidthShare
+        let room = attachmentValueWidth - (besidePicture ? attachmentPicture + attachmentPictureGap : 0)
+        return min(previewLines, max(1, Int((width / room).rounded(.up))))
+    }
+
+    public static func attachmentValueRoom(lines: Int) -> CGFloat {
+        let caption = CGFloat(layout.type.detail) * lineShare
+        let body = lines == 0 ? 0 : attachmentValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
+        return (attachmentValuePadding + attachmentValueFoot + caption + body).rounded(.up)
+    }
+
+    public static var attachmentFit: Int {
+        let room = gridWidth - 2 * padding - glyph - fieldTextGap + attachmentSpreadGap
+        return max(AttachmentStack.pile, min(AttachmentStack.limit, Int(room / (attachmentCard + attachmentSpreadGap))))
+    }
+
+    public static func fieldRect(room: CGFloat) -> CGRect {
+        CGRect(x: halo, y: halo, width: gridWidth, height: cell + room)
+    }
+
+    public static func attachmentStack(count: Int) -> CGFloat {
+        count == 0 ? 0 : attachmentCard + CGFloat(count - 1) * attachmentStep
+    }
+
+    public static var attachmentRow: CGFloat {
+        attachmentCard + CGFloat(attachmentFit - 1) * attachmentPitch
+    }
+
+    public static var attachmentReach: CGFloat {
+        2 * attachmentFarShadowRadius + attachmentFarShadowDrop
+    }
 
     public static let metricBigRingLine: CGFloat = 8
     public static let metricRingLine: CGFloat = 4
@@ -41,6 +115,7 @@ extension SpotTokens {
     public static let lineRingLine: CGFloat = 2
 
     public static let menuBarPill = CGSize(width: 40, height: 24)
+    public static let menuBarTint = 0.2
     public static let menuBarGap: CGFloat = 5
     public static let menuBarCountGap: CGFloat = 3
     public static let menuBarPadding: CGFloat = 6
@@ -74,6 +149,7 @@ extension SpotTokens {
     public static var backdrop: Theme.Backdrop { layout.backdrop }
     public static let backdropMaskScale: CGFloat = 0.5
     public static let backdropFadeSteps = 64
+    public static let backdropMaskBytes = 16 * 1024 * 1024
     public static let backdropLeastBlur: CGFloat = 0.25
     public static let backdropBlurResponse: CGFloat = 1.2
     public static let cardShadowReach: CGFloat = 3

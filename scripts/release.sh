@@ -7,7 +7,7 @@ profile=openspot
 out=.temp/release
 archive=$out/Openspot.xcarchive
 dmg=$out/Openspot-$version.dmg
-packages=.temp/packages
+packages=$out/packages
 tools=$packages/artifacts/sparkle/Sparkle/bin
 account=openspot
 build=${BUILD:-$(git rev-list --count HEAD)}
@@ -40,14 +40,15 @@ public_key=${PUBLIC_KEY:-$("$tools/generate_keys" --account "$account" -p 2>/dev
   || fail "Make the update key first, once, and back it up: $tools/generate_keys --account $account"
 
 xcodebuild -project app/Openspot.xcodeproj -scheme Openspot -configuration Release -destination 'generic/platform=macOS' \
-  -clonedSourcePackagesDirPath "$packages" -archivePath "$archive" archive \
+  -clonedSourcePackagesDirPath "$packages" -derivedDataPath "$out/dd" -archivePath "$archive" archive \
   MARKETING_VERSION="$version" \
   CURRENT_PROJECT_VERSION="$build" \
   UPDATE_PUBLIC_KEY="$public_key" \
   DEVELOPMENT_TEAM="$team" \
   CODE_SIGN_IDENTITY="Developer ID Application" \
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
-  OTHER_CODE_SIGN_FLAGS=--timestamp >>"$out/build.log" 2>&1 || fail "The build failed. See $out/build.log"
+  OTHER_CODE_SIGN_FLAGS=--timestamp >>"$out/build.log" 2>&1 \
+  || fail "The build failed: $(grep -m1 'error:' "$out/build.log"). See $out/build.log"
 
 /usr/libexec/PlistBuddy -c "Add :method string developer-id" \
   -c "Add :teamID string $team" \

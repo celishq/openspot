@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotSize: Equatable, Sendable {
+public struct SpotSize: Hashable, Sendable {
     public let columns: Int
     public let rows: Int
 

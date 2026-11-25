@@ -6,7 +6,7 @@ public struct HintWords: Hashable, Sendable {
         public let words: String
     }
 
-    private static let keySymbols = CharacterSet(charactersIn: "⌘⌥⌃⇧⏎↩⌫⎋↑↓←→")
+    private static let keySymbols = CharacterSet(charactersIn: "⌘⌥⌃⇧⏎↩⌫⎋⇥↑↓←→")
     private static let keyNames: Set<String> = ["Esc", "Tab", "Space", "Return", "Delete"]
 
     public let groups: [Group]
