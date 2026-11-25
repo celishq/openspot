@@ -58,7 +58,7 @@ final class AttachmentSpotTests: BuiltInCase {
         try await press("settings", on: "tab")
 
         let opened = await app.opened
-        XCTAssertEqual(opened, ["settings tab"])
+        XCTAssertEqual(opened, ["settings at spot/tab"])
     }
 
     func testTheLastRowOpensAccessInSettingsAndNoReaderIsListed() async throws {

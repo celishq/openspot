@@ -70,8 +70,8 @@ final class AccessGrantTests: XCTestCase {
         clock.advance(by: 1)
     }
 
-    func testAllowWithNoUseOpensSettingsAtTheSpotAndAsksForTheFirstAccess() async throws {
-        let answer = try await call(["spot", "allow", "standup"])
+    func testAGrantOfASpotOpensSettingsAtItAndAsksForTheFirstAccess() async throws {
+        let answer = try await call(["access", "grant", "standup"])
 
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(answer.output, "Settings walks you through Calendars and Screen Recording.\n")
@@ -81,8 +81,8 @@ final class AccessGrantTests: XCTestCase {
         try await wait("the ask for calendars") { self.accesses.asks == [.calendars] }
     }
 
-    func testAllowSaysSoWhenTheSpotNeedsNoAccess() async throws {
-        let answer = try await call(["spot", "allow", "plain"])
+    func testAGrantSaysSoWhenTheSpotNeedsNoAccess() async throws {
+        let answer = try await call(["access", "grant", "plain"])
 
         XCTAssertEqual(answer.output, "Plain has each macOS access it needs.\n")
         XCTAssertNil(model.grant)
@@ -90,7 +90,7 @@ final class AccessGrantTests: XCTestCase {
     }
 
     func testAStepMovesOnWhenItsAccessTurnsOnAndTheWindowTakesItsFocusBack() async throws {
-        _ = try await call(["spot", "allow", "standup"])
+        _ = try await call(["access", "grant", "standup"])
 
         try await turn(.calendars)
 
@@ -101,7 +101,7 @@ final class AccessGrantTests: XCTestCase {
     }
 
     func testAccessGrantPrintsTheStepItWaitsOnAndWhereItsSwitchIs() async throws {
-        _ = try await call(["spot", "allow", "standup"])
+        _ = try await call(["access", "grant", "standup"])
         try await turn(.calendars)
         try await wait("the next step") { self.model.grant?.step == .screen }
 
@@ -112,7 +112,7 @@ final class AccessGrantTests: XCTestCase {
 
     func testTheLastAccessEndsTheGrantAndTheWatch() async throws {
         accesses.set(.screen, to: .allowed)
-        _ = try await call(["spot", "allow", "standup"])
+        _ = try await call(["access", "grant", "standup"])
         XCTAssertEqual(model.grant?.steps, [.calendars])
 
         try await turn(.calendars)
@@ -129,7 +129,7 @@ final class AccessGrantTests: XCTestCase {
     }
 
     func testEndStopsTheWatch() async throws {
-        _ = try await call(["spot", "allow", "standup"])
+        _ = try await call(["access", "grant", "standup"])
         try await wait("the watch sleeps") { self.clock.sleepCount == 1 }
 
         let answer = try await call(["access", "grant", "--end"])
@@ -141,7 +141,7 @@ final class AccessGrantTests: XCTestCase {
     }
 
     func testAStepThatNeedsARestartIsKeptAndSettingsOpensAgainAtItAfterTheStart() async throws {
-        _ = try await call(["spot", "allow", "standup"])
+        _ = try await call(["access", "grant", "standup"])
         XCTAssertNil(defaults.stringArray(forKey: SpotsModel.grantKey))
         try await turn(.calendars)
         try await wait("the screen step") { self.model.grant?.step == .screen }
@@ -175,7 +175,7 @@ final class AccessGrantTests: XCTestCase {
         model.press("standup")
         XCTAssertEqual(host.settingsOpens, 1)
         model.settingsBook.go(.keys)
-        XCTAssertTrue(model.act(.settings, on: "standup"))
+        XCTAssertTrue(model.openSettings(at: .spotOf("standup")))
 
         XCTAssertTrue(isAtStandup)
         XCTAssertEqual(host.settingsOpens, 2)

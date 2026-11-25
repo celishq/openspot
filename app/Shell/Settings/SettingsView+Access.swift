@@ -109,8 +109,8 @@ extension SettingsView {
 
     @ViewBuilder
     func fix(_ standing: SpotStanding) -> some View {
-        if standing.readiness == .review {
-            Button("Review…") { act { await $0.review(standing.id, use: standing.refused.first) } }
+        if standing.readiness == .review, let use = standing.refused.first {
+            Button("Review…") { act { await $0.review(standing.id, use: use) } }
         } else {
             Button("Allow…") { act { await $0.allow(standing.id) } }
         }

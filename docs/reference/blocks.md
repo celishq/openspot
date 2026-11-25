@@ -130,7 +130,7 @@ lines, then your settings as `setting.<name>=` lines.
 
 | Word                 | Comes                                              | Inputs                                               |
 | -------------------- | -------------------------------------------------- | ---------------------------------------------------- |
-| `show`               | When Openspot needs what to show.                  | `event`: `panel.open`, `sheet.open`, `spot.want` or `spot.change`; `route`, the page, empty for the first; `at`, where `openspot spot open --at` asked the sheet to land. |
+| `show`               | When Openspot needs what to show.                  | `event`: `panel.open`, `sheet.open`, `spot.want` or `spot.change`; `route`, the page, empty for the first. |
 | `press`              | When people press a row.                           | `item`, and `item.<key>` for each key of the row.    |
 | `drag`               | When people drag rows that have a `file` out.      | `item`, once for each row.                           |
 | `search`             | At each text of the panel's search that matches.   | `text`; `alt`, the texts people may have meant, such as in another keyboard layout. |

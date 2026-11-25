@@ -34,7 +34,6 @@ public struct SpotFacts: Equatable, Sendable {
     public let sample: URL?
     public let edits: SpotEdits?
     public let starts: SpotStart?
-    public let window: WindowSize?
     public internal(set) var editedFile: URL?
 
     public var kinds: [BlockKind] {

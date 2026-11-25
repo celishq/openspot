@@ -77,8 +77,8 @@ actor FakeRunningApp: RunningApp {
         opened.append((["settings"] + (place.map { ["at", $0.place] } ?? [])).joined(separator: " "))
     }
 
-    func open(_ id: String, at: String?) -> Bool {
-        opened.append((["open", id] + (at.map { ["at", $0] } ?? [])).joined(separator: " "))
+    func open(_ id: String) -> Bool {
+        opened.append("open \(id)")
         return id != "gone"
     }
 

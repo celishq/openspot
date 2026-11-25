@@ -81,7 +81,6 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        if entry(id)?.spot.window != nil { return .window }
         return arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
@@ -101,7 +100,11 @@ extension SpotsModel {
 
     @discardableResult
     public func openSettings(at place: SettingsPage? = nil) -> Bool {
-        asOnePress {
+        if case .spotOf(let id) = place, let entry = cards.first(where: { $0.id == id && $0.item == nil }), !hasSettings(entry) {
+            toast(.failure("\(entry.state.title) has nothing to set."))
+            return false
+        }
+        return asOnePress {
             settingsBook.open(at: place)
             host.showSettings()
             return true

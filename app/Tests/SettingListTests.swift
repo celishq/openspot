@@ -124,17 +124,9 @@ final class SettingListTests: XCTestCase {
 
     func testASpotThatCannotShowInTheMenuBarHasNoMenuBarOrWindowRow() throws {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let settings = SpotRows(spot: "notes", fields: [], showsInMenuBar: false, keys: [], isWindowByDefault: false, opensAsWindow: false, name: "")
+        let settings = SpotRows(spot: "notes", fields: [], showsInMenuBar: false, keys: [], isWindowByDefault: false, name: "")
 
         XCTAssertEqual(settings.rows(in: file.read(), secrets: [:]), [])
-    }
-
-    func testASpotThatAlwaysOpensAsAWindowHasNoWindowRow() async throws {
-        try TestSpot(toml: "title = 'Board'\nwindow = 'settings'").write(to: folder.appendingPathComponent("spots").spotFile("board"))
-
-        let rows = try await rows(["--spot", "board"])
-
-        XCTAssertEqual(rows.map(\.key), ["open", "float", "menubar"])
     }
 
     func testEachKeyOfTheListIsOneThatSettingSetTakes() async throws {

@@ -50,30 +50,25 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     }
 
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
-        let size = entry.spot.window
         let window = make(
-            remembers: size == nil,
+            remembers: true,
             title: entry.spot.name,
             name: "spot-window-\(entry.id)",
-            size: size?.size ?? SpotTokens.windowSize,
-            minSize: size?.minSize ?? SpotTokens.windowMinSize,
+            size: SpotTokens.windowSize,
+            minSize: SpotTokens.windowMinSize,
             content: SpotFloatView(model: model, id: entry.id, fills: true) { _ in }
         )
         window.model = model
         window.id = entry.id
-        window.declared = size?.size
-        if size != nil {
-            window.toolbar = NSToolbar(identifier: "spot-window-\(entry.id)")
-            window.toolbarStyle = .unified
-        }
         return window
     }
 
     static func make(settings model: SpotsModel, content: some View) -> SpotSheetWindow {
-        let size = WindowSize.settings
-        let window = make(remembers: false, title: "Settings", name: "settings-window", size: size.size, minSize: size.minSize, bridges: true, content: content)
+        let window = make(
+            remembers: false, title: "Settings", name: "settings-window", size: SpotTokens.settingsWindowSize, minSize: SpotTokens.settingsWindowMinSize, bridges: true, content: content
+        )
         window.book = model.settingsBook
-        window.declared = size.size
+        window.declared = SpotTokens.settingsWindowSize
         window.toolbarStyle = .unified
         window.isOpaque = true
         window.backgroundColor = .windowBackgroundColor

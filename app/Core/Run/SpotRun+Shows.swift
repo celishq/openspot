@@ -1,8 +1,6 @@
 import Foundation
 
 extension SpotRun {
-    private static let destinationInput = "at"
-
     public func afterAnswer(_ work: @escaping () -> Void) {
         waiter = work
         show()
@@ -27,8 +25,6 @@ extension SpotRun {
         let typed = query.isEmpty ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         var message = event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search)
-        let lands = showsSheet ? destination : nil
-        if let lands { message.inputs.append(.init(key: Self.destinationInput, value: lands)) }
         let isSent = send(Call(
             message: message,
             key: Self.showKey,
@@ -38,7 +34,6 @@ extension SpotRun {
         ))
         self.typed = nil
         if isSent {
-            if lands != nil { destination = nil }
             shownEvent = event
             if !list.holdsItems || list.hasFailed { list.beginLoading() }
         }

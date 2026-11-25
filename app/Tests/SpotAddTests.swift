@@ -72,14 +72,14 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(answer.errors, "`openspot spot add` did not add mint, so spots.lock holds no record of it. Add `clipboard` to `uses` in its spot.toml.\n")
     }
 
-    func testAllowNamesAnUnknownUseAndWithNoUseNeedsTheAppForItsGuidedGrant() async throws {
+    func testAllowNamesAnUnknownUseAndAGrantNeedsTheApp() async throws {
         let unknown = try await answer(["spot", "allow", "tea", "camera"])
-        let none = try await answer(["spot", "allow", "tea"])
+        let none = try await answer(["access", "grant", "tea"])
 
         XCTAssertEqual(unknown.code, 1)
         XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment or read\n")
         XCTAssertEqual(none.code, 3)
-        XCTAssertTrue(none.errors.hasPrefix("`openspot spot allow tea` needs the Openspot app"), none.errors)
+        XCTAssertTrue(none.errors.hasPrefix("`openspot access grant tea` needs the Openspot app"), none.errors)
     }
 
     func testAGitRepositoryIsClonedIntoAFolderOfItsOwnWithNoGitFolder() async throws {

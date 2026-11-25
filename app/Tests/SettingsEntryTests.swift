@@ -35,7 +35,7 @@ final class SettingsEntryTests: PanelCase {
         try script("draw", toml: "title = 'Draw'", "printf 'item=own\\ntitle=Own\\n'")
         await model.reload()
 
-        XCTAssertTrue(model.act(.settings, on: "draw"))
+        XCTAssertTrue(model.openSettings(at: .spotOf("draw")))
 
         XCTAssertEqual(book.page, .spotOf("draw"))
         XCTAssertNil(model.openSheetID)

@@ -18,7 +18,6 @@ public struct SpotRows: Equatable, Sendable {
     let showsInMenuBar: Bool
     let keys: [Key]
     let isWindowByDefault: Bool
-    let opensAsWindow: Bool
     let name: String
 
     private func kept(in config: Config) -> [KeptSetting] {
@@ -43,7 +42,7 @@ public struct SpotRows: Equatable, Sendable {
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
         let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
         let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
-        let placeRows = showsInMenuBar ? [menuBarRow] + (opensAsWindow ? [] : [windowRow]) : []
+        let placeRows = showsInMenuBar ? [menuBarRow, windowRow] : []
         return keyRows + fieldRows + keptRows + placeRows
     }
 

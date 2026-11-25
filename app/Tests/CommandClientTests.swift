@@ -13,7 +13,7 @@ final class CommandClientTests: XCTestCase {
         func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
         func apply(_ theme: Theme) async {}
-        func open(_ id: String, at: String?) async -> Bool { true }
+        func open(_ id: String) async -> Bool { true }
         func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { true }
         func pop(_ id: String, all: Bool) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }

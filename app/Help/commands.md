@@ -41,7 +41,7 @@ fail in it:
 - calls that change Openspot or its places: `app quit`, `app restart`, each call of `theme` but `theme list` and
   `theme open`, `update install`, `spot allow`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
-- calls that open a window or the panel: `app settings`, `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`,
+- calls that open a window or the panel: `app settings`, `spot open`, `spot choose`, `spot edit`, `spot prompt`,
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
   `reminders show`.
 
@@ -64,11 +64,10 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a route of the spot over the sheet that shows.                                   |
 | `openspot route back [--root]`                     | Goes back one sheet of the spot, or to its first sheet.                                         |
 | `openspot route close`                             | Takes each sheet of the spot off.                                                               |
-| `openspot spot open <id> [--select] [--at <where>]` | Opens the panel on a spot, as a new flow, or its window. `--select` only selects its card. `--at` gives the `show` of its sheet the input `at`, such as `spot/notes`. |
+| `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow, or its window. `--select` only selects its card.      |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows. |
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet.                                |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
-| `openspot spot settings <id>`                      | Opens Settings at a spot, as Settings in its ⌘K menu does.                                      |
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
@@ -76,7 +75,6 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot allow <id> <use>` | Lets a spot that `spot add` added make the calls of a use that its `spot.toml` doesn't name, and records the use in `spots.lock`, as an update with `--yes` does. Only the person can run it. |
-| `openspot spot allow <id>` | Opens Settings at a spot, and walks the person through each macOS access that it lacks, one at a time, beside System Settings. |
 | `openspot spot list [--core] [--json]` | Prints an `item=<id>` record for each spot: its `state=` (`ready`, `access`, `review` or `off`), its `uses=`, the macOS accesses it `needs=` that are denied or not asked yet, the uses it was `refused=`, the time of its last call of each use as `last.<use>=`, and the accesses that the calls of each use need as `access.<use>=`, or may need as `maybe.<use>=`. `--core` prints each spot that comes with Openspot, with `on=`. |
 | `openspot setting list [--spot <id>] [--json]` | Prints a record for each row of Settings, of the app and of each spot, or of one spot, `openspot` for the app: `item=`, `spot=`, `name=` (the spot's name), `key=` (what `setting set` takes), `title=`, `value=` (`set` for a secret), `kind=`, `section=`, `icon=` and `detail=`, and for a choice its `options=` and `default=`. |
 | `openspot setting remove [--spot <id>] <key>` | Removes a value, a secret too. Only you can, in Settings or in Terminal; a spot cannot. |
@@ -116,6 +114,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot front app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
 | `openspot clipboard read [--within <age>]` | Prints the text on the clipboard. With `--within`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
 | `openspot access list` | Prints an `item=<id>` record for each macOS access that a spot can need: `accessibility`, `automation`, `screen`, `calendars`, `reminders`, `camera`, `microphone`, `input` and `helper`. Each has its `title=`, its `access=`, the `spots=` that are on and need it for a call they make, and the spots that may need it for some forms of a call as `maybe=`. Then it prints `app=`, `path=` and `access=` for each app that Openspot reads. An access is `allowed`, `denied`, `unasked`, or `unknown`, as for an app that is closed. The record of the selected text has `app=accessibility`. |
+| `openspot access grant <id>` | Opens Settings at a spot, and walks the person through each macOS access that it lacks, one at a time, beside System Settings. |
 | `openspot access grant [--end]` | Prints the guided grant that runs, as one `item=grant` block: its `spot=`, its `steps=`, the `step=` it waits on with the `place=` of its switch in System Settings, the steps it is `done=` with, and `restart=true` when the step needs Openspot to start again. It prints nothing when none runs. `--end` ends it. |
 | `openspot access ask <app\|accessibility>` | Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |

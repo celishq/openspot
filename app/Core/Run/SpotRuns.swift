@@ -12,7 +12,6 @@ public final class SpotRuns {
     public private(set) var floating: Set<String> = []
     @ObservationIgnored public private(set) var appearance = Style.Variant.dark
     @ObservationIgnored private var windows: Set<String> = []
-    @ObservationIgnored var landings: [String: String] = [:]
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }

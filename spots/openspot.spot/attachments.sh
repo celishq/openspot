@@ -51,7 +51,7 @@ case "$1" in
     esac
     list
     ;;
-  settings) exec openspot spot settings "$source" ;;
+  settings) exec openspot app settings --at "spot/$source" ;;
   *)
     echo 'Attachments cannot do that.' >&2
     exit 1

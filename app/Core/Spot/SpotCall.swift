@@ -10,8 +10,8 @@ public enum SpotCall: NounCall {
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
     case remove(String)
-    case allow(String, use: String?)
-    case open(String, at: String? = nil)
+    case allow(String, use: String)
+    case open(String)
     case push(String, route: String?, title: String?, replace: Bool)
     case pop(String, all: Bool)
     case choose(String)
@@ -53,17 +53,17 @@ public enum SpotCall: NounCall {
             return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
         CommandVerb(
-            "allow", "<id> [use]",
-            "Lets a spot that spot add added make the calls of a use that its spot.toml does not name, and records the use in spots.lock, as an update that adds a use does with --yes. With no use, it opens Settings at the spot and walks you through each macOS access that the spot needs, one at a time, beside System Settings.",
+            "allow", "<id> <use>",
+            "Lets a spot that spot add added make the calls of a use that its spot.toml does not name, and records the use in spots.lock, as an update that adds a use does with --yes.",
             rule: CallRule(use: .spots, used: "allowed a use of a spot", inShow: .changes("changes what a spot can do"), onlyPerson: "cannot allow a use. Only you can, with `openspot spot allow` in Terminal.")
         ) { words in
-            guard let fit = words.fit, (1...2).contains(fit.rest.count) else { return nil }
-            return Self.allow(fit.rest[0], use: fit.rest.dropFirst().first)
+            guard let fit = words.fit, fit.rest.count == 2 else { return nil }
+            return Self.allow(fit.rest[0], use: fit.rest[1])
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb("open", "<id> [--select] [--at <where>]", "Opens the panel on a spot, as a new flow, or its window. --select only selects its card on the grid. --at gives the show of its sheet the input at, such as spot/notes.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
+        CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow, or its window. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0], at: fit.value("--at"))
+            return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
         CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
@@ -71,7 +71,6 @@ public enum SpotCall: NounCall {
             return Self.pop(fit.rest[0], all: fit.has("--all"))
         },
         CommandVerb("choose", "<id>", "Asks for files and drops them on a spot that takes them.", rule: CallRule(inShow: .changes(window))) { $0.one.map(Self.choose) },
-        act(.settings, "Opens the Settings of a spot, as the row of a card's menu does.", rule: CallRule(inShow: .changes(window))),
         act(.edit, "Opens the file of a spot to edit, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "opened the file of a spot", inShow: .changes(window))),
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
@@ -110,7 +109,7 @@ public enum SpotCall: NounCall {
         case .add(nil, let isConfirmed): spots.restore(isConfirmed: isConfirmed)
         case .remove(let id): spots.remove(id)
         case .allow(let id, let use): spots.allow(use, for: id)
-        case .open(let id, let at): spots.open(id, at: at)
+        case .open(let id): spots.open(id)
         case .push(let id, let route, let title, let replace): spots.push(id, route: route, title: title, replace: replace)
         case .pop(let id, let all): spots.pop(id, all: all)
         case .choose(let id): spots.choose(for: id)

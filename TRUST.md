@@ -24,7 +24,7 @@ it declares.
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `app restart`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `window`, `open`, `float`, `key.<action>` or of the spot `openspot` |
-| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
@@ -97,7 +97,7 @@ To take an access away from one spot, turn the spot off. To take it from every s
 
 A spot that Needs access shows Allow… in Needs you. Allow… walks you through each access it lacks, one at a time, beside
 System Settings. It moves on by itself when you turn the access on. Screen Recording needs Openspot to start again, so
-its step offers Restart Openspot, and Settings opens again at the same step. `openspot spot allow <id>` starts the same
+its step offers Restart Openspot, and Settings opens again at the same step. `openspot access grant <id>` starts the same
 walk from Terminal.
 
 A spot that Needs review shows Review… in Needs you. Review… allows the use that the spot tried, and records it in

@@ -67,9 +67,8 @@ struct SpotCalls {
         }
     }
 
-    func allow(_ word: String?, for id: String) -> CommandAPI.Work {
-        guard let word else { return grant(id) }
-        return CommandAnswer.work { [places, app] in
+    func allow(_ word: String, for id: String) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
             guard let use = try SpotUse.set([word], of: id).first else { return "" }
             let answer = try await places.lock.allow(use, for: id)
             await app?.spotsChanged()
@@ -77,30 +76,10 @@ struct SpotCalls {
         }
     }
 
-    private func grant(_ id: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning("spot allow \(id)") }
-        return CommandAnswer.work { [places, mac, access, runs] in
-            let config = places.config.read()
-            guard let spot = try places.folder(config).scan().scripts.first(where: { $0.id == id }) else {
-                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
-            }
-            let statuses = await access.read(from: mac, browsers: config.browsers).statuses
-            let last = (runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]
-            let needs = SpotStanding(spot, statuses: statuses, last: last, refused: [:]).missing
-            guard !needs.isEmpty else { return "\(spot.name) has each macOS access it needs.\n" }
-            guard await app.grant(id, needs: needs) else { throw SpotError.failed(1, "Openspot has no Settings to walk you through. Open Settings, then run this again.") }
-            return "Settings walks you through \(Self.names(AccessGrant(spot: id, steps: needs).steps.map(\.title))).\n"
-        }
-    }
-
-    private static func names(_ titles: [String]) -> String {
-        titles.count > 1 ? titles.dropLast().joined(separator: ", ") + " and " + titles[titles.count - 1] : titles.first ?? ""
-    }
-
-    func open(_ id: String, at: String?) -> CommandAPI.Work {
+    func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
-            guard await app.open(id, at: at) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
     }

@@ -35,81 +35,30 @@ final class SpotWindowTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    private var log: URL {
-        folder.appendingPathComponent("shows")
-    }
-
-    private var shows: [String] {
-        ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
-    }
-
-    private func settingsSpot(window: String = "settings") async throws {
-        let body = "at=$(sed -n 's/^input\\.at=//p')\necho \"$1 $at\" >> '\(log.path)'\nprintf 'item=a\\ntitle=Apple\\n'"
-        try TestSpot(toml: "title = 'Settings'\nwindow = '\(window)'", body: body).write(to: spots.spotFile("settings"))
+    private func windowSpot() async throws {
+        try TestSpot(toml: "title = 'Board'", body: "printf 'item=a\\ntitle=Apple\\n'").write(to: spots.spotFile("board"))
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "board") }
         await model.reload()
-    }
-
-    func testAWindowKeyGivesTheSpotItsNamedSize() async throws {
-        try await settingsSpot()
-
-        XCTAssertEqual(model.entry("settings")?.spot.window, .settings)
-        XCTAssertEqual(WindowSize.settings.size, CGSize(width: 880, height: 620))
-        XCTAssertLessThan(WindowSize.settings.minSize.width, WindowSize.settings.size.width)
-        XCTAssertLessThan(WindowSize.settings.minSize.height, WindowSize.settings.size.height)
-    }
-
-    func testAWindowKeyOfAnUnknownSizeIsAFaultThatNamesTheSizes() async throws {
-        try await settingsSpot(window: "huge")
-
-        let faults = try XCTUnwrap(model.entry("settings")?.spot.fault?.faults)
-        XCTAssertTrue(faults.contains { $0.contains("window = \"huge\"") && $0.contains("window = \"settings\"") }, "\(faults)")
-    }
-
-    func testASpotWithAWindowKeyOpensItsWindowWhateverThePersonChose() async throws {
-        try await settingsSpot()
-        _ = try model.files.config.change { $0.arrangement.set(isWindow: false, of: "settings") }
-        await model.reload()
-
-        model.press("settings")
-
-        try await wait("the window") { self.host.windows == ["settings"] }
-        XCTAssertEqual(model.place(ofSheet: "settings"), .window)
-        XCTAssertEqual(host.shows, 0)
-        XCTAssertNil(model.openSheetID)
     }
 
     func testASecondOpenBringsTheSameWindowToTheFront() async throws {
-        try await settingsSpot()
+        try await windowSpot()
         model.isShown = true
 
-        XCTAssertTrue(model.open("settings"))
-        try await wait("the window") { self.host.windows == ["settings"] }
-        XCTAssertTrue(model.open("settings"))
-        try await wait("the window again") { self.host.windows == ["settings", "settings"] }
+        XCTAssertTrue(model.open("board"))
+        try await wait("the window") { self.host.windows == ["board"] }
+        XCTAssertTrue(model.open("board"))
+        try await wait("the window again") { self.host.windows == ["board", "board"] }
 
-        XCTAssertEqual(model.runs.floating, ["settings"])
+        XCTAssertEqual(model.runs.floating, ["board"])
         XCTAssertEqual(host.landings, [])
         XCTAssertFalse(model.isShown)
     }
 
-    func testOpenAtHandsWhereToLandToTheShowOfTheWindow() async throws {
-        try await settingsSpot()
+    func testAWindowKeyInSpotTomlIsUnknown() async throws {
+        try TestSpot(toml: "title = 'Board'\nwindow = 'settings'").write(to: spots.spotFile("board"))
+        await model.reload()
 
-        XCTAssertTrue(model.open("settings", at: "spot/notes"))
-        try await wait("the show at the spot") { self.shows.contains("show spot/notes") }
-        XCTAssertTrue(model.open("settings", at: "access/screen"))
-        try await wait("the show at the access") { self.shows.contains("show access/screen") }
-
-        XCTAssertEqual(host.windows, ["settings", "settings"])
-        XCTAssertEqual(shows.filter { $0.hasSuffix("spot/notes") }.count, 1, "\(shows)")
-    }
-
-    func testAPlaceGivenBeforeTheWindowCanOpenIsKeptForItsOpen() async throws {
-        XCTAssertFalse(model.open("settings", at: "access/screen"))
-        try await settingsSpot()
-
-        XCTAssertTrue(model.open("settings"))
-
-        try await wait("the show at the access") { self.shows.contains("show access/screen") }
+        XCTAssertNotNil(model.entry("board")?.spot.fault)
     }
 }

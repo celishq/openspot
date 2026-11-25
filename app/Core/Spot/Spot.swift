@@ -55,8 +55,7 @@ public struct Spot: Equatable, Sendable {
         keywords: [String] = [],
         sample: URL? = nil,
         edits: SpotEdits? = nil,
-        starts: SpotStart? = nil,
-        window: WindowSize? = nil
+        starts: SpotStart? = nil
     ) {
         let isSource = uses.contains(.attachment)
         header = Header(SpotFacts(
@@ -66,7 +65,7 @@ public struct Spot: Equatable, Sendable {
             host: host, growsFromField: growsFromField, mode: mode,
             dataName: dataName, isOnGrid: isOnGrid && !isSource, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
             commands: commands, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
-            edits: edits, starts: starts, window: window
+            edits: edits, starts: starts
         ))
         self.kind = kind
         self.pick = pick
@@ -177,7 +176,6 @@ public struct Spot: Equatable, Sendable {
             showsInMenuBar: canShowInMenuBar,
             keys: settingKeys,
             isWindowByDefault: isWindow,
-            opensAsWindow: self.window != nil,
             name: self.name
         )
         if !self.hasSheet, !self.commands.isEmpty {

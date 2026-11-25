@@ -199,11 +199,11 @@ public final class SettingsBook {
     }
 
     public func allow(_ spot: String) async {
-        await run(["spot", "allow", spot])
+        await run(["access", "grant", spot])
     }
 
-    public func review(_ spot: String, use: SpotUse?) async {
-        await run(["spot", "allow", spot] + (use.map { [$0.rawValue] } ?? []))
+    public func review(_ spot: String, use: SpotUse) async {
+        await run(["spot", "allow", spot, use.rawValue])
     }
 
     public func ask(_ access: MacAccess) async {
