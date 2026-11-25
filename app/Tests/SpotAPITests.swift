@@ -144,15 +144,15 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown(["spot", "list", "--all"]))
     }
 
-    func testTheValuesListHoldsEachValueWithItsSpot() async throws {
+    func testTheSettingListHoldsAValueThatALoadedSpotKeepsAndNoneOfASpotThatIsGone() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("repos"), toml: "title = 'Repos'")
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
-        let values = try await json(["setting", "list", "--json"])
+        let values = try await json(["setting", "list", "--json"]).filter { $0["kind"] as? String == "text" }
 
-        XCTAssertEqual(values.map { $0["spot"] as? String }, ["repos", "gone"])
-        XCTAssertEqual(values.map { $0["key"] as? String }, ["folder", "editor"])
-        XCTAssertEqual(values.map { $0["value"] as? String }, ["~/Code", "Zed"])
+        XCTAssertEqual(values.map { $0["item"] as? String }, ["repos/folder"])
+        XCTAssertEqual(values.map { $0["value"] as? String }, ["~/Code"])
     }
 
     func testKeySetGivesACommandAKeyAndTakesItAway() async throws {
