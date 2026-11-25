@@ -14,7 +14,7 @@ struct SpotArrangeBar: View {
         HStack(spacing: SpotTokens.wordsGap) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search your spots", text: Binding(get: { model.arrangeQuery }, set: { model.searchShelf($0) }))
+            TextField("Search your spots", text: Binding(get: { model.shelfQuery }, set: { model.searchShelf($0) }))
                 .textFieldStyle(.plain)
                 .focused($isFocused)
             SpotShelfCount(model: model)
@@ -31,7 +31,7 @@ private struct SpotShelfCount: View {
     let model: SpotsModel
 
     var body: some View {
-        if !model.arrangeQuery.isEmpty {
+        if !model.shelfQuery.isEmpty {
             Text("\(model.shelf.count) of \(model.offGrid.count)")
                 .font(SpotType.detail)
                 .foregroundStyle(.secondary)

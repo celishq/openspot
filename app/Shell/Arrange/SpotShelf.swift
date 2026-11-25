@@ -39,7 +39,7 @@ struct SpotShelf: View {
     private func drag(of id: String, at rect: CGRect) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotArrangeView.space))
             .onChanged { value in
-                let origin = CGPoint(x: rect.minX - panelOrigin.x, y: layout.band.lowerBound + SpotTokens.scrollFadeLength + rect.minY - model.arrangeScroll - panelOrigin.y)
+                let origin = CGPoint(x: rect.minX - panelOrigin.x, y: layout.band.lowerBound + SpotTokens.scrollFadeLength + rect.minY - model.shelfScroll - panelOrigin.y)
                 var still = Transaction()
                 still.tracksVelocity = false
                 withTransaction(still) { model.dragShelfSpot(id, from: origin, by: value.translation) }

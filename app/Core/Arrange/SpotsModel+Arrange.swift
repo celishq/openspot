@@ -1,25 +1,21 @@
 import Foundation
 
 extension SpotsModel {
-    public func arrange() {
-        beginEditing()
-    }
-
     public func arranges(_ entry: Entry) -> Bool {
         takesOffGrid(entry) && !entry.spot.isSource
     }
 
     public func searchShelf(_ text: String) {
         asOnePress {
-            guard text != arrangeQuery else { return }
-            arrangeQuery = text
+            guard text != shelfQuery else { return }
+            shelfQuery = text
             takeShelf()
         }
     }
 
     public func shelfScrolled(to offset: CGFloat) {
-        guard arrangeScroll != offset else { return }
-        arrangeScroll = offset
+        guard shelfScroll != offset else { return }
+        shelfScroll = offset
     }
 
     func takeOffGridSpots(placed: Set<String>) {
@@ -33,7 +29,7 @@ extension SpotsModel {
     }
 
     func takeShelf() {
-        let next = shelfMatches(of: arrangeQuery)
+        let next = shelfMatches(of: shelfQuery)
         if next != shelf { shelf = next }
     }
 
@@ -58,8 +54,8 @@ extension SpotsModel {
     }
 
     func clearArrange() {
-        if !arrangeQuery.isEmpty { arrangeQuery = "" }
-        arrangeScroll = 0
+        if !shelfQuery.isEmpty { shelfQuery = "" }
+        shelfScroll = 0
         takeShelf()
     }
 
@@ -158,13 +154,13 @@ extension SpotsModel {
     }
 
     @discardableResult
-    public func pin(_ id: String, at cell: GridCell? = nil) -> GridPin {
+    public func pin(_ id: String) -> GridPin {
         asOnePress {
             guard let entry = card(id: id), arranges(entry) else { return .unknown }
             let (spots, layout) = laidGrid()
             guard !spots.contains(where: { $0.id == id }) else { return .onGrid }
             let choices = sizes(of: entry)
-            let slots = cell.map { [$0] } ?? grid.freeCells(around: layout)
+            let slots = grid.freeCells(around: layout)
             guard let slot = slots.lazy.compactMap({ slot in self.grid.fit(entry.size, at: slot, among: layout, choices: choices).map { (slot, $0) } }).first else { return .full }
             let placement = SpotPlacement(index: spots.count, row: slot.0.row, column: slot.0.column, size: slot.1)
             saveLayout(layout + [placement], of: spots + [entry], selecting: id, also: { $0.set(isOnGrid: true, of: id) })

@@ -15,7 +15,7 @@ struct StoreView: View {
                     if let page = store.page {
                         StorePageView(store: store, page: page, model: model)
                     } else {
-                        StoreShelfView(store: store)
+                        StoreCardsView(store: store)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

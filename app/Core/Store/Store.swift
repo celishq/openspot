@@ -196,7 +196,7 @@ public final class Store {
     }
 
     @concurrent
-    private nonisolated static func read(_ places: AppPlaces, opened: StoreSource?) async -> StoreShelf {
+    private nonisolated static func read(_ places: AppPlaces, opened: StoreSource?) async -> StoreRead {
         let before = try? places.lock.entries()
         await SpotUpdate(places: places).takeEachWithNoNewPower()
         let tookUpdates = (try? places.lock.entries()) != before
@@ -210,7 +210,7 @@ public final class Store {
                 file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil) }
             }.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
         }
-        return StoreShelf(sources: sources, missing: Set(sources.filter { $0.canRemove && !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)
+        return StoreRead(sources: sources, missing: Set(sources.filter { $0.canRemove && !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)
     }
 
     @concurrent

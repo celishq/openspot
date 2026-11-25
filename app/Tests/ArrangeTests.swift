@@ -37,7 +37,7 @@ final class ArrangeTests: PanelCase {
         model.dragRest = .zero
         try await spots(off + on)
         for id in off { model.takeOffGrid(id) }
-        model.arrange()
+        model.beginEditing()
     }
 
     func testArrangeListsYourSpotsOffTheGridByName() async throws {
@@ -54,7 +54,7 @@ final class ArrangeTests: PanelCase {
 
         model.searchShelf("sn")
 
-        XCTAssertEqual(model.arrangeQuery, "sn")
+        XCTAssertEqual(model.shelfQuery, "sn")
         XCTAssertEqual(shelf, ["snooze", "snoozetab"])
         model.searchShelf("")
         XCTAssertEqual(shelf, ["notes", "snooze", "snoozetab", "tabs"])
@@ -71,7 +71,7 @@ final class ArrangeTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertFalse(model.isEditing)
-        XCTAssertEqual(model.arrangeQuery, "")
+        XCTAssertEqual(model.shelfQuery, "")
         XCTAssertEqual(host.arranged, [true, false])
     }
 

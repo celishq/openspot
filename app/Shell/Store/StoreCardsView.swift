@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct StoreShelfView: View {
+struct StoreCardsView: View {
     let store: Store
 
     private var source: StoreSource? {

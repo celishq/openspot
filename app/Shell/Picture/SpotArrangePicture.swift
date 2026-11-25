@@ -17,7 +17,7 @@ enum SpotArrangePicture {
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForShows()
             model.selected = -1
-            model.arrange()
+            model.beginEditing()
             if let search = scene.search { model.searchShelf(search) }
             let origin = CGPoint(x: ((screen.width - SpotTokens.panelWidth) / 2).rounded(), y: panelTop)
             if let id = scene.swap { lift(id, in: model, panelOrigin: origin) }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct StoreShelf: Sendable {
+struct StoreRead: Sendable {
     let sources: [StoreSource]
     let missing: Set<String>
     let cards: [StorePlace: [StoreCard]]

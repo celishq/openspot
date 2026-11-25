@@ -251,7 +251,7 @@ final class PanelKeysTests: PanelCase {
 
     func testArrangeOpensNoMenuNorSheetAndEscEndsIt() async throws {
         try await showGrid()
-        model.arrange()
+        model.beginEditing()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
         for key in [enter, tab, actions, settings, history] { _ = model.handleKey(key) }
