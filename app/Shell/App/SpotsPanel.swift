@@ -17,10 +17,9 @@ final class SpotsPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if firstResponder is NSText, event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey,
-           let action = EditMenu.action(of: key), NSApp.sendAction(action, to: nil, from: self) {
-            return true
-        }
+        guard event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey else { return super.performKeyEquivalent(with: event) }
+        if key == ActionKey(name: "v", isCommand: true), model?.isShown == true, model?.pasteSpot() == true { return true }
+        if firstResponder is NSText, let action = EditMenu.action(of: key), NSApp.sendAction(action, to: nil, from: self) { return true }
         return super.performKeyEquivalent(with: event)
     }
 
@@ -291,15 +290,6 @@ final class SpotsPanel: NSPanel {
         }
     }
 
-    private func watchPaste(model: SpotsModel) {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
-            let isTaken = MainActor.assumeIsolated {
-                event.keyModifiers == .command && event.actionKey?.name == "v" && model?.isShown == true && model?.pasteSpot() == true
-            }
-            return isTaken ? nil : event
-        }
-    }
-
     private static let plainCursors: Void = {
         typealias Draw = @convention(c) (NSView, Selector) -> Void
         let selector = #selector(NSView.updateLayer)
@@ -335,7 +325,6 @@ final class SpotsPanel: NSPanel {
         let hosting = NSHostingView(rootView: SpotsWindowView(model: model, place: panel.place))
         hosting.sizingOptions = []
         panel.contentView = hosting
-        panel.watchPaste(model: model)
         panel.watchFrontApp(model: model)
         panel.watchInputSource(model: model)
         panel.center()
