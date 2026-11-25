@@ -144,15 +144,15 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown(["spot", "list", "--all"]))
     }
 
-    func testTheValuesListHoldsEachValueWithItsSpot() async throws {
+    func testTheSettingListHoldsAValueThatALoadedSpotKeepsAndNoneOfASpotThatIsGone() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("repos"), toml: "title = 'Repos'")
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
-        let values = try await json(["setting", "list", "--json"])
+        let values = try await json(["setting", "list", "--json"]).filter { $0["kind"] as? String == "text" }
 
-        XCTAssertEqual(values.map { $0["spot"] as? String }, ["repos", "gone"])
-        XCTAssertEqual(values.map { $0["key"] as? String }, ["folder", "editor"])
-        XCTAssertEqual(values.map { $0["value"] as? String }, ["~/Code", "Zed"])
+        XCTAssertEqual(values.map { $0["item"] as? String }, ["repos/folder"])
+        XCTAssertEqual(values.map { $0["value"] as? String }, ["~/Code"])
     }
 
     func testKeySetGivesACommandAKeyAndTakesItAway() async throws {
@@ -290,6 +290,7 @@ final class SpotAPITests: XCTestCase {
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
         _ = try await answer(["spot", "open", "notes"])
+        _ = try await answer(["spot", "open", "settings", "--at", "spot/notes"])
         _ = try await answer(["spot", "push", "settings", "spot:notes", "--replace", "--title", "Notes"])
         _ = try await answer(["spot", "push", "notes"])
         _ = try await answer(["spot", "pop", "settings", "--all"])
@@ -301,7 +302,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(change, CommandAnswer())
         let opened = await app.opened
-        XCTAssertEqual(opened, ["open notes", "push settings spot:notes replace Notes", "push notes", "pop settings all", "pop settings", "review apps", "change repos folder", "open gone", "review gone"])
+        XCTAssertEqual(opened, ["open notes", "open settings at spot/notes", "push settings spot:notes replace Notes", "push notes", "pop settings all", "pop settings", "review apps", "change repos folder", "open gone", "review gone"])
         XCTAssertEqual(gone.errors, "Openspot has no spot `gone`. Run `openspot spot list` to see each one.\n")
         XCTAssertEqual(goneReview.code, 1)
         for arguments in [["spot", "open", "notes"], ["spot", "review", "apps"], ["setting", "change", "--spot", "a", "b"]] {

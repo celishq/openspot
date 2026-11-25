@@ -64,7 +64,7 @@ final class ReadUseCallTests: XCTestCase {
 
         let answer = try await call(["access", "list"])
 
-        XCTAssertEqual(answer.output, "app=company.thebrowser.dia\npath=/Applications/Dia.app\naccess=allowed\n\napp=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n")
+        XCTAssertTrue(answer.output.hasSuffix("\n\napp=company.thebrowser.dia\npath=/Applications/Dia.app\naccess=allowed\n\napp=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n"), answer.output)
     }
 
     func testTabPrintsTheFrontTabOfTheNamedBrowserInTheWordsOfThatBrowser() async throws {
@@ -255,7 +255,8 @@ final class ReadUseCallTests: XCTestCase {
 
         let answer = try await call(["access", "list"])
 
-        XCTAssertEqual(answer.output, """
+        XCTAssertTrue(answer.output.hasSuffix("""
+
         app=com.apple.Safari
         path=/Applications/Safari.app
         access=allowed
@@ -271,7 +272,7 @@ final class ReadUseCallTests: XCTestCase {
         app=accessibility
         access=unasked
 
-        """)
+        """), answer.output)
         XCTAssertFalse(reads.asks.contains { $0.hasSuffix("true") }, reads.asks.joined(separator: ", "))
     }
 

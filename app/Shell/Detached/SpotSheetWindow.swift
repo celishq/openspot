@@ -33,13 +33,20 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     }
 
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
-        let window = make(title: entry.spot.name, name: "spot-window-\(entry.id)", content: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
+        let size = entry.spot.window
+        let window = make(
+            title: entry.spot.name,
+            name: "spot-window-\(entry.id)",
+            size: size?.size ?? SpotTokens.windowSize,
+            minSize: size?.minSize ?? SpotTokens.windowMinSize,
+            content: SpotFloatView(model: model, id: entry.id, fills: true) { _ in }
+        )
         window.model = model
         window.id = entry.id
         return window
     }
 
-    static func make(title: String, name: String, size: CGSize = SpotTokens.windowSize, content: some View) -> SpotSheetWindow {
+    static func make(title: String, name: String, size: CGSize = SpotTokens.windowSize, minSize: CGSize = SpotTokens.windowMinSize, content: some View) -> SpotSheetWindow {
         let window = SpotSheetWindow(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -54,7 +61,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         window.hasShadow = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        window.minSize = SpotTokens.windowMinSize
+        window.minSize = minSize
         window.delegate = window
         window.setFrameAutosaveName(name)
         let host = NSHostingController(rootView: content)

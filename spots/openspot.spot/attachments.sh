@@ -20,7 +20,7 @@ list() {
     { delete f; source = 0
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "uses" && f[key] == "attachment") source = 1
+        if (key == "uses" && ("," f[key] ",") ~ /,attachment,/) source = 1
       }
       if (!source) next
       printf "\nitem=%s\nparent=list\ntitle=%s\nicon=%s\nvalue=%s\n", f["item"], f["title"], f["icon"], f["on"]
@@ -32,6 +32,7 @@ list() {
   printf '%s\n' "$access" | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
+      if (!("app" in f)) next
       if (f["app"] == "accessibility") { title = "Selected text"; icon = "character.cursor.ibeam" }
       else { title = f["path"]; sub(/.*\//, "", title); sub(/\.app$/, "", title); icon = f["path"] }
       printf "\nitem=access-%s\nparent=access\ntitle=%s\nicon=%s\napp=%s\naccess=%s\nhides=settings\n", f["app"], title, icon, f["app"], f["access"]

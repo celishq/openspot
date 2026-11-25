@@ -35,6 +35,7 @@ Each key of the top level, before the first table.
 | `stay`     | bool   | Whether the script keeps running and gets each word on stdin. Not for a `.js` spot.         |
 | `source`   | [text] | More Swift files or folders of a Swift spot.                                               |
 | `views`    | [text] | The SwiftUI files that draw its own kinds of block, such as `["week.swift"]`.              |
+| `window`   | text   | `"settings"`: its sheet always opens in a window of that size, which `openspot spot open <id> --at <where>` opens with the input `at` in its show. |
 
 ## Uses
 

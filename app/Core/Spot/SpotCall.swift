@@ -11,7 +11,7 @@ public enum SpotCall: NounCall {
     case add(String?, isConfirmed: Bool)
     case remove(String)
     case allow(String, use: String?)
-    case open(String)
+    case open(String, at: String? = nil)
     case push(String, route: String?, title: String?, replace: Bool)
     case pop(String, all: Bool)
     case choose(String)
@@ -40,7 +40,7 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints an item, an item=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, whether it is on, and its uses. --json prints them as JSON, with their keys."
+            "Prints an item, an item=<id> block, for each spot that the app loads, with its state= (ready, access, review or off), uses=, needs= each macOS access that a call in its files or a call it made needs and that is denied or not asked yet, and last.<use>= the time of its last call of each use, then a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
@@ -61,9 +61,9 @@ public enum SpotCall: NounCall {
             return Self.allow(fit.rest[0], use: fit.rest.dropFirst().first)
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
+        CommandVerb("open", "<id> [--select] [--at <where>]", "Opens the panel on a spot, as a new flow, or its window. --select only selects its card on the grid. --at gives the show of its sheet the input at, such as spot/notes.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
+            return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0], at: fit.value("--at"))
         },
         CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
@@ -110,7 +110,7 @@ public enum SpotCall: NounCall {
         case .add(nil, let isConfirmed): spots.restore(isConfirmed: isConfirmed)
         case .remove(let id): spots.remove(id)
         case .allow(let id, let use): spots.allow(use, for: id)
-        case .open(let id): spots.open(id)
+        case .open(let id, let at): spots.open(id, at: at)
         case .push(let id, let route, let title, let replace): spots.push(id, route: route, title: title, replace: replace)
         case .pop(let id, let all): spots.pop(id, all: all)
         case .choose(let id): spots.choose(for: id)

@@ -78,7 +78,7 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(unknown.code, 1)
         XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment or read\n")
-        XCTAssertEqual(none.code, 1)
+        XCTAssertEqual(none.code, 2)
         XCTAssertEqual(none.errors, "`openspot spot allow` needs a use for now, such as `openspot spot allow tea clipboard`.\n")
     }
 

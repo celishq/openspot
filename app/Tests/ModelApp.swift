@@ -13,7 +13,7 @@ struct ModelApp: RunningApp {
     func installUpdate() async -> Bool { false }
     func quit() async {}
     func apply(_ theme: Theme) async {}
-    func open(_ id: String) async -> Bool { await model.open(id) }
+    func open(_ id: String, at: String?) async -> Bool { await model.open(id, at: at) }
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool { await model.present(FlowSheet(spot: id, title: title), from: caller) }
     func leave(_ id: String) async -> Bool { await model.leave(id) }
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }

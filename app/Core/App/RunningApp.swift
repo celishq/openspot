@@ -8,7 +8,7 @@ public protocol RunningApp: Sendable {
     func installUpdate() async -> Bool
     func quit() async
     func apply(_ theme: Theme) async
-    func open(_ id: String) async -> Bool
+    func open(_ id: String, at: String?) async -> Bool
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool
     func leave(_ id: String) async -> Bool
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool
@@ -27,7 +27,7 @@ public protocol RunningApp: Sendable {
 
 extension RunningApp {
     public func ask(_ id: String, from caller: String?, title: String?) async -> Bool {
-        await open(id)
+        await open(id, at: nil)
     }
 
     public func leave(_ id: String) async -> Bool {

@@ -6,6 +6,7 @@ struct SettingCalls {
     let app: (any RunningApp)?
     let secrets: SecretStore
     var channel: String?
+    let mac: Mac
 
     func get(_ key: String, of spot: String) -> CommandAPI.Work {
         CommandAnswer.work { [places, secrets, channel] in
@@ -29,11 +30,38 @@ struct SettingCalls {
         }
     }
 
-    func list(_ form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places, secrets] in
+    func list(of spot: String?, _ form: PrintForm) -> CommandAPI.Work {
+        CommandAnswer.work { [places, secrets, app, mac] in
             let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
-            return try list.values(form, secrets: secrets.read())
+            let isApp = spot == ReservedSetting.appSpot
+            var rows: [SettingRow] = []
+            if spot == nil || isApp {
+                rows += AppSettings(
+                    panelKey: (config.panelKey ?? .standard).text,
+                    fixKey: (config.fixKey ?? .fix).text,
+                    slow: await app?.slowMotion(nil) ?? nil,
+                    login: mac.login()?.isOn(),
+                    link: mac.link()?.isOn,
+                    theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
+                ).rows
+            }
+            if !isApp {
+                var scan = try places.folder(config).scan()
+                scan.addSettings(in: places.config, secrets: secrets, read: config, defaults: places.readDefaultArrangement())
+                let sheets = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.settingsSheet)
+                if let spot, sheets.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+                let kept = try secrets.read()
+                rows += sheets.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
+            }
+            return try form.text(of: rows)
+        }
+    }
+
+    func window(of spot: String, _ isWindow: Bool) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            let config = try places.config.change { $0.arrangement.set(isWindow: isWindow, of: spot) }
+            await app?.configChanged(.spots([spot]), to: config)
+            return ""
         }
     }
 

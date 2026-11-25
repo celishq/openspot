@@ -117,7 +117,7 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(get.output, "•••\n")
         XCTAssertFalse(list.output.contains("MARKER"), list.output)
-        XCTAssertTrue(list.output.contains("•••"), list.output)
+        XCTAssertTrue(list.output.contains("value=set\n"), list.output)
         XCTAssertEqual(set.code, 1)
         XCTAssertEqual(set.errors, "Openspot keeps `token` of weather as a secret, so only its own form changes it. Open the Settings of weather, and press Return on its row.\n")
         XCTAssertEqual(unset.code, 1)

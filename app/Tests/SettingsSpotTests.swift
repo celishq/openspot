@@ -8,202 +8,125 @@ final class SettingsSpotTests: BuiltInCase {
         }
     }
 
-    private func items() async throws -> [SpotItem] {
-        try await settings.items(timeout: 60).items
+    private func show(at destination: String? = nil) async throws -> String {
+        try await runs.answer(of: settings, ScriptEntry.show.name, input: destination.map { "input.at=\($0)\n" }, limit: 60)
     }
 
-    private func call(_ arguments: [String]) async throws {
-        let handler = arguments[0] == "open" ? "press" : arguments[0]
-        let input = arguments.dropFirst().map { "input.\(handler == "press" ? "item" : "value")=\($0)\n" }.joined()
-        try await settings.perform(handler, input: input.isEmpty ? nil : input, timeout: 60)
+    private func send(_ words: String...) async throws -> String {
+        try await runs.answer(of: settings, "window", input: "input.value=\(words.joined(separator: "\t"))\n", limit: 60)
     }
 
-    func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
+    private func records(_ text: String) -> [String: TextBlock] {
+        Dictionary(TextBlock.blocks(in: text).compactMap { block in block.value("item").map { ($0, block) } }) { first, _ in first }
+    }
+
+    private func viewValues(_ text: String) throws -> [String: [String]] {
+        let frame = Frame(text: text, kinds: try settings.kinds)
+        XCTAssertEqual(frame.parts.map(\.id), ["window"])
+        return frame.parts.first.flatMap { frame.tree.node($0.id) }?.values ?? [:]
+    }
+
+    func testItOpensAsAWindowOfTheSettingsSizeAndDrawsItsOwnView() throws {
         let spot = try settings
-        let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
-        XCTAssertEqual(spot.name, "Settings")
-        XCTAssertEqual(spot.subtitle, "Choose your key")
-        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
-        XCTAssertEqual(spot.kind, .list)
-        XCTAssertTrue(spot.triggers.lists)
-        XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.triggers.showsOnPanel)
-        XCTAssertTrue(spot.showsOfferedItems)
-        XCTAssertTrue(spot.showsInSheet)
-        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
+        XCTAssertEqual(spot.window, .settings)
+        XCTAssertEqual(Array(spot.views.keys), ["settings"])
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
-        let programs = try countPrograms()
+    func testTheShowHandsTheViewEveryAccessSpotRowThemeAndTheAccount() async throws {
+        try "#!/bin/sh\nopenspot screen shot\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'")
+        accesses.set(.screen, to: .denied)
 
-        _ = try await items()
+        let text = try await show()
+        let found = records(text)
 
-        XCTAssertEqual(programs(), ["openspot app status"])
+        XCTAssertNil(try viewValues(text)["at"])
+        XCTAssertEqual(Set(found.keys.filter { $0.hasPrefix("access:") }), Set(MacAccess.allCases.map { "access:\($0.rawValue)" }))
+        XCTAssertEqual(found["access:screen"]?.value("title"), "Screen Recording")
+        XCTAssertEqual(found["access:screen"]?.value("access"), "denied")
+        XCTAssertEqual(found["access:screen"]?.value("spots"), "cups")
+        XCTAssertEqual(found["spot:cups"]?.value("kind"), "spot")
+        XCTAssertEqual(found["spot:cups"]?.value("state"), "access")
+        XCTAssertEqual(found["spot:cups"]?.value("needs"), "screen")
+        XCTAssertEqual(found["spot:cups"]?.value("access.screen"), "screen")
+        XCTAssertFalse(found.keys.contains { $0.hasPrefix("spot:openspot/") })
+        XCTAssertEqual(found["row:openspot/panel-key"]?.value("form"), "key")
+        XCTAssertEqual(found["row:openspot/panel-key"]?.value("value"), "ctrl+space")
+        XCTAssertEqual(found["row:cups/key.fill"]?.value("title"), "Fill")
+        XCTAssertEqual(found["theme:Openspot"]?.value("used"), "true")
+        XCTAssertEqual(found["theme:Dracula"]?.value("dark.accent"), "#BD93F9")
+        XCTAssertEqual(Set(found.values.compactMap { $0.value("parent") }), ["rows"])
     }
 
-    func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
-        try script("cups.sh", "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'\n[settings]\nsize = 'text'\n[on]\nevery = 60\n'sheet.open' = true")
-        try file.set(setting: "theme", of: "cups", to: "dark")
-        try file.assign(.shake, to: "cups", act: .float)
+    func testAShowAskedToLandHandsWhereToTheView() async throws {
+        let text = try await show(at: "access/screen")
 
-        let items = try await items()
-
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key"])
-        XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
+        XCTAssertEqual(try viewValues(text)["at"], ["access/screen"])
     }
 
-    func testTheSheetListsTheKeyOfTheFile() async throws {
-        try file.set("panel-key", to: "option+space")
+    func testASetSentByTheViewWritesThroughSettingSetAndShowsTheWindowAgain() async throws {
+        try script("cups.sh", "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'")
 
-        let items = try await items()
-
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key"])
-        XCTAssertEqual(items.first?.title, "Open Openspot")
-        XCTAssertEqual(items.first?.shortcut, "option+space")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], []])
-        XCTAssertEqual(items.map(\.takesShake), [false, false])
-    }
-
-    func testTheSheetListsTheFixKeyAndChangesIt() async throws {
-        let before = try await items()
-        XCTAssertEqual(before[1].title, "Open a fix")
-        XCTAssertEqual(before[1].shortcut, "cmd+option+o")
-
-        try await call(["fix-key", "ctrl+option+f"])
+        _ = try await send("set", "openspot", "fix-key", "ctrl+option+f")
+        let text = try await send("set", "cups", "open", "ctrl+option+k")
 
         XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
+        XCTAssertEqual(records(text)["row:cups/open"]?.value("value"), "ctrl+option+k")
+        XCTAssertNil(try viewValues(text)["at"])
+        let removed = try await send("set", "cups", "open", "")
+        XCTAssertNil(records(removed)["row:cups/open"]?.value("value"))
     }
 
-    func testTheKeyThatOpensThePanelTakesNoShake() async throws {
+    func testAToggleOfTheAppGoesToTheMac() async throws {
+        offerLogin()
+
+        _ = try await send("set", "openspot", "login", "true")
+
+        XCTAssertTrue(opensAtLogin)
+    }
+
+    func testTurnTurnsASpotOffAndOn() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("awake.spot/awake.sh"), toml: "title = 'Awake'")
+
+        _ = try await send("turn", "awake", "true")
+        XCTAssertTrue(file.read().arrangement.enabled.contains("awake"))
+        let text = try await send("turn", "awake", "false")
+
+        XCTAssertFalse(file.read().arrangement.enabled.contains("awake"))
+        XCTAssertEqual(records(text)["spot:awake"]?.value("state"), "off")
+    }
+
+    func testAThemeSentByTheViewIsUsed() async throws {
+        let text = try await send("theme", "Dracula")
+
+        XCTAssertEqual(file.read().theme, "Dracula")
+        XCTAssertEqual(records(text)["theme:Dracula"]?.value("used"), "true")
+    }
+
+    func testAllowAsksForTheAccessibilityThatASpotLacks() async throws {
+        try "#!/bin/sh\nopenspot clipboard paste\n".writeScript(to: spots.spotFile("paste"), toml: "title = 'Paste'\nuses = ['clipboard']")
+        reads.set(trust: .unasked)
+
+        _ = try await send("allow", "paste")
+
+        XCTAssertTrue(reads.asks.contains("accessibility true"), reads.asks.joined(separator: ", "))
+    }
+
+    func testFailedWordsShowWhyInAToastAndTheWindowStays() async throws {
+        let effects = try recordEffects()
+
+        let text = try await send("theme", "Gone")
+
+        XCTAssertEqual(effects(), ["toast There is no theme named Gone. Run `openspot theme list` to see each one."])
+        XCTAssertNotNil(records(text)["theme:Openspot"])
+    }
+
+    func testUnknownWordsFail() async throws {
         do {
-            try await call(["panel-key", "shake"])
-            XCTFail("took a shake to open the panel")
-        } catch {
-            XCTAssertEqual(file.read().panelKey, .standard)
-        }
-    }
-
-    func testTheSheetListsTheStandardKeyWithNoFile() async throws {
-        let items = try await items()
-
-        XCTAssertEqual(items.first?.shortcut, "ctrl+space")
-    }
-
-    func testTheSheetHasNoPartsAndKeepsItsOrder() async throws {
-        let output = try await settings.items(timeout: 60)
-
-        XCTAssertTrue(output.parts.isEmpty)
-        XCTAssertFalse(output.keepsRecent)
-        XCTAssertEqual(output.pick, .stay)
-    }
-
-    func testAKeyRecordedOnARowGoesToTheFileAndTheListReadsItAgain() async throws {
-        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
-        defer { runs.quit() }
-        let sheet = runs.sheet(for: try settings)
-        sheet.open {}
-        for _ in 0..<6000 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
-        let item = try XCTUnwrap(sheet.list.selectedItem)
-
-        sheet.set(item, to: "cmd+k")
-
-        for _ in 0..<6000 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertEqual(file.read().panelKey, Shortcut(text: "cmd+k"))
-        XCTAssertEqual(sheet.list.shown.first?.shortcut, "cmd+k")
-        let changes = await app.changes
-        XCTAssertEqual(changes, 1)
-    }
-
-    func testAKeyItCannotUseLeavesTheFile() async throws {
-        do {
-            try await call(["panel-key", "k"])
-            XCTFail("took a bad key")
-        } catch {
-            XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))
-        }
-    }
-
-    func testAnUnknownCallFails() async throws {
-        do {
-            try await call(["gone"])
-            XCTFail("took an unknown call")
+            _ = try await send("gone")
+            XCTFail("took unknown words")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "Settings cannot do that.")
         }
-    }
-
-    func testTheLoginRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {
-        offerLogin()
-
-        let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "open_at_login"])
-        XCTAssertEqual(off.last?.title, "Open at login")
-        XCTAssertEqual(off.last?.isOn, false)
-
-        try await call(["open", "open_at_login"])
-        XCTAssertTrue(opensAtLogin)
-        let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
-
-        try await call(["open", "open_at_login"])
-        XCTAssertFalse(opensAtLogin)
-    }
-
-    func testTheSlowMotionRowShowsWithARunningAppAndAPickTurnsItOnAndOff() async throws {
-        await app.offerSlowMotion()
-
-        let off = try await items()
-        let row = try XCTUnwrap(off.first { $0.run == "slow_motion" })
-        XCTAssertEqual(row.title, "Slow motion")
-        XCTAssertEqual(row.isOn, false)
-
-        try await call(["open", "slow_motion"])
-        let on = try await items()
-        XCTAssertEqual(on.first { $0.run == "slow_motion" }?.isOn, true)
-    }
-
-    func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
-        offerLink()
-        let effects = try recordEffects()
-
-        let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "command_link"])
-        XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
-        XCTAssertEqual(off.last?.isOn, false)
-
-        try await call(["open", "command_link"])
-        XCTAssertEqual(effects(), ["toast Installed openspot"])
-        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: linkFile.path), root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot").path)
-        let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
-
-        try await call(["open", "command_link"])
-        XCTAssertEqual(effects(), ["toast Installed openspot", "toast Removed openspot"])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: linkFile.path))
-        XCTAssertEqual(mac.elevated, [])
-    }
-
-    func testAHotkeyItemShowsItsKeyAndRecordsANewOne() {
-        let items = Frame(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\nitem=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\nitem=other\ntitle=Other\n").items
-
-        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil, nil])
-        XCTAssertEqual(items.map(\.records), [true, false, false])
-        XCTAssertEqual(items.map(\.takesShake), [true, false, false])
-    }
-
-    func testAPartRecordsAKeyAndReportsItsValue() throws {
-        var part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [
-            .init(key: "field", value: "open"), .init(key: "type", value: "hotkey"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
-        ])))
-
-        XCTAssertEqual(part.value, "ctrl+k")
-        part.set("cmd+j")
-        XCTAssertEqual(part.control, .shortcut("cmd+j"))
-    }
-
-    func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(FrameCheck(text: "field=a\ntype=hotkey\nvalue=ctrl+k\n").partFaults, [])
     }
 }

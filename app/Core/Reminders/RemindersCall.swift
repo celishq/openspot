@@ -11,14 +11,14 @@ enum RemindersCall: NounCall {
     private static let change = "changes your reminders"
 
     static let noun = CommandNoun("reminders", group: .mac, guide: "calendar", verbs: [
-        CommandVerb("due", "[--days n] [--hide id]...", "Prints each open reminder that is late or due through the end of day n, and each one done today, as a row. --hide leaves out a list.", rule: CallRule(use: .calendar, used: read)) { words in
+        CommandVerb("due", "[--days n] [--hide id]...", "Prints each open reminder that is late or due through the end of day n, and each one done today, as a row. --hide leaves out a list.", rule: CallRule(use: .calendar, used: read, needs: [.reminders])) { words in
             words.fit.flatMap { fit in fit.rest.isEmpty ? fit.days.map { Self.due(days: $0, hidden: fit.values("--hide")) } : nil }
         },
-        CommandVerb("lists", "", "Prints each list of reminders as a row.", rule: CallRule(use: .calendar, used: read)) { $0.none ? Self.lists : nil },
-        CommandVerb("add", "[--dry-run] <words>...", "Adds a reminder from words such as Call mom tomorrow 9am, and prints its row. --dry-run prints the row and adds nothing.", rule: CallRule(use: .calendar, used: "added a reminder", inShow: .changes(change))) { words in
+        CommandVerb("lists", "", "Prints each list of reminders as a row.", rule: CallRule(use: .calendar, used: read, needs: [.reminders])) { $0.none ? Self.lists : nil },
+        CommandVerb("add", "[--dry-run] <words>...", "Adds a reminder from words such as Call mom tomorrow 9am, and prints its row. --dry-run prints the row and adds nothing.", rule: CallRule(use: .calendar, used: "added a reminder", inShow: .changes(change), needs: [.reminders])) { words in
             words.fit.flatMap { $0.rest.isEmpty ? nil : Self.add(words: $0.rest.joined(separator: " "), isDry: $0.has("--dry-run")) }
         },
-        CommandVerb("done", "<id> [true|false]", "Ticks a reminder, or with false opens it again.", rule: CallRule(use: .calendar, used: "changed a reminder", inShow: .changes(change))) { words in
+        CommandVerb("done", "<id> [true|false]", "Ticks a reminder, or with false opens it again.", rule: CallRule(use: .calendar, used: "changed a reminder", inShow: .changes(change), needs: [.reminders])) { words in
             switch words.rest.count {
             case 1: Self.done(id: words.rest[0], isDone: true)
             case 2 where ["true", "false"].contains(words.rest[1]): Self.done(id: words.rest[0], isDone: words.rest[1] == "true")

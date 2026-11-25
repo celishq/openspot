@@ -20,9 +20,16 @@ struct SpotList {
         let floatKey: String?
         let menubar: Bool
         let inMenuBar: Bool
+        let state: String
+        let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]
+                + Access.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
@@ -35,31 +42,66 @@ struct SpotList {
         let detail: String?
         let on: Bool
         let own: Bool
+        let state: String
         let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + uses.map { ("uses", $0) }]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + Access.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
         }
     }
 
-    private struct Value: PrintedRecord {
-        let spot: String
-        let key: String
-        let value: String
+    private struct Access {
+        let state: String
+        let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
-        var blocks: [[(String, String?)]] {
-            [[("item", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
+        init(_ spot: Spot, isOn: Bool, statuses: [MacAccess: ReadAccess], last: [String: Date], refused: [SpotUse: Date]) {
+            let access = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array(last.keys))
+            let needs = access.missing(in: statuses)
+            let listed = { (set: Set<MacAccess>) in set.isEmpty ? nil : MacAccess.allCases.filter(set.contains).map(\.rawValue).joined(separator: ",") }
+            byUse = Dictionary(uniqueKeysWithValues: access.byUse.map { use, found in
+                (use.rawValue, ["access": listed(found.needs), "maybe": listed(found.maybe)].compactMapValues { $0 })
+            })
+            let refused = SpotUse.allCases.filter { refused[$0] != nil && !spot.uses.contains($0) }
+            state = SpotReadiness(isOn: isOn, needs: needs, refused: refused).rawValue
+            self.refused = refused.map(\.rawValue)
+            uses = spot.uses.map(\.rawValue).sorted()
+            self.needs = needs.map(\.rawValue)
+            var times: [String: Date] = [:]
+            for (call, date) in last {
+                guard let use = CommandLineCall.looseRule(of: call.split(separator: " ").map(String.init), spot: spot.id)?.rule.use else { continue }
+                times[use.rawValue] = max(times[use.rawValue] ?? date, date)
+            }
+            self.last = times.mapValues { $0.formatted(.iso8601) }
+        }
+
+        static func fields(state: String, uses: [String], needs: [String], refused: [String], last: [String: String], byUse: [String: [String: String]]) -> [(String, String?)] {
+            [("state", state), ("uses", uses.isEmpty ? nil : uses.joined(separator: ",")), ("needs", needs.isEmpty ? nil : needs.joined(separator: ",")), ("refused", refused.isEmpty ? nil : refused.joined(separator: ","))]
+                + last.keys.sorted().map { ("last.\($0)", last[$0]) }
+                + byUse.keys.sorted().flatMap { use in ["access", "maybe"].map { ("\($0).\(use)", byUse[use]?[$0]) } }
         }
     }
 
     let folder: SpotsFolder
     let config: Config
+    var statuses: [MacAccess: ReadAccess] = [:]
+    var lastUses: [String: [String: Date]] = [:]
+    var refused: [String: [SpotUse: Date]] = [:]
+    var allowed: [SpotLock.Entry] = []
 
     func loaded(_ form: PrintForm) throws -> String {
-        let scan = try folder.scan()
+        let scan = try folder.scan().allowing(allowed)
         let keys = config.keys
         return try form.text(of: scan.scripts.map { script in
-            Loaded(
+            let access = Access(script, isOn: true, statuses: statuses, last: lastUses[script.id] ?? [:], refused: refused[script.id] ?? [:])
+            return Loaded(
                 id: script.id,
                 name: script.name,
                 icon: Self.picture(of: script),
@@ -72,13 +114,25 @@ struct SpotList {
                 float: true,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,
-                inMenuBar: config.arrangement.menuBar.contains(script.id)
+                inMenuBar: config.arrangement.menuBar.contains(script.id),
+                state: access.state,
+                uses: access.uses,
+                needs: access.needs,
+                refused: access.refused,
+                last: access.last,
+                byUse: access.byUse
             )
         })
     }
 
     func core(_ form: PrintForm) throws -> String {
-        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
+        try form.text(of: choices.map { choice in
+            let access = Access(choice.spot, isOn: choice.on, statuses: statuses, last: lastUses[choice.id] ?? [:], refused: refused[choice.spot.id] ?? [:])
+            return Choice(
+                id: choice.id, name: choice.spot.name, icon: Self.picture(of: choice.spot), detail: choice.spot.subtitle, on: choice.on, own: choice.own,
+                state: access.state, uses: access.uses, needs: access.needs, refused: access.refused, last: access.last, byUse: access.byUse
+            )
+        })
     }
 
     private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
@@ -88,11 +142,6 @@ struct SpotList {
             let id = SpotsFolder.coreID(of: spot)
             return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
         }
-    }
-
-    func values(_ form: PrintForm, secrets: SecretStore.Values) throws -> String {
-        let hidden = secrets.sorted { $0.key < $1.key }.flatMap { spot, values in values.keys.sorted().map { Value(spot: spot, key: $0, value: FieldValues.hidden) } }
-        return try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) } + hidden)
     }
 
     private static func picture(of spot: Spot) -> String {

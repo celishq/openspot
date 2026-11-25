@@ -4,6 +4,7 @@ public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     let mac: Mac
+    let access = KeptAccess()
     private let raise: (@Sendable (AppSignal) async -> Void)?
     private let app: (any RunningApp)?
     private let places: AppPlaces
@@ -61,6 +62,7 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.undeclared(refusal))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
+        runs.usage.used(call.name, by: caller.id)
         return call
     }
 

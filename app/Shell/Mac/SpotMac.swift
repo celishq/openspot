@@ -16,6 +16,7 @@ final class SpotMac: MacEvents {
             translation: SpotTranslation(),
             events: self,
             power: SpotPower(),
+            accesses: SpotAccesses(),
             login: { AppLogin.item },
             link: { AppCommandLink.item },
             pickColor: { await SpotColorPick.pick() },

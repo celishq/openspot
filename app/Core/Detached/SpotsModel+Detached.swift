@@ -26,6 +26,7 @@ extension SpotsModel {
             return
         }
         if !runs.floating.contains(id) { runs.float(id, isWindow: true) }
+        if let sheet = sheets[id], sheet.destination != nil { sheet.show(need: .change, event: .sheet) }
         host.window(entry)
     }
 

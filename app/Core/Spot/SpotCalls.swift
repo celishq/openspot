@@ -7,8 +7,12 @@ struct SpotCalls {
     let runs: SpotRuns?
     let secrets: SecretStore
     let caller: Spot?
+    let mac: Mac
+    let access: KeptAccess
 
     init(_ context: CallContext) {
+        mac = context.mac
+        access = context.api.access
         caller = context.caller
         places = context.places
         folder = context.folder
@@ -18,9 +22,12 @@ struct SpotCalls {
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places] in
+        CommandAnswer.work { [places, mac, access, runs] in
             let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
+            let statuses = await access.read(from: mac, browsers: config.browsers).statuses
+            let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
+            let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs, stats: places.stats), spot: nil).refused
+            let list = SpotList(folder: places.folder(config), config: config, statuses: statuses, lastUses: last, refused: refused, allowed: (try? places.lock.entries()) ?? [])
             return try core ? list.core(form) : list.loaded(form)
         }
     }
@@ -63,8 +70,8 @@ struct SpotCalls {
     }
 
     func allow(_ word: String?, for id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [places, app] in
-            guard let word else { throw SpotError.fault("`openspot spot allow` needs a use for now, such as `openspot spot allow \(id) clipboard`.") }
+        guard let word else { return { CommandAnswer(errors: "`openspot spot allow` needs a use for now, such as `openspot spot allow \(id) clipboard`.\n", code: 2) } }
+        return CommandAnswer.work { [places, app] in
             guard let use = try SpotUse.set([word], of: id).first else { return "" }
             let answer = try await places.lock.allow(use, for: id)
             await app?.spotsChanged()
@@ -72,10 +79,10 @@ struct SpotCalls {
         }
     }
 
-    func open(_ id: String) -> CommandAPI.Work {
+    func open(_ id: String, at: String?) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work {
-            guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+            guard await app.open(id, at: at) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
     }
