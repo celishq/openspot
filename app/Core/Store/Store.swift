@@ -218,7 +218,7 @@ public final class Store {
         let config = places.config.read()
         let folder = places.spots
         let own = catalog(places, config, sources: []).items.first { $0.id == id && $0.isAdded }
-        let button: StoreButton = own == nil ? .install : own?.origin == .core ? .locked : own?.copy == .update ? .update : own?.copy == .edited ? .edited : .installed
+        let button = StoreButton(of: own)
         switch place {
         case .mine:
             guard let own else { return nil }
