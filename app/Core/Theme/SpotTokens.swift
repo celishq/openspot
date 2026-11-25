@@ -13,6 +13,7 @@ public enum SpotTokens {
     public static var padding: CGFloat { layout.space.padding }
     public static var gridWidth: CGFloat { layout.gridWidth }
     public static let columns = 4
+    public static let rows = 7
     public static var cell: CGFloat { layout.space.cell }
     public static let groupTitleHeight: CGFloat = 16
     public static var glyph: CGFloat { layout.space.glyph }
