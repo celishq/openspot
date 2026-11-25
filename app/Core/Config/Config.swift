@@ -14,7 +14,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var faults: [String] = []
     public var arrangement = SpotChoices()
     public var keys: [GlobalKey] = []
-    public private(set) var settings: [SpotSetting] = []
+    public private(set) var settings: [KeptSetting] = []
     public private(set) var stores: [Store] = []
     public private(set) var theme: String?
     public private(set) var grid = GridLayout()
@@ -128,7 +128,7 @@ public struct Config: Equatable, Sendable {
     }
 
     public mutating func set(setting key: String, of spot: String, to value: String?) {
-        let new = value.map { SpotSetting(spot: spot, key: key, value: $0) }
+        let new = value.map { KeptSetting(spot: spot, key: key, value: $0) }
         if let place = settings.firstIndex(where: { $0.spot == spot && $0.key == key }) {
             settings.removeAll { $0.spot == spot && $0.key == key }
             if let new { settings.insert(new, at: place) }
@@ -167,11 +167,11 @@ public struct Config: Equatable, Sendable {
         settings.first { $0.spot == spot && $0.key == key }?.value
     }
 
-    private mutating func setting(of table: ConfigDocument.Table) -> SpotSetting? {
+    private mutating func setting(of table: ConfigDocument.Table) -> KeptSetting? {
         guard case .string(let spot)? = table["spot"], case .string(let key)? = table["key"], case .string(let value)? = table["value"] else {
             return unread(table, "config.toml: a setting needs a spot, a key and a value.")
         }
-        return SpotSetting(spot: spot, key: key, value: value)
+        return KeptSetting(spot: spot, key: key, value: value)
     }
 
     private mutating func store(of table: ConfigDocument.Table) -> Store? {

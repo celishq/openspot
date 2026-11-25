@@ -103,7 +103,7 @@ final class SettingsEntryTests: PanelCase {
     }
 
     func testAPublishWithNoAccountOpensSettingsAtTheAccount() async throws {
-        model.openSettings(at: "account")
+        model.openSettings(at: .account)
 
         XCTAssertEqual(book.page, .account)
         XCTAssertEqual(host.settingsOpens, 1)
@@ -115,7 +115,7 @@ final class SettingsEntryTests: PanelCase {
         await model.reload()
         XCTAssertTrue(book.facts.rows.isEmpty)
 
-        model.openSettings(at: "row/cups/key.fill")
+        model.openSettings(at: .row("cups/key.fill"))
 
         try await wait("the facts and the row") { self.book.page == .spotOf("cups") && self.book.target == "cups/key.fill" }
         book.closed()

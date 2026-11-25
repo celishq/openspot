@@ -16,7 +16,7 @@ enum SettingsPicture {
             model.panelWillShow()
             await model.waitForShows()
             await model.settingsBook.read()
-            if let place { model.settingsBook.land(place) }
+            if let place { model.settingsBook.land(SettingsPage(place: place) ?? .access) }
             draw(model: model, isLight: isLight, to: path)
         }
         NSApplication.shared.run()

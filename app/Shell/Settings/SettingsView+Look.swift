@@ -53,7 +53,7 @@ extension SettingsView {
 
     var accountPage: some View {
         let account = facts.account
-        let rows = facts.rows.filter { $0.section == .account }
+        let rows = facts.rows(in: .account)
         let tile = SettingsTile(symbol: "person.crop.circle.fill", color: SpotTheme.settingsAccountTile, side: SpotTokens.settingsHeaderTile)
         return Group {
             if let account, account.isSignedIn {
@@ -153,11 +153,10 @@ extension SettingsView {
         book.say("Copied your key")
     }
 
-    func rowsPage(_ title: String, _ line: String, section: SettingRow.Section) -> some View {
-        let rows = facts.rows.filter { $0.spot == "openspot" && $0.section == section }
-        return Group {
+    func rowsPage(_ title: String, _ line: String, section: SettingsPage.Section) -> some View {
+        Group {
             heading(title, line)
-            group(nil) { lines(rows) { settingLine($0) } }
+            group(nil) { lines(facts.rows(in: section)) { settingLine($0) } }
         }
     }
 }

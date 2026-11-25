@@ -192,4 +192,12 @@ final class AccessGrantTests: XCTestCase {
         try await wait("the run") { FileManager.default.fileExists(atPath: self.folder.appendingPathComponent("runs").path) }
         XCTAssertEqual(host.settingsOpens, 0)
     }
+
+    func testTheMarksOfTheGridAreTheSpotsThatSettingsSaysNeedYou() async throws {
+        try await wait("the marks") { self.model.waiting == ["standup", "agenda"] }
+
+        await model.settingsBook.read()
+
+        XCTAssertEqual(Set(model.settingsBook.facts.waiting.map(\.id)), model.waiting)
+    }
 }

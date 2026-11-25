@@ -64,7 +64,7 @@ public enum SettingCall: NounCall {
 
     private static func reserved(_ spot: String, _ key: String, _ value: String?, isInShow: Bool) -> (any NounCall)? {
         let flag = value.flatMap { ["true": true, "false": false][$0] }
-        let isApp = spot == ReservedSetting.appSpot && (ReservedSetting.appKeys.contains(key) || key == AppSettings.themeKey)
+        let isApp = spot == ReservedSetting.appSpot && (ReservedSetting.appKeys.contains(key) || key == AppRows.themeKey)
         let name = "setting set \(isApp ? "--spot \(spot) " : "")\(key)"
         func on(_ act: String, _ call: (Bool) -> SettingCall) -> any NounCall {
             guard let flag else { return CallFault.refused("`\(key)` takes `true` or `false`, such as `openspot setting set --spot \(spot) \(key) true`.") }
@@ -74,7 +74,7 @@ public enum SettingCall: NounCall {
             guard isInShow, let refusal = CallRule(inShow: .changes(act)).refusal(of: name) else { return call }
             return CallFault.refused(refusal)
         }
-        if spot == ReservedSetting.appSpot, key == AppSettings.themeKey {
+        if spot == ReservedSetting.appSpot, key == AppRows.themeKey {
             guard let value else { return CallFault.refused("`theme` needs the name of a theme, such as `openspot setting set --spot openspot theme Openspot`.") }
             return changing(.theme(value), "changes the theme")
         }
@@ -91,8 +91,8 @@ public enum SettingCall: NounCall {
         }
         switch key {
         case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }
-        case SpotSettings.menuBarKey: return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
-        case SpotSettings.windowKey: return on("changes how a spot opens") { .window(spot: spot, isWindow: $0) }
+        case SpotRows.menuBarKey: return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
+        case SpotRows.windowKey: return on("changes how a spot opens") { .window(spot: spot, isWindow: $0) }
         case let key where GlobalKey.Act(setting: key) != nil:
             return changing(.key(spot: spot, act: GlobalKey.Act(setting: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil

@@ -5,10 +5,6 @@ public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
         case key, field, toggle, choice, secret, text
     }
 
-    public enum Section: String, Encodable, Sendable {
-        case general, developer, keys, look, account, spot
-    }
-
     static let secretValue = "set"
 
     public let item: String
@@ -18,13 +14,13 @@ public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
     public let title: String
     public let value: String?
     public let kind: Kind
-    public let section: Section
+    public let section: SettingsPage.Section
     public let icon: String
     public let detail: String?
     public let options: String?
     public let `default`: String?
 
-    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: Section, icon: String, detail: String? = nil, options: [String] = [], default: String? = nil) {
+    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: SettingsPage.Section, icon: String, detail: String? = nil, options: [String] = [], default: String? = nil) {
         item = "\(spot)/\(key)"
         self.spot = spot
         self.name = name

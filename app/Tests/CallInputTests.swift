@@ -31,10 +31,10 @@ final class CallInputTests: SpotRunsCase {
         try script("other", toml: "[settings]\nfolder = 'text'", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
-            SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
-            SpotSetting(spot: "script", key: "api-key", value: "k1"),
-            SpotSetting(spot: "script", key: "kept", value: "not declared"),
-            SpotSetting(spot: "other", key: "folder", value: "/tmp/other")
+            KeptSetting(spot: "script", key: "folder", value: "/tmp/repos"),
+            KeptSetting(spot: "script", key: "api-key", value: "k1"),
+            KeptSetting(spot: "script", key: "kept", value: "not declared"),
+            KeptSetting(spot: "other", key: "folder", value: "/tmp/other")
         ])
 
         sheet.show(need: .change)
@@ -142,7 +142,7 @@ final class CallInputTests: SpotRunsCase {
     private func settingRows(fields: [Manifest.Setting], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
-        let settings = SpotSettings(spot: "script", fields: fields, showsInMenuBar: false, keys: [])
+        let settings = SpotRows(spot: "script", fields: fields, showsInMenuBar: false, keys: [], isWindowByDefault: false, opensAsWindow: false, name: "")
         return try PrintForm.frame.text(of: settings.rows(in: file.read(), secrets: try secrets(["token": marker]).read()["script"] ?? [:]))
     }
 

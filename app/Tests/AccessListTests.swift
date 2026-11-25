@@ -55,10 +55,10 @@ final class AccessListTests: XCTestCase {
         try "openspot.call([\"calendar\", \"events\"])\nopenspot.call([\"screen\", \"record\", \"start\"])\n".write(to: script.deletingLastPathComponent().appendingPathComponent("film.js"), atomically: true, encoding: .utf8)
         let spot = Spot(id: "film", name: "Film", url: script, dataName: "film", views: ["film": script.deletingLastPathComponent().appendingPathComponent("film.js").path])
 
-        let access = SpotAccess(spot, written: KeptCalls().read(spot), made: ["window move"])
+        let standing = SpotStanding(spot, statuses: [:], last: ["window move": Date()], refused: [:])
 
-        XCTAssertEqual(access.needs, [.screen, .calendars, .accessibility])
-        XCTAssertEqual(access.maybe, [.camera, .microphone, .input])
+        XCTAssertEqual(standing.needs, [.screen, .calendars, .accessibility])
+        XCTAssertEqual(standing.maybe, [.camera, .microphone, .input])
     }
 
     func testAccessListPrintsEachOfTheNineAccessesWithTheSpotsThatNeedItAndNeverAsks() async throws {

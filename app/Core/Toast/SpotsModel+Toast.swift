@@ -9,10 +9,10 @@ extension SpotsModel {
     private func press(fixing note: ToastNote, of spot: String) -> @MainActor @Sendable () -> Void {
         switch note.fix {
         case .url(let url): { [weak self] in
-            if let access = MacAccess(pane: url), self?.openSettings(at: "access/\(access.rawValue)") == true { return }
+            if let access = MacAccess(pane: url), self?.openSettings(at: .accessOf(access)) == true { return }
             self?.host.open(url)
         }
-        case .settings: { [weak self] in self?.openSettings(at: "keys") }
+        case .settings: { [weak self] in self?.openSettings(at: .keys) }
         case nil: { [weak self] in self?.press(note, of: spot) }
         }
     }

@@ -124,7 +124,7 @@ final class SettingListTests: XCTestCase {
 
     func testASpotThatCannotShowInTheMenuBarHasNoMenuBarOrWindowRow() throws {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let settings = SpotSettings(spot: "notes", fields: [], showsInMenuBar: false, keys: [])
+        let settings = SpotRows(spot: "notes", fields: [], showsInMenuBar: false, keys: [], isWindowByDefault: false, opensAsWindow: false, name: "")
 
         XCTAssertEqual(settings.rows(in: file.read(), secrets: [:]), [])
     }

@@ -17,7 +17,7 @@ public final class SettingsBook {
     @ObservationIgnored weak var model: SpotsModel?
     @ObservationIgnored public internal(set) var searchRows = ItemList()
     @ObservationIgnored var rowsRead: Task<Void, Never>?
-    @ObservationIgnored private var landing: String?
+    @ObservationIgnored private var landing: SettingsPage?
     @ObservationIgnored private var reading: Task<Void, Never>?
     @ObservationIgnored private var hasRead = false
 
@@ -32,7 +32,7 @@ public final class SettingsBook {
         return switch page {
         case .accessOf(let id): id.title
         case .spotOf(let id): facts.standing(id)?.title ?? id
-        default: page.section.rawValue
+        default: page.section.title
         }
     }
 
@@ -60,7 +60,7 @@ public final class SettingsBook {
         }
     }
 
-    func open(at place: String?) {
+    func open(at place: SettingsPage?) {
         isOpen = true
         landing = place
         if let place { land(place) }
@@ -132,46 +132,29 @@ public final class SettingsBook {
         query = text
     }
 
-    public func land(_ at: String) {
-        let parts = at.split(separator: "/", maxSplits: 1).map(String.init)
-        let rest = parts.count > 1 ? parts[1] : nil
+    public func land(_ place: SettingsPage) {
         query = ""
         recording = nil
         back = []
         forward = []
         target = nil
-        switch parts.first {
-        case "access":
-            page = rest.flatMap(MacAccess.init(rawValue:)).map { .accessOf($0) } ?? .access
-        case "row":
-            if let row = rest.flatMap(facts.row) { return reveal(row) }
-            page = .access
-        case "spot" where rest.map { id in facts.standing(id) == nil && facts.rows.contains { $0.spot == id } } == true:
+        switch place {
+        case .row(let item):
+            guard let row = facts.row(item) else { return page = .access }
+            reveal(row)
+        case .search(let words):
+            query = words
+        case .spotOf(let id) where facts.standing(id) == nil && facts.rows.contains { $0.spot == id }:
             page = .keys
-            target = rest.map { "\($0)/open" }
-        case "spot", "spots":
-            let words = rest?.split(separator: "/", maxSplits: 1).map(String.init) ?? []
-            page = words.first.map { .spotOf($0) } ?? .spots
-            if words.count > 1 { target = "\(words[0])/\(words[1])" }
-        case "keys": page = .keys
-        case "look": page = .look
-        case "account": page = .account
-        case "general": page = .general
-        case "developer": page = .developer
-        case "search": query = rest ?? ""
-        default: page = .access
+            target = "\(id)/open"
+        default:
+            page = place
         }
-        if target == nil, page.section != .spots, page.section != .access, rest?.contains("/") == true { target = rest }
     }
 
     public func reveal(_ row: SettingRow) {
-        if row.spot == ReservedSetting.appSpot {
-            land("\(row.section.rawValue)/\(row.item)")
-        } else if facts.standing(row.spot) == nil {
-            land("keys/\(row.item)")
-        } else {
-            land("spot/\(row.spot)/\(row.key)")
-        }
+        land(row.spot == ReservedSetting.appSpot ? row.section.page : facts.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
+        target = row.item
     }
 
     public func startRecording(_ row: SettingRow) {

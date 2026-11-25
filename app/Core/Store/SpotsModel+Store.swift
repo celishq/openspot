@@ -57,7 +57,7 @@ extension SpotsModel {
         let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
         if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
         toast(.failure("Set up your account, then publish again."))
-        openSettings(at: "account")
+        openSettings(at: .account)
         return nil
     }
 }

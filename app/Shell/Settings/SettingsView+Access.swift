@@ -61,7 +61,7 @@ extension SettingsView {
         }
     }
 
-    func accessPage(of access: SettingsFacts.Access) -> some View {
+    func accessPage(of access: AccessList.Entry) -> some View {
         let needers = access.spots.compactMap(facts.standing)
         let maybes = access.maybe.compactMap(facts.standing)
         return Group {
@@ -108,7 +108,7 @@ extension SettingsView {
     }
 
     @ViewBuilder
-    func fix(_ standing: SettingsFacts.Standing) -> some View {
+    func fix(_ standing: SpotStanding) -> some View {
         if standing.readiness == .review {
             Button("Review…") { act { await $0.review(standing.id, use: standing.refused.first) } }
         } else {

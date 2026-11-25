@@ -11,7 +11,7 @@ final class WireTests: SpotRunsCase {
         printf 'args=%s\\n%s\\n--\\n' "$*" "$in" >> '\(path("calls"))'
         case "$1" in show|every|sheet.text) printf '\(Self.view)' ;; esac
         """)
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         return try sheet()
     }
 
@@ -172,7 +172,7 @@ final class WireTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         runs.panelOpened()
         sheet.open {}
         try await wait("the show") { ((try? String(contentsOfFile: self.path("stdin"), encoding: .utf8)) ?? "").hasSuffix("\n\n") }

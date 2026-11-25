@@ -86,7 +86,7 @@ public final class SpotRuns {
     @ObservationIgnored private(set) var settings: [String: [String: String]] = [:]
     @ObservationIgnored public var secrets: SecretStore?
 
-    public func take(settings values: [SpotSetting]) {
+    public func take(settings values: [KeptSetting]) {
         var next: [String: [String: String]] = [:]
         for value in values { next[value.spot, default: [:]][value.key] = value.value }
         settings = next

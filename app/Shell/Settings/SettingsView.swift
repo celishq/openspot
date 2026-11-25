@@ -84,7 +84,7 @@ struct SettingsView: View {
                 let count = section == .access ? facts.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
-                    Text(section.rawValue)
+                    Text(section.title)
                     Spacer(minLength: 0)
                     if count > 0 {
                         Text("\(count)")
@@ -122,6 +122,7 @@ struct SettingsView: View {
             case .account: accountPage
             case .general: rowsPage("General", "The keys that open Openspot, and how it starts.", section: .general)
             case .developer: rowsPage("Developer", "For those who build spots and themes.", section: .developer)
+            case .row, .search: EmptyView()
             }
         }
     }

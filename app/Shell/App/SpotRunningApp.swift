@@ -115,7 +115,7 @@ struct SpotRunningApp: RunningApp {
         await model.endGrant()
     }
 
-    func openSettings(at place: String?) async {
+    func openSettings(at place: SettingsPage?) async {
         await model.openSettings(at: place)
     }
 

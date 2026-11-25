@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotSetting: Hashable, Sendable {
+public struct KeptSetting: Hashable, Sendable {
     public let spot: String
     public let key: String
     public let value: String

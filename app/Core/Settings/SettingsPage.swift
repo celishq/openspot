@@ -1,11 +1,23 @@
 import Foundation
 
 public enum SettingsPage: Hashable, Sendable {
-    public enum Section: String, CaseIterable, Identifiable, Sendable {
-        case access = "Access", spots = "Spots", keys = "Keys", look = "Look", account = "Account", general = "General", developer = "Developer"
+    public enum Section: String, CaseIterable, Encodable, Identifiable, Sendable {
+        case access, spots = "spot", keys, look, account, general, developer
 
         public var id: Self {
             self
+        }
+
+        public var title: String {
+            switch self {
+            case .access: "Access"
+            case .spots: "Spots"
+            case .keys: "Keys"
+            case .look: "Look"
+            case .account: "Account"
+            case .general: "General"
+            case .developer: "Developer"
+            }
         }
 
         public var symbol: String {
@@ -33,11 +45,38 @@ public enum SettingsPage: Hashable, Sendable {
         }
     }
 
-    case access, accessOf(MacAccess), spots, spotOf(String), keys, look, account, general, developer
+    case access, accessOf(MacAccess), spots, spotOf(String), keys, look, account, general, developer, row(String), search(String)
+
+    public init?(place: String) {
+        let parts = place.split(separator: "/", maxSplits: 1).map(String.init)
+        let rest = parts.count > 1 ? parts[1] : nil
+        switch (parts.first, rest) {
+        case ("access", let id?):
+            guard let access = MacAccess(rawValue: id) else { return nil }
+            self = .accessOf(access)
+        case ("spot", let id?): self = .spotOf(id)
+        case ("row", let item?): self = .row(item)
+        case ("search", let words): self = .search(words ?? "")
+        case (let word?, nil):
+            guard let section = Section.allCases.first(where: { $0.rawValue == word || $0.title.lowercased() == word }) else { return nil }
+            self = section.page
+        default: return nil
+        }
+    }
+
+    public var place: String {
+        switch self {
+        case .accessOf(let access): "access/\(access.rawValue)"
+        case .spotOf(let id): "spot/\(id)"
+        case .row(let item): "row/\(item)"
+        case .search(let words): "search/\(words)"
+        default: section.title.lowercased()
+        }
+    }
 
     public var section: Section {
         switch self {
-        case .access, .accessOf: .access
+        case .access, .accessOf, .row, .search: .access
         case .spots, .spotOf: .spots
         case .keys: .keys
         case .look: .look
@@ -49,7 +88,7 @@ public enum SettingsPage: Hashable, Sendable {
 
     public var hint: String {
         switch self {
-        case .access: "Each spot works with all it declares, or not at all."
+        case .access, .row, .search: "Each spot works with all it declares, or not at all."
         case .accessOf: "Turn it off in System Settings, and every spot here stops."
         case .spots: "Click a spot to see what it uses."
         case .spotOf: "A spot gets only the uses it declares."

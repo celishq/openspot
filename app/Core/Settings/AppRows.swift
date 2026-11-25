@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppSettings {
+struct AppRows {
     static let themeKey = "theme"
     static let name = "Openspot"
 
@@ -13,7 +13,7 @@ struct AppSettings {
 
     var rows: [SettingRow] {
         let spot = ReservedSetting.appSpot
-        func toggle(_ key: String, _ value: Bool?, _ title: String, _ icon: String, _ section: SettingRow.Section, _ detail: String? = nil) -> SettingRow? {
+        func toggle(_ key: String, _ value: Bool?, _ title: String, _ icon: String, _ section: SettingsPage.Section, _ detail: String? = nil) -> SettingRow? {
             value.map { SettingRow(spot: spot, name: Self.name, key: key, title: title, value: String($0), kind: .toggle, section: section, icon: icon, detail: detail) }
         }
         return [

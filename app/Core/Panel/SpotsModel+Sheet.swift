@@ -100,7 +100,7 @@ extension SpotsModel {
     }
 
     @discardableResult
-    public func openSettings(at place: String? = nil) -> Bool {
+    public func openSettings(at place: SettingsPage? = nil) -> Bool {
         asOnePress {
             settingsBook.open(at: place)
             host.showSettings()
@@ -110,7 +110,7 @@ extension SpotsModel {
 
     public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil) {
         if let spot = sheets[id]?.spot, spot.opensToKeys {
-            openSettings(at: "spot/\(id)")
+            openSettings(at: .spotOf(id))
             return
         }
         if place(ofSheet: id) == .window { return openWindow(id) }

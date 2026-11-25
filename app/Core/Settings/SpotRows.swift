@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotSettings: Equatable, Sendable {
+public struct SpotRows: Equatable, Sendable {
     struct Key: Equatable, Sendable {
         let act: GlobalKey.Act
         let title: String
@@ -17,11 +17,11 @@ public struct SpotSettings: Equatable, Sendable {
     let fields: [Manifest.Setting]
     let showsInMenuBar: Bool
     let keys: [Key]
-    var isWindowByDefault = false
-    var opensAsWindow = false
-    var name = ""
+    let isWindowByDefault: Bool
+    let opensAsWindow: Bool
+    let name: String
 
-    private func kept(in config: Config) -> [SpotSetting] {
+    private func kept(in config: Config) -> [KeptSetting] {
         config.settings.filter { value in
             value.spot == spot && !ReservedSetting.isReserved(value.key) && Manifest.Setting.isKey(value.key) && !fields.contains { $0.id == value.key }
         }
@@ -29,7 +29,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     func rows(in config: Config, secrets: [String: String]) -> [SettingRow] {
         func row(_ key: String, _ title: String, _ value: String?, _ kind: SettingRow.Kind, _ icon: String) -> SettingRow {
-            SettingRow(spot: spot, name: name, key: key, title: title, value: value, kind: kind, section: .spot, icon: icon)
+            SettingRow(spot: spot, name: name, key: key, title: title, value: value, kind: kind, section: .spots, icon: icon)
         }
         let keyRows = self.keys.map { key in row(key.act.setting, key.title, config.keys.first { $0.spot == spot && $0.act == key.act }?.trigger.text, .key, key.icon) }
         let fieldRows = self.fields.map { field in
@@ -37,7 +37,7 @@ public struct SpotSettings: Equatable, Sendable {
                 ? row(field.id, field.title, secrets[field.id].map { _ in SettingRow.secretValue }, .secret, Self.valueIcon)
                 : SettingRow(
                     spot: spot, name: name, key: field.id, title: field.title, value: config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, kind: Self.kind(of: field),
-                    section: .spot, icon: Self.valueIcon, options: field.options, default: field.defaultValue
+                    section: .spots, icon: Self.valueIcon, options: field.options, default: field.defaultValue
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }

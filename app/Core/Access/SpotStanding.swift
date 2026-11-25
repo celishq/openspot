@@ -1,0 +1,68 @@
+import Foundation
+
+public struct SpotStanding: Identifiable, Equatable, Sendable {
+    public struct Use: Identifiable, Equatable, Sendable {
+        public let id: SpotUse
+        public let needs: [MacAccess]
+        public let maybe: [MacAccess]
+    }
+
+    public let id: String
+    public let spot: Spot
+    public let readiness: SpotReadiness
+    public let uses: [Use]
+    public let missing: [MacAccess]
+    public let refused: [SpotUse]
+    let needs: Set<MacAccess>
+    let maybe: Set<MacAccess>
+    let byUse: [Use]
+    let last: [SpotUse: Date]
+
+    init(_ spot: Spot, id: String? = nil, isOn: Bool = true, statuses: [MacAccess: ReadAccess], last: [String: Date], refused: [SpotUse: Date]) {
+        let calls = KeptCalls.shared.read(spot) + last.keys.map { $0.split(separator: " ").map(String.init) }
+        let rules = calls.compactMap { CommandLineCall.looseRule(of: $0, spot: spot.id)?.rule }
+        let ordered = { (set: Set<MacAccess>) in MacAccess.allCases.filter(set.contains) }
+        needs = rules.reduce(Set<MacAccess>()) { $0.union($1.needs) }
+        maybe = rules.reduce(Set<MacAccess>()) { $0.union($1.mayNeed) }.subtracting(needs)
+        var found: [SpotUse: (needs: Set<MacAccess>, maybe: Set<MacAccess>)] = [:]
+        for rule in rules {
+            guard let use = rule.use, !rule.needs.isEmpty || !rule.mayNeed.isEmpty else { continue }
+            let kept = found[use] ?? ([], [])
+            found[use] = (kept.needs.union(rule.needs), kept.maybe.union(rule.mayNeed))
+        }
+        let byUse = found.map { use, accesses in Use(id: use, needs: ordered(accesses.needs), maybe: ordered(accesses.maybe.subtracting(accesses.needs))) }
+        let declared = spot.uses.sorted { $0.rawValue < $1.rawValue }
+        self.id = id ?? spot.id
+        self.spot = spot
+        self.byUse = byUse.sorted { $0.id.rawValue < $1.id.rawValue }
+        uses = declared.map { use in byUse.first { $0.id == use } ?? Use(id: use, needs: [], maybe: []) }
+        let needs = needs
+        let missing = MacAccess.allCases.filter { needs.contains($0) && [.denied, .unasked].contains(statuses[$0] ?? .unknown) }
+        let undeclared = SpotUse.allCases.filter { refused[$0] != nil && !spot.uses.contains($0) }
+        readiness = !isOn ? .off : !undeclared.isEmpty ? .review : missing.isEmpty ? .ready : .access
+        self.missing = missing
+        self.refused = undeclared
+        var times: [SpotUse: Date] = [:]
+        for (call, date) in last {
+            guard let use = CommandLineCall.looseRule(of: call.split(separator: " ").map(String.init), spot: spot.id)?.rule.use else { continue }
+            times[use] = max(times[use] ?? date, date)
+        }
+        self.last = times
+    }
+
+    public var title: String {
+        spot.name
+    }
+
+    public var detail: String {
+        spot.subtitle ?? ""
+    }
+
+    public var lacks: Bool {
+        readiness == .access || readiness == .review
+    }
+
+    public var isOff: Bool {
+        readiness == .off
+    }
+}

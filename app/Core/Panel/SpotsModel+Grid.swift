@@ -196,11 +196,11 @@ extension SpotsModel {
 
     @discardableResult
     public func openSettings(of entry: Entry) -> Bool {
-        hasSettings(entry) && openSettings(at: "spot/\(entry.id)")
+        hasSettings(entry) && openSettings(at: .spotOf(entry.id))
     }
 
     public func hasSettings(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.spot.settingsSheet != nil
+        entry.item == nil && entry.spot.rows != nil
     }
 
     var soleHint: String? {

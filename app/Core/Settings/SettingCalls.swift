@@ -45,10 +45,14 @@ struct SettingCalls {
 
     func rows(of spot: String?) async throws -> [SettingRow] {
         let config = places.config.read()
+        return try await rows(of: spot, config: config, scan: spot == ReservedSetting.appSpot ? ScanResult(files: [], refused: []) : places.folder(config).scan())
+    }
+
+    func rows(of spot: String?, config: Config, scan: ScanResult) async throws -> [SettingRow] {
         let isApp = spot == ReservedSetting.appSpot
         var rows: [SettingRow] = []
         if spot == nil || isApp {
-            rows += AppSettings(
+            rows += AppRows(
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
                 slow: await app?.slowMotion(nil) ?? nil,
@@ -58,12 +62,12 @@ struct SettingCalls {
             ).rows
         }
         if !isApp {
-            var scan = try places.folder(config).scan()
+            var scan = scan
             scan.addSettings(in: places.config, read: config, defaults: places.readDefaultArrangement())
-            let sheets = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.settingsSheet)
-            if let spot, sheets.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+            let found = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.rows)
+            if let spot, found.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
             let kept = try secrets.read()
-            rows += sheets.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
+            rows += found.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
         }
         return rows
     }

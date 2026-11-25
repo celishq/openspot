@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotSettingsTests: XCTestCase {
+final class SpotRowsTests: XCTestCase {
     private var folder: URL!
 
     private var file: ConfigFile {
@@ -29,7 +29,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     private func rows(of id: String) throws -> [SettingRow] {
-        try XCTUnwrap(try spot(id).settingsSheet).rows(in: file.read(), secrets: [:])
+        try XCTUnwrap(try spot(id).rows).rows(in: file.read(), secrets: [:])
     }
 
     func testAScriptWithCommandsAndNoReadOpensToItsSettingsWhichHoldItsKeys() async throws {

@@ -3,24 +3,21 @@ import Foundation
 extension CommandAPI {
     func spotList() async -> SpotList {
         let config = places.config.read()
-        let statuses = await access.read(from: mac, browsers: config.browsers).statuses
-        let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
-        let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs, stats: places.stats), spot: nil).refused
-        return SpotList(folder: places.folder(config), config: config, statuses: statuses, lastUses: last, refused: refused, allowed: (try? places.lock.entries()) ?? [])
+        var list = SpotList(folder: places.folder(config), config: config)
+        (list.statuses, list.apps) = await access.read(from: mac, browsers: config.browsers)
+        list.lastUses = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
+        list.refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs, stats: places.stats), spot: nil).refused
+        list.allowed = (try? places.lock.entries()) ?? []
+        return list
     }
 
     func accessList() async throws -> (list: AccessList, apps: [TextBlock]) {
-        let config = places.config.read()
-        let (statuses, apps) = await access.read(from: mac, browsers: config.browsers)
-        let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
-        let spots = try places.folder(config).scan().scripts.map { spot in
-            (id: spot.id, access: SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array((last[spot.id] ?? [:]).keys)))
-        }
-        return (AccessList(statuses: statuses, spots: spots), apps)
+        let list = await spotList()
+        return (AccessList(statuses: list.statuses, standings: try list.loaded()), list.apps)
     }
 
     func settingRows() async throws -> [SettingRow] {
-        try await SettingCalls(places: places, caller: nil, app: app, secrets: places.secrets, channel: nil, mac: mac).rows(of: nil)
+        try await settingCalls.rows(of: nil)
     }
 
     public func answer(_ arguments: [String]) async -> CommandAnswer {
@@ -32,11 +29,18 @@ extension CommandAPI {
     }
 
     func settingsFacts() async -> SettingsFacts {
-        let accesses = try? await accessList().list
-        let spots = await spotList()
-        let rows = (try? await settingRows()) ?? []
+        let list = await spotList()
+        let loaded = try? list.loaded()
+        let rows = (try? await settingCalls.rows(of: nil, config: list.config, scan: list.scan.get())) ?? []
         let looks = ThemeCall.listed(ThemeFolder(config: places.config, builtIn: mac.theme))
         let account = try? (account ?? Account(store: places.account, allows: { _ in false })).status()
-        return SettingsFacts(accesses: accesses, loaded: (try? spots.loadedRecords()) ?? [], core: spots.coreRecords(), rows: rows, looks: looks, account: account)
+        return SettingsFacts(
+            accesses: loaded.map { AccessList(statuses: list.statuses, standings: $0).entries } ?? [], loaded: loaded ?? [], core: list.core(),
+            rows: rows, looks: looks, account: account
+        )
+    }
+
+    private var settingCalls: SettingCalls {
+        SettingCalls(places: places, caller: nil, app: app, secrets: places.secrets, channel: nil, mac: mac)
     }
 }

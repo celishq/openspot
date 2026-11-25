@@ -1,21 +1,36 @@
 import Foundation
 
-struct AccessList {
-    let statuses: [MacAccess: ReadAccess]
-    let spots: [(id: String, access: SpotAccess)]
+public struct AccessList: Equatable, Sendable {
+    public struct Entry: Identifiable, Equatable, Sendable {
+        public let id: MacAccess
+        public let status: ReadAccess
+        public let spots: [String]
+        public let maybe: [String]
 
-    var blocks: [TextBlock] {
-        MacAccess.allCases.map { access in
-            let fields: [(String, String?)] = [
-                ("item", access.rawValue), ("title", access.title), ("access", (statuses[access] ?? .unknown).rawValue),
-                ("spots", listed { $0.needs.contains(access) }), ("maybe", listed { $0.maybe.contains(access) })
-            ]
-            return TextBlock(fields: fields.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } })
+        public var isAllowed: Bool {
+            status == .allowed
         }
     }
 
-    private func listed(_ isIn: (SpotAccess) -> Bool) -> String? {
-        let ids = spots.filter { isIn($0.access) }.map(\.id)
-        return ids.isEmpty ? nil : ids.joined(separator: ",")
+    public let entries: [Entry]
+
+    init(statuses: [MacAccess: ReadAccess], standings: [SpotStanding]) {
+        entries = MacAccess.allCases.map { access in
+            Entry(
+                id: access, status: statuses[access] ?? .unknown,
+                spots: standings.filter { $0.needs.contains(access) }.map(\.id),
+                maybe: standings.filter { $0.maybe.contains(access) }.map(\.id)
+            )
+        }
+    }
+
+    var blocks: [TextBlock] {
+        entries.map { entry in
+            let listed = { (ids: [String]) in ids.isEmpty ? nil : ids.joined(separator: ",") }
+            let fields: [(String, String?)] = [
+                ("item", entry.id.rawValue), ("title", entry.id.title), ("access", entry.status.rawValue), ("spots", listed(entry.spots)), ("maybe", listed(entry.maybe))
+            ]
+            return TextBlock(fields: fields.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } })
+        }
     }
 }

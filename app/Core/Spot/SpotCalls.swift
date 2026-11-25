@@ -85,8 +85,8 @@ struct SpotCalls {
                 throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
             }
             let statuses = await access.read(from: mac, browsers: config.browsers).statuses
-            let made = Array(((runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]).keys)
-            let needs = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: made).missing(in: statuses)
+            let last = (runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]
+            let needs = SpotStanding(spot, statuses: statuses, last: last, refused: [:]).missing
             guard !needs.isEmpty else { return "\(spot.name) has each macOS access it needs.\n" }
             guard await app.grant(id, needs: needs) else { throw SpotError.failed(1, "Openspot has no Settings to walk you through. Open Settings, then run this again.") }
             return "Settings walks you through \(Self.names(AccessGrant(spot: id, steps: needs).steps.map(\.title))).\n"

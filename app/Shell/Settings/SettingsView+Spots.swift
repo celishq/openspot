@@ -11,7 +11,7 @@ extension SettingsView {
         }
     }
 
-    func spotPage(of standing: SettingsFacts.Standing) -> some View {
+    func spotPage(of standing: SpotStanding) -> some View {
         let rows = facts.rows(of: standing.id)
         let keys = rows.filter { $0.kind == .key }
         let fields = rows.filter { [.field, .text, .secret, .choice].contains($0.kind) }
@@ -62,11 +62,11 @@ extension SettingsView {
         }
     }
 
-    private func banner(_ standing: SettingsFacts.Standing) -> some View {
+    private func banner(_ standing: SpotStanding) -> some View {
         let (title, line): (String, String) = switch standing.readiness {
         case .off: ("\(standing.title) is off", "It runs again once you turn it on.")
         case .review: ("\(standing.title) needs your review", SettingsWords.lack(of: standing, in: facts))
-        default: ("\(standing.title) can’t run yet", "It needs \(facts.names(standing.needs)) from macOS.")
+        default: ("\(standing.title) can’t run yet", "It needs \(facts.names(standing.missing)) from macOS.")
         }
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         return HStack(spacing: SpotTokens.settingsValueGap) {
@@ -86,7 +86,7 @@ extension SettingsView {
         .overlay(shape.strokeBorder(SpotTheme.settingsLate.opacity(SpotTheme.settingsBannerRim), lineWidth: SpotTokens.settingsRim))
     }
 
-    private func useLine(_ use: SettingsFacts.Standing.Use) -> some View {
+    private func useLine(_ use: SpotStanding.Use) -> some View {
         let accesses = use.needs.compactMap(facts.access)
         return HStack(spacing: SpotTokens.settingsRowGap) {
             Text(use.id.rawValue)
@@ -121,7 +121,7 @@ extension SettingsView {
         .padding(.vertical, SpotTokens.settingsUseRowPadding)
     }
 
-    func spotLine(_ standing: SettingsFacts.Standing, detail: String? = nil) -> some View {
+    func spotLine(_ standing: SpotStanding, detail: String? = nil) -> some View {
         row(open: .spotOf(standing.id)) {
             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
             titled(standing.title, detail ?? (standing.lacks ? SettingsWords.lack(of: standing, in: facts) : ""))

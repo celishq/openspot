@@ -32,6 +32,10 @@ final class SettingsBookTests: PanelCase {
         await book.read()
     }
 
+    private func land(_ place: String) throws {
+        book.land(try XCTUnwrap(SettingsPage(place: place), "no place \(place)"))
+    }
+
     private func row(_ item: String) throws -> SettingRow {
         try XCTUnwrap(book.facts.row(item), "no row \(item)")
     }
@@ -47,7 +51,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(facts.access(.screen)?.status, .denied)
         XCTAssertEqual(facts.access(.screen)?.spots, ["cups"])
         XCTAssertEqual(facts.standing("cups")?.readiness, .access)
-        XCTAssertEqual(facts.standing("cups")?.needs, [.screen])
+        XCTAssertEqual(facts.standing("cups")?.missing, [.screen])
         XCTAssertEqual(facts.standing("cups")?.uses.first { $0.id == .screen }?.needs, [.screen])
         XCTAssertFalse(facts.standings.contains { $0.id.hasPrefix("openspot/") })
         XCTAssertEqual(try row("openspot/panel-key").kind, .key)
@@ -74,27 +78,35 @@ final class SettingsBookTests: PanelCase {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
 
-        book.land("access/screen")
+        try land("access/screen")
         XCTAssertEqual(book.page, .accessOf(.screen))
-        book.land("spot/cups")
+        try land("spot/cups")
         XCTAssertEqual(book.page, .spotOf("cups"))
-        book.land("row/cups/key.fill")
+        try land("row/cups/key.fill")
         XCTAssertEqual(book.page, .spotOf("cups"))
         XCTAssertEqual(book.target, "cups/key.fill")
-        book.land("row/openspot/panel-key")
+        try land("row/openspot/panel-key")
         XCTAssertEqual(book.page, .general)
         XCTAssertEqual(book.target, "openspot/panel-key")
-        book.land("keys")
+        try land("keys")
         XCTAssertEqual(book.page, .keys)
-        book.land("account")
+        try land("account")
         XCTAssertEqual(book.page, .account)
-        book.land("search/screen")
+        try land("search/screen")
         XCTAssertEqual(book.query, "screen")
+    }
+
+    func testEachPlaceReadsBackFromItsWords() {
+        let places: [SettingsPage] = [.access, .accessOf(.screen), .spots, .spotOf("tools/a"), .keys, .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
+
+        XCTAssertEqual(places.map { SettingsPage(place: $0.place) }, places)
+        XCTAssertNil(SettingsPage(place: "access/nothing"))
+        XCTAssertNil(SettingsPage(place: "nowhere"))
     }
 
     func testBackAndForwardWalkThePagesSeen() async throws {
         await read()
-        book.land("access")
+        book.land(.access)
 
         book.go(.keys)
         book.go(.look)
@@ -155,7 +167,7 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testAChoiceWithNoValueShowsItsDefault() {
-        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spot, icon: "", options: ["name", "date"], default: "date")
+        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spots, icon: "", options: ["name", "date"], default: "date")
 
         XCTAssertEqual(book.display(row), "date")
     }

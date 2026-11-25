@@ -59,11 +59,11 @@ public enum SettingsWords {
         }
     }
 
-    public static func lack(of standing: SettingsFacts.Standing, in facts: SettingsFacts) -> String {
+    public static func lack(of standing: SpotStanding, in facts: SettingsFacts) -> String {
         if standing.readiness == .review {
             return standing.refused.isEmpty ? "Made a call it doesn’t declare" : "Tried \(standing.refused.map(\.rawValue).joined(separator: ", ")), which it doesn’t declare"
         }
-        return "Needs \(facts.names(standing.needs))"
+        return "Needs \(facts.names(standing.missing))"
     }
 
     public static func caps(_ key: String) -> [String] {

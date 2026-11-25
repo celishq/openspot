@@ -1,49 +1,6 @@
 import Foundation
 
 public struct SettingsFacts: Equatable, Sendable {
-    public struct Access: Identifiable, Equatable, Sendable {
-        public let id: MacAccess
-        public let status: ReadAccess
-        public let spots: [String]
-        public let maybe: [String]
-
-        public var isAllowed: Bool {
-            status == .allowed
-        }
-    }
-
-    public struct Standing: Identifiable, Equatable, Sendable {
-        public struct Use: Identifiable, Equatable, Sendable {
-            public let id: SpotUse
-            public let needs: [MacAccess]
-            public let maybe: [MacAccess]
-        }
-
-        public let id: String
-        public let spot: Spot
-        public let readiness: SpotReadiness
-        public let uses: [Use]
-        public let needs: [MacAccess]
-        public let refused: [SpotUse]
-        let words: String
-
-        public var title: String {
-            spot.name
-        }
-
-        public var detail: String {
-            spot.subtitle ?? ""
-        }
-
-        public var lacks: Bool {
-            readiness == .access || readiness == .review
-        }
-
-        public var isOff: Bool {
-            readiness == .off
-        }
-    }
-
     public struct Look: Identifiable, Equatable, Sendable {
         public let id: String
         public let isUsed: Bool
@@ -61,8 +18,8 @@ public struct SettingsFacts: Equatable, Sendable {
     }
 
     public struct Found: Equatable, Sendable {
-        public let accesses: [Access]
-        public let standings: [Standing]
+        public let accesses: [AccessList.Entry]
+        public let standings: [SpotStanding]
         public let rows: [SettingRow]
 
         public var isEmpty: Bool {
@@ -70,40 +27,26 @@ public struct SettingsFacts: Equatable, Sendable {
         }
     }
 
-    public private(set) var accesses: [Access] = []
-    public private(set) var standings: [Standing] = []
+    public private(set) var accesses: [AccessList.Entry] = []
+    public private(set) var standings: [SpotStanding] = []
     public private(set) var rows: [SettingRow] = []
     public private(set) var looks: [Look] = []
     public private(set) var account: Account?
     public private(set) var clashes: [[SettingRow]] = []
     public private(set) var clashing: Set<String> = []
+    private var standingWords: [String] = []
     private var rowWords: [String] = []
     private var accessWords: [String] = []
 
     public init() {}
 
-    init(accesses list: AccessList?, loaded: [SpotList.Record], core: [SpotList.Record], rows: [SettingRow], looks: [ThemeCall.Listed], account: AccountStatus?) {
-        if let list {
-            accesses = MacAccess.allCases.map { access in
-                Access(
-                    id: access, status: list.statuses[access] ?? .unknown,
-                    spots: list.spots.filter { $0.access.needs.contains(access) }.map(\.id),
-                    maybe: list.spots.filter { $0.access.maybe.contains(access) }.map(\.id)
-                )
-            }
-        }
+    init(accesses: [AccessList.Entry], loaded: [SpotStanding], core: [SpotList.Choice], rows: [SettingRow], looks: [ThemeCall.Listed], account: AccountStatus?) {
+        self.accesses = accesses
         var seen = Set<String>()
-        standings = (loaded + core.filter { !$0.isOn })
+        standings = (loaded + core.map(\.standing).filter(\.isOff))
             .filter { !$0.id.hasPrefix(ReservedSetting.appSpot + "/") && seen.insert($0.id).inserted }
-            .map { record in
-                let access = record.access
-                return Standing(
-                    id: record.id, spot: record.spot, readiness: access.readiness,
-                    uses: access.uses.map { use in Standing.Use(id: use, needs: access.byUse[use]?.needs ?? [], maybe: access.byUse[use]?.maybe ?? []) },
-                    needs: access.needs, refused: access.refused, words: Self.fold(record.spot.name + " " + (record.spot.subtitle ?? ""))
-                )
-            }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        standingWords = standings.map { Self.fold($0.title + " " + $0.detail) }
         self.rows = rows
         rowWords = rows.map { Self.fold($0.title + " " + ($0.detail ?? "")) }
         accessWords = accesses.map { Self.fold($0.id.title) }
@@ -116,15 +59,15 @@ public struct SettingsFacts: Equatable, Sendable {
         clashing = Set(clashes.flatMap { $0.map(\.item) })
     }
 
-    public var waiting: [Standing] {
+    public var waiting: [SpotStanding] {
         standings.filter(\.lacks)
     }
 
-    public func standing(_ id: String) -> Standing? {
+    public func standing(_ id: String) -> SpotStanding? {
         standings.first { $0.id == id }
     }
 
-    public func access(_ id: MacAccess) -> Access? {
+    public func access(_ id: MacAccess) -> AccessList.Entry? {
         accesses.first { $0.id == id }
     }
 
@@ -140,11 +83,15 @@ public struct SettingsFacts: Equatable, Sendable {
         rows.filter { $0.spot == spot }
     }
 
+    public func rows(in section: SettingsPage.Section) -> [SettingRow] {
+        rows.filter { $0.spot == ReservedSetting.appSpot && $0.section == section }
+    }
+
     public func found(_ query: String) -> Found {
         let folded = Self.fold(query.trimmingCharacters(in: .whitespaces))
         return Found(
             accesses: zip(accesses, accessWords).filter { $0.1.contains(folded) }.map(\.0),
-            standings: standings.filter { $0.words.contains(folded) },
+            standings: zip(standings, standingWords).filter { $0.1.contains(folded) }.map(\.0),
             rows: zip(rows, rowWords).filter { $0.1.contains(folded) }.map(\.0)
         )
     }

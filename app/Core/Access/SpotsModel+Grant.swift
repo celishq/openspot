@@ -33,7 +33,7 @@ extension SpotsModel {
         grant = next.step == nil ? nil : next
         settingsBook.grant = grant
         keepGrant()
-        openSettings(at: "spot/\(next.spot)")
+        openSettings(at: .spotOf(next.spot))
         guard grant != nil else { return true }
         askStep()
         watchGrant()
@@ -92,20 +92,21 @@ extension SpotsModel {
 
     @concurrent
     private nonisolated static func waiting(_ spots: [Spot], api: CommandAPI?, runs: SpotRuns, stats: URL) async -> Set<String> {
-        var statuses: [MacAccess: ReadAccess] = [:]
-        if let accesses = api?.mac.accesses {
+        guard let api else { return [] }
+        var statuses = api.access.statuses
+        if let accesses = api.mac.accesses {
             for access in MacAccess.allCases where access != .automation { statuses[access] = await accesses.status(of: access) }
         }
         let last = runs.usage.lastUses
         let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs.usage.keepsDays ? runs : nil, stats: stats), spot: nil).refused
         return Set(spots.filter { spot in
-            [.access, .review].contains(SpotReadiness(spot, statuses: statuses, made: Array((last[spot.id] ?? [:]).keys), refused: refused[spot.id] ?? [:]))
+            SpotStanding(spot, statuses: statuses, last: last[spot.id] ?? [:], refused: refused[spot.id] ?? [:]).lacks
         }.map(\.id))
     }
 
     func openWaiting(_ id: String) -> Bool {
         guard waiting.contains(id) else { return false }
-        openSettings(at: "spot/\(id)")
+        openSettings(at: .spotOf(id))
         return true
     }
 }
