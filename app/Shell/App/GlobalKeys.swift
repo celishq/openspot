@@ -99,8 +99,8 @@ final class GlobalKeys {
         let isWanted = wanted.contains { if case .tap = $0.trigger { true } else { false } }
         if isWanted, tapWatch == nil {
             tapWatch = SpotTapWatch { [weak self] modifier in self?.takeTap(modifier) }
-            if !SpotAccessibility.ask() {
-                fix("Openspot cannot hear a tap of one key. Allow Openspot in Accessibility.", SpotAccessibility.settings)
+            if !AXIsProcessTrusted() {
+                fix("Openspot cannot hear a tap of one key. Allow Openspot in Accessibility.", URL(string: SpotClipboard.accessibility)!)
             }
         } else if !isWanted {
             tapWatch?.stop()

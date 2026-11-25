@@ -17,7 +17,7 @@ enum SpotCommandLine {
                 let answer = await work()
                 output.print(answer.output)
                 output.report(answer.errors)
-                if case .paste = call.value as? ClipboardCall { try? await Task.sleep(for: postedKeysPause) }
+                if call.value as? ClipboardCall == .paste { try? await Task.sleep(for: postedKeysPause) }
                 exit(answer.code)
             }
             if call.rule.flags.contains(.events) {
