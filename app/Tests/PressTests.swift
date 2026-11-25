@@ -160,4 +160,21 @@ final class PressTests: PanelCase {
         XCTAssertFalse(model.visible.contains { $0.id == "notes" && $0.isOnGrid })
         XCTAssertEqual(takes, [1, 1])
     }
+
+    func testASheetThatClosesWhileALoadTakesItsSpotAwayIsCutOnceTheListIsWhole() async throws {
+        try await openList()
+        host.heldEnds = []
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertEqual(model.transition.phase, .closing)
+        try FileManager.default.removeItem(at: spots.spotFile("list"))
+
+        await model.reload()
+
+        XCTAssertNil(model.transition.id)
+        XCTAssertNil(model.card(id: "list"))
+        XCTAssertEqual(host.disagreements, 0)
+        let ends = host.heldEnds ?? []
+        host.heldEnds = nil
+        ends.forEach { $0() }
+    }
 }

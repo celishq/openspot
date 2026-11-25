@@ -437,6 +437,7 @@ public final class SpotsModel {
         if panels != config.panels { panels = config.panels }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
+        cutLostSheet()
         readWindows()
         if problems != self.problems, !problems.isEmpty {
             toast(.failure(problems.joined(separator: " ")))

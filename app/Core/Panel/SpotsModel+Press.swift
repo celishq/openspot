@@ -5,7 +5,10 @@ extension SpotsModel {
         pressDepth += 1
         defer {
             pressDepth -= 1
-            if pressDepth == 0, hintIsStale { takeHint() }
+            if pressDepth == 0 {
+                cutLostSheet()
+                if hintIsStale { takeHint() }
+            }
         }
         return work()
     }

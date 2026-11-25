@@ -225,6 +225,10 @@ extension SpotsModel {
         if list == nil { endReview() }
     }
 
+    func cutLostSheet() {
+        if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
+    }
+
     func hasPlace(_ id: String?) -> Bool {
         guard let id else { return false }
         return id == fieldSheet || sheets[id] != nil || SpotSheetCard.of(id, in: self) != nil

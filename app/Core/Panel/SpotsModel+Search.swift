@@ -55,14 +55,14 @@ extension SpotsModel {
             if slash != nil { slash = nil }
             content = .attachment
             foundSpots = []
-            show(attachmentRows())
+            takeVisible(attachmentRows())
             return
         }
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
             content = .cards
             foundSpots = []
-            return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
+            return takeVisible(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
         }
         indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
@@ -73,7 +73,7 @@ extension SpotsModel {
         content = rows.isEmpty ? .search : .slash
         if !rows.isEmpty {
             foundSpots = []
-            return show(rows)
+            return takeVisible(rows)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
@@ -87,7 +87,7 @@ extension SpotsModel {
             search: mainSearch,
             limit: Self.searchLimit - answers.count
         )
-        land(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
+        takeFound(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
     }
 
     private func indexSpots() {
@@ -102,19 +102,19 @@ extension SpotsModel {
         answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
-    private func land(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), answers: [Entry], sources: [Spot]) {
+    private func takeFound(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), answers: [Entry], sources: [Spot]) {
         mainSearch = found.search
         let ids = Set(answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         foundSpots = found.matches.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1], item: match.item)
         }
-        show(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        takeVisible(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
-    private func show(_ next: [Entry]) {
+    private func takeVisible(_ next: [Entry]) {
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
@@ -126,7 +126,6 @@ extension SpotsModel {
             laidOutTop = top
             placements = grid.place(sizes).map { $0.dropped(by: top) }
         }
-        if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
     func mayMove(_ id: String) -> Bool {
