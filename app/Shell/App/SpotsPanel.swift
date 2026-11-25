@@ -16,12 +16,6 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
-    override func fieldEditor(_ createFlag: Bool, for object: Any?) -> NSText? {
-        let editor = super.fieldEditor(createFlag, for: object)
-        if let text = editor as? NSTextView, text.textLayoutManager != nil { _ = text.layoutManager }
-        return editor
-    }
-
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey else { return super.performKeyEquivalent(with: event) }
         if key == ActionKey(name: "v", isCommand: true), model?.isShown == true, model?.pasteSpot() == true { return true }
