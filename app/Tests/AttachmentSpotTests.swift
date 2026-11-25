@@ -46,20 +46,31 @@ final class AttachmentSpotTests: BuiltInCase {
         XCTAssertTrue(["attachments", "tab", "selection", "clipboard"].allSatisfy(spot.keywords.contains))
     }
 
-    func testTheSheetListsEachSourceWithWhatItReads() async throws {
+    func testTheSheetListsEachSourceShownOrHiddenWithWhatItReads() async throws {
+        try file.change { $0.set(setting: "attachment", of: "tab", to: "false") }
+
         let items = try await items()
 
         XCTAssertEqual(items.map(\.run), ["copy", "tab"])
-        XCTAssertEqual(items.map(\.openTitle), ["Open Settings", "Open Settings"])
+        XCTAssertEqual(items.map(\.isOn), [true, false])
+        XCTAssertEqual(items.map(\.openTitle), ["Hide", "Show"])
         XCTAssertEqual(items.last?.subtitle, "Hand the front tab to a spot")
     }
 
-    func testReturnOpensTheSettingsOfTheSource() async throws {
-        try await press("press", on: "tab")
+    func testReturnHidesAndShowsASourceAndKeepsItsSpotOn() async throws {
+        try await press("press", on: "copy")
+        XCTAssertEqual(file.read().setting("attachment", of: "copy"), "false")
+        XCTAssertEqual(file.read().arrangement.choices, [])
+
+        try await press("press", on: "copy")
+        XCTAssertNil(file.read().setting("attachment", of: "copy"))
+    }
+
+    func testSettingsOpensTheSettingsOfTheSource() async throws {
+        try await press("settings", on: "tab")
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["settings tab"])
-        XCTAssertEqual(file.read().arrangement.choices, [])
     }
 
     func testAccessListsEachReaderWithWhetherMacOSLetsOpenspotReadIt() async throws {
@@ -71,6 +82,7 @@ final class AttachmentSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.subtitle), ["Allowed", "Open the app to check", "Not allowed", "Not asked"])
         XCTAssertEqual(rows.first?.picture, .file("/Applications/Safari.app"))
         XCTAssertEqual(rows.map(\.openTitle), ["Manage in System Settings", "Open Chrome", "Open System Settings", "Ask for access"])
+        XCTAssertEqual(rows.map { $0.hides ?? [] }, Array(repeating: ["settings"], count: 4))
         let faults = try await attachments.sheetFaults(timeout: 60)
         XCTAssertEqual(faults, [])
     }

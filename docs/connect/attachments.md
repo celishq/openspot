@@ -35,7 +35,7 @@ case "$1" in
 esac
 ```
 
-Turn on Browser Tab in the Attachments spot. Open the panel over Safari, press Tab, and pick Copy title. It copies the
+Open the panel over Safari, press Tab, and pick Copy title. It copies the
 title of the tab.
 
 ## How it takes it
@@ -159,7 +159,10 @@ esac
   when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens the Attachments spot, where people allow it, and the next Tab reads again.
 - A chip shows only when a spot has a row for it. A source runs only when some spot has a row for some
   kind.
-- A source stays off the grid and out of the search. It is always on, and the Attachments spot lists it.
+- A source stays off the grid and out of the search. The Attachments spot lists it, and Return there hides or shows its
+  chip. A hidden source runs no `attachment.pick` and no `show` at the open of the panel, and gives no chip. Its spot stays
+  on. `openspot setting set --spot <id> attachment false` hides it, and `openspot setting set --spot <id> attachment`
+  shows it again.
 
 ## Next
 

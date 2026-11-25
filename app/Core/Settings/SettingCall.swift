@@ -19,7 +19,7 @@ public enum SettingCall: NounCall {
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: menubar (true or false), attachment (false hides the chip of a source), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isInShow: words.isInShow) ?? Self.set(spot: spot, key: key, value: value) }
         },

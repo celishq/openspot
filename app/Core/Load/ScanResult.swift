@@ -50,7 +50,7 @@ public struct ScanResult: Equatable, Sendable {
     public mutating func addSettings(in config: ConfigFile, secrets: SecretStore, read: Config? = nil, defaults: SpotChoices = SpotChoices()) {
         let read = read ?? config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { spot in
-            spot.takingSettings(in: config, secrets: secrets, isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id))
+            spot.takingSettings(in: config, secrets: secrets, isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id)).hidingSource(read.setting(ReservedSetting.attachment, of: spot.id) == "false")
         }) }
     }
 }

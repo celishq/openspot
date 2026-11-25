@@ -24,7 +24,7 @@ struct SettingCalls {
                 throw SpotError.failed(1, "Openspot keeps `\(key)` of \(spot) as a secret, so only its own form changes it. Open the Settings of \(spot), and press Return on its row.")
             }
             let config = try places.config.change { $0.set(setting: key, of: spot, to: value) }
-            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
+            await app?.configChanged([ReservedSetting.icon, ReservedSetting.attachment].contains(key) ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
             return ""
         }
     }

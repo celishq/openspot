@@ -32,7 +32,8 @@ Each spot has its own Settings, which open when you press `⌘` Return on its ca
 
 - A key row records a key on Return, and `⌘⌫` removes it. A key is a shortcut such as `ctrl+option+k`, a shake, or a
   tap of one modifier, such as `option`.
-- `openspot setting set` changes the same values: `icon`, `menubar`, `open`, `float` and `key.<action>`.
+- `openspot setting set` changes the same values: `icon`, `menubar`, `open`, `float` and `key.<action>`, and
+  `attachment`, which [the Attachments spot](#hand-what-you-work-on-to-a-spot) sets.
 
 ## Choose where a spot shows
 
@@ -51,8 +52,8 @@ bigger card pushes the others on. A spot with no room is found by search.
 
 ## Hand what you work on to a spot
 
-Search for Attachments. It lists Selection, Browser Tab and Fresh Copy, which are always on, and Return opens the
-Settings of one. Under Access, each app it reads says whether macOS lets Openspot read
+Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to hide or show its card in the field.
+`⌘` Return opens the Settings of one. Under Access, each app it reads says whether macOS lets Openspot read
 it, and Return asks for access or opens the pane of System Settings that gives it. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 

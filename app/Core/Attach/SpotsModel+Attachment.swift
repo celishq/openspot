@@ -8,7 +8,7 @@ extension SpotsModel {
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { !$0.spot.chipActions.isEmpty }
-        let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
+        let unread = feeds ? entries.filter { $0.spot.isSource && !$0.spot.isSourceHidden && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
         endSpread()
         var next = attachments
         next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
@@ -47,7 +47,7 @@ extension SpotsModel {
 
     private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
         var next = stack
-        if cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
+        if entry(id)?.spot.isSourceHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
         return next
     }
 

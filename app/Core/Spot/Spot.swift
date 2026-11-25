@@ -239,6 +239,13 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    func hidingSource(_ isHidden: Bool) -> Spot {
+        guard isHidden, self.isSource else { return self }
+        var spot = self
+        spot.isSourceHidden = true
+        return spot
+    }
+
     func builtIn() -> Spot {
         var spot = self
         spot.isBuiltIn = true
@@ -296,7 +303,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
-        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment)
+        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment && !self.isSourceHidden)
     }
 
     public func takes(_ value: AttachmentValue) -> Bool {
