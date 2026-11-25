@@ -44,7 +44,7 @@ public final class SpotsModel {
             spotListIsStale = true
             storeCards = nil
             askAnswers()
-            takePreview()
+            takeDetails()
             showVisible()
             prepareCardGlyphs()
         }
@@ -52,7 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            takePreview()
+            takeDetails()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -74,29 +74,25 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
-            if attachments.selectedChip != oldValue.selectedChip {
-                previewBuilds += 1
-                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
-            }
         }
     }
-    @ObservationIgnored var chipPreview: AttachmentPreview?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
     public private(set) var promptWord = SearchPrompt.grid
-    public internal(set) var preview: AttachmentPreview? {
+    public internal(set) var details: AttachmentDetails? {
         didSet {
-            let room = preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
-            if fieldRoom != room { fieldRoom = room }
+            let room = Self.room(of: details)
+            if detailsRoom != room { detailsRoom = room }
+            if let details, heldDetails != details { heldDetails = details }
         }
     }
-    public private(set) var fieldRoom: CGFloat = 0
+    public private(set) var heldDetails: AttachmentDetails?
+    public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
-    @ObservationIgnored var previewBuilds = 0
     @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches

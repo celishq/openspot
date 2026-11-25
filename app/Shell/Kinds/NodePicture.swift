@@ -10,6 +10,8 @@ struct NodePicture: View {
         Group {
             if let path = icon?.image {
                 SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: times[path]))
+            } else if let path = icon?.file {
+                NodeFileThumbnail(path: path)
             } else if let icon {
                 GeometryReader { room in
                     SpotItemIcon(icon: icon.file.map(FileIcon.init(path:)), glyph: icon.glyph, symbol: icon.symbol, size: SpotTokens.pictureSide(in: room.size))

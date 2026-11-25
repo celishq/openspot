@@ -72,7 +72,7 @@ A prefix applies a class only in a place or a state, such as `card:hidden` or `h
 
 | Prefix                                           | Tailwind            | Applies                                          |
 | ------------------------------------------------ | ------------------- | ------------------------------------------------ |
-| `sheet:`, `card:`, `bar:`, `float:`, `window:`, `toast:` | none        | In your sheet, a card, the menu bar, a float, a window or a [toast](commands.md#a-toast). |
+| `sheet:`, `card:`, `bar:`, `float:`, `window:`, `toast:`, `details:` | none | In your sheet, a card, the menu bar, a float, a window, a [toast](commands.md#a-toast) or the [details of a chip](../connect/attachments.md#give-a-value). |
 | `small:`, `wide:`, `square:`, `strip:`, `large:` | none                | On a card of that size.                          |
 | `hover:`                                         | the same            | While the pointer is over it.                    |
 | `pressed:`                                       | `active:`           | While it's pressed.                              |

@@ -24,7 +24,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(model.attachments.selected, "tab")
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.details?.label, "A")
         XCTAssertEqual(shown, ["keep"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -90,7 +90,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.query = "/"
 
-        XCTAssertNil(model.preview)
+        XCTAssertNil(model.details)
         XCTAssertEqual(host.motions.count, changes)
     }
 
@@ -101,46 +101,98 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.entries = model.entries.filter { $0.id != "tab" }
 
-        XCTAssertNil(model.preview)
+        XCTAssertNil(model.details)
         XCTAssertEqual(host.motions.count, changes)
     }
 
     func testThePreviewGivesWayOnTypingASlashInAChangeOfItsOwn() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
-        let writes = host.previewWrites.count
+        let writes = host.detailsWrites.count
 
         model.search("/")
 
-        XCTAssertNil(model.preview)
-        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
-        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertNil(model.details)
+        XCTAssertEqual(host.detailsWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: false)])
+        XCTAssertEqual(host.detailsWrites.dropFirst(writes).map(\.depth), [0])
     }
 
     func testThePreviewGivesWayToEditSpotsInOneChange() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
-        let writes = host.previewWrites.count
+        let writes = host.detailsWrites.count
 
         model.beginEditing()
 
-        XCTAssertNil(model.preview)
-        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
-        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertNil(model.details)
+        XCTAssertEqual(host.detailsWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: false)])
+        XCTAssertEqual(host.detailsWrites.dropFirst(writes).map(\.depth), [0])
     }
 
     func testTabWritesThePlacedStackAndThePreviewInOneChange() async throws {
         try await openWithTab()
         host.heldEnds = []
         let changes = host.motions.count
-        let writes = host.previewWrites.count
+        let writes = host.detailsWrites.count
 
         XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.edit])
-        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.sheet(isOpen: true)])
+        XCTAssertEqual(host.detailsWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: true)])
         XCTAssertTrue(model.attachments.isMoving)
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.details?.label, "A")
+    }
+
+    func testTabGrowsTheFieldForThePreviewOnTheSheetsOpenWithTheRowsLaidInTheSameChange() async throws {
+        try await openWithTab()
+        let previews = host.detailsWrites.count
+        let placements = host.placementWrites.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(host.detailsWrites.dropFirst(previews).map(\.motion), [.sheet(isOpen: true)])
+        XCTAssertEqual(host.placementWrites.dropFirst(placements).map(\.motion), [.sheet(isOpen: true)])
+        XCTAssertEqual(model.placements.first?.drop, model.detailsRoom)
+    }
+
+    func testEscShrinksTheFieldOnTheSheetsCloseWithTheCardsLaidInTheSameChange() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let previews = host.detailsWrites.count
+        let placements = host.placementWrites.count
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+
+        XCTAssertNil(model.details)
+        XCTAssertEqual(host.detailsWrites.dropFirst(previews).map(\.motion), [.sheet(isOpen: false)])
+        XCTAssertEqual(host.placementWrites.dropFirst(placements).map(\.motion), [.sheet(isOpen: false)])
+    }
+
+    func testATabToAChipOfAnotherHeightGrowsOrShrinksTheFieldOnTheSheetsMotion() async throws {
+        try taker("keep", takes: "'url'")
+        try taker("reader", takes: "'text'")
+        try source(adds: "url=https://example.com/a title=A")
+        try source("long", adds: "'text=\(String(repeating: "word ", count: 60))' title=Long")
+        await open()
+        try await wait("both values") { self.model.attachments.chips.filter { $0.value != nil }.count == 2 }
+        XCTAssertTrue(model.handleKey(tab))
+        let room = model.detailsRoom
+        let previews = host.detailsWrites.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertNotEqual(model.detailsRoom, room)
+        XCTAssertEqual(host.detailsWrites.dropFirst(previews).map(\.motion), [.sheet(isOpen: model.detailsRoom > room)])
+    }
+
+    func testEscKeepsTheLookOfThePreviewForItsClose() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+
+        XCTAssertNil(model.details)
+        XCTAssertEqual(model.heldDetails?.label, "A")
     }
 
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
@@ -188,13 +240,13 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.dismissals, 0)
     }
 
-    func testTypingFiltersTheRowsAndKeepsThePreview() async throws {
+    func testTypingFiltersTheRowsAndKeepsTheDetails() async throws {
         try await openWithTab(takers: ["keep", "save"])
         XCTAssertTrue(model.handleKey(tab))
 
         model.query = "sav"
 
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.details?.label, "A")
         XCTAssertEqual(shown, ["save"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -212,47 +264,45 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(shown, ["save"])
     }
 
-    func testTypingInTheAttachmentFitsTheActionsAndBuildsThePreviewOnlyAtTab() async throws {
+    func testTypingInTheAttachmentFitsTheActionsAndKeepsTheDetails() async throws {
         try await openWithTab(takers: ["keep", "save"])
         XCTAssertTrue(model.handleKey(tab))
         let fits = model.commands.fits
-        let builds = model.previewBuilds
 
         for text in ["s", "sa", "sav"] {
             model.search(text)
         }
 
         XCTAssertEqual(model.commands.fits, fits)
-        XCTAssertEqual(model.previewBuilds, builds)
         XCTAssertEqual(shown, ["save"])
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.details?.label, "A")
     }
 
-    func testTheRowsStartBelowThePreview() async throws {
+    func testTheRowsStartBelowTheDetails() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
 
         model.moveSelection(dx: 0, dy: -1)
 
-        XCTAssertEqual(model.preview?.lines, 1)
-        XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldRoom])
-        XCTAssertLessThan(model.fieldRoom, SpotTokens.cell + SpotTokens.rowGap)
+        XCTAssertEqual(model.details?.lines, 1)
+        XCTAssertEqual(model.placements.map(\.rect.minY), [model.detailsRoom])
+        XCTAssertLessThan(model.detailsRoom, SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(model.selected, 0)
     }
 
     func testASheetThatOpensFromTheFieldWhileThePreviewHoldsRoomKeepsTheRoomThroughItsOpen() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
-        let room = model.fieldRoom
+        let room = model.detailsRoom
         XCTAssertGreaterThan(room, 0)
-        let writes = host.previewWrites.count
+        let writes = host.detailsWrites.count
 
         model.pushFirst("reader", moving: true)
         try await wait("the open") { self.model.transition.phase == .open }
 
         XCTAssertNil(SpotSheetCard.of("reader", in: model))
-        XCTAssertEqual(model.fieldRoom, room)
-        XCTAssertEqual(host.previewWrites.count, writes)
+        XCTAssertEqual(model.detailsRoom, room)
+        XCTAssertEqual(host.detailsWrites.count, writes)
     }
 
     func testReturnHandsTheValueToTheActionOfTheSelectedRow() async throws {
@@ -291,12 +341,12 @@ final class AttachmentStateTests: AttachmentCase {
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
-        XCTAssertEqual(model.preview?.caption, "Reading Safari…")
+        XCTAssertEqual(model.details?.label, "Reading Safari…")
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the rows of the value") { self.shown == ["keep"] }
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.details?.label, "A")
         XCTAssertEqual(model.selected, 0)
     }
 
@@ -378,7 +428,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         XCTAssertFalse(model.attachments.isOn)
         XCTAssertEqual(shown, grid)
-        XCTAssertNil(model.preview)
+        XCTAssertNil(model.details)
     }
 
     func testTheFieldSearchesActionsWhileAChipIsChosenAndSpotsAfterEscOrAReopen() async throws {
@@ -438,7 +488,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.beginEditing()
 
-        XCTAssertNil(model.preview)
+        XCTAssertNil(model.details)
     }
 
     func testTheActionsMenuHasNoTargetOnAnAttachmentRow() async throws {
