@@ -102,7 +102,9 @@ final class PanelKeysTests: PanelCase {
 
     func testAKeyAddedInOneRowShowsInTheHint() async throws {
         try await showGrid()
-        model.beginEditing()
+        model.hold([.command])
+        model.point(at: .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY)))
+        XCTAssertEqual(model.editing, .held)
         let rows = model.keyRows(of: .edit)
 
         XCTAssertEqual(KeyRow.hint(of: rows), "S Size   ⇧ Arrows Move   Esc Done")
@@ -247,17 +249,12 @@ final class PanelKeysTests: PanelCase {
         XCTAssertNil(model.menu)
     }
 
-    func testEditSpotsTakesEveryKeyAndEscEndsIt() async throws {
+    func testArrangeOpensNoMenuNorSheetAndEscEndsIt() async throws {
         try await showGrid()
-        model.beginEditing()
+        model.arrange()
 
-        XCTAssertTrue(model.handleKey(right))
-        XCTAssertEqual(model.selected, 1)
-        XCTAssertTrue(model.handleKey(enter))
-        XCTAssertTrue(model.handleKey(tab))
-        XCTAssertTrue(model.handleKey(actions))
-        XCTAssertTrue(model.handleKey(settings))
-        XCTAssertTrue(model.handleKey(history))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        for key in [enter, tab, actions, settings, history] { _ = model.handleKey(key) }
         XCTAssertNil(model.menu)
         XCTAssertNil(model.openSheetID)
         XCTAssertEqual(host.dismissals, 0)

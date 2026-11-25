@@ -1,7 +1,7 @@
 [scripts.actions]
 title = "Card actions"
 icon = "ellipsis.circle"
-detail = "Share, set, edit, rearrange, change the icon of or remove a spot"
+detail = "Share, set, edit, arrange, change the icon of or remove a spot"
 uses = ["spots"]
 
 [scripts.actions.bindings]
@@ -24,8 +24,8 @@ shortcut = "cmd+e"
 close = false
 offers = ["actions mine"]
 
-[scripts.actions.actions.rearrange]
-title = "Rearrange"
+[scripts.actions.actions.arrange]
+title = "Arrange"
 close = false
 offers = ["actions"]
 
@@ -114,11 +114,11 @@ search = true
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"
-detail = "Edit Spots"
-keywords = ["edit spots"]
+detail = "Arrange your spots"
+keywords = ["arrange", "edit spots"]
 
 [scripts.spots.actions.edit]
-title = "Edit Spots"
+title = "Arrange"
 
 [scripts.store]
 title = "Store"

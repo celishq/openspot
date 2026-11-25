@@ -17,7 +17,7 @@ extension SpotsModel {
         }
         pointerMove = translation
         guard let drag else { return }
-        let moved = drag.capped(translation, within: windowInGrid)
+        let moved = drag.capped(translation, within: isArranging ? .infinite : windowInGrid)
         if lift.offset != moved { lift.offset = moved }
         let corner = inPanel(drag.homeRect.offsetBy(dx: moved.width, dy: moved.height).origin)
         if lift.origin != corner { lift.origin = corner }
@@ -42,7 +42,8 @@ extension SpotsModel {
     public func dropSpot(by translation: CGSize) {
         asOnePress {
             guard let drag else { return }
-            if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
+            let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
+            if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
                 cancelDrag()
                 return takeOffGrid(entry.id)
             }
@@ -76,7 +77,7 @@ extension SpotsModel {
         carry?.isLanding = true
     }
 
-    private func endLanding(of id: String) {
+    func endLanding(of id: String) {
         if landing == id { landing = nil }
         if drag == nil, carry?.entry.id == id { carry = nil }
         if drag == nil, lift.offset != .zero { lift.offset = .zero }

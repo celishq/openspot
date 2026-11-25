@@ -5,7 +5,7 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandFitsTheCardsOfItsOriginAndHasNoCard() throws {
         let actions = try spot("actions")
 
-        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Rearrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Remove"])
+        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Arrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Remove"])
         XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine], [], [], [], [], [], [.mine]])
         XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫"])
         XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, nil, "hasIcon", nil])
@@ -16,7 +16,7 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandAsksTheAPI() async throws {
         let actions = try spot("actions")
 
-        for act in ["settings", "edit", "share", "delete", "rearrange"] {
+        for act in ["settings", "edit", "share", "delete", "arrange"] {
             try await actions.perform(act, input: "input.item=weather\n", timeout: 60)
         }
 

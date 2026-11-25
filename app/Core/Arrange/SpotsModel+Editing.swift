@@ -8,7 +8,7 @@ extension SpotsModel {
     }
 
     public func beginEditing() {
-        begin(.open)
+        begin(.arrange)
     }
 
     private func begin(_ session: EditSession) {
@@ -20,6 +20,7 @@ extension SpotsModel {
             change(.edit) {
                 editing = session
                 query = ""
+                clearArrange()
                 updateVisible()
             }
             hideAttachments()
@@ -87,6 +88,7 @@ extension SpotsModel {
                 pointerMove = nil
                 if lift.offset != .zero { lift.offset = .zero }
                 selected = 0
+                clearArrange()
                 updateVisible()
             }
         }
@@ -137,9 +139,10 @@ extension SpotsModel {
         }
     }
 
-    func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotChoices) -> Void = { _ in }) {
+    func saveLayout(_ layout: [SpotPlacement], of spots: [Entry]? = nil, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotChoices) -> Void = { _ in }) {
         let count = grid.columns
-        let changes = layout.filter { visible.indices.contains($0.index) }.map { (visible[$0.index], $0) }
+        let spots = spots ?? visible
+        let changes = layout.filter { spots.indices.contains($0.index) }.map { (spots[$0.index], $0) }
         save { next in
             for (entry, placement) in changes {
                 if entry.cell(in: grid) != placement.cell { next.set(cell: placement.cell, of: entry.id, columns: count) }

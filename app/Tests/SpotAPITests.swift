@@ -95,7 +95,7 @@ final class SpotAPITests: XCTestCase {
         let delete = try await answer(["spot", "delete", "apps"])
         let change = try await answer(["prompt", "change", "apps"])
 
-        XCTAssertEqual(remove.errors, "`apps` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Edit Spots.\n")
+        XCTAssertEqual(remove.errors, "`apps` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Arrange.\n")
         XCTAssertEqual(delete.errors, remove.errors)
         XCTAssertEqual(edit.errors, "`apps` comes with Openspot, so it cannot be edited. Run `openspot spot new <name>` to make a spot of your own.\n")
         XCTAssertEqual(prompt.errors, edit.errors)

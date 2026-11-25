@@ -208,7 +208,14 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
+    private func holdEditing() {
+        model.endEditing()
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+    }
+
     func testADraggedCardStaysAPaddingInsideTheWindow() {
+        holdEditing()
         let rect = model.placements[0].rect
         let inset = SpotTokens.padding
 
@@ -223,6 +230,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testEditSpotsOffersNoHideKey() {
+        holdEditing()
         XCTAssertEqual(model.hint, "S Size   ⇧ Arrows Move   Esc Done")
     }
 
@@ -248,6 +256,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testAReleaseOffTheGridPutsTheCardsBack() async {
+        holdEditing()
         model.dragSpot("d", by: move("d", to: row0))
 
         model.dropSpot(by: CGSize(width: -3 * SpotTokens.gridWidth, height: 0))
@@ -477,7 +486,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 0))
     }
 
-    func testEditingOpenedByRearrangeStaysWhenCommandIsReleased() {
+    func testArrangeStaysWhenCommandIsReleased() {
         model.endEditing()
         model.editGrid()
 

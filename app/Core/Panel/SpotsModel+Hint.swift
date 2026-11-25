@@ -4,6 +4,7 @@ import Observation
 extension SpotsModel {
     public var hint: String {
         if recording != nil { return KeyRow.hint(of: keyRows(of: .recording)) }
+        if isArranging { return arrangeHint }
         if isEditing { return KeyRow.hint(of: keyRows(of: .edit)) }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         let escape = KeyRow.hint(of: [escapeRow])
@@ -23,6 +24,12 @@ extension SpotsModel {
         } ?? escape
         let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
         return attachmentHint.map { "\($0)   \(shown)" } ?? shown
+    }
+
+    var arrangeHint: String {
+        if offGrid.isEmpty { return "All your spots are on the grid." }
+        if freeCells.isEmpty { return "The grid is full. Drop a spot on a card to swap them." }
+        return offGrid.count == 1 ? "1 spot is off the grid. Drag it in to pin it." : "\(offGrid.count) spots are off the grid. Drag one in to pin it."
     }
 
     public func followHint() {

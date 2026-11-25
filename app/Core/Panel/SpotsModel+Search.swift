@@ -128,6 +128,7 @@ extension SpotsModel {
             let left = Set(next.map(\.id)).subtracting(placed)
             if left != leftOut { leftOut = left }
             runs.take(grid: placed)
+            takeOffGridSpots(placed: placed)
         }
         lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
     }

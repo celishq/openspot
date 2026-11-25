@@ -20,11 +20,11 @@ final class CatalogSpotTests: BuiltInCase {
         let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Spots")
-        XCTAssertEqual(spot.subtitle, "Edit Spots")
+        XCTAssertEqual(spot.subtitle, "Arrange your spots")
         XCTAssertFalse(spot.triggers.shows)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
         XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
-        XCTAssertEqual(spot.keywords, ["edit spots"])
+        XCTAssertEqual(spot.keywords, ["arrange", "edit spots"])
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {

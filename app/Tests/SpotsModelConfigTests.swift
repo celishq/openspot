@@ -71,7 +71,9 @@ final class SpotsModelConfigTests: PanelCase {
     }
 
     func testAnEditKeyReadsNoConfigFromTheDisk() throws {
-        model.beginEditing()
+        model.hold([.command])
+        model.point(at: .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY)))
+        XCTAssertEqual(model.editing, .held)
         let reads = disk.reads
         var writes = disk.writes
         let wrote = { () -> Bool in

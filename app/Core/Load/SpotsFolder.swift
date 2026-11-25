@@ -85,7 +85,7 @@ public struct SpotsFolder: Sendable {
     }
 
     static func unremovable(_ id: String) -> String {
-        "`\(id)` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Edit Spots."
+        "`\(id)` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Arrange."
     }
 
     static func uneditable(_ id: String) -> String {

@@ -291,6 +291,12 @@ public final class SpotsModel {
         }
     }
     public var isEditing: Bool { editing != nil }
+    public var isArranging: Bool { editing == .arrange }
+    public internal(set) var arrangeQuery = ""
+    @ObservationIgnored public internal(set) var arrangeScroll: CGFloat = 0
+    public internal(set) var offGrid: [Entry] = []
+    @ObservationIgnored var offGridWords: [String] = []
+    public internal(set) var shelf: [Entry] = []
     @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []
     public internal(set) var freeCells: [GridCell] = []
@@ -301,6 +307,7 @@ public final class SpotsModel {
     public internal(set) var gesture: SpotGesture?
     public var drag: SpotDrag? { gesture?.drag }
     public var resize: SpotResize? { gesture?.resize }
+    public var pin: SpotPin? { gesture?.pin }
     public let lift = SpotLift()
     public internal(set) var landing: String?
     public internal(set) var carry: SpotCarry?
