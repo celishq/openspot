@@ -8,12 +8,12 @@ enum BrowserCall: NounCall {
         CommandVerb(
             "tab", "<app>",
             "Prints the url=, title= and app= of the front tab of the front window of the browser <app>. It prints nothing when that browser is not running.",
-            rule: ReadSources.rule
+            rule: ReadSources.browserRule
         ) { $0.one.map(Self.tab) },
         CommandVerb(
             "tabs", "<app>",
             "Prints a record for each tab of each window of the browser <app>: url=, title=, window= (1 is the front window), index= (its place in the window), active=true or false, and app=.",
-            rule: ReadSources.rule
+            rule: ReadSources.browserRule
         ) { $0.one.map(Self.tabs) }
     ])
 
