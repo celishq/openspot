@@ -294,7 +294,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", """
         case "$1" in
           show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nitem=a\\ntitle=A\\n' ;;
-          work) sleep 0.2; echo gone >&2; exit 3 ;;
+          work) \(untilRelease); echo gone >&2; exit 3 ;;
         esac
         """)
         var failures: [String] = []
@@ -305,6 +305,7 @@ final class SpotDropTests: XCTestCase {
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop(paths: [file]))
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the drop") { self.log().contains("drop \(file)") }
         XCTAssertEqual(failures, ["gone"])
@@ -443,12 +444,13 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAPressWithinOneSecondOfADropDoesNothing() async throws {
-        let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "sleep 0.2\ntouch '\(path("done"))'")
+        let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "\(untilRelease)\ntouch '\(path("done"))'")
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         sheet.pressCard()
 
         XCTAssertTrue(sheet.isCardRunning)
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the end of the work") { self.placed(at: path("done")) }
     }
 
@@ -464,8 +466,8 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
-        runs = SpotRuns(showLimit: 0.2, clock: RunClock(now: { [clock] in clock.time }))
-        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "sleep 0.5\ntouch '\(path("done"))'")
+        runs = SpotRuns(showLimit: 0.2, clock: clock.value)
+        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "\(untilRelease)\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []
         sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
@@ -473,6 +475,9 @@ final class SpotDropTests: XCTestCase {
 
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.first?.isAct, true)
+        clock.advance(by: 1)
+        XCTAssertEqual(sheet.calls.count, 1)
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the end of the work") { self.placed(at: path("done")) && sheet.calls.isEmpty }
         XCTAssertEqual(failures, [])

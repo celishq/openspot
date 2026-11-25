@@ -35,6 +35,14 @@ final class SpotsModelTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
+    private var untilRelease: String {
+        "n=0; while [ ! -f '\(folder.appendingPathComponent("release").path)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+    }
+
+    private func openGate() {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("release").path, contents: Data())
+    }
+
     private func script(_ name: String, toml: String, _ body: String) throws {
         try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
@@ -1783,7 +1791,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAListThatArrivesFromASpotsRunWithNoPressUpdatesTheHint() async throws {
-        try script("list", toml: "", "sleep 0.3; printf 'item=a\\ntitle=Apple\\n'")
+        try script("list", toml: "", "\(untilRelease); printf 'item=a\\ntitle=Apple\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1791,6 +1799,7 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open sheet") { model.openSheetID == "list" }
         let empty = model.sheetHint
+        openGate()
 
         try await wait("the hint of the list") { model.openItems?.shown.count == 1 && model.sheetHint == HintWords(model.hint) && model.sheetHint != empty }
     }
@@ -1875,7 +1884,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func showAnswers(slow: String = "none") async throws {
-        let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); it=$(printf '%s\n' "$in" | sed -n 's/^input\.item=//p'); case "$t" in \#(slow)) sleep 0.5 ;; esac; case "$1" in search) [ -n "$t" ] && printf 'item=%s\ntitle=Is %s\ndetail=Read %s\n' "$t" "$t" "$t" ;; press) \#(TestSpot.toast) "Picked $it" ;; esac"#
+        let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); it=$(printf '%s\n' "$in" | sed -n 's/^input\.item=//p'); case "$t" in \#(slow)) \#(untilRelease) ;; esac; case "$1" in search) [ -n "$t" ] && printf 'item=%s\ntitle=Is %s\ndetail=Read %s\n' "$t" "$t" "$t" ;; press) \#(TestSpot.toast) "Picked $it" ;; esac"#
         try script("calc", toml: "title = 'Calc'\n[on]\nsearch = '^[0-9]'", body)
         model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
         try script("notes", toml: "title = 'Notes 2'", "printf 'item=a\\ntitle=A\\n'")
@@ -1976,6 +1985,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
         model.search("12")
         XCTAssertEqual(model.visible.first?.id, "calc\n1")
+        openGate()
         try await wait("the newer answer") { model.visible.first?.id == "calc\n12" }
     }
 
@@ -2014,6 +2024,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.search("12")
         model.runSelected()
+        openGate()
 
         try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
         XCTAssertFalse(host.confirms.contains("Picked 1"))

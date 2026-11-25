@@ -363,7 +363,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n' ;;
-          go) sleep 0.2; touch '\(path("done"))' ;;
+          go) \(untilRelease); touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -376,6 +376,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.press(part)
 
         XCTAssertEqual(sheet.calls.filter(\.isAct).count, 1)
+        openGate()
         try await wait("the end of the work") { self.placed(at: path("done")) }
         try await wait("the read after the work") { self.log() == ["show", "go", "show"] }
     }
@@ -384,8 +385,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nitem=a\\ntitle=A\\n' ;;
-          go) sleep 0.2; touch '\(path("action"))' ;;
-          press) sleep 0.2; touch '\(path("pick"))' ;;
+          go) \(untilRelease); touch '\(path("action"))' ;;
+          press) \(untilRelease); touch '\(path("pick"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -400,11 +401,12 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pick(item)
 
         XCTAssertEqual(sheet.calls.filter(\.isAct).count, 2)
+        openGate()
         try await wait("the end of the work") { self.placed(at: path("action")) && self.placed(at: path("pick")) }
     }
 
     func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nclass=card:flex\\nvalue=true\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'; exit 0; }\n\(untilRelease)\ntouch '\(path("done"))'\nprintf 'switch=power\\nclass=card:flex\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -414,6 +416,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.state.on, true)
         XCTAssertTrue(sheet.isCardRunning)
+        openGate()
         try await wait("the end of the work") { self.placed(at: path("done")) && !sheet.isCardRunning }
         XCTAssertEqual(sheet.state.on, true)
     }

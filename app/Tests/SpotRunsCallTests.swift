@@ -215,12 +215,13 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true\nsearch = true", "sleep 0.2\nprintf 'item=a\\ntitle=A\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true\nsearch = true", "\(untilRelease)\nprintf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
 
         sheet.close()
+        openGate()
 
         try await wait("the row") { sheet.list.shown.count == 1 }
     }
@@ -272,7 +273,7 @@ final class SpotRunsCallTests: SpotRunsCase {
       go)
         \(TestSpot.toast) Started
         printf 'frame=\\nclass=gap-part\\n\\ntext=bar\\ntitle=half\\n---\\n'
-        sleep 0.3
+        %@
         touch '%@'
         \(TestSpot.toast) Done
         printf 'text=bar\\ntitle=done\\n'
@@ -282,7 +283,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAWorkCallGoesOnWithTheSheetAndThePanelClosedAndItsLastPictureStands() async throws {
         takeCalls()
-        try script(toml: "", String(format: Self.worker, path("done")))
+        try script(toml: "", String(format: Self.worker, untilRelease, path("done")))
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
@@ -298,6 +299,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.close()
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.count, 1)
+        openGate()
 
         try await wait("the end of the work") { self.placed(at: path("done")) && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
@@ -380,7 +382,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) sleep 0.2; echo "$v" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
+          a) \(untilRelease); echo "$v" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
           b) echo "$v" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n' ;;
         esac
         """)
@@ -391,6 +393,8 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(parts[0], to: "true")
         sheet.set(parts[1], to: "true")
+        try await wait("the call of b") { self.placed(at: self.path("b")) }
+        openGate()
         try await wait("the read after the older call") { sheet.calls.isEmpty && self.log().count >= 4 }
 
         XCTAssertEqual(sheet.panel?.parts[1].value, "true")

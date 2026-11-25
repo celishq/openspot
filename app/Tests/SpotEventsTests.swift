@@ -114,12 +114,13 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAPanelThatHidesLetsALaunchReadFinish() async throws {
-        try script("news", toml: "[on]\n\"app.launch\" = true", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'frame=\\ntitle=N\\n'")
+        try script("news", toml: "[on]\n\"app.launch\" = true", log: "news", "\(untilRelease)\necho done >> '\(path("done"))'\nprintf 'frame=\\ntitle=N\\n'")
         _ = try scanned()
 
         runs.launched()
         runs.panelOpened()
         runs.panelClosed()
+        openGate()
 
         try await wait("the end of the launch read") { self.placed(at: path("done")) }
     }

@@ -37,6 +37,14 @@ final class SpotRunTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
+    private var untilRelease: String {
+        "n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+    }
+
+    private func openGate() {
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+    }
+
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
@@ -276,7 +284,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testOnlyTheFirstPartsOfASheetArriveThroughTheArrival() async throws {
-        let sheet = try holding("printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'\nsleep 0.1\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=B\\n---\\n'", pause: 0.02)
+        let sheet = try holding("printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'\n\(untilRelease)\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=B\\n---\\n'", pause: 0.02)
         var arrivals = 0
         runs.last?.partsArrival = { _, bring in
             arrivals += 1
@@ -285,6 +293,8 @@ final class SpotRunTests: XCTestCase {
 
         runs.last?.panelOpened()
         sheet.open(waits: true) {}
+        try await wait("the first parts") { sheet.panel?.parts.first?.title == "A" }
+        openGate()
 
         try await wait("the later parts") { sheet.panel?.parts.first?.title == "B" }
         XCTAssertEqual(arrivals, 1)
@@ -292,7 +302,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTheFirstRowsOfASheetArriveWithItsParts() async throws {
-        let sheet = try holding("sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\nchoice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nitems=list\\n\\nitem=x\\nparent=list\\ntitle=X\\n\\n'", pause: 0.02)
+        let sheet = try holding("printf 'frame=\\nclass=gap-part\\n\\nchoice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nitems=list\\n\\nitem=x\\nparent=list\\ntitle=X\\n\\n'", pause: 0.02)
         var rowsBeforeParts: Int?
         runs.last?.partsArrival = { _, bring in
             rowsBeforeParts = sheet.list.shown.count
@@ -308,11 +318,12 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
-        let sheet = try holding("sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'", pause: 0.02)
+        let sheet = try holding("\(untilRelease)\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'", pause: 0.02)
 
         sheet.open(waits: true) {}
 
         XCTAssertTrue(sheet.isWaiting)
+        openGate()
         try await wait("the parts") { sheet.panel != nil }
         XCTAssertFalse(sheet.isWaiting)
     }
@@ -352,7 +363,7 @@ final class SpotRunTests: XCTestCase {
     func testAReadThatOthersJoinLeavesTheRows() async throws {
         let sheet = try make("""
         [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'item=a\\ntitle=A\\n'; exit 0; }
-        sleep 0.2
+        \(untilRelease)
         printf 'item=a\\ntitle=A\\n'
         """)
         sheet.show()
@@ -361,6 +372,7 @@ final class SpotRunTests: XCTestCase {
         sheet.show(need: .change)
         sheet.show(need: .change)
         XCTAssertFalse(sheet.calls.isEmpty)
+        openGate()
         var lowest = 1
         try await wait("the end of the joined read") {
             lowest = min(lowest, sheet.list.shown.count)
@@ -373,12 +385,13 @@ final class SpotRunTests: XCTestCase {
 
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {
         let first = try make(name: "first", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'\nsleep 30")
-        let second = try make(name: "second", "sleep 0.2\nprintf 'item=b\\ntitle=B\\n'")
+        let second = try make(name: "second", "\(untilRelease)\nprintf 'item=b\\ntitle=B\\n'")
 
         first.open {}
         try await wait("the first frame") { first.panel != nil }
         second.show()
         first.close()
+        openGate()
 
         try await wait("the row") { second.list.shown.count == 1 }
     }
@@ -403,10 +416,12 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnOpenSheetTakesLaterFrames() async throws {
-        let sheet = try make("printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=1\\n---\\n'")
+        let sheet = try make("printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=0\\n---\\n'\n\(untilRelease)\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=1\\n---\\n'")
 
         runs.last?.panelOpened()
         sheet.open {}
+        try await wait("the first frame") { sheet.panel?.parts.first?.title == "0" }
+        openGate()
 
         try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
     }
@@ -424,12 +439,13 @@ final class SpotRunTests: XCTestCase {
     """
 
     func testAStayingSheetOpensWithItsFirstFrame() async throws {
-        let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), mode: .stay)
+        let sheet = try make("\(untilRelease)\n" + String(format: Self.counter, path("ended")), mode: .stay)
         var isReady = false
 
         runs.last?.panelOpened()
         sheet.open { isReady = true }
         XCTAssertFalse(isReady)
+        openGate()
 
         try await wait("the first frame") { isReady }
         XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
@@ -467,7 +483,7 @@ final class SpotRunTests: XCTestCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=copy) sleep 0.2; touch '\(path("copied"))' ;;
+            arg=copy) \(untilRelease); touch '\(path("copied"))' ;;
             '') printf 'frame=\\nclass=gap-part\\nend=%s\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' "$call" ;;
           esac
         done
@@ -478,6 +494,7 @@ final class SpotRunTests: XCTestCase {
 
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
         sheet.close()
+        openGate()
 
         try await wait("the copy") { placed(at: path("copied")) }
     }
@@ -584,7 +601,6 @@ final class SpotRunTests: XCTestCase {
 
     func testTextTypedBeforeTheFirstAnswerGoesToAScriptThatSearches() async throws {
         let sheet = try make(searches: true, """
-        [ -n "$t" ] || sleep 0.2
         printf 'item=a\\ntitle=%s\\n' "${t:-none}"
         """)
 

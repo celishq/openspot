@@ -4,11 +4,12 @@ import XCTest
 @MainActor
 final class SpotRunsReadTests: SpotRunsCase {
     func testAnOpenAtLaunchWaitsForEachReadAndServesTheNextOpen() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "echo run >> '\(path("runs"))'\nsleep 0.1\nprintf 'frame=\\ntitle=Read\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true", "echo run >> '\(path("runs"))'\n\(untilRelease)\nprintf 'frame=\\ntitle=Read\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
         XCTAssertTrue(runs.isShowing)
+        openGate()
         try await wait("the answer") { !self.runs.isShowing }
         runs.panelClosed()
         runs.panelOpened()
@@ -48,24 +49,28 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testALaterFrameOfAReadWithABlockReplacesItsValue() async throws {
-        try script(toml: "", "printf 'frame=\\nmain=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'frame=\\n\\ntext=b\\ntitle=B\\n---\\n'")
+        try script(toml: "", "printf 'frame=\\nmain=m\\n\\ntext=m\\ntitle=3\\n---\\n'\n\(untilRelease)\nprintf 'frame=\\n\\ntext=b\\ntitle=B\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
 
         runs.panelOpened()
         sheet.open {}
+        try await wait("the first frame") { frames.frames.count == 1 }
+        openGate()
 
         try await wait("the later frame") { frames.last?.contains("B") == true }
         XCTAssertEqual(sheet.reading.value?.title, "B")
     }
 
     func testALaterFrameWithARootReplacesThePartsOfTheRead() async throws {
-        try script(toml: "", "printf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\nsleep 0.05\nprintf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A2\\n---\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\n\(untilRelease)\nprintf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A2\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
 
         runs.panelOpened()
         sheet.open {}
+        try await wait("the first frame") { frames.frames.count == 1 }
+        openGate()
 
         try await wait("the later frame") { frames.frames.count == 2 }
         XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a"])
@@ -73,24 +78,28 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testALaterFrameOfOnlyAHeadKeepsTheList() async throws {
-        try script(toml: "", "printf 'frame=\\ntitle=L\\n\\nitem=a\\ntitle=A\\n---\\n'\nsleep 0.05\nprintf 'frame=\\ntitle=L\\n---\\n'")
+        try script(toml: "", "printf 'frame=\\ntitle=L\\n\\nitem=a\\ntitle=A\\n---\\n'\n\(untilRelease)\nprintf 'frame=\\ntitle=L\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
 
         runs.panelOpened()
         sheet.open {}
+        try await wait("the first frame") { frames.frames.count == 1 }
+        openGate()
 
         try await wait("the later frame") { frames.frames.count == 2 }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
     }
 
     func testALaterFrameWithNoRootChangesOnlyThePartsItPrints() async throws {
-        try script(toml: "", "printf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\nsleep 0.05\nprintf 'text=a\\ntitle=A2\\n---\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\ntitle=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\n\(untilRelease)\nprintf 'text=a\\ntitle=A2\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
 
         runs.panelOpened()
         sheet.open {}
+        try await wait("the first frame") { frames.frames.count == 1 }
+        openGate()
 
         try await wait("the later frame") { frames.frames.count == 2 }
         XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a", "b"])
@@ -222,12 +231,13 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testARequestJoinsTheReadThatRuns() async throws {
-        try script(toml: "", "sleep 0.2\nprintf 'item=a\\ntitle=A\\n'")
+        try script(toml: "", "\(untilRelease)\nprintf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.show()
         sheet.show()
         sheet.show()
+        openGate()
 
         try await wait("the row") { sheet.list.shown.count == 1 }
         XCTAssertEqual(log(), ["show"])
@@ -272,22 +282,24 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASheetOpenThatTheSpotListsDuringAPanelReadReadsAgain() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true\n\"sheet.open\" = true", "sleep 0.2\n\(TestSpot.event)\necho \"$ev\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true\n\"sheet.open\" = true", "\(untilRelease)\n\(TestSpot.event)\necho \"$ev\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
         sheet.open {}
+        openGate()
 
         try await wait("the second read") { self.log("reasons").count == 2 }
         XCTAssertEqual(log("reasons").first, "panel.open")
     }
 
     func testAPanelOpenAndASheetOpenAtOnceRunOnce() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "sleep 0.2\nprintf 'frame=\\ndetail=Off\\n\\nitem=a\\ntitle=A\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true", "\(untilRelease)\nprintf 'frame=\\ndetail=Off\\n\\nitem=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
         sheet.open {}
+        openGate()
 
         try await wait("the row") { sheet.list.shown.count == 1 }
         XCTAssertEqual(log(), ["show"])
@@ -324,7 +336,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASheetWithNothingToTypeReadsAgainAfterFiveSecondsAndKeepsItsPartsMeanwhile() async throws {
-        try script(toml: "", "sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\ntext=bar\\ntitle=Go\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n'")
+        try script(toml: "", "[ -f '\(path("first"))' ] && { \(untilRelease); }\ntouch '\(path("first"))'\nprintf 'frame=\\nclass=gap-part\\n\\ntext=bar\\ntitle=Go\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -337,6 +349,7 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
         XCTAssertTrue(sheet.isShowing)
+        openGate()
         try await wait("the second read") { self.log().count == 2 && !sheet.isShowing }
         XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
     }
@@ -496,11 +509,12 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAChangeDuringARunningReadReadsOnceMoreAfterIt() async throws {
-        try script(toml: "", "sleep 0.2\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "\(untilRelease)\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.show()
         sheet.show(need: .change)
+        openGate()
 
         try await wait("two reads") { self.log() == ["show", "show"] }
     }
@@ -518,12 +532,13 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASpotShowsItsHeaderUntilItsAnswerArrives() async throws {
-        try script(toml: "detail = 'Header'\n[on]\n\"panel.open\" = true", "sleep 0.2\nprintf 'frame=\\ndetail=Answer\\n\\nswitch=power\\nclass=card:flex\\nvalue=true\\n'")
+        try script(toml: "detail = 'Header'\n[on]\n\"panel.open\" = true", "\(untilRelease)\nprintf 'frame=\\ndetail=Answer\\n\\nswitch=power\\nclass=card:flex\\nvalue=true\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
         XCTAssertEqual(sheet.state.subtitle, "Header")
         XCTAssertEqual(sheet.spot.kind, .list)
+        openGate()
 
         try await wait("the answer") { sheet.state.subtitle == "Answer" }
         XCTAssertEqual(sheet.spot.kind, .toggle)
@@ -542,7 +557,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPressBeforeTheFirstAnswerWaitsForIt() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "sleep 0.2\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         XCTAssertTrue(sheet.awaitsAnswer)
         var kind: SpotKind?

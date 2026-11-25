@@ -26,7 +26,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n' ;;
-          go) printf 'item=x\\ntitle=X\\n---\\n'; sleep 0.3; printf 'item=y\\ntitle=Y\\n' ;;
+          go) printf 'item=x\\ntitle=X\\n---\\n'; \(untilRelease); printf 'item=y\\ntitle=Y\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -34,6 +34,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try await wait("the parts") { sheet.panel?.parts.count == 2 }
 
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
+        try await wait("the first rows") { sheet.list.all.map(\.title) == ["X"] }
+        openGate()
 
         try await wait("the second rows") { sheet.list.all.map(\.title) == ["X", "Y"] }
     }

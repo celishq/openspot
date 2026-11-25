@@ -12,7 +12,7 @@ final class CaffeinateSpotTests: XCTestCase {
         let f = folder.path
         try fake("caffeinate", """
             echo "$$ $*" >> '\(f)/awake'
-            [ -f '\(f)/short' ] && exec /bin/sleep 0.3
+            [ -f '\(f)/short' ] && { n=0; while [ ! -f '\(f)/release' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done; exit 0; }
             exec /bin/sleep 600
             """)
         try fake("openspot", """
@@ -368,6 +368,8 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
 
         try await pick("1800", in: sheet)
+        try await wait("caffeinate") { self.running().count == 1 }
+        touch("release")
 
         try await wait("the end of the call") { !self.awake().isEmpty && sheet.calls.isEmpty }
         try await wait("the rows without Turn off") { sheet.list.all.first?.run == "1800" }
@@ -426,6 +428,7 @@ final class CaffeinateSpotTests: XCTestCase {
         touch("short")
 
         _ = try await holdWithTheLid()
+        touch("release")
 
         try await wait("the lid let go") { self.lidIsLetGo() }
     }

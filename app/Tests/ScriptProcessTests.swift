@@ -217,12 +217,13 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
-        let spot = try writeSpot("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
+        let spot = try writeSpot("term.sh", "#!/bin/sh\ntrap '\(untilRelease); touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: spot.url, clock: FakeClock().value)
         var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         process.stop()
+        openGate()
 
         try await wait("the clean-up and the end") { self.placed(at: folder.appendingPathComponent("cleaned").path) && !process.isRunning }
     }
@@ -240,6 +241,14 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertTrue(runs(script))
         try await pass(2, on: clock)
         try await wait("the end of the process") { !process.isRunning }
+    }
+
+    private var untilRelease: String {
+        "n=0; while [ ! -f \"\(path("release"))\" ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+    }
+
+    private func openGate() {
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
     }
 
     private func writesPid(_ name: String) -> String {
@@ -370,11 +379,15 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testACallGoesOnWhileAChildHoldsItsOutput() async throws {
-        let spot = try writeSpot("child.sh", "#!/bin/sh\n(sleep 0.3; printf 'late=1\\n') &\nexit 0\n")
+        let spot = try writeSpot("child.sh", "#!/bin/sh\n(\(untilRelease); printf 'late=1\\n') &\n\(writesPid("script"))\nexit 0\n")
 
-        let output = try await ScriptProcess.output(url: spot.url, limit: 60)
+        let output = Task { try await ScriptProcess.output(url: spot.url, limit: 60) }
+        let script = try await pid("script")
+        try await wait("the end of the script") { !self.runs(script) }
+        openGate()
 
-        XCTAssertEqual(output, "late=1\n")
+        let text = try await output.value
+        XCTAssertEqual(text, "late=1\n")
     }
 
     func testACallEndsWhenItsOutputCloses() async throws {
