@@ -69,7 +69,7 @@ final class AttachmentSpotTests: BuiltInCase {
         XCTAssertFalse(rows.contains { $0.section == "Access" })
         try await press("press", on: "access")
         let opened = await app.opened
-        XCTAssertEqual(opened, ["open openspot/settings at access"])
+        XCTAssertEqual(opened, ["settings at access"])
         let faults = try await attachments.sheetFaults(timeout: 60)
         XCTAssertEqual(faults, [])
     }

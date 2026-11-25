@@ -55,6 +55,12 @@ struct SettingsView: View {
                     .disabled(book.forward.isEmpty)
                     .help("Forward")
             }
+            ToolbarItem(placement: .navigation) {
+                Text(book.title)
+                    .font(SpotType.settingsPageTitle)
+                    .lineLimit(1)
+            }
+            .sharedBackgroundVisibility(.hidden)
         }
         .focusable()
         .focusEffectDisabled()

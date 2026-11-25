@@ -56,6 +56,14 @@ struct AppCalls {
         }
     }
 
+    func settings(at place: String?) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("app settings") }
+        return CommandAnswer.work {
+            await app.openSettings(at: place)
+            return ""
+        }
+    }
+
     func restart() -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("app restart") }
         return CommandAnswer.work {

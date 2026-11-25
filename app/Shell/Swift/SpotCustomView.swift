@@ -130,8 +130,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             "rowGap": SpotTokens.rowGap,
             "columns": SpotTokens.windowColumns,
             "tipDelay": SpotTipView.delay,
-            "theme": theme,
-            SecretLinks.key: cards.secrets(for: source) as Any
+            "theme": theme
         ]
     }
 

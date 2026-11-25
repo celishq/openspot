@@ -6,7 +6,7 @@ public enum RenderCall: NounCall {
     case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
     case panel(String, search: String?, isLight: Bool)
     case store(String)
-    case window(id: String, at: String?, path: String, isLight: Bool)
+    case settings(at: String?, path: String, isLight: Bool)
 
     private static let rule = CallRule(flags: .ownProcess)
 
@@ -30,9 +30,9 @@ public enum RenderCall: NounCall {
             return Self.panel(fit.rest[0], search: fit.value("--search"), isLight: fit.has("--light"))
         },
         CommandVerb("store", "<file.png>", "Draws the window of the Store with each spot as its card.", rule: rule) { $0.one.map(Self.store) },
-        CommandVerb("window", "<id> [--at <where>] [--light] <file.png>", "Draws the window of a spot whose sheet opens as a window, opened as `spot open --at` opens it, dark or light.", rule: rule) { words in
-            guard let fit = words.fit, fit.rest.count == 2 else { return nil }
-            return Self.window(id: fit.rest[0], at: fit.value("--at"), path: fit.rest[1], isLight: fit.has("--light"))
+        CommandVerb("settings", "[--at <where>] [--light] <file.png>", "Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light.", rule: rule) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.settings(at: fit.value("--at"), path: fit.rest[0], isLight: fit.has("--light"))
         }
     ])
 

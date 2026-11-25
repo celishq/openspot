@@ -27,11 +27,6 @@ struct SpotCardSource {
         return AnyView(SpotCornerButton(symbol: symbol, label: label, corner: .leading, size: size, onHover: { _ in }, action: action))
     }
 
-    func secrets(for source: String) -> [String: Any]? {
-        guard let model, SecretLinks.isGiven(to: source, core: model.files.spots.core) else { return nil }
-        return SecretLinks(model: model).input
-    }
-
     private static let unselectable = Int.min
 
     func size(_ id: String) -> CGSize {

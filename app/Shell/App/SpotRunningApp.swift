@@ -115,6 +115,10 @@ struct SpotRunningApp: RunningApp {
         await model.endGrant()
     }
 
+    func openSettings(at place: String?) async {
+        await model.openSettings(at: place)
+    }
+
     func restart() async -> Bool {
         await MainActor.run {
             guard let app = NSApp.delegate as? OpenspotApp else { return false }

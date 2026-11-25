@@ -72,7 +72,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has `source = [\"\(source)\"]`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source = [\"model\"]`.")
         }
         let edits = manifest.edits.flatMap(SpotEdits.init(rawValue:))
-        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\", edits = \"attachments\" or edits = \"settings\".") }
+        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\" or edits = \"attachments\".") }
         let starts = manifest.starts.flatMap(SpotStart.init(rawValue:))
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")

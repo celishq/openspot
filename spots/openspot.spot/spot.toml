@@ -107,18 +107,6 @@ uses = ["app"]
 [scripts.quit.actions.quit]
 title = "Quit"
 
-[scripts.settings]
-title = "Settings"
-icon = "gearshape"
-detail = "Access, spots, keys, look and account"
-uses = ["app", "spots", "read", "account"]
-views = ["settings.swift"]
-window = "settings"
-edits = "settings"
-
-[scripts.settings.on]
-"sheet.open" = true
-
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"

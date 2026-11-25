@@ -43,6 +43,7 @@ Its sidebar holds seven sections:
 - A switch changes at once. A field keeps its value when you press Return, and an empty field removes it.
 - The search field at the top of the sidebar finds a row in every section. A click on a result opens its page.
 - The panel's search finds each row too. Return on one opens Settings at the row.
+- `openspot app settings --at <where>` opens Settings at a place, such as `access/screen`, `spot/notes` or `keys`.
 - `openspot setting list` prints each row, and `openspot setting set` changes the same values: `enabled`, `menubar`,
   `window`, `open`, `float` and `key.<action>` of a spot.
 

@@ -73,6 +73,10 @@ actor FakeRunningApp: RunningApp {
         themes.append(theme)
     }
 
+    func openSettings(at place: String?) {
+        opened.append((["settings"] + (place.map { ["at", $0] } ?? [])).joined(separator: " "))
+    }
+
     func open(_ id: String, at: String?) -> Bool {
         opened.append((["open", id] + (at.map { ["at", $0] } ?? [])).joined(separator: " "))
         return id != "gone"

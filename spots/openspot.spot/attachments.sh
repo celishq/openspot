@@ -38,7 +38,7 @@ case "$1" in
   show) list ;;
   press)
     case "$source" in
-      access) exec openspot spot open openspot/settings --at access ;;
+      access) exec openspot app settings --at access ;;
       *)
         if [ "$(field "$source" own)" = true ]; then
           openspot toast 'This source is in your spots folder, so it is always on.'

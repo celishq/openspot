@@ -41,7 +41,7 @@ fail in it:
 - calls that change Openspot or its places: `app quit`, `app restart`, each call of `theme` but `theme list` and
   `theme open`, `update install`, `spot allow`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
-- calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`,
+- calls that open a window or the panel: `app settings`, `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`,
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
   `reminders show`.
 
@@ -104,7 +104,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
 | `openspot render spot <id> <file.png>` | Draws the sheet of an installed spot, or with `--card <size>` its card, in the dark appearance, or the light one with `--light`. |
 | `openspot render panel [--search <words>] [--light] <file.png>` | Draws the panel with each installed spot on its grid, or with what a search finds, dark or light. |
-| `openspot render window <id> [--at <where>] [--light] <file.png>` | Draws the window of a spot whose sheet opens as a window, opened as `spot open --at` opens it, dark or light. |
+| `openspot render settings [--at <where>] [--light] <file.png>` | Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light. |
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
@@ -124,6 +124,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot theme <verb>`                            | Lists the themes, and uses, makes and changes one: `list`, `use`, `new`, `duplicate`, `rename`, `delete`, `open` and `reload`. |
 | `openspot theme list [--json]` | Prints an `item=<name>` record for each theme, with `builtin=true` and `used=true` where they hold, and its colours: `dark.background=`, `dark.ink=`, `dark.accent=`, and the same of `light`. |
 | `openspot app restart` | Ends the running app and starts it again. A guided grant at a step that needs the start, such as Screen Recording, opens again at that step. |
+| `openspot app settings [--at <where>]` | Opens the Settings window, at a place when one is given: `access`, `access/<id>`, `spot/<id>`, `row/<spot>/<key>`, `keys`, `look`, `account`, `general`, `developer` or `search/<words>`. |
 | `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish.                             |
 | `openspot account new [<handle>]` | Makes the account key, with the handle, and prints the account's record. Only Openspot's own spots can run it. |
 | `openspot account sign-out` | Removes the account key from this Mac. Only Openspot's own spots can run it. |

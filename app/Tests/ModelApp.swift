@@ -29,4 +29,5 @@ struct ModelApp: RunningApp {
     func grant(_ id: String, needs: [MacAccess]) async -> Bool { await model.grant(id, needs: needs) }
     func grant() async -> AccessGrant? { await model.grant }
     func endGrant() async { await model.endGrant() }
+    func openSettings(at place: String?) async { await model.openSettings(at: place) }
 }

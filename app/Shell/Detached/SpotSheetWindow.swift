@@ -74,7 +74,6 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         let window = make(remembers: false, title: "Settings", name: "settings-window", size: size.size, minSize: size.minSize, bridges: true, content: content)
         window.book = model.settingsBook
         window.declared = size.size
-        window.titleVisibility = .visible
         window.titlebarAppearsTransparent = false
         window.toolbarStyle = .unified
         window.isOpaque = true

@@ -10,6 +10,7 @@ extension SpotType {
     static let settingsNumber = Font.system(size: 12, weight: .semibold)
     static let settingsTitle = Font.title2.weight(.semibold)
     static let settingsHeader = Font.title3.weight(.semibold)
+    static let settingsPageTitle = Font.system(size: 15, weight: .semibold)
     static let settingsTileShare: CGFloat = 0.52
     static let settingsSymbolShare: CGFloat = 0.5
     static let settingsGlyphShare: CGFloat = 0.55
