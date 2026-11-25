@@ -102,7 +102,7 @@ struct SpotSheetLayer: View {
     }
 
     private var closingPage: SheetPage? {
-        isOpen ? nil : model.closingPage.flatMap { $0.spot == entry.id ? $0 : nil }
+        isOpen ? nil : model.closingSheet.flatMap { $0.page.spot == entry.id ? $0.page : nil }
     }
 
     private var progress: Double {

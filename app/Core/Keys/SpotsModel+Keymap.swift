@@ -1,5 +1,4 @@
 import Foundation
-import Observation
 
 extension SpotsModel {
     func takeMode() {
@@ -40,29 +39,6 @@ extension SpotsModel {
         case .form: formRows
         case .sheet, .grid: spotRows
         }
-    }
-
-    public var hint: String {
-        if recording != nil { return KeyRow.hint(of: keyRows(of: .recording)) }
-        if isEditing { return KeyRow.hint(of: keyRows(of: .edit)) }
-        if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        let escape = KeyRow.hint(of: [escapeRow])
-        if let parts = openParts, !parts.showsRows || parts.drawsKeys {
-            let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
-        }
-        if content != .attachment, let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
-        if let slashHint { return slashHint }
-        if content == .attachment, let attachmentHint { return attachmentHint }
-        if let soleHint { return soleHint }
-        let keys = target.flatMap { target in
-            actionMenu(on: target)?.hint(
-                stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
-                second: [settingsRow.hint].compactMap { $0 }
-            )
-        } ?? escape
-        let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
-        return attachmentHint.map { "\($0)   \(shown)" } ?? shown
     }
 
     private var recordingRows: [KeyRow] {
@@ -188,11 +164,11 @@ extension SpotsModel {
         ]
     }
 
-    private var escapeWords: String {
+    var escapeWords: String {
         flow.behind == nil ? "Close" : "Back"
     }
 
-    private var escapeRow: KeyRow {
+    var escapeRow: KeyRow {
         KeyRow("escape", words: escapeWords) { [self] _ in
             if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
                 run(action, on: target)
@@ -203,7 +179,7 @@ extension SpotsModel {
         }
     }
 
-    private var settingsRow: KeyRow {
+    var settingsRow: KeyRow {
         let shows = target.map { openSheetID == nil && $0.item == nil && settingsSheet(of: $0.entry) != nil } ?? false
         return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
             openSelectedSettings() ? true : nil
@@ -213,9 +189,6 @@ extension SpotsModel {
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
             .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
-            KeyRow("z", command: true) { [self] _ in
-                openSheetID == nil && searchText.isEmpty && undoRemoval() ? true : nil
-            },
             settingsRow,
         ]
         let parts = openParts
@@ -275,7 +248,7 @@ extension SpotsModel {
         return rows
     }
 
-    private var confirmRow: KeyRow {
+    var confirmRow: KeyRow {
         KeyRow("return", shift: nil, words: waitingWords) { [self] _ in runConfirmed() ? true : nil }
     }
 
@@ -342,52 +315,5 @@ extension SpotsModel {
             moveSelection(dx: step, dy: 0)
         }
         return true
-    }
-
-    public func followHint() {
-        guard !followsHint else { return }
-        followsHint = true
-        takeHint()
-    }
-
-    func asOnePress<T>(_ work: () -> T) -> T {
-        pressDepth += 1
-        defer {
-            pressDepth -= 1
-            if pressDepth == 0, hintIsStale { takeHint() }
-        }
-        return work()
-    }
-
-    private func takeHint() {
-        hintIsStale = false
-        place(HintWords(withObservationTracking { hint } onChange: { [weak self] in
-            MainActor.assumeIsolated { self?.staleHint() }
-        }))
-    }
-
-    private func staleHint() {
-        hintIsStale = true
-        guard pressDepth == 0 else { return }
-        Task { @MainActor [weak self] in
-            guard let self, hintIsStale else { return }
-            takeHint()
-        }
-    }
-
-    private func place(_ words: HintWords) {
-        hintTakes += 1
-        let onSheet = openSheetID != nil || spotDrop != nil
-        guard words != (onSheet ? sheetHint : gridHint) else { return }
-        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
-        hintIsForEdit = isEditing
-        change(motion, { if onSheet { sheetHint = words } else { gridHint = words } })
-    }
-
-    var selectedGlyphTitle: String? {
-        guard openSheetID == nil, let entry = selectedEntry,
-              placements.first(where: { $0.index == selected })?.size == .small
-        else { return nil }
-        return entry.state.title
     }
 }

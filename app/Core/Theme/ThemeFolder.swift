@@ -132,12 +132,12 @@ public struct ThemeFolder: Sendable {
     }
 
     @discardableResult
-    public func delete(_ name: String, trash: (URL) throws -> URL = AppPlaces.systemTrash) throws -> Bool {
+    public func delete(_ name: String, trash: (URL) throws -> Void = AppPlaces.systemTrash) throws -> Bool {
         let scan = scan()
         let found = try find(name, in: scan)
         guard !found.isBuiltIn else { throw SpotError.failed(1, "The theme \(found.name) is built in, so it cannot be deleted.") }
         let isInUse = readInUse(in: scan) == found.name
-        _ = try trash(folder(of: found.name))
+        try trash(folder(of: found.name))
         if isInUse { try config.change { $0.set(theme: Self.builtInName) } }
         return isInUse
     }

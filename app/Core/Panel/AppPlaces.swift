@@ -4,7 +4,7 @@ public struct AppPlaces: Sendable {
     public let environment: [String: String]
     public let home: URL
     nonisolated(unsafe) public let defaults: UserDefaults
-    public let trash: @Sendable (URL) throws -> URL
+    public let trash: @Sendable (URL) throws -> Void
     public let kinds: @Sendable ([String]) -> FileKinds
     public let defaultConfig: URL?
     public let account: AccountStore
@@ -21,7 +21,7 @@ public struct AppPlaces: Sendable {
         environment: [String: String],
         home: URL,
         defaults: UserDefaults,
-        trash: @escaping @Sendable (URL) throws -> URL = AppPlaces.systemTrash,
+        trash: @escaping @Sendable (URL) throws -> Void = AppPlaces.systemTrash,
         kinds: @escaping @Sendable ([String]) -> FileKinds = { FileKinds.Disk().read($0) },
         defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml"),
         disk: any ConfigDisk = LocalDisk()
@@ -44,10 +44,8 @@ public struct AppPlaces: Sendable {
         lock = .standard(environment: environment, home: home)
     }
 
-    public static func systemTrash(_ url: URL) throws -> URL {
-        var place: NSURL?
-        try FileManager.default.trashItem(at: url, resultingItemURL: &place)
-        return (place as URL?) ?? url
+    public static func systemTrash(_ url: URL) throws {
+        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
     }
 
     public static var standard: AppPlaces {

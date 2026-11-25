@@ -28,7 +28,7 @@ final class FlowNavigationTests: PanelCase {
     func testEscClearsTheSearchThenStepsBackThenClosesTheSheet() async throws {
         try await openList()
         try await openPage()
-        model.searchText = "de"
+        model.search("de")
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.searchText, "")

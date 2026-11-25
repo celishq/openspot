@@ -281,9 +281,9 @@ final class AttachmentReadTests: AttachmentCase {
         try pickSource(runs: "\(cli) attachment add \(add)")
         await open()
 
-        model.searchText = "k"
+        model.search("k")
         XCTAssertTrue(model.isAttachmentHidden)
-        model.searchText = ""
+        model.search("")
         XCTAssertFalse(model.isAttachmentHidden)
         XCTAssertEqual(log("tab-log"), [])
     }

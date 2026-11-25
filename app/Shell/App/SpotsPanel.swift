@@ -16,6 +16,17 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.isDisjoint(with: [.option, .control]), let key = event.actionKey else { return super.performKeyEquivalent(with: event) }
+        if key == ActionKey(name: "v", isCommand: true), model?.isShown == true, model?.pasteSpot() == true { return true }
+        if super.performKeyEquivalent(with: event) { return true }
+        guard isKeyWindow, firstResponder is NSText, let item = EditMenu.item(of: key), let action = item.action,
+              let target = NSApp.target(forAction: action, to: nil, from: item) as? NSResponder,
+              (target as? NSUserInterfaceValidations)?.validateUserInterfaceItem(item) ?? true
+        else { return false }
+        return NSApp.sendAction(action, to: target, from: item)
+    }
+
     func warm(then done: @escaping () -> Void) {
         model?.isWarming = true
         alphaValue = 0
@@ -283,15 +294,6 @@ final class SpotsPanel: NSPanel {
         }
     }
 
-    private func watchPaste(model: SpotsModel) {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
-            let isTaken = MainActor.assumeIsolated {
-                event.keyModifiers == .command && event.actionKey?.name == "v" && model?.isShown == true && model?.pasteSpot() == true
-            }
-            return isTaken ? nil : event
-        }
-    }
-
     private static let plainCursors: Void = {
         typealias Draw = @convention(c) (NSView, Selector) -> Void
         let selector = #selector(NSView.updateLayer)
@@ -327,7 +329,6 @@ final class SpotsPanel: NSPanel {
         let hosting = NSHostingView(rootView: SpotsWindowView(model: model, place: panel.place))
         hosting.sizingOptions = []
         panel.contentView = hosting
-        panel.watchPaste(model: model)
         panel.watchFrontApp(model: model)
         panel.watchInputSource(model: model)
         panel.center()

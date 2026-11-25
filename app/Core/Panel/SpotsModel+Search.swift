@@ -58,14 +58,14 @@ extension SpotsModel {
             if slash != nil { slash = nil }
             content = .attachment
             foundSpots = []
-            show(attachmentRows())
+            takeVisible(attachmentRows())
             return
         }
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
             content = .cards
             foundSpots = []
-            return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
+            return takeVisible(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
         }
         indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
@@ -76,7 +76,7 @@ extension SpotsModel {
         content = rows.isEmpty ? .search : .slash
         if !rows.isEmpty {
             foundSpots = []
-            return show(rows)
+            return takeVisible(rows)
         }
         var ids = Set<String>()
         let answering = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
@@ -94,7 +94,7 @@ extension SpotsModel {
             sources: sources.map(\.spot),
             isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
-        land(ask)
+        takeFound(ask)
     }
 
     private func indexSpots() {
@@ -109,7 +109,7 @@ extension SpotsModel {
         answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
-    private func land(_ ask: SearchAsk) {
+    private func takeFound(_ ask: SearchAsk) {
         let found = ask.found()
         mainSearch = found.search
         let ids = Set(ask.answers.map(\.id))
@@ -122,12 +122,12 @@ extension SpotsModel {
             holdsRows = true
             return
         }
-        show(next)
+        takeVisible(next)
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
-    private func show(_ next: [Entry]) {
+    private func takeVisible(_ next: [Entry]) {
         holdsRows = false
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
@@ -140,7 +140,6 @@ extension SpotsModel {
             laidOutTop = top
             placements = grid.place(sizes).map { $0.dropped(by: top) }
         }
-        if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
     func mayMove(_ id: String) -> Bool {
@@ -160,6 +159,7 @@ extension SpotsModel {
     }
 
     func takeQuery(_ text: String) {
+        hideAttachments(for: text)
         hold(shownPreview(of: text), motion: .edit)
         query = text
     }
@@ -179,21 +179,21 @@ extension SpotsModel {
     }
 
     public var searchText: String {
-        get { form?.draft.choices?.query ?? openSheet?.query ?? query }
-        set {
-            asOnePress {
-                if form?.draft.choices != nil {
-                    form?.draft.search(newValue)
-                } else if let file = SpotPackage.file(in: newValue) {
-                    takeQuery("")
-                    openSheet?.search("")
-                    DispatchQueue.main.async { self.review([file]) }
-                } else if let openSheet {
-                    openSheet.search(newValue)
-                } else {
-                    takeQuery(newValue)
-                }
-                hideAttachments()
+        form?.draft.choices?.query ?? openSheet?.query ?? query
+    }
+
+    public func search(_ text: String) {
+        asOnePress {
+            if form?.draft.choices != nil {
+                form?.draft.search(text)
+            } else if let file = SpotPackage.file(in: text) {
+                takeQuery("")
+                openSheet?.search("")
+                DispatchQueue.main.async { self.review([file]) }
+            } else if let openSheet {
+                openSheet.search(text)
+            } else {
+                takeQuery(text)
             }
         }
     }

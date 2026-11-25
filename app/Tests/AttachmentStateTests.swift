@@ -42,13 +42,13 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         XCTAssertFalse(model.isAttachmentHidden)
 
-        model.searchText = "k"
+        model.search("k")
         XCTAssertTrue(model.isAttachmentHidden)
-        model.searchText = ""
+        model.search("")
         XCTAssertFalse(model.isAttachmentHidden)
 
         XCTAssertTrue(model.handleKey(tab))
-        model.searchText = "k"
+        model.search("k")
         XCTAssertFalse(model.isAttachmentHidden)
     }
 
@@ -65,12 +65,22 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         let writes = host.hiddenWrites.count
 
-        model.searchText = "k"
+        model.search("k")
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertFalse(model.isAttachmentHidden)
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.motion), [.fade, .fade])
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.depth), [0, 0])
+    }
+
+    func testTheFadeOfTheStackIsTheFirstChangeOfTheTypedLetter() async throws {
+        try await openWithTab()
+        let writes = host.hiddenWrites.count
+
+        model.search("k")
+
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.query), [""])
+        XCTAssertEqual(model.query, "k")
     }
 
     func testAWriteOfTheQueryThatLeavesTheChipsMakesNoChangeOfItsOwn() async throws {
@@ -100,7 +110,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
         let writes = host.previewWrites.count
 
-        model.searchText = "/"
+        model.search("/")
 
         XCTAssertNil(model.preview)
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
@@ -145,7 +155,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.attachments.selected, "tab")
         XCTAssertEqual(model.hintTakes - takes, 1)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
-        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertEqual(host.hintWrites.count, writes)
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
@@ -209,7 +219,7 @@ final class AttachmentStateTests: AttachmentCase {
         let builds = model.previewBuilds
 
         for text in ["s", "sa", "sav"] {
-            model.searchText = text
+            model.search(text)
         }
 
         XCTAssertEqual(model.commands.fits, fits)

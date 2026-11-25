@@ -144,7 +144,7 @@ public final class SpotsModel {
         }
     }
     public internal(set) var flowEdges = FlowEdges()
-    public internal(set) var closingPage: SheetPage?
+    public internal(set) var closingSheet: ClosingSheet?
     @ObservationIgnored var edgeStep = 0
     @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
@@ -152,6 +152,7 @@ public final class SpotsModel {
         didSet {
             if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
             holdBackdropSheet()
+            if transition.phase != .closing, closingSheet != nil { closingSheet = nil }
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
@@ -262,7 +263,7 @@ public final class SpotsModel {
     public internal(set) var sheetHint = HintWords("")
     @ObservationIgnored var hintIsForEdit = false
     @ObservationIgnored var followsHint = false
-    @ObservationIgnored var hintTakes = 0
+    @ObservationIgnored public internal(set) var hintTakes = 0
     @ObservationIgnored var hintIsStale = false
     @ObservationIgnored var pressDepth = 0
     public var form: FormSession? {
@@ -318,8 +319,6 @@ public final class SpotsModel {
         }
     }
     @ObservationIgnored private(set) var gridBuilds = 0
-    @ObservationIgnored var removal: Removal?
-    @ObservationIgnored var removals = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
 
     @ObservationIgnored public unowned let host: SpotsHost
@@ -469,7 +468,6 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
-        hideAttachments()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }

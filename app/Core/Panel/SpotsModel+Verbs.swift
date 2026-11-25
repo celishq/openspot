@@ -1,15 +1,6 @@
 import Foundation
 
 extension SpotsModel {
-    struct Removal {
-        let id: String
-        let words: String
-        let moves: [(from: URL, to: URL)]
-        var secrets: SecretStore.Values = [:]
-    }
-
-    static let undoKey = ActionKey(name: "z", isCommand: true)
-
     private func file(of entry: Entry) -> URL {
         entry.spot.fault?.file ?? entry.spot.url
     }
@@ -62,65 +53,33 @@ extension SpotsModel {
     func remove(_ entry: Entry) {
         closeSheet(moving: isShown)
         let command = entry.spot.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.spot
-        let words = command.name
-        let id = entry.id
         let folder = folder
         let ids = Set(entries.filter { $0.spot.url == entry.spot.url }.map(\.spot.id) + [entry.id])
-        removal = nil
-        removals += 1
-        let turn = removals
         let trash = files.trash
         let log = files.log
         let secrets = files.secrets
         Task {
-            let (moves, kept, failure) = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, of: ids)
-            if turn == removals { removal = failure == nil || !moves.isEmpty ? Removal(id: id, words: words, moves: moves, secrets: kept) : nil }
+            let failure = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, of: ids)
             await reload()
             if let failure {
                 toast(.failure("\(command.name) was not removed. \(failure)"))
             } else {
-                toast("Moved \(words) to the Trash. Press `⌘Z` to put it back.")
+                toast("Moved \(command.name) to the Trash.")
             }
         }
     }
 
     @concurrent
     private nonisolated static func discard(
-        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> URL, log: CallLog, secrets: SecretStore, of ids: Set<String>
-    ) async -> (moves: [(from: URL, to: URL)], secrets: SecretStore.Values, failure: String?) {
-        var moves: [(from: URL, to: URL)] = []
+        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, of ids: Set<String>
+    ) async -> String? {
         do {
-            try folder.remove(spot) { url in moves.append((url, try trash(url))) }
+            try folder.remove(spot, discard: trash)
             log.remove(spot.id)
-            return (moves, try secrets.remove { ids.contains($0) }, nil)
+            try secrets.remove { ids.contains($0) }
+            return nil
         } catch {
-            return (moves, [:], reason(error))
-        }
-    }
-
-    func undoRemoval() -> Bool {
-        guard let removal else { return false }
-        self.removal = nil
-        let chosen = selectedEntry?.id
-        Task {
-            guard await Self.putBack(removal.moves, secrets: removal.secrets, in: files.secrets) else {
-                return toast(.failure("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder."))
-            }
-            await reload()
-            if selectedEntry?.id == chosen, let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
-            toast("Put \(removal.words) back.")
-        }
-        return true
-    }
-
-    @concurrent
-    private nonisolated static func putBack(_ moves: [(from: URL, to: URL)], secrets: SecretStore.Values, in store: SecretStore) async -> Bool {
-        do {
-            for move in moves.reversed() { try FileManager.default.moveItem(at: move.to, to: move.from) }
-            try store.putBack(secrets)
-            return true
-        } catch {
-            return false
+            return reason(error)
         }
     }
 }

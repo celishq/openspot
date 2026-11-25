@@ -56,6 +56,7 @@ extension SpotsModel {
 
     public func sheetEntry(_ id: String?) -> Entry? {
         guard let id else { return nil }
+        if let held = leavingSheet(id) { return held.entry }
         if let entry = entry(id) { return entry }
         guard OwnedSheet.owner(of: id) != nil, let run = sheets[id] else { return nil }
         return Entry(spot: run.spot, run: run)
@@ -68,7 +69,7 @@ extension SpotsModel {
     public func stepBack() -> Bool {
         asOnePress {
             if !searchText.isEmpty {
-                searchText = ""
+                search("")
             } else if popPage() {
             } else if openSheetID != nil {
                 closeSheet(moving: isShown)
@@ -130,15 +131,22 @@ extension SpotsModel {
         present(id, moving: moving)
     }
 
+    func leavingSheet(_ id: String?) -> ClosingSheet? {
+        guard transition.phase == .closing, let held = closingSheet, held.id == id else { return nil }
+        return held
+    }
+
     func present(_ id: String, moving: Bool) {
-        closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
         asOnePress {
-            closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
+            let closing = moving ? openSheetID.flatMap { id in
+                sheets[id].map { ClosingSheet(id: id, page: SheetPage(run: $0, rect: $0.sheetRect, query: searchText), entry: sheetEntry(id)) }
+            } : nil
+            if closing != closingSheet { closingSheet = closing }
             pendingAsk = nil
             keys.status = nil
             askedAnswer = nil
@@ -188,7 +196,7 @@ extension SpotsModel {
                 change(moving ? .sheet(isOpen: true) : nil, {
                     transition.show(list, moves: true)
                 }) { [weak self] in
-                    self?.change(nil) { self?.transition.settle(list) }
+                    self?.snap { self?.transition.settle(list) }
                 }
                 return
             }
@@ -206,7 +214,7 @@ extension SpotsModel {
                 return
             }
             closeMenu(keepsFoot: true)
-            change(nil) {
+            snap {
                 transition.show(list, moves: true, page: flow.current)
                 holdFieldDrop()
             }
@@ -217,7 +225,7 @@ extension SpotsModel {
     }
 
     func cutSheet(to list: String?) {
-        change(nil) {
+        snap {
             if let list { transition.show(list, moves: false, page: flow.current) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
@@ -238,7 +246,7 @@ extension SpotsModel {
         }) { [weak self] in
             guard let self else { return }
             let isInstall = transition.id != nil && transition.id == fieldSheet
-            change(nil) {
+            snap {
                 self.transition.finish(motion)
                 if isInstall, self.transition.phase == .open {
                     self.fieldDrop = nil
@@ -246,10 +254,7 @@ extension SpotsModel {
                 }
             }
             if isInstall, transition.phase == .closed { hideFieldDrop() }
-            if transition.phase == .closed {
-                endReview()
-                closingPage = nil
-            }
+            if transition.phase == .closed { endReview() }
         }
     }
 
@@ -285,6 +290,10 @@ extension SpotsModel {
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
         host.change(motion, body, completion: completion)
+    }
+
+    func snap(_ body: () -> Void) {
+        host.change(nil, body, completion: {})
     }
 
     public func moveItemToEdge(last: Bool) {
