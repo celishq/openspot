@@ -532,6 +532,37 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertNil(sheet.list.loadingWords)
     }
 
+    func testTheLimitOfACallToAStayingSpotStartsWhenItsBuildEnds() async throws {
+        let swift = try cachingWithTools("int main(void) { char line[64]; while (fgets(line, sizeof line, stdin)) {} return 0; }")
+        let release = folder.appendingPathComponent("release").path
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("swiftc"), to: tools.appendingPathComponent("held-swiftc"))
+        try "#!/bin/sh\nn=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done\nexec '\(tools.path)/held-swiftc' \"$@\"\n"
+            .writeScript(to: tools.appendingPathComponent("swiftc"))
+        let clock = FakeClock()
+        let runs = SpotRuns(clock: clock.value, swift: swift)
+        defer { runs.quit() }
+        let sheet = runs.sheet(for: try stayingSpot())
+        runs.panelOpened()
+        sheet.open {}
+        let link = try XCTUnwrap(sheet.link as? StayMode)
+
+        let form = Task { try? await sheet.answer(to: Message("look", inputs: []), key: "look") }
+        defer { form.cancel() }
+        try await wait("the call of the form") { link.records.values.contains { $0.isForm } }
+        let record = try XCTUnwrap(link.records.values.first { $0.isForm })
+        XCTAssertNil(record.timer)
+        clock.advance(by: 60)
+        FileManager.default.createFile(atPath: release, contents: Data())
+        try await wait("the limit armed once the program runs") { record.timer != nil }
+        XCTAssertFalse(record.isDropped)
+        try await wait("the sleep of the limit") { clock.isSleeping(for: 10) }
+        clock.advance(by: 10)
+        await record.timer?.value
+
+        XCTAssertTrue(record.isDropped)
+    }
+
     func testASwiftSpotIsBuiltFromItsFileAndEachSourceItsHeaderNames() async throws {
         let spot = try spotOfSeveralFiles()
         let runs = SpotRuns(swift: SwiftProgram(cache: cache))

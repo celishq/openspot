@@ -260,6 +260,10 @@ public final class ScriptProcess: @unchecked Sendable {
         return ProcessTime(of: id) ?? .zero
     }
 
+    var hasStarted: Bool {
+        lock.withLock { id > 0 }
+    }
+
     func onStart(_ handler: @escaping @Sendable (pid_t) -> Void) {
         lock.withLock { startHandlers.append(handler) }
     }

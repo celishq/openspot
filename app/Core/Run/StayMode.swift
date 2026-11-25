@@ -180,6 +180,9 @@ final class StayMode: ScriptMode {
         guard let run, givenUp == nil else { return }
         let (script, frames, caller) = runs.stay(run.spot, limit: runs.showLimit)
         self.script = script
+        script.onStart { [weak self, weak script] _ in
+            Task { @MainActor in if let script { self?.started(script) } }
+        }
         self.caller = caller
         drawn = nil
         slowAsks = 0
@@ -211,7 +214,7 @@ final class StayMode: ScriptMode {
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
         guard isTimed else { return }
-        if isHeld {
+        if isHeld || !script.hasStarted {
             record.left = runs.showLimit
         } else {
             arm(id, record, for: runs.showLimit, on: script)
@@ -240,16 +243,23 @@ final class StayMode: ScriptMode {
 
     func releaseLimit() {
         isHeld = false
-        if let script {
-            for (id, record) in records where !record.isDropped {
-                guard let left = record.left else { continue }
-                record.left = nil
-                arm(id, record, for: left, on: script)
-            }
-        }
+        if let script, script.hasStarted { armLeft(on: script) }
         guard asksAfterHold else { return }
         asksAfterHold = false
         run?.askAnswer()
+    }
+
+    private func started(_ started: ScriptProcess) {
+        guard script === started, !isHeld else { return }
+        armLeft(on: started)
+    }
+
+    private func armLeft(on script: ScriptProcess) {
+        for (id, record) in records where !record.isDropped {
+            guard let left = record.left else { continue }
+            record.left = nil
+            arm(id, record, for: left, on: script)
+        }
     }
 
     private func noteReason() {

@@ -20,7 +20,7 @@ final class SpotSettingsSheetTests: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, swift: SwiftProgram(cache: folder.appendingPathComponent("swift", isDirectory: true))))
         host.model = model
     }
 
@@ -120,7 +120,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(row.subtitle, "Gold")
         model.runItem(row)
 
-        try await wait("the looks", seconds: 600) { model.form?.draft.form.soleChoice != nil }
+        try await wait("the looks", seconds: 60) { model.form?.draft.form.soleChoice != nil }
         XCTAssertEqual(model.form?.draft.form.soleChoice?.options.map(\.id), ["colorful", "gold", "metallic"])
         XCTAssertEqual(model.form?.draft.form.soleChoice?.value, "gold")
     }
