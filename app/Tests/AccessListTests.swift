@@ -106,6 +106,19 @@ final class AccessListTests: XCTestCase {
         XCTAssertNil(found["plain"]?["uses"])
     }
 
+    func testSpotListPrintsUnderEachUseTheAccessItsCallsNeedAllowedOrNot() async throws {
+        accesses.set(.screen, to: .allowed)
+
+        let answer = try await call(["spot", "list"], api: api())
+        let found = records(answer.output)
+
+        XCTAssertEqual(found["shot"]?["access.screen"], "screen")
+        XCTAssertEqual(found["shot"]?["maybe.screen"], "camera,microphone,input")
+        XCTAssertNil(found["shot"]?["access.clipboard"])
+        XCTAssertEqual(found["lid"]?["access.power"], "helper")
+        XCTAssertNil(found["pick"]?["access.screen"])
+    }
+
     func testTheCoreListPrintsOffForASpotThatIsNotOn() async throws {
         try "#!/bin/sh\nopenspot power lid-closed\n".writeScript(to: core.appendingPathComponent("awake.spot/awake.sh"), toml: "uses = ['power', 'attachment']")
         accesses.set(.helper, to: .denied)

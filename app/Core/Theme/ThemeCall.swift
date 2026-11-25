@@ -30,11 +30,24 @@ enum ThemeCall: NounCall, Equatable {
     ])
 
     private struct PrintedTheme: PrintedRecord {
+        struct Swatch: Encodable {
+            let background, ink, accent: String
+
+            init(_ appearance: Theme.Appearance) {
+                (background, ink, accent) = (appearance.background.text, appearance.ink.text, appearance.accent.text)
+            }
+
+            func fields(_ name: String) -> [(String, String?)] {
+                [("\(name).background", background), ("\(name).ink", ink), ("\(name).accent", accent)]
+            }
+        }
+
         let theme: String
         let builtin, used: Bool
+        let dark, light: Swatch
 
         var blocks: [[(String, String?)]] {
-            [[("item", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)]]
+            [[("item", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)] + dark.fields("dark") + light.fields("light")]
         }
     }
 
@@ -51,7 +64,10 @@ enum ThemeCall: NounCall, Equatable {
         case .list(let form):
             CommandAnswer.work {
                 let used = themes.readInUse()
-                return try form.text(of: themes.scan().items.map { PrintedTheme(theme: $0.name, builtin: $0.isBuiltIn, used: $0.name == used) })
+                return try form.text(of: themes.scan().items.map { item in
+                    let colours = ThemeFolder.read(builtIn: themes.builtIn, copy: item.file).colours
+                    return PrintedTheme(theme: item.name, builtin: item.isBuiltIn, used: item.name == used, dark: .init(colours.dark), light: .init(colours.light))
+                })
             }
         case .use(let name):
             CommandAnswer.work { try await draw("Switched to the theme \(try themes.use(name)).") }

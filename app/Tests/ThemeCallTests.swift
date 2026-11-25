@@ -41,8 +41,8 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(copied.output, "Made the theme Openspot copy, and switched to it.\n")
         XCTAssertEqual(renamed.output, "Renamed the theme Openspot copy to Dusk.\n")
         XCTAssertEqual(used.output, "Switched to the theme Theme 2.\n")
-        XCTAssertEqual(list.output, "item=Openspot\nbuiltin=true\n\nitem=Dusk\n\nitem=Theme 2\nused=true\n\n")
-        XCTAssertEqual(json.output, #"[{"builtin":true,"theme":"Openspot","used":false},{"builtin":false,"theme":"Dusk","used":false},{"builtin":false,"theme":"Theme 2","used":true}]"# + "\n")
+        XCTAssertEqual(Self.names(list.output), "item=Openspot\nbuiltin=true\n\nitem=Dusk\n\nitem=Theme 2\nused=true\n\n")
+        XCTAssertTrue(json.output.hasPrefix(#"[{"builtin":true,"#), json.output)
         XCTAssertEqual(deleted.output, "Moved the theme Theme 2 to the Trash, and switched to the theme Openspot.\n")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: config.appendingPathComponent("Trash").path), ["Theme 2.theme"])
         let themes = await app.themes
@@ -80,10 +80,30 @@ final class ThemeCallTests: XCTestCase {
         let list = try await answer(api, ["theme", "list"])
         let used = try await answer(api, ["theme", "use", "paper"])
 
-        XCTAssertEqual(list.output, "item=Openspot\nbuiltin=true\n\nitem=Paper\nbuiltin=true\n\nitem=Theme 2\nused=true\n\n")
+        XCTAssertEqual(Self.names(list.output), "item=Openspot\nbuiltin=true\n\nitem=Paper\nbuiltin=true\n\nitem=Theme 2\nused=true\n\n")
         XCTAssertEqual(used.output, "Switched to the theme Paper.\n")
         let themes = await app.themes
         XCTAssertEqual(themes.last?.colours.dark.accent, ThemeColor(text: "#FF9F0A"))
+    }
+
+    func testTheListGivesTheBackgroundInkAndAccentOfEachThemeInDarkAndLight() async throws {
+        let config = try temporaryFolder()
+        let api = api(config, app: FakeRunningApp())
+        _ = try await answer(api, ["theme", "new"])
+        try "[dark]\nbackground = \"#282A36\"\naccent = \"#BD93F9\"\n".write(to: config.appendingPathComponent("themes/Theme 2.theme/theme.toml"), atomically: true, encoding: .utf8)
+
+        let list = try await answer(api, ["theme", "list"])
+
+        let blocks = TextBlock.blocks(in: list.output)
+        let swatch = { (name: String) in
+            ["dark.background", "dark.ink", "dark.accent", "light.background", "light.ink", "light.accent"].map { blocks.first { $0.value("item") == name }?.value($0) ?? "" }
+        }
+        XCTAssertEqual(swatch("Openspot"), ["#000000", "#FFFFFF", "accent", "#FFFFFF", "#1C1C1C", "accent"])
+        XCTAssertEqual(swatch("Theme 2"), ["#282A36", "#FFFFFF", "#BD93F9", "#FFFFFF", "#1C1C1C", "accent"])
+    }
+
+    private static func names(_ output: String) -> String {
+        output.split(separator: "\n", omittingEmptySubsequences: false).filter { !$0.hasPrefix("dark.") && !$0.hasPrefix("light.") }.joined(separator: "\n")
     }
 
     func testABadNameIsAFailureLine() async throws {

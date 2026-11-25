@@ -24,10 +24,11 @@ struct SpotList {
         let uses: [String]
         let needs: [String]
         let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
             [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]
-                + Access.fields(state: state, uses: uses, needs: needs, last: last)]
+                + Access.fields(state: state, uses: uses, needs: needs, last: last, byUse: byUse)]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
@@ -44,9 +45,10 @@ struct SpotList {
         let uses: [String]
         let needs: [String]
         let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + Access.fields(state: state, uses: uses, needs: needs, last: last)]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + Access.fields(state: state, uses: uses, needs: needs, last: last, byUse: byUse)]
         }
     }
 
@@ -55,9 +57,15 @@ struct SpotList {
         let uses: [String]
         let needs: [String]
         let last: [String: String]
+        let byUse: [String: [String: String]]
 
         init(_ spot: Spot, isOn: Bool, statuses: [MacAccess: ReadAccess], last: [String: Date]) {
-            let needs = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array(last.keys)).missing(in: statuses)
+            let access = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array(last.keys))
+            let needs = access.missing(in: statuses)
+            let listed = { (set: Set<MacAccess>) in set.isEmpty ? nil : MacAccess.allCases.filter(set.contains).map(\.rawValue).joined(separator: ",") }
+            byUse = Dictionary(uniqueKeysWithValues: access.byUse.map { use, found in
+                (use.rawValue, ["access": listed(found.needs), "maybe": listed(found.maybe)].compactMapValues { $0 })
+            })
             state = SpotReadiness(isOn: isOn, needs: needs).rawValue
             uses = spot.uses.map(\.rawValue).sorted()
             self.needs = needs.map(\.rawValue)
@@ -69,9 +77,10 @@ struct SpotList {
             self.last = times.mapValues { $0.formatted(.iso8601) }
         }
 
-        static func fields(state: String, uses: [String], needs: [String], last: [String: String]) -> [(String, String?)] {
+        static func fields(state: String, uses: [String], needs: [String], last: [String: String], byUse: [String: [String: String]]) -> [(String, String?)] {
             [("state", state), ("uses", uses.isEmpty ? nil : uses.joined(separator: ",")), ("needs", needs.isEmpty ? nil : needs.joined(separator: ","))]
                 + last.keys.sorted().map { ("last.\($0)", last[$0]) }
+                + byUse.keys.sorted().flatMap { use in ["access", "maybe"].map { ("\($0).\(use)", byUse[use]?[$0]) } }
         }
     }
 
@@ -102,7 +111,8 @@ struct SpotList {
                 state: access.state,
                 uses: access.uses,
                 needs: access.needs,
-                last: access.last
+                last: access.last,
+                byUse: access.byUse
             )
         })
     }
@@ -112,7 +122,7 @@ struct SpotList {
             let access = Access(choice.spot, isOn: choice.on, statuses: statuses, last: lastUses[choice.id] ?? [:])
             return Choice(
                 id: choice.id, name: choice.spot.name, icon: Self.picture(of: choice.spot), detail: choice.spot.subtitle, on: choice.on, own: choice.own,
-                state: access.state, uses: access.uses, needs: access.needs, last: access.last
+                state: access.state, uses: access.uses, needs: access.needs, last: access.last, byUse: access.byUse
             )
         })
     }
