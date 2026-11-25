@@ -10,6 +10,7 @@ public final class SpotRun {
         case frame(String)
         case parts
         case listChange
+        case answered
         case landed
         case closed
         case move(FlowMove)
