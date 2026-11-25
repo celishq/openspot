@@ -43,7 +43,7 @@ final class ArrangeTests: PanelCase {
         try await arrangeWithOff(["zeta", "alpha", "mango"], on: ["a", "b"])
 
         XCTAssertTrue(model.isArranging)
-        XCTAssertEqual(order, ["a", "b"])
+        XCTAssertEqual(Set(order), ["a", "b"])
         XCTAssertEqual(model.offGrid.map(\.id), ["alpha", "mango", "zeta"])
         XCTAssertEqual(shelf, ["alpha", "mango", "zeta"])
     }

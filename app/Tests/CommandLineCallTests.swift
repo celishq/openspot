@@ -81,6 +81,8 @@ final class CommandLineCallTests: XCTestCase {
             .panel("a.png", scene: PanelScene(isArranging: true, search: "sn", swap: "clock"))
         )
         XCTAssertNil(CommandLineCall(arguments: ["render", "panel", "--search", "sn", "a.png"])?.value as? RenderCall)
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "--hold", "--pick", "a.png"])?.value as? RenderCall, .panel("a.png", scene: PanelScene(isHeld: true, picks: true)))
+        XCTAssertNil(CommandLineCall(arguments: ["render", "panel", "--pick", "a.png"])?.value as? RenderCall)
         XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png", place: nil, spot: nil, review: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["render"])?.value as? CallFault, .unknown(["render"]))
     }

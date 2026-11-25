@@ -28,6 +28,8 @@ extension SpotTokens {
     public static let arrangeSearchWidth: CGFloat = 340
     public static let arrangeButton: CGFloat = 34
     public static let arrangeButtonPadding: CGFloat = 16
+    public static let slotPickWidth: CGFloat = 220
+    public static let slotPickPadding: CGFloat = 6
     public static let scrollFadeDistance = 24.0
     public static let textLeading: CGFloat = 3
     public static let textLineGap: CGFloat = 1

@@ -120,6 +120,9 @@ keywords = ["arrange", "edit spots"]
 [scripts.spots.actions.edit]
 title = "Arrange"
 
+[scripts.spots.on]
+command = ["spots"]
+
 [scripts.store]
 title = "Store"
 icon = "bag"

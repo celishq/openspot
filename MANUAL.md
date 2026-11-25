@@ -24,7 +24,7 @@ Every spot answers the same keys, so you learn them once.
   Once you edit the spot, it takes no update: the Store says "Edited, updates paused", and `openspot store revert`
   moves your copy to the Trash and puts the store's version back. Its data stays.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
-- A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Edit Spots takes it off the grid.
+- A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Arrange takes it off the grid.
 
 ## Get spots in the Store
 
@@ -62,10 +62,21 @@ Each spot has its own Settings, which open when you press `⌘` Return on its ca
 
 Put any spot in the menu bar, in a float or in a window from its Settings.
 
-Arrange the grid in Edit Spots: hold `⌘` and move the pointer over the grid, or press `⌘K` on a card and choose
-Rearrange. A release of `⌘` ends it; Rearrange stays until Done. The grid has 7 rows and 4, 6 or 8 columns, which the
-header switches. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a
-bigger card pushes the others on. A spot with no room is found by search.
+Arrange the grid in Arrange: press `⌘K` on a card and choose Arrange, press the Spots card, or run `openspot grid edit`.
+The screen dims, and your spots that are not on the grid sit in even columns on both sides of the panel, sorted by
+name. Type in the field at the top to keep only the matches. Drag a spot onto a free slot to pin it there, drag a card
+off the grid to take it off, or drop a spot on a card to swap the two. A lifted spot takes the size of the slot it
+lands in. The 4 / 6 / 8 switch sets the columns, and ✓ or Esc ends Arrange. Open the Store, at the bottom, opens the
+Store.
+
+For a quick change, hold `⌘` and move the pointer over the grid: drag a card to move it, and its − takes it off. Each
+free slot shows a +, and the hint counts your spots that are off the grid. Click a + to pick one of them from a short
+list: type to narrow it, and Return pins the chosen spot there. A release of `⌘` ends it. The grid has 7 rows and 4, 6
+or 8 columns. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a bigger
+card pushes the others on. A spot with no room is found by search, and counts as off the grid.
+
+Type `/spots` to list all your spots, the ones off the grid first. `⌘K` Pin to grid on a row puts that spot in the first
+free slot, as `openspot grid pin <id>` does.
 
 - A float shows the spot in a small window at the pointer, which a key or a shake opens, and which stays while you work
   in other apps.

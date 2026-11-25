@@ -83,6 +83,14 @@ struct SpotRunningApp: RunningApp {
         await model.editGrid()
     }
 
+    func gridSpots() async -> [ArrangedSpot] {
+        await model.gridSpots()
+    }
+
+    func pin(_ id: String) async -> GridPin {
+        await model.pin(id)
+    }
+
     func openStore(_ id: String?, search: String?) async -> Bool {
         await StoreWindow.show(model: model, id: id, search: search)
     }

@@ -33,9 +33,28 @@ extension SpotsModel {
     }
 
     func takeShelf() {
-        let words = Self.fold(arrangeQuery.trimmingCharacters(in: .whitespaces))
-        let next = words.isEmpty ? offGrid : zip(offGrid, offGridWords).filter { $0.1.contains(words) }.map(\.0)
+        let next = shelfMatches(of: arrangeQuery)
         if next != shelf { shelf = next }
+    }
+
+    func shelfMatches(of text: String) -> [Entry] {
+        let words = Self.fold(text.trimmingCharacters(in: .whitespaces))
+        return words.isEmpty ? offGrid : zip(offGrid, offGridWords).filter { $0.1.contains(words) }.map(\.0)
+    }
+
+    public func gridSpots() -> [ArrangedSpot] {
+        let placed = Set(laidGrid().spots.map(\.id))
+        let spots = cards.filter(arranges).sorted { $0.spot.name.localizedStandardCompare($1.spot.name) == .orderedAscending }
+        let listed = { (entry: Entry) in
+            ArrangedSpot(id: entry.id, name: entry.spot.name, icon: entry.spot.image ?? entry.spot.file ?? entry.spot.glyph ?? entry.spot.symbol, isOnGrid: placed.contains(entry.id))
+        }
+        return spots.filter { !placed.contains($0.id) }.map(listed) + spots.filter { placed.contains($0.id) }.map(listed)
+    }
+
+    private func laidGrid() -> (spots: [Entry], placements: [SpotPlacement]) {
+        let shown = cards.filter(\.isOnGrid)
+        let laid = grid.place(shown.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })
+        return (laid.map { shown[$0.index] }, laid.enumerated().map { $0.element.reindexed($0.offset) })
     }
 
     func clearArrange() {
@@ -117,11 +136,8 @@ extension SpotsModel {
     public func pin(_ id: String, at cell: GridCell? = nil) -> GridPin {
         asOnePress {
             guard let entry = card(id: id), arranges(entry) else { return .unknown }
-            let shown = cards.filter(\.isOnGrid)
-            let laid = grid.place(shown.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })
-            let spots = laid.map { shown[$0.index] }
+            let (spots, layout) = laidGrid()
             guard !spots.contains(where: { $0.id == id }) else { return .onGrid }
-            let layout = laid.enumerated().map { $0.element.reindexed($0.offset) }
             let choices = sizes(of: entry)
             let slots = cell.map { [$0] } ?? grid.freeCells(around: layout)
             guard let slot = slots.lazy.compactMap({ slot in self.grid.fit(entry.size, at: slot, among: layout, choices: choices).map { (slot, $0) } }).first else { return .full }
