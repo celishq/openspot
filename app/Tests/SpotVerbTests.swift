@@ -687,7 +687,7 @@ final class SpotVerbTests: XCTestCase {
     private func friends(_ toml: String = "title = 'Clock'") throws {
         let friends = folder.appendingPathComponent("friends")
         try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: toml)
-        _ = try model.files.config.change { $0.add(store: Store(url: friends)) }
+        _ = try model.files.config.change { $0.add(store: StoreSource(url: friends)) }
     }
 
     func testTheReviewOfASpotOfAStoreShowsBeforeACopyAndItsInstallMakesItSearchableOffTheGrid() async throws {
@@ -712,7 +712,7 @@ final class SpotVerbTests: XCTestCase {
         let friends = folder.appendingPathComponent("friends")
         let body = "#!/bin/sh\nif [ -f \"$OPENSPOT_DATA/kept\" ]; then t=kept; else : > \"$OPENSPOT_DATA/kept\"; t=new; fi\nprintf 'item=a\\ntitle=%s\\n' \"$t\"\n"
         try body.writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
-        _ = try model.files.config.change { $0.add(store: Store(url: friends)) }
+        _ = try model.files.config.change { $0.add(store: StoreSource(url: friends)) }
         let installed = try await call(["store", "get", "clock"])
         XCTAssertEqual(installed.code, 0, installed.errors)
         let first = try await call(["spot", "run", "clock"])

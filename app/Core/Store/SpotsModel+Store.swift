@@ -46,7 +46,7 @@ extension SpotsModel {
     }
 
     var catalog: SpotCatalog {
-        SpotCatalog(published: files.store, folder: folder, arrangement: arrangement, stores: Store.all(builtIn: files.examples, config: config))
+        SpotCatalog(published: files.store, folder: folder, arrangement: arrangement, stores: StoreSource.all(builtIn: files.examples, config: config))
     }
 
     func ownSpot(_ id: String) -> Spot? {

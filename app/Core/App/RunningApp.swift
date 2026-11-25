@@ -17,6 +17,7 @@ public protocol RunningApp: Sendable {
     func act(_ act: CardAct, on id: String) async -> Bool
     func choose(for id: String) async -> Bool
     func editGrid() async
+    func openStore(_ id: String?, search: String?) async -> Bool
     func publish(_ id: String) async -> SpotPublish
     func reveal(_ id: String) async -> Bool
     func playground(_ file: URL?, isCareful: Bool) async
@@ -36,5 +37,9 @@ extension RunningApp {
 
     public func slowMotion(_ isOn: Bool?) async -> Bool? {
         nil
+    }
+
+    public func openStore(_ id: String?, search: String?) async -> Bool {
+        false
     }
 }

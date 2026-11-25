@@ -96,7 +96,7 @@ final class StoreSpotTests: BuiltInCase {
     func testTheBuiltInStoreComesFirstWhenTheAppHasItsExamples() async throws {
         let examples = root.appendingPathComponent("examples")
         let friends = try friends()
-        _ = try file.change { $0.add(store: Store(url: friends)) }
+        _ = try file.change { $0.add(store: StoreSource(url: friends)) }
         try FileManager.default.removeItem(at: examples)
         let before = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(try viewValues(before)["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
@@ -110,7 +110,7 @@ final class StoreSpotTests: BuiltInCase {
 
     func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
         let gone = root.appendingPathComponent("gone")
-        _ = try file.change { $0.add(store: Store(url: gone)) }
+        _ = try file.change { $0.add(store: StoreSource(url: gone)) }
 
         let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
@@ -121,7 +121,7 @@ final class StoreSpotTests: BuiltInCase {
 
     func testLocateMovesAGoneStoreToThePickedFolder() async throws {
         let gone = root.appendingPathComponent("gone")
-        _ = try file.change { $0.add(store: Store(url: gone)) }
+        _ = try file.change { $0.add(store: StoreSource(url: gone)) }
         let friends = try friends()
         try pick(friends)
 
@@ -132,7 +132,7 @@ final class StoreSpotTests: BuiltInCase {
 
     func testGetOpensTheReviewOfASpotAndCopiesNothingYet() async throws {
         let friends = try friends()
-        _ = try file.change { $0.add(store: Store(url: friends)) }
+        _ = try file.change { $0.add(store: StoreSource(url: friends)) }
 
         try await call(["gallery", "get:clock"])
 

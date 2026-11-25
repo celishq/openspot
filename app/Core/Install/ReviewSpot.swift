@@ -14,6 +14,8 @@ public struct ReviewSpot: Equatable, Sendable {
     public let subtitle: String
     public let trust: String
     public let canDo: [String]
+    public let uses: [SpotUse]
+    public let lines: [ReviewLine]
     private let text: String
     private let canAdd: Bool
     private var source: URL?
@@ -41,6 +43,7 @@ public struct ReviewSpot: Equatable, Sendable {
         subtitle = release.isOtherKey ? Self.otherKeySubtitle
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
+        self.uses = uses
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
         let installed = Set(present.flatMap { (try? SpotUse.set(Manifest(beside: folder.appendingPathComponent($0)).script($0).uses, of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
@@ -55,6 +58,13 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Can also", canAlso),
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
+        lines = [
+            ReviewLine(title: "Uses", words: [uses.isEmpty ? "Nothing" : uses.map(\.rawValue).joined(separator: ", ")]),
+            ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
+            ReviewLine(title: "Can also", words: canAlso),
+            ReviewLine(title: "Binds", words: bindings.map(\.shown)),
+            ReviewLine(title: "Files", words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
+        ].filter { !$0.words.isEmpty }
         text = [
             ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",
             programs.isEmpty ? nil : Self.section(

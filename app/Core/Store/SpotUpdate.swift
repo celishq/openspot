@@ -53,6 +53,21 @@ public struct SpotUpdate: Sendable {
         return "Reverted \(name) to its version of \(try day(of: source)). Your edited copy is in the Trash.\n"
     }
 
+    public func powers(_ id: String) throws -> [String] {
+        let entry = try entry(id)
+        guard let source = Self.source(of: entry) else { return [] }
+        let review = try ReviewSpot(
+            spot: SpotPackage(paths: [source.lastPathComponent], in: source.deletingLastPathComponent()),
+            folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)
+        )
+        let added = review.uses.filter { !entry.uses.contains($0) }
+        return (added.isEmpty ? [] : ["Uses \(added.map(\.rawValue).joined(separator: ", "))"]) + review.canDo.filter { !entry.canDo.contains($0) }
+    }
+
+    public func name(of id: String) throws -> String {
+        name(of: try entry(id))
+    }
+
     public func takeEachWithNoNewPower() async {
         for entry in (try? lock.entries()) ?? [] where Self.state(of: entry, in: spots)?.state == .update {
             _ = try? await take(entry, named: name(of: entry), isConfirmed: false, command: "")

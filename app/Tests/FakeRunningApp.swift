@@ -91,6 +91,11 @@ actor FakeRunningApp: RunningApp {
         opened.append("grid")
     }
 
+    func openStore(_ id: String?, search: String?) -> Bool {
+        opened.append((["store"] + [id, search.map { "search \($0)" }].compactMap { $0 }).joined(separator: " "))
+        return true
+    }
+
     func publish(_ id: String) -> SpotPublish {
         opened.append("publish \(id)")
         return id == "unread" ? .needsReadme : .published

@@ -17,7 +17,7 @@ public enum SpotSample {
         url.lastPathComponent == scriptName && url.deletingLastPathComponent().deletingPathExtension().lastPathComponent != "sample"
     }
 
-    static func exists(for spot: Spot, runsScript: Bool) -> Bool {
+    public static func exists(for spot: Spot, runsScript: Bool) -> Bool {
         (runsScript && spot.sample != nil) || FileManager.default.fileExists(atPath: text(beside: spot.url).path)
     }
 
@@ -30,12 +30,17 @@ public enum SpotSample {
 
     @MainActor
     public static func output(of item: SpotCatalog.Item, runs: SpotRuns) async -> Frame? {
-        if item.runsSample, let sampled = item.spot.sampled {
+        await output(of: item.spot, runsScript: item.runsSample, runs: runs)
+    }
+
+    @MainActor
+    public static func output(of spot: Spot, runsScript: Bool, runs: SpotRuns) async -> Frame? {
+        if runsScript, let sampled = spot.sampled {
             guard let text = try? await runs.answer(of: sampled, ScriptEntry.show.name, limit: limit) else { return nil }
             return await Frame.reading(text, kinds: sampled.kinds)
         }
-        let kept = text(beside: item.spot.url)
-        let kinds = item.spot.kinds
+        let kept = text(beside: spot.url)
+        let kinds = spot.kinds
         return await Task.detached(priority: .userInitiated) { (try? String(contentsOf: kept, encoding: .utf8)).map { Frame(text: $0, kinds: kinds) } }.value
     }
 }

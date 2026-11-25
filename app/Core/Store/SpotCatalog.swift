@@ -8,7 +8,7 @@ public struct SpotCatalog: Sendable {
         public let size: SpotSize
         public let publication: SpotPublication?
         public let hasSample: Bool
-        public let store: Store?
+        public let store: StoreSource?
         public let version: SpotVersion?
         public let copy: SpotUpdate.State?
         let isCore: Bool
@@ -34,10 +34,10 @@ public struct SpotCatalog: Sendable {
     let published: URL
     let folder: SpotsFolder
     let arrangement: SpotChoices
-    let stores: [Store]
+    let stores: [StoreSource]
     let lock: SpotLock?
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotChoices, stores: [Store], lock: SpotLock? = nil) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotChoices, stores: [StoreSource], lock: SpotLock? = nil) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement
@@ -72,7 +72,7 @@ public struct SpotCatalog: Sendable {
             }
         }
         let stored = stores.flatMap { store in
-            ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
+            store.spots().filter { !ownIDs.contains($0.id) }.compactMap { file in
                 file.spots.first.map { spot in
                     item(spot, id: file.id, isAdded: false, store: store, version: lock == nil ? nil : try? SpotVersion(of: spot.url.deletingLastPathComponent()))
                 }
@@ -87,7 +87,7 @@ public struct SpotCatalog: Sendable {
     }
 
     private func item(
-        _ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: Store? = nil, version: SpotVersion? = nil,
+        _ spot: Spot, id: String, isAdded: Bool, isCore: Bool = false, publication: SpotPublication? = nil, store: StoreSource? = nil, version: SpotVersion? = nil,
         copy: SpotUpdate.State? = nil
     ) -> Item {
         Item(
@@ -96,10 +96,10 @@ public struct SpotCatalog: Sendable {
         )
     }
 
-    public func install(_ id: String, in places: AppPlaces) throws -> SpotInstall? {
+    public func install(_ id: String, in places: AppPlaces, from source: StoreSource? = nil) throws -> SpotInstall? {
         if item(id)?.isCore == true { return nil }
-        let found = stores.lazy.compactMap { store in
-            ((try? SpotsFolder(url: store.url).scan())?.files ?? []).first { $0.id == id }?.spots.first
+        let found = (source.map { [$0] } ?? stores).lazy.compactMap { source in
+            source.spots().first { $0.id == id }?.spots.first.flatMap { spot in source.fetch(id).map { (name: spot.name, folder: $0) } }
         }.first
         guard let found else {
             guard item(id) != nil else {
@@ -108,8 +108,7 @@ public struct SpotCatalog: Sendable {
             return nil
         }
         return SpotInstall(
-            id: id, name: found.name, source: found.url.deletingLastPathComponent(), spots: folder.url, core: folder.core, lock: places.lock,
-            config: places.config, trash: places.trash
+            id: id, name: found.name, source: found.folder, spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
         )
     }
 

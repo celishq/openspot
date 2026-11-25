@@ -13,7 +13,7 @@ public struct AppPlaces: Sendable {
     public let systemKeys: SystemKeys
     public let spots: SpotsFolder
     public let store: URL
-    public let examples: Store?
+    public let examples: StoreSource?
     public let lock: SpotLock
     let configFolder: URL
 
@@ -40,7 +40,7 @@ public struct AppPlaces: Sendable {
         config = .standard(in: configFolder, disk: disk)
         spots = .standard(environment: environment, home: home)
         store = SpotCatalog.url(environment: environment, home: home)
-        examples = Store.builtIn(environment: environment)
+        examples = StoreSource.builtIn(environment: environment)
         lock = .standard(environment: environment, home: home)
     }
 

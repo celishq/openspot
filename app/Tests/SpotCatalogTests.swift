@@ -24,14 +24,14 @@ final class SpotCatalogTests: XCTestCase {
         ConfigFile(url: folder.appendingPathComponent("config.toml"))
     }
 
-    private func list(stores: [Store]? = nil) -> SpotCatalog {
-        SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: config.read().arrangement, stores: stores ?? [Store(url: store)])
+    private func list(stores: [StoreSource]? = nil) -> SpotCatalog {
+        SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: config.read().arrangement, stores: stores ?? [StoreSource(url: store)])
     }
 
     func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
         try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
-        let shelf = list(stores: [Store(url: friends), Store(url: folder.appendingPathComponent("gone")), Store(url: store)])
+        let shelf = list(stores: [StoreSource(url: friends), StoreSource(url: folder.appendingPathComponent("gone")), StoreSource(url: store)])
 
         XCTAssertEqual(shelf.items.map(\.id), ["apps", "clock", "mine", "shared", "timer"])
         XCTAssertEqual(shelf.items.first { $0.id == "clock" }?.origin, .store)
@@ -43,7 +43,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
         let examples = folder.appendingPathComponent("examples", isDirectory: true)
-        let builtIn = try XCTUnwrap(Store.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        let builtIn = try XCTUnwrap(StoreSource.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
 
         XCTAssertEqual(builtIn.name, "Openspot")
@@ -57,9 +57,9 @@ final class SpotCatalogTests: XCTestCase {
     }
 
     func testTheConfigKeepsEachStoreFolderOnce() throws {
-        let friends = Store(url: folder.appendingPathComponent("friends"))
+        let friends = StoreSource(url: folder.appendingPathComponent("friends"))
 
-        _ = try config.change { $0.add(store: friends); $0.add(store: Store(url: folder.appendingPathComponent("friends/"))) }
+        _ = try config.change { $0.add(store: friends); $0.add(store: StoreSource(url: folder.appendingPathComponent("friends/"))) }
         XCTAssertEqual(config.read().stores, [friends])
         XCTAssertEqual(friends.name, "friends")
 

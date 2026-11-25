@@ -9,6 +9,7 @@ enum StoreCall: NounCall {
     case add(String)
     case remove(String)
     case folders(PrintForm)
+    case open(String?, search: String?)
 
     static let noun = CommandNoun("store", group: .build, verbs: [
         CommandVerb("list", "[--json]", "Prints each spot of the store, and whether you have it. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the store")) { words in
@@ -32,6 +33,10 @@ enum StoreCall: NounCall {
         CommandVerb("folders", "[--json]", "Prints the built-in store Openspot, then each store that store add added, with its name and whether its folder is found. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the stores")) { words in
             words.form.map(Self.folders)
         },
+        CommandVerb("open", "[<id>] [--search <text>]", "Opens the Store, at the page of a spot when given its id, or with the words of --search in its search.", rule: CallRule(inShow: .changes("opens the Store"))) { words in
+            guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
+            return Self.open(fit.rest.first, search: fit.value("--search"))
+        },
         CommandVerb("publish", "<id>", "Publishes a spot of your spots folder to the store. Only the Store spot can run it, so a person publishes from the Store spot.", rule: CallRule(use: .account, used: "published a spot", inShow: .changes("changes the store"), flags: .reachesKey)) { $0.one.map(Self.publish) }
     ])
 
@@ -46,6 +51,7 @@ enum StoreCall: NounCall {
         case .add(let path): calls.add(path)
         case .remove(let path): calls.remove(path)
         case .folders(let form): calls.folders(form)
+        case .open(let id, let search): calls.open(id, search: search)
         }
     }
 }
