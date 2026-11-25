@@ -105,12 +105,12 @@ struct SpotFieldView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            SpotRoundButton(icon: .symbol("sidebar.left"), label: "Left Panel", look: model.panels[.left] ? .strong : .plain) {
-                model.show(.left, !model.panels[.left])
+            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
+                ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
             }
-            SpotRoundButton(icon: .symbol("sidebar.right"), label: "Right Panel", look: model.panels[.right] ? .strong : .plain) {
-                model.show(.right, !model.panels[.right])
-            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
             SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)

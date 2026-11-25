@@ -5,4 +5,8 @@ public enum GridContent: Sendable {
     case search
     case slash
     case attachment
+
+    public var isFixed: Bool {
+        self == .cards
+    }
 }

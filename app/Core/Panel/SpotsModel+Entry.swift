@@ -21,16 +21,16 @@ extension SpotsModel {
         private let gridChoice: Bool?
         private let searchChoice: Bool?
         private let wordChoices: [String: String]
-        public let panel: GridPanel
+        public let cells: [Int: GridCell]
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices()) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             searchChoice = choice.isFound(of: spot.id) ?? defaults.isFound(of: spot.id)
             wordChoices = choice.commands(of: spot.id) ?? defaults.commands(of: spot.id) ?? [:]
-            panel = choice.panel(of: spot.id) ?? .center
+            cells = choice.cells(of: spot.id) ?? defaults.cells(of: spot.id) ?? [:]
             item = nil
             role = .card
             self.run = run
@@ -45,7 +45,7 @@ extension SpotsModel {
             gridChoice = nil
             searchChoice = nil
             wordChoices = [:]
-            panel = .center
+            cells = [:]
             self.item = item
             self.role = role
             run = nil
@@ -64,8 +64,8 @@ extension SpotsModel {
             run?.spot ?? fixedSpot
         }
 
-        public var isSizeChosen: Bool {
-            sizeChoice != nil
+        public func cell(in grid: GridLayout) -> GridCell? {
+            cells[grid.columns]
         }
 
         @MainActor public var size: SpotSize {
@@ -126,7 +126,7 @@ extension SpotsModel {
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
-            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel && lhs.defaultSize == rhs.defaultSize && lhs.role == rhs.role
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.cells == rhs.cells && lhs.defaultSize == rhs.defaultSize && lhs.role == rhs.role
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

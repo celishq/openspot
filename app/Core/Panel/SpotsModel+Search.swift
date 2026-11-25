@@ -1,28 +1,6 @@
 import Foundation
 
 extension SpotsModel {
-    var shelfStart: Int? {
-        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = shelfCards.filter { $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
-        return visible.count - hidden
-    }
-
-    var shelfCards: [Entry] {
-        cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.isFound && $0.spot.fault == nil }
-    }
-
-    var grid: SpotGrid {
-        var placed: [Int: GridPanel] = [:]
-        let split = shelfStart
-        if query.isEmpty {
-            for index in visible.indices where index < (split ?? visible.count) {
-                let panel = visible[index].id == drag?.id ? drag?.target.panel ?? .center : panel(of: visible[index])
-                if panel != .center { placed[index] = panel }
-            }
-        }
-        return SpotGrid(split: split, kept: Set(visible.indices.filter { visible[$0].isSizeChosen }), placed: placed, panels: panels)
-    }
-
     public func card(id: String) -> Entry? {
         id == fieldSheet ? nil : entry(id)
     }
@@ -65,7 +43,7 @@ extension SpotsModel {
             if slash != nil { slash = nil }
             content = .cards
             foundSpots = []
-            return takeVisible(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
+            return takeVisible(cards.filter(\.isOnGrid))
         }
         indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
@@ -129,26 +107,41 @@ extension SpotsModel {
 
     private func takeVisible(_ next: [Entry]) {
         holdsRows = false
-        if next != visible { visible = next }
-        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
-        let index = visible.firstIndex { $0.id == resize?.id }
-        let grid = index.map(self.grid.keeping) ?? self.grid
+        let isFixed = content.isFixed
+        if isGridFixed != isFixed { isGridFixed = isFixed }
         let top = fieldRoom
-        if sizes != laidOutSizes || grid != laidOutGrid || top != laidOutTop {
-            laidOutSizes = sizes
-            laidOutGrid = grid
-            laidOutTop = top
-            placements = grid.place(sizes).map { $0.dropped(by: top) }
+        if isFixed, let gesture {
+            let shown = Set(visible.map(\.id))
+            if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
+                lay(gesture.layout, top: top)
+                return
+            }
+            dropGesture()
         }
+        let laid = isFixed
+            ? grid.place(next.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })
+            : grid.list(next.map { $0.role == .answer && $0.size != .strip ? $0.size : grid.row })
+        let shown = laid.map { next[$0.index] }
+        if shown != visible { visible = shown }
+        if isFixed {
+            let placed = Set(shown.map(\.id))
+            let left = Set(next.map(\.id)).subtracting(placed)
+            if left != leftOut { leftOut = left }
+            runs.take(grid: placed)
+        }
+        lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
+    }
+
+    private func lay(_ next: [SpotPlacement], top: CGFloat) {
+        laidOutTop = top
+        let dropped = next.map { $0.dropped(by: top) }
+        if dropped != placements { placements = dropped }
     }
 
     func mayMove(_ id: String) -> Bool {
         guard let entry = entry(id) else { return false }
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-            guard isEditing, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else {
-                return entry.isOnGrid != visible.contains { $0.id == id }
-            }
-            return entry.isOnGrid == (placements[index].group == .shelf)
+            return entry.isOnGrid != (visible.contains { $0.id == id } || leftOut.contains(id))
         }
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }

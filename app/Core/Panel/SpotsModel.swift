@@ -33,7 +33,6 @@ public final class SpotsModel {
     private func takeCards() {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
-        runs.take(grid: Set(entries.lazy.filter(\.isOnGrid).map(\.id)))
     }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
@@ -58,13 +57,10 @@ public final class SpotsModel {
             selected = 0
             askAnswers()
             showVisible()
-            spanBackdrop()
         }
     }
     public internal(set) var visible: [Entry] = []
-    @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
-    @ObservationIgnored var laidOutGrid = SpotGrid()
     @ObservationIgnored var laidOutTop: CGFloat = 0
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
@@ -114,20 +110,21 @@ public final class SpotsModel {
     @ObservationIgnored var heldLayout: Theme.Layout?
     @ObservationIgnored var laidOut = Theme.Layout()
     @ObservationIgnored var takenTheme = Theme()
-    public internal(set) var groupBands: SpotGroupBands?
-    public internal(set) var panels = GridPanels() {
-        didSet { spanBackdrop() }
+    public internal(set) var grid = GridLayout() {
+        didSet {
+            guard grid != oldValue else { return }
+            widen()
+        }
     }
-    public internal(set) var backdropPanels = GridPanels()
     public internal(set) var backdropSheet: SpotRun?
-    @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
-        let height = SpotTokens.contentHeight(gridHeight: max(SpotGrid.height(of: placements), laidOutTop))
+        let free = grid.freeCells(around: placements)
+        if free != freeCells { freeCells = free }
+        let shown = content.isFixed && isEditing ? grid.height + laidOutTop : SpotPlacement.height(of: placements)
+        let height = SpotTokens.contentHeight(gridHeight: max(shown, laidOutTop))
         if height != gridHeight { gridHeight = height }
-        let bands = SpotGroupBands(placements)
-        if bands != groupBands { groupBands = bands }
         takeShade()
     }
     public var selected = 0 {
@@ -207,6 +204,7 @@ public final class SpotsModel {
     @ObservationIgnored var askedAnswer: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
+        holdCommand(modifiers.contains(.command))
         guard recording != nil, let code = keys.hold(modifiers) else { return }
         record(code: code, modifiers: modifiers)
     }
@@ -285,26 +283,35 @@ public final class SpotsModel {
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var askedWindows: Set<String> = []
-    public var isEditing = false {
-        didSet { takeMode() }
+    public internal(set) var editing: EditSession? {
+        didSet {
+            guard isEditing != (oldValue != nil) else { return }
+            takeMode()
+            takePlacements()
+        }
     }
+    public var isEditing: Bool { editing != nil }
+    @ObservationIgnored var command = CommandHold.up
+    @ObservationIgnored var leftOut: Set<String> = []
+    public internal(set) var freeCells: [GridCell] = []
+    public internal(set) var isGridFixed = true
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
     var shakes: [String: Int] = [:]
-    public internal(set) var drag: SpotDrag?
+    public internal(set) var gesture: SpotGesture?
+    public var drag: SpotDrag? { gesture?.drag }
+    public var resize: SpotResize? { gesture?.resize }
     public let lift = SpotLift()
     public internal(set) var landing: String?
     public internal(set) var carry: SpotCarry?
-    public internal(set) var resize: SpotResize?
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
-    @ObservationIgnored var dragTarget: SpotDrag.Target?
-    @ObservationIgnored var dragWait: Task<Void, Never>?
+    @ObservationIgnored var dragTarget: GridCell?
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     public internal(set) var cardScroll: CGFloat = 0
-    @ObservationIgnored var scrollAtPress: CGFloat = 0
+    @ObservationIgnored var dragWait: Task<Void, Never>?
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
-    @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
+    @ObservationIgnored public private(set) var defaultArrangement = SpotChoices()
     public internal(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
@@ -360,7 +367,7 @@ public final class SpotsModel {
         kept.config
     }
 
-    public var arrangement: SpotArrangement {
+    public var arrangement: SpotChoices {
         kept.config.arrangement
     }
 
@@ -436,7 +443,7 @@ public final class SpotsModel {
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
         holdAssignedKeys(config)
-        if panels != config.panels { panels = config.panels }
+        if grid != config.grid { grid = config.grid }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()
@@ -467,7 +474,7 @@ public final class SpotsModel {
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
-        takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
+        takeQuery(visible.contains { $0.id == id } ? "" : entry.state.title)
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -557,6 +564,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
+            holdCommand(false)
             endSpread()
             if attachments.spreads { attachments.fold() }
             hideAttachments()

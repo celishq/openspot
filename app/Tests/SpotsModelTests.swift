@@ -186,7 +186,7 @@ final class SpotsModelTests: XCTestCase {
         await ordered.reload()
         XCTAssertEqual(ordered.entries.map(\.id), ["a", "d", "c", "b"])
 
-        try ordered.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b"), SpotArrangement.Choice(id: "a")]))
+        try ordered.files.config.write(SpotChoices(choices: [SpotChoices.Choice(id: "b"), SpotChoices.Choice(id: "a")]))
         await ordered.reload()
         XCTAssertEqual(ordered.entries.map(\.id), ["b", "d", "c", "a"])
     }
@@ -200,7 +200,7 @@ final class SpotsModelTests: XCTestCase {
         let files = AppPlaces(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
         let sized = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { sized.quit() }
-        try sized.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b", size: .large)]))
+        try sized.files.config.write(SpotChoices(choices: [SpotChoices.Choice(id: "b", size: .large)]))
 
         await sized.reload()
 
@@ -318,7 +318,7 @@ final class SpotsModelTests: XCTestCase {
         try script("one", toml: "title = 'One'", "")
         try script("two", toml: "title = 'Two'", "")
         await model.reload()
-        var arrangement = SpotArrangement()
+        var arrangement = SpotChoices()
         arrangement.set(isOnGrid: false, of: "two")
         try model.files.config.write(arrangement)
         try script("three", toml: "title = 'Three'", "")
@@ -332,7 +332,7 @@ final class SpotsModelTests: XCTestCase {
         try script("one", toml: "title = 'One'", "")
         try script("two", toml: "title = 'Two'", "")
         await model.reload()
-        var arrangement = SpotArrangement()
+        var arrangement = SpotChoices()
         arrangement.set(isOnGrid: false, of: "two")
 
         try model.files.config.write(arrangement)
@@ -1066,7 +1066,8 @@ final class SpotsModelTests: XCTestCase {
         try script("build", toml: "", "printf 'item=g\\ntitle=Guide\\n'")
         try script("picker", toml: "", "printf 'item=new\\ntitle=New spot\\n'")
         await model.reload()
-        model.setOnGrid(false, for: "build")
+        try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "build") }
+        await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.press("picker")
@@ -1206,19 +1207,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
         XCTAssertNil(model.openParts?.selectedPart)
         XCTAssertEqual(model.openItems?.selected, 1)
-    }
-
-    func testAClickWithCommandOpensTheSettingsOfASpot() async throws {
-        let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "", "if [ \"$1\" = show ]; then printf 'item=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-
-        model.tap("conf", opening: true)
-
-        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
     }
 
     func testCommandEnterOpensTheSettingsOfASpotWithNoPressOpenAndNotItsOwnSheet() async throws {

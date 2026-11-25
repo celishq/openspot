@@ -1,7 +1,6 @@
 import Foundation
 
 extension SpotTokens {
-    public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
 
     public static var wordsRingSide: CGFloat { glyph * 2 }
 
@@ -18,6 +17,7 @@ extension SpotTokens {
     public static var toastRoom: CGFloat { max(toastMargin, 2 * CGFloat(backdrop.shadow)) }
 
     public static var panelWidth: CGFloat { layout.panelWidth }
+    public static var panelFrame: CGRect { CGRect(x: 0, y: 0, width: panelWidth, height: panelHeight) }
 
     public static var panelHeight: CGFloat { layout.panelHeight }
 
@@ -128,8 +128,8 @@ extension SpotTokens {
 
     public static var gridTop: CGFloat { layout.gridTop }
 
-    public static func gridOrigin(scrollOffset: CGFloat, left: CGFloat) -> CGPoint {
-        CGPoint(x: halo - left, y: gridTop - scrollOffset)
+    public static func gridOrigin(scrollOffset: CGFloat = 0) -> CGPoint {
+        CGPoint(x: halo, y: gridTop - scrollOffset)
     }
 
     public static var menuTextInset: CGFloat { padding - menuPadding + 4 }

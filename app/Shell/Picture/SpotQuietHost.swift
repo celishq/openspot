@@ -15,6 +15,7 @@ final class SpotQuietHost: SpotsHost {
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) { SpotLoadedTheme.shared.paint(colours) }
     func layOut(_ layout: Theme.Layout) { SpotLoadedTheme.shared.lay(layout) }
+    func widen() { SpotLoadedTheme.shared.widen() }
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}

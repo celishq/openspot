@@ -156,7 +156,7 @@ private struct SheetFadeMask: ViewModifier {
     let fade: SpotScrollFade
     let height: CGFloat
     let isOpen: Bool
-    @Environment(\.spotPanels) private var panels
+    @Environment(\.spotGrid) private var grid
 
     func body(content: Content) -> some View {
         content.mask {
@@ -164,8 +164,6 @@ private struct SheetFadeMask: ViewModifier {
                 fade.edges.gradient(height: height)
                 isOpen ? SpotTheme.mask : Color.clear
             }
-            .padding(.leading, panels.leftExtent)
-            .offset(x: panels.frame.minX)
         }
     }
 }
