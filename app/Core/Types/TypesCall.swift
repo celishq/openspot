@@ -16,7 +16,7 @@ enum TypesCall: NounCall {
         guard case .write(let id) = self else { return nil }
         let folder = context.folder.standardizedFileURL.path + "/"
         return CommandAnswer.work { [places = context.places] in
-            let spots = try places.readSpots().scan().scripts
+            let spots = try places.spots.scan().scripts
             let found = id.map { id in spots.first { $0.id == id } } ?? spots.first { folder.hasPrefix($0.url.deletingLastPathComponent().standardizedFileURL.path + "/") }
             guard let spot = found else {
                 throw SpotError.failed(1, id.map { "Openspot has no spot \($0). Run `openspot check spots` to see each file that does not load." } ?? "The current folder holds no spot. Run it in a spot's folder, or name the spot, such as openspot types snooze.")

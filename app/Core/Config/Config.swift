@@ -229,7 +229,7 @@ public struct Config: Equatable, Sendable {
         }
         if case .boolean(let isOnGrid)? = table["grid"] { choice.isOnGrid = isOnGrid }
         if case .boolean(let isFound)? = table["search"] { choice.isFound = isFound }
-        if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
+        if table["enabled"] == .boolean(false), choice.isOnGrid == nil { choice.isOnGrid = false }
         if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
         if case .boolean(let isInMenuBar)? = table["tray"] { choice.isInMenuBar = isInMenuBar }
         if case .boolean(let isWindow)? = table["window"] { choice.isWindow = isWindow }

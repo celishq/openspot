@@ -33,12 +33,11 @@ struct SpotList {
         let name: String
         let icon: String
         let detail: String?
-        let on: Bool
         let own: Bool
         let uses: [String]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + uses.map { ("uses", $0) }]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("own", String(own))] + uses.map { ("uses", $0) }]
         }
     }
 
@@ -78,15 +77,14 @@ struct SpotList {
     }
 
     func core(_ form: PrintForm) throws -> String {
-        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
+        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
     }
 
-    private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
+    private var choices: [(id: String, spot: Spot, own: Bool)] {
         let own = folder.scanOwnIDs()
-        let enabled = config.arrangement.enabled
         return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
-            return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
+            return (id, spot, own.contains(id))
         }
     }
 

@@ -42,9 +42,9 @@ extension SpotsModel {
     public func dropSpot(by translation: CGSize) {
         asOnePress {
             guard let drag else { return }
-            if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), turnsOff(entry) {
+            if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
                 cancelDrag()
-                return turnOff(entry.id)
+                return takeOffGrid(entry.id)
             }
             let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home
             guard let landed = drag.moved(to: target), target != drag.home else { return cancelDrag() }

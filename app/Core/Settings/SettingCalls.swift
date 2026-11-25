@@ -32,13 +32,13 @@ struct SettingCalls {
     func list(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places, secrets] in
             let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
+            let list = SpotList(folder: places.spots, config: config)
             return try list.values(form, secrets: secrets.read())
         }
     }
 
     private static func isSecret(_ key: String, of spot: String, in places: AppPlaces) -> Bool {
-        let script = try? places.readSpots().scan().scripts.first { $0.id == spot }
+        let script = try? places.spots.scan().scripts.first { $0.id == spot }
         return script?.settings.contains { $0.id == key && $0.isSecret } == true
     }
 

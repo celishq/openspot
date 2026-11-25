@@ -157,9 +157,8 @@ extension SpotsModel {
     @concurrent
     private nonisolated static func review(core id: String, in folder: SpotsFolder) async -> Result<ReviewSpot?, Error> {
         Result {
-            let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
-            let scan = try place.scan()
-            guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
+            let scan = try folder.scan()
+            guard let command = scan.spots.first(where: { folder.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
             return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core, canAdd: false)
         }
     }

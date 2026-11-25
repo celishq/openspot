@@ -151,11 +151,11 @@ final class PressTests: PanelCase {
         XCTAssertEqual(takes, [1, 1])
     }
 
-    func testTurningASpotOffWorksAStaleHintOutOnceByTheEndOfThePress() async throws {
+    func testTakingASpotOffTheGridWorksAStaleHintOutOnceByTheEndOfThePress() async throws {
         try await showGrid("notes", "mail")
         model.beginEditing()
 
-        let takes = await takes(stale: true) { model.turnOff("notes") }
+        let takes = await takes(stale: true) { model.takeOffGrid("notes") }
 
         XCTAssertFalse(model.visible.contains { $0.id == "notes" && $0.isOnGrid })
         XCTAssertEqual(takes, [1, 1])

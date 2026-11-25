@@ -6,7 +6,7 @@ struct StoreCalls {
 
     private static func catalog(in places: AppPlaces) -> SpotCatalog {
         let config = places.config.read()
-        return SpotCatalog(published: places.store, folder: places.folder(config), arrangement: config.arrangement, stores: Store.all(builtIn: places.examples, config: config))
+        return SpotCatalog(published: places.store, folder: places.spots, arrangement: config.arrangement, stores: Store.all(builtIn: places.examples, config: config))
     }
 
     private struct PrintedFolder: PrintedRecord {
@@ -60,8 +60,7 @@ struct StoreCalls {
 
     func get(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [places, app] in
-            let file = places.config
-            let item = try await Self.catalog(in: places).get(id, config: file, lock: places.lock)
+            let item = try await Self.catalog(in: places).get(id, lock: places.lock)
             await app?.spotsChanged()
             return "Added \(item.spot.name).\n"
         }

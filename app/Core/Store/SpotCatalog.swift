@@ -57,14 +57,11 @@ public struct SpotCatalog: Sendable {
         let own = (try? folder.scanOwn()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: published) : [:]
-        let enabled = arrangement.enabled.union(folder.enabled)
-        let disabled = arrangement.disabled.union(folder.disabled)
         let core = folder.coreChoices().filter { !ownIDs.contains(SpotsFolder.coreID(of: $0)) }.map { spot in
-            item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
+            item(spot, id: SpotsFolder.coreID(of: spot), isAdded: true, isCore: true)
         }
         let mine = own.files.compactMap { file in
-            let startsOff = file.spots.contains { !$0.triggers.schedule.isEmpty }
-            return file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id) && (!startsOff || enabled.contains(file.id)), publication: publications[$0.id]) }
+            file.spots.first.map { item($0, id: file.id, isAdded: true, publication: publications[$0.id]) }
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
@@ -91,14 +88,12 @@ public struct SpotCatalog: Sendable {
         _ = try await lock.add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
     }
 
-    public func get(_ id: String, config: ConfigFile, lock: SpotLock) async throws -> Item {
+    public func get(_ id: String, lock: SpotLock) async throws -> Item {
         guard let item = item(id) else {
             throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
         }
         guard !item.isAdded else { return item }
-        if item.store != nil { try await add(item, lock: lock) } else {
-            try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
-        }
+        try await add(item, lock: lock)
         return item
     }
 

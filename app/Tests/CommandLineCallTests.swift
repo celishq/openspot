@@ -202,7 +202,6 @@ final class CommandLineCallTests: XCTestCase {
             (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),
             (["setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"], "`openspot setting set --spot openspot fix-key` sets a key of your Mac"),
             (["setting", "set", "menubar", "true"], "`openspot setting set menubar` changes the menu bar"),
-            (["setting", "set", "enabled", "false"], "`openspot setting set enabled` turns a spot on or off"),
         ]
         for (arguments, act) in refusals {
             XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read, reason: "panel.open")?.value as? CallFault, .refused("\(act), so it cannot run in a show. Run it from a pick or an action."), arguments.joined(separator: " "))

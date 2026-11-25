@@ -140,22 +140,17 @@ final class StoreSpotTests: BuiltInCase {
     func testItListsEachSpotWithWhatItsButtonDoes() async throws {
         let rows = try await items()
 
-        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "added", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "get", "core"]])
+        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "added", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "added", "core"]])
         XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
         XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
     }
 
-    func testGetTurnsOnACoreSpotAndAddsAStoredOne() async throws {
-        let ids = try await items().map { $0[0] }
-        XCTAssertTrue(ids.contains("timer"))
-
+    func testGetAddsAStoredSpotAndLeavesACoreOneAsItIs() async throws {
         try await call(["gallery", "get:timer"])
-        XCTAssertTrue(file.read().arrangement.enabled.contains("timer"))
+        XCTAssertEqual(file.read().arrangement.choices, [])
 
         try await call(["gallery", "get:shared"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("shared.spot/shared.sh").path))
-        let rows = try await items()
-        XCTAssertEqual(rows.first { $0[0] == "timer" }?[2], "added")
     }
 
     func testAFailedGetSaysWhyInAToast() async throws {
@@ -175,14 +170,12 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("store/mine.spot").path))
     }
 
-    func testGetTurnsBackOnYourOwnSpotThatEditSpotsTurnedOff() async throws {
-        try file.turn("mine", on: false)
-        let before = try await items()
-        XCTAssertEqual(before.first { $0[0] == "mine" }?[2], "get")
+    func testYourOwnSpotOffTheGridStaysAdded() async throws {
+        try file.pin("mine", on: false)
 
-        try await call(["gallery", "get:mine"])
+        let rows = try await items()
 
-        XCTAssertEqual(file.read().arrangement.disabled, [])
+        XCTAssertEqual(rows.first { $0[0] == "mine" }?[2], "added")
     }
 
     func testOnlyTheSheetOfASpotGetsItsReadmeLineByLine() async throws {

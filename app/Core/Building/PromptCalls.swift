@@ -14,7 +14,7 @@ struct PromptCalls {
 
     func change(_ id: String, words: String, failure: String?) -> CommandAPI.Work {
         CommandAnswer.work { [mac, places, runs] in
-            let folder = places.readSpots()
+            let folder = places.spots
             guard !folder.isCore(id: id) else { throw SpotError.failed(1, SpotsFolder.uneditable(id)) }
             guard let spot = try folder.scan().scripts.first(where: { $0.id == id }), !spot.isBuiltIn else {
                 throw SpotError.failed(1, "Openspot cannot find \(id). Check its ID with `openspot spot list`.")

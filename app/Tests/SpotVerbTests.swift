@@ -228,7 +228,7 @@ final class SpotVerbTests: XCTestCase {
         )
         let actions = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
         try String(contentsOf: actions, encoding: .utf8).writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml + "\n[bindings]\nicon = { spot = 'openspot/icon' }")
-        try model.files.config.turn("cups", on: true)
+        try model.files.config.pin("cups", on: true)
         let target = try await select("cups")
         let draw = try XCTUnwrap(model.runs.sheets["openspot/actions"]?.spot.offeredActions.first { $0.action.id == "icon.draw" }?.action)
 
@@ -238,7 +238,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testEditOnACoreSpotOpensNoEditSheetAndSaysWhyAndASpotOfTheAppHasNone() async throws {
-        try model.files.config.turn("cups", on: true)
+        try model.files.config.pin("cups", on: true)
         _ = try await select("cups")
 
         XCTAssertTrue(model.act(.edit, on: "cups"))

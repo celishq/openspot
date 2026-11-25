@@ -51,7 +51,7 @@ final class ReviewSpotTests: XCTestCase {
         try "export default { async search() { return 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\nclass=large:flex\\n' } }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\nuses = ['clipboard']\n\n[on]\nsearch = '^[0-9]'")
         try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\ntitle=1 + 2\\nclass=large:flex\\n'\n".writeScript(to: sums.appendingPathComponent("sample.sh"))
         try "# Sums\n\nAdds numbers.\n".write(to: sums.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
-        let scan = try SpotsFolder(url: folder, core: core, enabled: ["sums"]).scan()
+        let scan = try SpotsFolder(url: folder, core: core).scan()
         let shared = try XCTUnwrap(scan.spots.first { SpotsFolder.coreID(of: $0) == "sums" })
 
         let text = try shown(ReviewSpot(spot: SpotPackage(sharing: shared, from: scan), folder: folder, canAdd: false))

@@ -20,16 +20,8 @@ struct SpotCalls {
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places] in
             let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
+            let list = SpotList(folder: places.spots, config: config)
             return try core ? list.core(form) : list.loaded(form)
-        }
-    }
-
-    func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [places, app] in
-            let config = try places.readSpots().turn(ids, on: isOn, in: places.config)
-            await app?.configChanged(.spots(ids), to: config)
-            return ""
         }
     }
 
@@ -89,7 +81,7 @@ struct SpotCalls {
     }
 
     private static func refuseCore(_ id: String, _ act: CardAct, in places: AppPlaces) throws {
-        guard [.edit, .prompt, .delete].contains(act), places.readSpots().isCore(id: id) else { return }
+        guard [.edit, .prompt, .delete].contains(act), places.spots.isCore(id: id) else { return }
         throw SpotError.failed(1, act == .delete ? SpotsFolder.unremovable(id) : SpotsFolder.uneditable(id))
     }
 
@@ -111,7 +103,7 @@ struct SpotCalls {
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
         { [places, folder, runs, caller] in
-            let spots = places.readSpots()
+            let spots = places.spots
             let found: Spot?
             do {
                 found = try spots.scan().scripts.first { $0.id == id }
@@ -198,7 +190,7 @@ struct SpotCalls {
 
     func actions(_ id: String?) -> CommandAPI.Work {
         CommandAnswer.work { [places] in
-            let spots = try places.readSpots().scan().scripts.filter { id == nil || $0.id == id }
+            let spots = try places.spots.scan().scripts.filter { id == nil || $0.id == id }
             if let id, spots.isEmpty {
                 throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
             }

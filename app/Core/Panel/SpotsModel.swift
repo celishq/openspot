@@ -372,7 +372,7 @@ public final class SpotsModel {
     }
 
     public var folder: SpotsFolder {
-        files.folder(kept.config)
+        files.spots
     }
 
     public var sheets: [String: SpotRun] {
@@ -386,7 +386,7 @@ public final class SpotsModel {
     public func beginFirstLaunch() async {
         isFirstLaunch = true
         do {
-            try files.config.begin(enabling: folder.startingSpots())
+            try files.config.begin(naming: folder.startingSpots())
         } catch {
             toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
         }
@@ -424,10 +424,10 @@ public final class SpotsModel {
         let isSameConfig = config == kept.config
         host.applyConfig(config)
         kept = next
-        let folder = files.folder(config)
+        let folder = files.spots
         let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
         guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
-        var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
+        var scan = (try? load.result(hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
@@ -523,7 +523,7 @@ public final class SpotsModel {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {
-            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement), at: min(index, next.count))
+            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore(spot)), at: min(index, next.count))
         }
         if next != entries { entries = next }
     }
@@ -537,7 +537,8 @@ public final class SpotsModel {
 
     public func rebuildEntries() {
         gridBuilds += 1
-        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement) }
+        let folder = folder
+        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore($0)) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
         if next != entries { entries = next }

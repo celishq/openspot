@@ -60,7 +60,7 @@ struct SpotGridView: View {
                     model: model,
                     id: entry.id,
                     size: card.size,
-                    turnsOff: model.isEditing && !card.isLifted && model.turnsOff(entry),
+                    takesOffGrid: model.isEditing && !card.isLifted && model.takesOffGrid(entry),
                     sizes: model.isEditing && !card.isLifted ? model.sizes(of: entry) : [],
                     isResizing: model.resize?.id == entry.id,
                     isDragging: drag != nil

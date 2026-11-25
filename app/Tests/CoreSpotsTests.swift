@@ -22,24 +22,23 @@ final class CoreSpotsTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: place.appendingPathComponent(name.inSpotFolder), toml: toml)
     }
 
-    private func names(enabled: Set<String>) throws -> [String] {
-        try SpotsFolder(url: folder, core: core, enabled: enabled).scan().spots.map(\.name)
+    private func names() throws -> [String] {
+        try SpotsFolder(url: folder, core: core).scan().spots.map(\.name)
     }
 
-    func testACoreSpotIsOffUntilItIsTurnedOn() throws {
+    func testEachCoreSpotAndEachSpotOfTheFolderIsOnWithNoChoice() throws {
         try write("apps.sh", in: core)
         try write("files.sh", in: core)
+        try write("standup.sh", in: folder, toml: "[on]\nschedule = ['30 9 * * 1-5']")
 
-        XCTAssertEqual(try names(enabled: []), [])
-        XCTAssertEqual(try names(enabled: ["files"]), ["Files"])
+        XCTAssertEqual(try names(), ["Standup", "Apps", "Files"])
     }
 
-    func testAFileInTheSpotsFolderWinsOverACoreSpotAndIsAlwaysOn() throws {
+    func testAFileInTheSpotsFolderWinsOverACoreSpot() throws {
         try write("apps.sh", in: core, toml: "title = 'Core apps'")
         try write("apps.sh", in: folder, toml: "title = 'My apps'")
 
-        XCTAssertEqual(try names(enabled: []), ["My apps"])
-        XCTAssertEqual(try names(enabled: ["apps"]), ["My apps"])
+        XCTAssertEqual(try names(), ["My apps"])
     }
 
     func testTheFolderOfACoreSpotHoldsItsFilesAndIsNoSpot() throws {
@@ -48,7 +47,7 @@ final class CoreSpotsTests: XCTestCase {
         try write("party.sh", in: core, toml: "title = 'Party'")
         try write("shared.sh", in: files)
 
-        let scan = try SpotsFolder(url: folder, core: core, enabled: ["party"]).scan()
+        let scan = try SpotsFolder(url: folder, core: core).scan()
 
         XCTAssertEqual(scan.spots.map(\.id), ["party"])
         XCTAssertEqual(scan.spots.map(\.name), ["Party"])
@@ -77,52 +76,53 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(defaults.size(of: "openspot/store"), .wide)
     }
 
-    @MainActor func testAMetricThatAGetTurnsOnShowsItsCard() throws {
+    @MainActor func testAMetricThatTheConfigNamesShowsItsCard() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let metrics = ["battery", "cpu", "devices", "disk", "memory"]
-        let scan = try SpotsFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: Set(metrics)).scan()
+        let scan = try SpotsFolder(url: folder, core: repo.appendingPathComponent("spots")).scan()
+        let named = SpotChoices(choices: metrics.map { SpotChoices.Choice(id: $0) })
 
         for id in metrics {
             let spot = try XCTUnwrap(scan.spots.first { $0.id == id }, id)
-            XCTAssertTrue(SpotsModel.Entry(spot: spot, run: nil, defaults: defaults).isOnGrid, id)
+            XCTAssertTrue(SpotsModel.Entry(spot: spot, run: nil, choice: named, defaults: defaults, isCore: true).isOnGrid, id)
         }
     }
 
     func testACoreSpotRunsInPlaceFromItsFolderInTheApp() throws {
         try write("apps.sh", in: core)
 
-        let apps = try XCTUnwrap(SpotsFolder(url: folder, core: core, enabled: ["apps"]).scan().spots.first)
+        let apps = try XCTUnwrap(SpotsFolder(url: folder, core: core).scan().spots.first)
 
         XCTAssertEqual(apps.url.resolvingSymlinksInPath().path, core.appendingPathComponent("apps.spot/apps.sh").resolvingSymlinksInPath().path)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
-    func testAFaultInACoreSpotThatIsOffStaysQuiet() throws {
+    func testAFaultInACoreSpotIsRefused() throws {
         try write("bad.sh", in: core, toml: "read = 'never'")
 
-        XCTAssertEqual(try SpotsFolder(url: folder, core: core, enabled: []).scan().refused, [])
+        XCTAssertEqual(try SpotsFolder(url: folder, core: core).scan().refused.map(\.file), ["bad"])
     }
 
     func testWithNoCoreFolderAScanGivesTheFolder() throws {
         try write("mine.sh", in: folder)
         let gone = root.appendingPathComponent("gone")
 
-        XCTAssertEqual(try SpotsFolder(url: folder, core: gone, enabled: ["apps"]).scan().spots.map(\.name), ["Mine"])
+        XCTAssertEqual(try SpotsFolder(url: folder, core: gone).scan().spots.map(\.name), ["Mine"])
     }
 
     func testAMissingSpotsFolderStillGivesTheCoreSpots() throws {
         try write("apps.sh", in: core)
         let gone = root.appendingPathComponent("gone")
 
-        XCTAssertEqual(try SpotsFolder(url: gone, core: core, enabled: ["apps"]).scan().spots.map(\.name), ["Apps"])
+        XCTAssertEqual(try SpotsFolder(url: gone, core: core).scan().spots.map(\.name), ["Apps"])
     }
 
     func testAScanRunsNoCoreSpot() throws {
         let mark = root.appendingPathComponent("ran")
         try "#!/bin/sh\ntouch \"\(mark.path)\"\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
 
-        _ = try SpotsFolder(url: folder, core: core, enabled: ["apps"]).scan()
+        _ = try SpotsFolder(url: folder, core: core).scan()
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: mark.path))
     }
@@ -136,7 +136,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testACoreSpotCannotBeRemovedAndStaysOnTheDisk() throws {
         try write("apps.sh", in: core)
-        let place = SpotsFolder(url: folder, core: core, enabled: ["apps"])
+        let place = SpotsFolder(url: folder, core: core)
         let apps = try XCTUnwrap(place.scan().spots.first)
 
         XCTAssertTrue(place.isCore(apps))
@@ -151,27 +151,30 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertFalse(place.isCore(mine))
     }
 
-    func testTheConfigReadsAndWritesEnabled() throws {
-        let config = Config(text: "[[spots]]\nid = \"apps\"\nenabled = true\n\n[[spots]]\nid = \"files\"\nenabled = false\n")
+    func testAnOldEnabledLosesNothingAndGoesAtTheNextWrite() throws {
+        let config = Config(text: "[[spots]]\nid = \"apps\"\nenabled = true\n\n[[spots]]\nid = \"files\"\nenabled = false\n\n[[spots]]\nid = \"links\"\nenabled = false\ngrid = true\n")
 
         XCTAssertEqual(config.faults, [])
-        XCTAssertEqual(config.arrangement.enabled, ["apps"])
-
-        var arrangement = config.arrangement
-        arrangement.set(isEnabled: true, of: "links")
-        arrangement.set(isEnabled: false, of: "apps")
-        XCTAssertEqual(arrangement.enabled, ["links"])
+        XCTAssertEqual(config.arrangement.choices.map(\.id), ["apps", "files", "links"])
+        XCTAssertEqual(["apps", "files", "links"].map(config.arrangement.isOnGrid(of:)), [nil, false, true])
         var changed = config
-        changed.arrangement = arrangement
-        XCTAssertEqual(Config(text: changed.text).arrangement.enabled, ["links"])
+        changed.arrangement.set(size: .wide, of: "apps")
+        XCTAssertFalse(changed.text.contains("enabled"))
+        XCTAssertEqual(Config(text: changed.text).arrangement.choices.map(\.id), ["apps", "files", "links"])
     }
 
-    func testTheStandardFolderTakesTheEnabledSpotsFromTheConfig() throws {
-        let home = root.appendingPathComponent("config")
-        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
-        try "[[spots]]\nid = \"apps\"\nenabled = true\n".write(to: home.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+    @MainActor func testACoreSpotSitsOnTheGridOnlyOnceTheConfigNamesIt() throws {
+        try write("apps.sh", in: core)
+        try write("files.sh", in: core)
+        try write("mine.sh", in: folder)
+        let place = SpotsFolder(url: folder, core: core)
+        let spots = try place.scan().spots
+        let named = SpotChoices(choices: [SpotChoices.Choice(id: "apps")])
 
-        XCTAssertEqual(SpotsFolder.standard(environment: ["OPENSPOT_CONFIG": home.path], home: root).enabled, ["apps"])
+        let grid = spots.map { SpotsModel.Entry(spot: $0, run: nil, choice: named, isCore: place.isCore($0)).isOnGrid }
+
+        XCTAssertEqual(spots.map(\.id), ["mine", "apps", "files"])
+        XCTAssertEqual(grid, [true, true, false])
     }
 
     func testEachRepoSpotHasASubtitle() throws {

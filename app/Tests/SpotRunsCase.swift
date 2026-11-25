@@ -57,7 +57,7 @@ class SpotRunsCase: XCTestCase {
 
     func scanned() throws -> ScanResult {
         let load = KeptScan.shared.load(SpotsFolder(url: folder))
-        let scan = try load.result(enabled: [], disabled: [], hosted: [])
+        let scan = try load.result(hosted: [])
         XCTAssertEqual(scan.refused, [])
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts { stamps[script.id] = load.stamp(of: script) }

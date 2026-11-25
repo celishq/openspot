@@ -38,7 +38,7 @@ public struct AppPlaces: Sendable {
         secrets = .standard(own: own)
         systemKeys = .standard(home: home)
         config = .standard(in: configFolder, disk: disk)
-        spots = .standard(environment: environment, home: home, enabled: [], disabled: [])
+        spots = .standard(environment: environment, home: home)
         store = SpotCatalog.url(environment: environment, home: home)
         examples = Store.builtIn(environment: environment)
         lock = .standard(environment: environment, home: home)
@@ -55,14 +55,6 @@ public struct AppPlaces: Sendable {
     public func readDefaultArrangement() -> SpotChoices {
         guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotChoices() }
         return Config(text: text).arrangement
-    }
-
-    public func folder(_ config: Config) -> SpotsFolder {
-        SpotsFolder(url: spots.url, core: spots.core, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled, wrapsLooseFiles: true)
-    }
-
-    public func readSpots() -> SpotsFolder {
-        folder(config.read())
     }
 
     public var log: CallLog {

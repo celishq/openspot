@@ -57,42 +57,21 @@ extension SpotsModel {
         endEditing()
     }
 
-    public func turnsOff(_ entry: Entry) -> Bool {
+    public func takesOffGrid(_ entry: Entry) -> Bool {
         entry.item == nil && entry.spot.host == nil && !entry.spot.isBuiltIn && entry.spot.fault == nil
     }
 
-    public func turnOff(_ id: String) {
+    public func takeOffGrid(_ id: String) {
         asOnePress {
-            guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
-            if folder.isCore(entry.spot) { takeOffGrid(entry.spot) } else { turn(entry.spot, on: false) }
+            guard let entry = visible.first(where: { $0.id == id }), takesOffGrid(entry) else { return }
+            let next: KeptConfig
+            do {
+                next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: id) }
+            } catch {
+                return toast(.failure("\(entry.spot.name) stays on the grid. \(Self.reason(error))"))
+            }
+            change(.edit) { reload(patching: nil, to: next) }
         }
-    }
-
-    private func takeOffGrid(_ spot: Spot) {
-        let next: KeptConfig
-        do {
-            next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: spot.id) }
-        } catch {
-            return toast(.failure("\(spot.name) stays on the grid. \(Self.reason(error))"))
-        }
-        change(.edit) { reload(patching: nil, to: next) }
-    }
-
-    @discardableResult
-    func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
-        let id = folder.fileID(of: spot)
-        let next: KeptConfig
-        do {
-            next = try files.config.change(from: kept) { $0.arrangement.set(isEnabled: isOn, of: id) }
-        } catch {
-            toast(.failure("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))"))
-            return false
-        }
-        change(.edit) {
-            ending()
-            reload(patching: nil, to: next)
-        }
-        return true
     }
 
     public func endEditing(moving: Bool = true) {

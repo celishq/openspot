@@ -19,7 +19,7 @@ extension SpotsModel {
         let folder = self.folder
         let shown = Dictionary(cards.filter { $0.item == nil }.map { (SpotCatalog.id(of: $0.spot, in: folder), $0) }, uniquingKeysWith: { first, _ in first })
         let read = Dictionary(catalog.items(publications: false).map { item in
-            (item.id, (entry: shown[item.id] ?? Entry(spot: item.spot, run: nil, choice: arrangement, defaults: defaultArrangement), item: item))
+            (item.id, (entry: shown[item.id] ?? Entry(spot: item.spot, run: nil, choice: arrangement, defaults: defaultArrangement, isCore: item.isCore), item: item))
         }, uniquingKeysWith: { first, _ in first })
         storeCards = read
         return read

@@ -16,10 +16,6 @@ public struct SpotLoad: Sendable {
         let refusal: String?
         let added: Date?
 
-        var isScheduled: Bool {
-            spots?.contains { !$0.triggers.schedule.isEmpty } == true
-        }
-
         func add(to result: inout ScanResult) {
             if let refusal { result.refused.append(ScanResult.Refusal(file: id, reason: refusal)) }
             guard let spots else { return }
@@ -47,14 +43,14 @@ public struct SpotLoad: Sendable {
 
     public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:], hasAppSpots: false)
 
-    public func result(enabled: Set<String>, disabled: Set<String>, hosted: [Spot] = []) throws -> ScanResult {
+    public func result(hosted: [Spot] = []) throws -> ScanResult {
         if let failure { throw SpotError.fault(failure) }
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: loose)
-        let ownIDs = Set(entries.filter { $0.origin == .own }.map(\.id))
-        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) && (enabled.contains(entry.id) || !entry.isScheduled) {
+        let ownIDs = ownIDs
+        for entry in entries where entry.origin == .own {
             entry.add(to: &result)
         }
-        for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) && enabled.contains(entry.id) {
+        for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) {
             entry.add(to: &result)
         }
         for entry in entries where entry.origin == .app {

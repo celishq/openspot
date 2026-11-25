@@ -28,7 +28,7 @@ Each spot has its own Settings, which open when you press `⌘` Return on its ca
 
 - A key row records a key on Return, and `⌘⌫` removes it. A key is a shortcut such as `ctrl+option+k`, a shake, or a
   tap of one modifier, such as `option`.
-- `openspot setting set` changes the same values: `icon`, `enabled`, `menubar`, `open`, `float` and `key.<action>`.
+- `openspot setting set` changes the same values: `icon`, `menubar`, `open`, `float` and `key.<action>`.
 
 ## Choose where a spot shows
 
@@ -43,11 +43,12 @@ bigger card pushes the others on. A spot with no room is found by search.
   in other apps.
 - A window opens the sheet in a normal window, which you move, resize and close.
 - A spot with `every` or an action with a title starts off the grid, so a new spot doesn't fill the panel.
+- Each spot that comes with Openspot is on, and search finds it. Only the ones Openspot starts with sit on the grid.
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to turn it on or off.
-`⌘` Return opens the Settings of one that is on. Under Access, each app it reads says whether macOS lets Openspot read
+Search for Attachments. It lists Selection, Browser Tab and Fresh Copy, which are always on, and Return opens the
+Settings of one. Under Access, each app it reads says whether macOS lets Openspot read
 it, and Return asks for access or opens the pane of System Settings that gives it. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 
@@ -60,7 +61,7 @@ changes until you press Tab.
 
 - Typing filters the actions that take the card. Backspace edits only the text.
 - When the text starts with `/`, Tab completes the slash command instead.
-- A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
+- A card shows only when a spot takes it. Fresh Copy shows what you copied in the last 2 minutes.
 
 Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
 Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in

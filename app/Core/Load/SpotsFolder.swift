@@ -8,35 +8,26 @@ public struct SpotsFolder: Sendable {
 
     public let url: URL
     public let core: URL?
-    public let enabled: Set<String>
-    public let disabled: Set<String>
     public let wrapsLooseFiles: Bool
 
-    public init(url: URL, core: URL? = nil, enabled: Set<String> = [], disabled: Set<String> = [], wrapsLooseFiles: Bool = false) {
+    public init(url: URL, core: URL? = nil, wrapsLooseFiles: Bool = false) {
         self.url = url
         self.core = core
-        self.enabled = enabled
-        self.disabled = disabled
         self.wrapsLooseFiles = wrapsLooseFiles
     }
 
     public static func standard(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        home: URL = FileManager.default.homeDirectoryForCurrentUser,
-        enabled: Set<String>? = nil,
-        disabled: Set<String>? = nil
+        home: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> SpotsFolder {
         let core = core(environment: environment)
-        let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
-        let enabled = enabled ?? arrangement?.enabled ?? []
-        let disabled = disabled ?? arrangement?.disabled ?? []
         let url: URL
         if let path = environment["OPENSPOT_SPOTS"], !path.isEmpty {
             url = URL(fileURLWithPath: path, isDirectory: true)
         } else {
             url = config(environment: environment, home: home).appendingPathComponent(folderName, isDirectory: true)
         }
-        return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled, wrapsLooseFiles: true)
+        return SpotsFolder(url: url, core: core, wrapsLooseFiles: true)
     }
 
     static func core(environment: [String: String]) -> URL? {
@@ -67,7 +58,7 @@ public struct SpotsFolder: Sendable {
     }
 
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
-        try KeptScan.shared.load(self).result(enabled: enabled, disabled: disabled, hosted: hosted)
+        try KeptScan.shared.load(self).result(hosted: hosted)
     }
 
     static func looseReason(_ file: URL, in url: URL) -> String {

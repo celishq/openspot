@@ -74,7 +74,7 @@ final class SpotTomlTests: XCTestCase {
     func testTheStampOfASpotChangesWithAnEditOfItsSpotToml() throws {
         let spots = try folder("cups", toml: "title = \"Cups\"\n", scripts: ["cups.sh": "#!/bin/sh\necho\n"])
         let load = KeptScan().load(SpotsFolder(url: spots))
-        let spot = try XCTUnwrap(try load.result(enabled: [], disabled: [], hosted: []).spots.first)
+        let spot = try XCTUnwrap(try load.result(hosted: []).spots.first)
 
         try "title = \"Coffee cups\"\n".write(to: spots.appendingPathComponent("cups.spot/spot.toml"), atomically: false, encoding: .utf8)
 

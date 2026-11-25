@@ -36,19 +36,19 @@ final class SpotLoadTests: PanelCase {
 
         XCTAssertGreaterThan(work.stats, 0)
         XCTAssertEqual(work.statsOnMain, 0)
-        XCTAssertEqual(model.entries.map(\.id), ["own"])
+        XCTAssertEqual(model.entries.map(\.id), ["own", "a", "b"])
     }
 
-    func testATurnOfOneCoreSpotParsesNoFile() async throws {
+    func testAGridChangeOfOneCoreSpotParsesNoFile() async throws {
         await model.reload()
-        let next = try model.folder.turn(["a"], on: true, in: model.files.config)
+        let next = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "a") }
         let work = ScanWork()
 
         ScanWork.$meter.withValue(work) {
             model.configChanged(.spots(["a"]), to: next)
         }
 
-        XCTAssertEqual(model.entries.map(\.id).sorted(), ["a", "own"])
+        XCTAssertEqual(model.entries.map(\.id).sorted(), ["a", "b", "own"])
         XCTAssertEqual(work.parses, 0)
         XCTAssertEqual(work.statsOnMain, 0)
     }
@@ -61,7 +61,7 @@ final class SpotLoadTests: PanelCase {
 
         await model.reload()
 
-        XCTAssertEqual(model.entries.map(\.id).sorted(), ["other", "own"])
+        XCTAssertEqual(model.entries.map(\.id).sorted(), ["a", "b", "other", "own"])
         XCTAssertTrue(try XCTUnwrap(model.entries.first { $0.id == "own" }).spot.header === header)
     }
 

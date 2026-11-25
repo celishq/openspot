@@ -85,7 +85,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot types [id]` | Writes the types of a `.js` spot to `openspot.d.ts`, or of a `.swift` spot to `Openspot.swift`, beside its script, for the spot of the current folder when there is no id, and prints the file. |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
-| `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
+| `openspot store get <id>`                          | Gets a spot of the store: adds its package to your spots folder.                                |
 | `openspot store add <folder>` | Adds a folder of spot folders as a store, named like the folder, so that the Store lists its spots. |
 | `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
 | `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |

@@ -83,7 +83,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private var offInConfig: [String] {
-        (try? model.files.config.read().arrangement.choices.filter { $0.isEnabled == false }.map(\.id).sorted()) ?? []
+        (try? model.files.config.read().arrangement.choices.filter { $0.isOnGrid == false }.map(\.id).sorted()) ?? []
     }
 
     private func savedCells() async -> [String: GridCell] {
@@ -708,11 +708,12 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(result, .notOwn)
     }
 
-    func testTheMinusTurnsASpotOfTheSpotsFolderOffAndItStaysOff() async {
-        model.turnOff("a")
+    func testTheMinusTakesASpotOfTheSpotsFolderOffTheGridAndKeepsItOn() async {
+        model.takeOffGrid("a")
 
         XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(offInConfig, ["a"])
+        XCTAssertTrue(model.entries.contains { $0.id == "a" })
         let shown = await savedCells()
         XCTAssertEqual(shown.keys.sorted(), ["b", "c", "d"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
@@ -720,11 +721,11 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testTheMinusTakesACoreSpotOffTheGridAndKeepsItOn() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        try model.files.config.turn("timer", on: true)
+        try model.files.config.pin("timer", on: true)
         await model.reload()
         XCTAssertTrue(order.contains("timer"))
 
-        model.turnOff("timer")
+        model.takeOffGrid("timer")
 
         XCTAssertFalse(order.contains("timer"))
         XCTAssertEqual(try model.files.config.read().arrangement.isOnGrid(of: "timer"), false)
