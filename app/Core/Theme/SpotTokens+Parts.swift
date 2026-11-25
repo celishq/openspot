@@ -52,7 +52,6 @@ extension SpotTokens {
     public static let attachmentFarShadowDrop: CGFloat = 6
     public static let attachmentDot: CGFloat = 4
     public static let attachmentDotGap: CGFloat = 3
-    public static let attachmentValueRise: CGFloat = 8
     public static let attachmentGap: CGFloat = 8
     public static let previewLines = 2
     public static let previewCaptionGap: CGFloat = 4

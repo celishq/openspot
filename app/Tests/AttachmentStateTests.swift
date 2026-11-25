@@ -185,6 +185,16 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.previewWrites.dropFirst(previews).map(\.motion), [.sheet(isOpen: model.fieldRoom > room)])
     }
 
+    func testEscKeepsTheLookOfThePreviewForItsClose() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(model.previewLook?.text, "A")
+    }
+
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
         try await openWithTab()
         model.followHint()
