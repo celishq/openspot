@@ -152,7 +152,7 @@ final class SpotSelectAllTrace: NSObject {
             let block: @convention(block) (NSView, Bool) -> Void = { view, flag in
                 MainActor.assumeIsolated {
                     if flag, let trace = SpotSelectAllTrace.current, trace.turnHadKey, view === trace.panel.contentView, !view.needsLayout {
-                        let stack = Thread.callStackSymbols.joined(separator: "\n")
+                        let stack = SpotSelectAllTrace.names(of: Thread.callStackReturnAddresses)
                         let cause = stack.contains("configureRenderingSurface") ? "text view adds a fragment subview" : stack.contains("requestUpdate") ? "host requestUpdate block" : stack.contains("setRootView") ? "setRootView" : stack.contains("sendEvent") ? "inside sendEvent" : "other"
                         trace.log("  setNeedsLayout on panel root, after layout \(trace.layouts), inLayout \(trace.inLayout): \(cause)")
                         if cause == "other", trace.stacks < 3 {
@@ -210,6 +210,14 @@ final class SpotSelectAllTrace: NSObject {
             }
         }
         method_setImplementation(method, imp_implementationWithBlock(block))
+    }
+
+    private static func names(of addresses: [NSNumber]) -> String {
+        addresses.compactMap { address in
+            var info = Dl_info()
+            guard dladdr(UnsafeRawPointer(bitPattern: address.uintValue), &info) != 0, let name = info.dli_sname else { return nil }
+            return String(cString: name)
+        }.joined(separator: "\n")
     }
 
     private static func count(_ view: NSView) -> Int {
