@@ -4,7 +4,9 @@ public enum SpotSource: Equatable, Sendable {
     case git(String)
     case folder(URL)
     case file(URL)
+    case builtIn(URL)
 
+    private static let builtInPrefix = "openspot:"
     private static let git = URL(fileURLWithPath: "/usr/bin/git")
 
     public init(text: String, place: URL) {
@@ -25,17 +27,41 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
+    init(recorded text: String, builtIn: StoreSource?) {
+        guard text.hasPrefix(Self.builtInPrefix), let builtIn else {
+            self.init(text: text, place: URL(fileURLWithPath: "/", isDirectory: true))
+            return
+        }
+        self = .builtIn(builtIn.url.appendingPathComponent(String(text.dropFirst(Self.builtInPrefix.count)), isDirectory: true))
+    }
+
     public var text: String {
         switch self {
         case .git(let text): text
         case .folder(let url), .file(let url): url.path
+        case .builtIn(let url): Self.builtInPrefix + url.lastPathComponent
         }
+    }
+
+    func find() -> URL? {
+        var isFolder: ObjCBool = false
+        switch self {
+        case .folder(let url), .builtIn(let url):
+            return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue ? url : nil
+        case .git, .file:
+            return nil
+        }
+    }
+
+    var isBuiltIn: Bool {
+        if case .builtIn = self { return true }
+        return false
     }
 
     func version() throws -> SpotVersion? {
         var isFolder: ObjCBool = false
         switch self {
-        case .folder(let url), .file(let url):
+        case .folder(let url), .file(let url), .builtIn(let url):
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue else { return nil }
             return try SpotVersion(of: url)
         case .git:
@@ -88,7 +114,7 @@ public enum SpotSource: Equatable, Sendable {
             } catch let error as SpotError {
                 throw SpotError.fault("Openspot cannot add \(text). \(error.reason)")
             }
-        case .folder(let url):
+        case .folder(let url), .builtIn(let url):
             let name = naming ?? Self.spotName(url.lastPathComponent)
             try Self.checkFree([name], in: folder, replacing: replacing)
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))

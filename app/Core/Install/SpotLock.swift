@@ -136,9 +136,9 @@ public struct SpotLock: Equatable, Sendable {
         var changed: [String: Entry] = [:]
         for (index, entry) in entries.enumerated() where !FileManager.default.fileExists(atPath: folder.appendingPathComponent(entry.paths.first ?? "").path) {
             do {
-                let place = URL(fileURLWithPath: "/", isDirectory: true)
+                let origin = origin(of: entry)
                 var facts: Facts?
-                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, base: environment, naming: entry.paths.first, check: { work, paths in
+                _ = try await origin.add(to: folder, at: entry.commit, base: environment, naming: entry.paths.first, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash {
                         try Self.refuseGrowth(from: entry.uses, entry.canDo, to: new, confirm: "openspot spot add --yes")
@@ -147,7 +147,7 @@ public struct SpotLock: Equatable, Sendable {
                 })
                 entries[index] = Entry(
                     source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [],
-                    address: facts?.release?.address, key: facts?.release?.publicKey, version: entry.version == nil ? nil : try SpotVersion(of: URL(fileURLWithPath: entry.source, isDirectory: true)).text
+                    address: facts?.release?.address, key: facts?.release?.publicKey, version: entry.version == nil ? nil : try origin.version()?.text
                 )
                 changed[entry.paths.first ?? entry.source] = entries[index]
                 added += entry.addedLine
@@ -209,6 +209,10 @@ public struct SpotLock: Equatable, Sendable {
         }
         try write(entries)
         return entry
+    }
+
+    func origin(of entry: Entry) -> SpotSource {
+        SpotSource(recorded: entry.source, builtIn: StoreSource.builtIn(environment: environment))
     }
 
     public func meant(_ id: String, by caller: String) -> String {

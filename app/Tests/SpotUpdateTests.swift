@@ -8,19 +8,23 @@ final class SpotUpdateTests: XCTestCase {
     override func setUpWithError() throws {
         root = try temporaryFolder()
         try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        places = places(builtIn: source)
+        try "#!/bin/sh\necho one\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
+        try "#!/bin/sh\npbcopy\n".writeScript(to: source.appendingPathComponent("paste.spot/paste.sh"), toml: "title = 'Paste'\nuses = ['clipboard']")
+    }
+
+    private func places(builtIn: URL) -> AppPlaces {
         let trash = trash
-        places = AppPlaces(
+        return AppPlaces(
             environment: [
                 "OPENSPOT_CONFIG": root.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path,
-                "OPENSPOT_EXAMPLES": source.path
+                "OPENSPOT_EXAMPLES": builtIn.path
             ],
             home: root,
             defaults: UserDefaults(suiteName: "openspot-update-\(UUID().uuidString)") ?? .standard,
             trash: { url in try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)) },
             defaultConfig: nil
         )
-        try "#!/bin/sh\necho one\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
-        try "#!/bin/sh\npbcopy\n".writeScript(to: source.appendingPathComponent("paste.spot/paste.sh"), toml: "title = 'Paste'\nuses = ['clipboard']")
     }
 
     private var spots: URL { root.appendingPathComponent("spots", isDirectory: true) }
@@ -37,8 +41,8 @@ final class SpotUpdateTests: XCTestCase {
         XCTAssertEqual(answer.code, 0, answer.errors)
     }
 
-    private func release(_ id: String, _ body: String, toml: String) throws {
-        let folder = source.appendingPathComponent("\(id).spot")
+    private func release(_ id: String, _ body: String, toml: String, in store: URL? = nil) throws {
+        let folder = (store ?? source).appendingPathComponent("\(id).spot")
         try write(body, to: folder.appendingPathComponent("\(id).sh"))
         try toml.write(to: folder.appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
         let later = try XCTUnwrap(ISO8601DateFormatter().date(from: "2031-11-25T12:00:00Z"))
@@ -74,6 +78,20 @@ final class SpotUpdateTests: XCTestCase {
         XCTAssertEqual(try version("clock"), try SpotVersion(of: source.appendingPathComponent("clock.spot")).text)
         XCTAssertNil(row?.value("copy"))
         XCTAssertEqual(row?.value("updated"), "25 Nov 2031")
+    }
+
+    func testACopyOfTheBuiltInStoreUpdatesAfterTheAppsExamplesFolderMoves() async throws {
+        try await installed("clock")
+        let moved = root.appendingPathComponent("Other.app/examples", isDirectory: true)
+        try FileManager.default.createDirectory(at: moved.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: source, to: moved)
+        places = places(builtIn: moved)
+        try release("clock", "#!/bin/sh\necho two\n", toml: "title = 'Clock'\n", in: moved)
+
+        let answer = try await call(["store", "update", "clock"])
+
+        XCTAssertEqual(answer.output, "Updated Clock to its version of 25 Nov 2031.\n", answer.errors)
+        XCTAssertEqual(try text("clock.spot/clock.sh"), "#!/bin/sh\necho two\n")
     }
 
     func testStoreUpdateTakesTheNewerVersionOfOneSpot() async throws {

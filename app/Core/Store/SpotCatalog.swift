@@ -67,7 +67,7 @@ public struct SpotCatalog: Sendable {
         }
         let mine = own.files.compactMap { file in
             file.spots.first.map { spot in
-                let copy = entries.first { $0.holds(file.id) }.flatMap { SpotUpdate.state(of: $0, in: folder.url) }
+                let copy = lock.flatMap { lock in entries.first { $0.holds(file.id) }.flatMap { SpotUpdate.state(of: $0, in: folder.url, lock: lock) } }
                 return item(spot, id: file.id, isAdded: true, publication: publications[spot.id], version: copy?.version, copy: copy?.state)
             }
         }
@@ -99,7 +99,7 @@ public struct SpotCatalog: Sendable {
     public func install(_ id: String, in places: AppPlaces, from source: StoreSource? = nil) throws -> SpotInstall? {
         if item(id)?.isCore == true { return nil }
         let found = (source.map { [$0] } ?? stores).lazy.compactMap { source in
-            source.spots().first { $0.id == id }?.spots.first.flatMap { spot in source.fetch(id).map { (name: spot.name, folder: $0) } }
+            source.spots().first { $0.id == id }?.spots.first.flatMap { spot in source.fetch(id).map { (name: spot.name, folder: $0, isBuiltIn: source.isBuiltIn) } }
         }.first
         guard let found else {
             guard item(id) != nil else {
@@ -108,7 +108,7 @@ public struct SpotCatalog: Sendable {
             return nil
         }
         return SpotInstall(
-            id: id, name: found.name, source: found.folder, spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
+            id: id, name: found.name, source: found.folder, isBuiltIn: found.isBuiltIn, spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
         )
     }
 

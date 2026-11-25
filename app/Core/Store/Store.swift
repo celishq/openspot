@@ -206,7 +206,7 @@ public final class Store {
             guard let own else { return nil }
             let review = (try? folder.scan()).flatMap { try? ReviewSpot(spot: SpotPackage(sharing: own.spot, from: $0), folder: folder.url, core: folder.core, canAdd: false) }
             let entry = own.origin == .core ? nil : (try? places.lock.entries())?.first { $0.holds(id) }
-            let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0.source, in: places, config: config))" } ?? "Yours"
+            let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version.map { "Updated \($0.day(now: now))" }, readme: text.lines, shown: text.shown,
@@ -233,8 +233,9 @@ public final class Store {
         return (lines, lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.map(StoreReadmeLine.init))
     }
 
-    private nonisolated static func name(ofSource path: String, in places: AppPlaces, config: Config) -> String {
-        let folder = URL(fileURLWithPath: path).standardizedFileURL.deletingLastPathComponent()
+    private nonisolated static func name(ofSource entry: SpotLock.Entry, in places: AppPlaces, config: Config) -> String {
+        if places.lock.origin(of: entry).isBuiltIn, let builtIn = places.examples { return builtIn.name }
+        let folder = URL(fileURLWithPath: entry.source).standardizedFileURL.deletingLastPathComponent()
         return StoreSource.all(builtIn: places.examples, config: config).first { $0.url.path == folder.path }?.name ?? folder.lastPathComponent
     }
 
