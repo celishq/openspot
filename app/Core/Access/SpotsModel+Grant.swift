@@ -100,7 +100,7 @@ extension SpotsModel {
             for access in MacAccess.allCases where access != .automation { statuses[access] = await accesses.status(of: access) }
         }
         let last = runs.usage.lastUses
-        let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs, stats: stats), spot: nil).refused
+        let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs.usage.keepsDays ? runs : nil, stats: stats), spot: nil).refused
         return Set(spots.filter { spot in
             [.access, .review].contains(SpotReadiness(spot, statuses: statuses, made: Array((last[spot.id] ?? [:]).keys), refused: refused[spot.id] ?? [:]))
         }.map(\.id))
