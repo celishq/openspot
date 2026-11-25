@@ -10,6 +10,10 @@ final class FocusRingTests: XCTestCase {
     title=Forget
     class=rounded-full
 
+    button=swap
+    icon=arrow.up.arrow.down
+    class=rounded-full
+
     button=plain
     title=Join
 
@@ -28,6 +32,12 @@ final class FocusRingTests: XCTestCase {
         let gap = SpotTokens.focusGap
 
         XCTAssertEqual(try ring(of: "chip"), FocusRing(edge: SurfaceEdge(radius: .infinity), outset: CGSize(width: gap, height: gap), hugsControl: true))
+    }
+
+    func testTheRingOfARoundIconButtonIsACapsuleAroundTheButton() throws {
+        let gap = SpotTokens.focusGap
+
+        XCTAssertEqual(try ring(of: "swap"), FocusRing(edge: SurfaceEdge(radius: .infinity), outset: CGSize(width: gap, height: gap), hugsControl: true))
     }
 
     func testAPlainButtonAndARowKeepTheirRings() throws {
