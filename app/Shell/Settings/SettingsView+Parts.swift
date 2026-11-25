@@ -5,7 +5,7 @@ extension SettingsView {
     var results: some View {
         let found = book.index.found(book.query)
         return Group {
-            heading("Results for “\(book.query)”", found.isEmpty ? "No row matches. Check the spelling, or try other words." : "Every row of every section that matches.")
+            title(.heading, EmptyView(), "Results for “\(book.query)”", found.isEmpty ? "No row matches. Check the spelling, or try other words." : "Every row of every section that matches.") {}
             if !found.accesses.isEmpty {
                 group("Access") {
                     lines(found.accesses) { access in
@@ -102,49 +102,64 @@ extension SettingsView {
         act { await $0.keep(secret: value, of: row) }
     }
 
-    func pageHeader(_ section: SettingsPage.Section) -> some View {
-        heading(section.title, section.page.line)
+    func title(of section: SettingsPage.Section) -> some View {
+        title(.heading, EmptyView(), section.title, section.page.line) {}
     }
 
-    func header<Trailing: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing) -> some View {
-        header(icon, title, text, trailing: trailing) {}
-    }
-
-    func header<Trailing: View, Accessory: View>(_ icon: some View, _ title: String, _ text: String, @ViewBuilder trailing: () -> Trailing, @ViewBuilder accessory: () -> Accessory) -> some View {
-        Section {
-            HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
-                icon
+    @ViewBuilder
+    func title<Icon: View, Actions: View>(_ style: SettingsTitle, _ icon: Icon, _ title: String, _ line: String, @ViewBuilder actions: () -> Actions) -> some View {
+        switch style {
+        case .heading:
+            Section {} header: {
                 VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                     Text(title)
-                        .font(SpotType.settingsHeader)
-                    if !text.isEmpty {
-                        Text(text)
+                        .font(SpotType.settingsTitle)
+                        .foregroundStyle(.primary)
+                    if !line.isEmpty {
+                        Text(line)
+                            .font(SpotType.settingsPageLine)
                             .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    trailing()
                 }
-                Spacer(minLength: 0)
-                accessory()
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .textCase(nil)
             }
-            .padding(.vertical, SpotTokens.settingsHeaderPadding)
-        }
-    }
-
-    func heading(_ title: String, _ line: String) -> some View {
-        Section {} header: {
-            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                Text(title)
-                    .font(SpotType.settingsTitle)
-                    .foregroundStyle(.primary)
-                if !line.isEmpty {
+        case .header:
+            Section {
+                HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
+                    icon
+                    VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                        Text(title)
+                            .font(SpotType.settingsHeader)
+                        if !line.isEmpty {
+                            Text(line)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        actions()
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, SpotTokens.settingsHeaderPadding)
+            }
+        case .hero:
+            Section {} header: {
+                VStack(spacing: SpotTokens.settingsHeroGap) {
+                    icon
+                    Text(title)
+                        .font(SpotType.settingsHero)
+                        .foregroundStyle(.primary)
                     Text(line)
                         .font(SpotType.settingsPageLine)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    actions()
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .textCase(nil)
             }
-            .padding(.bottom, SpotTokens.settingsHeadingGap)
-            .textCase(nil)
         }
     }
 

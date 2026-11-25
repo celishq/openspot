@@ -4,7 +4,7 @@ import SwiftUI
 extension SettingsView {
     var spotsPage: some View {
         Group {
-            pageHeader(.spots)
+            title(of: .spots)
             ForEach(book.spots.groups) { spots in
                 group(spots.id) {
                     lines(spots.standings) { spotLine($0) }
@@ -15,7 +15,7 @@ extension SettingsView {
 
     func spotPage(of standing: SpotStanding) -> some View {
         Group {
-            header(SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {}
+            title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {}
             if let banner = standing.banner {
                 self.banner(standing, banner.title, banner.line)
             }
@@ -97,7 +97,7 @@ extension SettingsView {
 
     var keysPage: some View {
         Group {
-            pageHeader(.keys)
+            title(of: .keys)
             if !book.keys.clashes.isEmpty {
                 Section {
                     ForEach(Array(book.keys.clashes.enumerated()), id: \.offset) { _, clash in

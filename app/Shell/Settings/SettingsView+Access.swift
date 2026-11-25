@@ -6,7 +6,7 @@ extension SettingsView {
         let needed = book.access.needed
         let rest = book.access.unneeded
         return Group {
-            header(SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
+            title(.header, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
                 Button("About Access…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
@@ -58,7 +58,7 @@ extension SettingsView {
         let needers = access.spots.compactMap(book.spots.standing)
         let maybes = access.maybe.compactMap(book.spots.standing)
         return Group {
-            header(SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
+            title(.header, SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
                 if !access.isAllowed {
                     Button("Allow…") { act { await $0.ask(access.id) } }
                         .controlSize(.large)

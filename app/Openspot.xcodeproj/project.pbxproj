@@ -93,6 +93,7 @@
 		11017F855C62A2AEF639E339 /* IconBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF264B9C03AA68F80541F4F /* IconBodyTests.swift */; };
 		1174CD4960858134FAF31E14 /* SpotStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6916BF58BB7B209E090B9B95 /* SpotStateTests.swift */; };
 		11E95C015D65316B79CB0466 /* SheetPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA169F033B45493E534D3A4 /* SheetPlace.swift */; };
+		1262511BE60B290A38B91E93 /* SettingsTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD3C7D982CAAFD49DB347C4 /* SettingsTitle.swift */; };
 		126D8904D143D33F3847408E /* SpotsModel+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CD5DEDA870B21A220E7D870 /* SpotsModel+Actions.swift */; };
 		133471B7796155E375895119 /* NodeFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39079830F27B18E8F827EFAB /* NodeFace.swift */; };
 		13434440741FFD5CB3D348CE /* FlowKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2A01272D1B30546828198C /* FlowKeyTests.swift */; };
@@ -2388,6 +2389,7 @@
 		EF899C0D68313BD1ACB2ECD8 /* TestChild.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestChild.swift; sourceTree = "<group>"; };
 		EFB76DB818EE1B3BF0A85DD6 /* CommandSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandSlot.swift; sourceTree = "<group>"; };
 		EFCB7D87F4F87274548C8CF4 /* PushedRuns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushedRuns.swift; sourceTree = "<group>"; };
+		EFD3C7D982CAAFD49DB347C4 /* SettingsTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTitle.swift; sourceTree = "<group>"; };
 		F002B656ED755F7C8457CDA5 /* TestSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSettings.swift; sourceTree = "<group>"; };
 		F018B8FCBD87CF448D9654CA /* CheckCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckCalls.swift; sourceTree = "<group>"; };
 		F02B043653D0F27FE8ED1446 /* SpotItemGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotItemGrid.swift; sourceTree = "<group>"; };
@@ -2677,6 +2679,7 @@
 				26752330834022C3A9E484DF /* SettingsScrollBar.swift */,
 				CBB683504E3A7D87BE844BC2 /* SettingsSpotIcon.swift */,
 				FAB6631D4077507E1A4D5901 /* SettingsTile.swift */,
+				EFD3C7D982CAAFD49DB347C4 /* SettingsTitle.swift */,
 				F151363A1962FF5A51B65F9F /* SettingsToolbarTitle.swift */,
 				E9902008B7FAA8CE1C13F3C4 /* SettingsView.swift */,
 				FF401138B433137556437DED /* SettingsView+Access.swift */,
@@ -5434,6 +5437,7 @@
 				972C8A942A2E4DAE80C602A8 /* SettingsScrollBar.swift in Sources */,
 				8A20F417D3E1753C6B0A3D94 /* SettingsSpotIcon.swift in Sources */,
 				99F2F9D1B50D5FF9AF8D0479 /* SettingsTile.swift in Sources */,
+				1262511BE60B290A38B91E93 /* SettingsTitle.swift in Sources */,
 				ED9A4DEBE3B01A19170A0DE7 /* SettingsToolbarTitle.swift in Sources */,
 				56EF5117F5469B1B91FEF83F /* SettingsView+Access.swift in Sources */,
 				63936CBDA5568B8177BAB763 /* SettingsView+Account.swift in Sources */,

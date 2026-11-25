@@ -72,11 +72,7 @@ struct SettingsView: View {
     }
 
     private var reveal: CGFloat {
-        switch book.page {
-        case .account: SpotTokens.settingsHeroReveal
-        case .access, .accessOf, .spotOf: SpotTokens.settingsTitleReveal
-        default: SpotTokens.settingsHeadingReveal
-        }
+        SettingsTitle(page: book.page, isSearching: book.isSearching).reveal
     }
 
     private var sidebar: some View {

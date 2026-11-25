@@ -4,7 +4,7 @@ import SwiftUI
 extension SettingsView {
     var lookPage: some View {
         Group {
-            pageHeader(.look)
+            title(of: .look)
             Section {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
                     ForEach(book.looks) { look in

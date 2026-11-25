@@ -8,7 +8,7 @@ extension SettingsView {
         let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.signedIn {
-                hero(account.handle.map { "@\($0)" } ?? SettingsPage.account.section.title, SettingsPage.account.line) {
+                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), account.handle.map { "@\($0)" } ?? SettingsPage.account.section.title, SettingsPage.account.line) {
                     Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
                 }
@@ -57,7 +57,7 @@ extension SettingsView {
                     }
                 }
             } else {
-                hero("Sign In to Publish", SettingsPage.account.line) {
+                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), "Sign In to Publish", SettingsPage.account.line) {
                     HStack(spacing: SpotTokens.settingsRowGap) {
                         Button("Use My Own Key…") { step = .signIn }
                         Button("Create a New Key…") { step = .handle }
@@ -68,26 +68,6 @@ extension SettingsView {
                         .buttonStyle(.link)
                 }
             }
-        }
-    }
-
-    private func hero<Actions: View>(_ title: String, _ line: String, @ViewBuilder actions: () -> Actions) -> some View {
-        Section {} header: {
-            VStack(spacing: SpotTokens.settingsHeroGap) {
-                SettingsAvatar(side: SpotTokens.settingsHeroAvatar)
-                Text(title)
-                    .font(SpotType.settingsHero)
-                    .foregroundStyle(.primary)
-                Text(line)
-                    .font(SpotType.settingsPageLine)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                actions()
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, SpotTokens.settingsHeadingGap)
-            .textCase(nil)
         }
     }
 
