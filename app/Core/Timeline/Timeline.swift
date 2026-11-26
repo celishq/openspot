@@ -9,7 +9,7 @@ public final class Timeline: Sendable {
     static let forgottenAge: TimeInterval = 600
 
     public struct Draft: Equatable, Sendable {
-        public let kind: TimelineEntry.Kind
+        public let kind: AttachmentValue.Kind
         public let values: [String]
         public var title: String?
         public var app: String?
@@ -18,7 +18,7 @@ public final class Timeline: Sendable {
         public var key: String?
         public var at: Date?
 
-        public init(kind: TimelineEntry.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
+        public init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
             self.kind = kind
             self.values = values
             self.title = title

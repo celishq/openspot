@@ -9,8 +9,8 @@ enum TimelineCall: NounCall {
     case pause(String)
     case resume
 
-    private static let keys = ["text", "url", "file", "title", "detail", "app", "icon", "key", "at"]
-    private static let notes: Set<String> = ["title", "detail", "app", "icon", "key", "at"]
+    private static let keys = AttachmentValue.Kind.allCases.map(\.rawValue) + notes
+    private static let notes = ["title", "detail", "app", "icon", "key", "at"]
     private static let listForm = "[--spot id] [--all] [--within age] [--text words] [--limit n]"
 
     static let noun = CommandNoun("timeline", group: .build, verbs: [
@@ -137,10 +137,8 @@ enum TimelineCall: NounCall {
     }
 
     private static func add(_ fields: [TextBlock.Field], of spot: String, to runs: SpotRuns) -> CommandAPI.Work {
-        let kinds = Set(fields.map(\.key).filter { !notes.contains($0) })
-        let values = fields.filter { kinds.contains($0.key) }.map(\.value)
         let note = { (key: String) in fields.last { $0.key == key }?.value }
-        guard kinds.count == 1, let kind = kinds.first.flatMap(TimelineEntry.Kind.init(rawValue:)), kind == .file || values.count == 1 else {
+        guard let (kind, values) = AttachmentValue.Kind.value(in: fields) else {
             return { CommandAnswer(errors: "`openspot timeline add` takes one kind of value: text=, url= or file= once for each file.\n", code: 2) }
         }
         guard values.allSatisfy({ !$0.isEmpty }) else {

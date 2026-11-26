@@ -175,7 +175,7 @@ extension SpotsModel {
     }
 
     private func handRow() -> Bool? {
-        guard let id = openSheetID, !isEditing, let value = openItems?.selectedItem?.handedValue(), cards.contains(where: { $0.spot.offers(value) }) else { return nil }
+        guard let id = openSheetID, !isEditing, let value = openItems?.selectedItem.flatMap(AttachmentValue.init(row:)), cards.contains(where: { $0.spot.offers(value) }) else { return nil }
         closeSheet(moving: true)
         var next = attachments
         next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) })

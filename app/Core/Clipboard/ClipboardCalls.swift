@@ -35,7 +35,7 @@ struct ClipboardCalls {
             case .none:
                 return ""
             case .files(let urls):
-                return TextBlock(fields: urls.map { .init(key: "file", value: $0.path) }).text
+                return TextBlock(fields: AttachmentValue.Kind.file.fields(urls.map(\.path))).text
             case .text:
                 let text = autoreleasepool { mac.text() }
                 guard text.utf8.count <= Timeline.cloneLimit, text.contains(where: { !$0.isWhitespace }) else { return "" }

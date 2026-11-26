@@ -31,7 +31,7 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     @discardableResult
-    private func add(_ kind: TimelineEntry.Kind, _ value: String, at: Date = Date(), title: String? = nil) throws -> String {
+    private func add(_ kind: AttachmentValue.Kind, _ value: String, at: Date = Date(), title: String? = nil) throws -> String {
         try XCTUnwrap(try runs.timeline.add(Timeline.Draft(kind: kind, values: [value], title: title), of: "clipboard", at: at)).id
     }
 
@@ -211,7 +211,7 @@ final class TimelineSpotTests: BuiltInCase {
 
         XCTAssertEqual(rows.map(\.title), ["cafe 3", "cafe 2", "cafe 1"])
         XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Timeline · Clipboard · "), true)
-        XCTAssertEqual(rows.first?.handedValue(), AttachmentValue(text: "cafe 3\nsecond line", title: "cafe 3"))
+        XCTAssertEqual(rows.first.flatMap(AttachmentValue.init(row:)), AttachmentValue(text: "cafe 3\nsecond line", title: "cafe 3"))
         XCTAssertEqual(rows.first?.openTitle, "Paste")
     }
 
