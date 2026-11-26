@@ -140,17 +140,6 @@ pages = ["prompt:*"]
 [scripts.themes.on]
 "sheet.open" = true
 
-[scripts.attachments]
-title = "Attachments"
-icon = "rectangle.on.rectangle"
-detail = "Choose what the panel hands to spots"
-keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
-uses = ["spots"]
-edits = "attachments"
-
-[scripts.attachments.on]
-"sheet.open" = true
-
 [scripts.updates]
 title = "Updates"
 icon = "arrow.triangle.2.circlepath"

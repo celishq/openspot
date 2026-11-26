@@ -240,7 +240,7 @@ extension SpotsModel {
             },
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
-                guard let target else { return nil }
+                guard let target else { return openSourceSettings() ? true : nil }
                 guard actionMenu(on: target)?.holdsMore == true else { return false }
                 openMenu(on: target)
                 return menu != nil

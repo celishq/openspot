@@ -81,10 +81,6 @@ id = "openspot/themes"
 grid = false
 
 [[spots]]
-id = "openspot/attachments"
-grid = false
-
-[[spots]]
 id = "openspot/icon"
 grid = false
 search = false

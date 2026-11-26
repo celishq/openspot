@@ -185,7 +185,7 @@ final class AttachmentActionTests: AttachmentCase {
 
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
 
-        XCTAssertEqual(model.hint, "⏎ Press again to approve   ⇥ Next   Esc Leave")
+        XCTAssertEqual(model.hint, "⏎ Press again to approve   ⇥ Next   ⌘K Settings   Esc Leave")
         XCTAssertTrue(model.attachments.isOn)
         XCTAssertEqual(log("review-log"), [])
 

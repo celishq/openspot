@@ -86,12 +86,17 @@ extension SpotsModel {
 
     func allowAttachment() {
         guard let id = allowSpot else { return }
-        pushFirst(id, moving: true)
+        openSettings(at: .spotOf(id))
     }
 
     private var allowSpot: String? {
         guard case .failed = attachments.selectedChip?.state else { return nil }
-        return entries.first { $0.spot.edits == .attachments && $0.spot.isBuiltIn }?.id
+        return attachments.selectedChip?.source
+    }
+
+    func openSourceSettings() -> Bool {
+        guard attachments.isOn, openSheetID == nil, let source = attachments.selectedChip?.source else { return false }
+        return openSettings(at: .spotOf(source))
     }
 
     private func mark(_ id: String, _ state: AttachmentChip.State) {
@@ -189,7 +194,7 @@ extension SpotsModel {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
         guard attachments.isOn else { return attachments.layout.isQuiet ? "⇥ Attach" : nil }
         let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" } ?? allowSpot.map { _ in "⏎ Allow" }
-        return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
+        return [run, "⇥ Next", "⌘K Settings", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
     func hideAttachments() {
