@@ -5,12 +5,8 @@ struct StoreTileLift: View {
     let card: StoreCard
 
     var body: some View {
-        HStack(spacing: SpotTokens.wordsGap) {
-            SpotGlyph(entry: SpotsModel.Entry(spot: card.spot, run: nil))
-            Text(card.spot.name)
-                .font(SpotType.strong)
-        }
-        .padding(SpotTokens.storeTilePadding)
-        .background(SpotTheme.window, in: SpotRoundShape(radius: SpotTokens.storeTileRadius))
+        StoreCardPreview(spot: card.spot, face: card.preview.face, size: card.preview.size, scale: 1)
+            .modifier(SpotLiftedCard(isLifted: true, isSolid: true, size: card.preview.size))
+            .environment(\.spotDrawsGlass, false)
     }
 }
