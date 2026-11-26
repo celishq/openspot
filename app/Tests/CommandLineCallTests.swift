@@ -107,7 +107,7 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testTheSpotNounMakesRunsShowsAndLogsOneSpot() {
-        XCTAssertEqual(CommandLineCall(arguments: ["guide"])?.value as? GuideCall, .text)
+        XCTAssertEqual(CommandLineCall(arguments: ["guide"])?.value as? GuideCall, .map)
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather"])?.value as? SpotCall, .new(name: "Weather", starter: .button))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather", "--from", "list"])?.value as? SpotCall, .new(name: "Weather", starter: .list))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather", "--from", "tree"])?.value as? CallFault, .unknown(["spot", "new", "Weather", "--from", "tree"]))

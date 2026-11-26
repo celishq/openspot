@@ -25,6 +25,19 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown answers: huge. Use answers = \"last\" or answers = \"card\""]])
     }
 
+    func testEachSpotThatTakesAWayPastAShellScriptGetsANoteAndNoFault() async throws {
+        try "#!/bin/sh\necho item=a\necho title=A\n".writeScript(to: folder.spotFile("clock"), toml: "")
+        try "#!/bin/sh\necho item=a\necho title=A\n".writeScript(to: folder.spotFile("trend"), toml: "stay = true")
+        try "export default { show() { return 'item=a\\ntitle=A' } }\n".writeScript(to: folder.appendingPathComponent("tip.spot/tip.js"), toml: "")
+
+        let check = SpotCheck(folder: SpotsFolder(url: folder))
+
+        XCTAssertEqual(try check.notes(), [
+            "tip: it takes JavaScript. Say in your answer why a shell script could not do it.",
+            "trend: it takes stay = true. Say in your answer why a shell script could not do it."
+        ])
+    }
+
     func testTheTestsOfASpotAreNotCheckedAsASpot() async throws {
         try "#!/bin/sh\necho item=a\necho title=A\n".writeScript(to: folder.spotFile("notes"), toml: "")
         try "#!/bin/sh\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"), toml: "answers = 'huge'")

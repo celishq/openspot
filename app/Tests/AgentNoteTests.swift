@@ -16,13 +16,14 @@ final class AgentNoteTests: XCTestCase {
         try? String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    func testTheNoteNamesTheCommandsOfABuildAndClaudeReadsIt() throws {
+    func testTheNotePointsAtTheGuidePageOfTheBuildAndClaudeReadsIt() throws {
         try AgentNote(command: "/Apps/Openspot.app/Contents/Helpers/openspot").write(in: folder)
 
         let note = try XCTUnwrap(saved("AGENTS.md"))
-        for word in ["spot.toml", "openspot guide", "openspot spot new", "openspot spot run", "openspot spot log", "openspot check spots --json", "openspot spot open", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
+        for word in ["spot.toml", "openspot guide build-and-check-a-spot", "`openspot guide <word>`", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
             XCTAssertTrue(note.contains(word), word)
         }
+        XCTAssertFalse(note.contains("check spots"))
         XCTAssertEqual(saved("CLAUDE.md"), "@AGENTS.md\n")
         XCTAssertFalse(note.contains("header"))
     }

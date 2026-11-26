@@ -97,7 +97,7 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(fix.title, "Copy prompt for AI")
 
         model.pressPart(fix)
-        try await wait("the whole prompt") { saved("clipboard")?.contains("what the spot runs on my computer.") == true }
+        try await wait("the whole prompt") { saved("clipboard")?.hasSuffix("</request>") == true }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(spots.spotFile("weather").path))

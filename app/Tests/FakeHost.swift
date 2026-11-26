@@ -174,10 +174,6 @@ final class FakeHost: SpotsHost {
         cardGlyphs.append(glyphs)
     }
 
-    func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("DOCS.md"), app: app)
-    }
-
     private(set) var changeDepth = 0
     private(set) var disagreements = 0
     private(set) var hintWrites: [(motion: PanelMotion?, depth: Int)] = []

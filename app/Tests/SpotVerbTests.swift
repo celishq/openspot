@@ -665,7 +665,7 @@ final class SpotVerbTests: XCTestCase {
 
         _ = target
         XCTAssertTrue(model.act(.prompt, on: "ping"))
-        try await wait("the toast") { host.confirms.last == AgentPrompt.copied }
+        try await wait("the toast") { host.confirms.last == SpotPrompt.copied }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(spots.spotFile("ping").path))
