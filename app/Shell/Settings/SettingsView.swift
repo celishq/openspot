@@ -21,6 +21,7 @@ struct SettingsView: PageView {
         PageWindow(
             title: book.title,
             page: shown,
+            visit: book.trail.now.visit,
             reveal: reveal,
             target: book.target,
             query: Binding(get: { book.query }, set: { book.search($0) }),

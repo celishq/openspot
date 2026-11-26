@@ -13,6 +13,7 @@ struct StoreView: PageView {
         PageWindow(
             title: store.title,
             page: shown,
+            visit: store.visit,
             reveal: (store.page == nil ? PageTitle.heading : PageTitle.header).reveal,
             query: Binding(get: { store.query }, set: { store.search($0) }),
             back: store.back.isEmpty ? nil : { Task { await store.goBack() } },

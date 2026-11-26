@@ -6,13 +6,15 @@ extension Store {
     }
 
     var stop: StoreStop {
-        StoreStop(place: place, spot: page?.id)
+        StoreStop(place: place, spot: page?.id, visit: visit)
     }
 
     func leave(_ from: StoreStop) {
-        guard from != stop else { return }
+        guard !from.isSame(as: stop) else { return }
         back.append(from)
         if !forward.isEmpty { forward = [] }
+        visits += 1
+        visit = visits
     }
 
     public func goBack() async {
@@ -30,5 +32,6 @@ extension Store {
     private func go(to stop: StoreStop) async {
         move(to: stop.place)
         if let spot = stop.spot { await load(spot) }
+        visit = stop.visit
     }
 }

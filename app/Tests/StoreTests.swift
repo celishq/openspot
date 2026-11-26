@@ -85,6 +85,25 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(marks, ["clock installed", "paste"])
     }
 
+    func testBackReturnsToTheVisitThatWasLeftAndAFreshOpenIsANewVisit() async throws {
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        let shelf = store.visit
+
+        await store.open("clock")
+        XCTAssertNotEqual(store.visit, shelf)
+        await store.goBack()
+        XCTAssertEqual(store.visit, shelf)
+        await store.goForward()
+        let page = store.visit
+        await store.goBack()
+        await store.open("clock")
+
+        XCTAssertEqual(store.page?.id, "clock")
+        XCTAssertNotEqual(store.visit, page)
+        XCTAssertNotEqual(store.visit, shelf)
+    }
+
     func testBackAndForwardStepThroughThePlacesAndPagesYouOpened() async throws {
         await store.read()
         XCTAssertEqual(store.title, "My spots")
@@ -109,7 +128,7 @@ final class StoreTests: XCTestCase {
 
         store.choose(.mine)
         XCTAssertTrue(store.forward.isEmpty)
-        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+        XCTAssertEqual(store.back.last.map { [$0.place, $0.spot] as [AnyHashable?] }, [StorePlace.source(.builtIn(examples)), "clock"])
     }
 
     func testShowingThePageThatShowsAddsNoStopAndASearchFromAPageCanGoBackToIt() async throws {
@@ -122,7 +141,7 @@ final class StoreTests: XCTestCase {
 
         store.search("tells")
         XCTAssertNil(store.page)
-        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+        XCTAssertEqual(store.back.last.map { [$0.place, $0.spot] as [AnyHashable?] }, [StorePlace.source(.builtIn(examples)), "clock"])
     }
 
     func testARemovedSourceLeavesTheHistory() async throws {

@@ -4,6 +4,7 @@ import SwiftUI
 struct PageWindow<Sidebar: View, Content: View>: View {
     let title: String
     let page: String
+    let visit: Int
     let reveal: CGFloat
     var target: String?
     let query: Binding<String>
@@ -12,6 +13,7 @@ struct PageWindow<Sidebar: View, Content: View>: View {
     @ViewBuilder let sidebar: () -> Sidebar
     @ViewBuilder let content: () -> Content
     @State private var scroll = PageScroll()
+    @State private var position = ScrollPosition()
 
     var body: some View {
         NavigationSplitView {
@@ -24,16 +26,21 @@ struct PageWindow<Sidebar: View, Content: View>: View {
                     content()
                 }
                 .formStyle(.grouped)
+                .scrollPosition($position)
                 .frame(maxWidth: SpotTokens.settingsFormWidth)
                 .frame(maxWidth: .infinity)
-                .id(page)
+                .id(shown)
                 .onAppear { show(target, in: proxy) }
                 .onChange(of: target) { show(target, in: proxy) }
             }
-            .onChange(of: page) { scroll.reset() }
+            .onChange(of: shown) {
+                scroll.reset()
+                position.scrollTo(y: scroll.offset(of: shown))
+            }
             .scrollEdgeEffectStyle(.soft, for: .top)
             .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { [scroll] _, isPast in scroll.show(title: isPast) })
             .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { [scroll] _, isPast in scroll.show(bar: isPast) })
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y + $0.contentInsets.top }, action: { [scroll, shown] _, offset in scroll.keep(offset, of: shown) })
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { [scroll] _, height in scroll.take(barHeight: height) })
             .overlay(alignment: .top) { PageScrollBar(scroll: scroll) }
         }
@@ -56,6 +63,10 @@ struct PageWindow<Sidebar: View, Content: View>: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
+    }
+
+    private var shown: String {
+        "\(visit)/\(page)"
     }
 
     private func show(_ target: String?, in proxy: ScrollViewProxy) {

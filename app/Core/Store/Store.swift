@@ -15,6 +15,8 @@ public final class Store {
     public private(set) var ask: StoreAsk?
     public internal(set) var back: [StoreStop] = []
     public internal(set) var forward: [StoreStop] = []
+    public internal(set) var visit = 0
+    @ObservationIgnored var visits = 0
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?

@@ -176,6 +176,21 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.trail.back.map(\.page), [.access, .developer])
     }
 
+    func testBackReturnsToTheVisitThatWasLeftAndAFreshGoIsANewVisit() async throws {
+        await read()
+        book.land(.access)
+        let first = book.trail.now.visit
+
+        book.go(.developer)
+        XCTAssertNotEqual(book.trail.now.visit, first)
+        book.goBack()
+        XCTAssertEqual(book.trail.now.visit, first)
+        book.go(.developer)
+
+        XCTAssertNotEqual(book.trail.now.visit, first)
+        XCTAssertEqual(Set([first, book.trail.back.last?.visit]).count, 1)
+    }
+
     func testASetWritesThroughSettingSetAndARemovalOfItsValueTakesItAway() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
