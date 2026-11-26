@@ -50,6 +50,8 @@ extension SpotsModel {
             guard let drag else { return }
             let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
             if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
+                let corner = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+                shelfDrop = shelfSlot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size).map { (entry.id, $0) }
                 dropGesture()
                 return takeOffGrid(entry.id)
             }

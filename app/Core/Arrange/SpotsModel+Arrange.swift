@@ -35,15 +35,33 @@ extension SpotsModel {
     }
 
     public func placeShelf(screen: CGSize, panelOrigin: CGPoint) {
+        if shelfRoom?.screen != screen || shelfRoom?.panelOrigin != panelOrigin { shelfSlots = [:] }
         shelfRoom = (screen, panelOrigin)
         layShelf()
     }
 
-    private func layShelf() {
+    func layShelf() {
         guard let room = shelfRoom else { return }
         let panel = CGRect(x: room.panelOrigin.x + SpotTokens.halo, y: room.panelOrigin.y + SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight)
-        let next = ShelfLayout(screen: room.screen, panel: panel, sizes: shelf.map(\.size))
+        let isFull = shelfQuery.trimmingCharacters(in: .whitespaces).isEmpty
+        let drop = shelfDrop
+        shelfDrop = nil
+        let ids = shelf.map(\.id)
+        let next = ShelfLayout(
+            screen: room.screen,
+            panel: panel,
+            sizes: shelf.map(\.size),
+            slots: isFull ? ids.map { $0 == drop?.id ? drop?.slot : shelfSlots[$0] } : [],
+            first: isFull ? ids.firstIndex { $0 == drop?.id } : nil
+        )
+        if isFull { shelfSlots = Dictionary(uniqueKeysWithValues: zip(ids, next.slots)) }
         if next != shelfLayout { shelfLayout = next }
+    }
+
+    func shelfSlot(at corner: CGPoint, size: SpotSize) -> ShelfSlot? {
+        guard let layout = shelfLayout, let room = shelfRoom else { return nil }
+        let point = CGPoint(x: room.panelOrigin.x + corner.x, y: corner.y + room.panelOrigin.y - layout.band.lowerBound - SpotTokens.scrollFadeLength + shelfScroll)
+        return layout.slot(near: point, size: size)
     }
 
     public func shelfOrigin(of id: String) -> CGPoint? {
@@ -75,6 +93,8 @@ extension SpotsModel {
     func clearArrange() {
         if !shelfQuery.isEmpty { shelfQuery = "" }
         shelfScroll = 0
+        shelfSlots = [:]
+        shelfDrop = nil
         takeShelf()
     }
 
@@ -128,7 +148,7 @@ extension SpotsModel {
             guard let pin = pin?.moved(by: translation) else { return }
             stopDragWait()
             pointerMove = nil
-            guard let target = pin.target, let entry = offGrid.first(where: { $0.id == pin.id }) else { return cancelPin() }
+            guard let target = pin.target, let entry = offGrid.first(where: { $0.id == pin.id }) else { return moveOnShelf(pin.id, by: translation) }
             var spots = visible
             var layout = pin.layout
             let placement = { (index: Int) in SpotPlacement(index: index, row: target.cell.row, column: target.cell.column, size: target.size) }
@@ -150,6 +170,20 @@ extension SpotsModel {
                 choices.set(isOnGrid: true, of: pin.id)
                 if let leaving { choices.set(isOnGrid: false, of: leaving) }
             })
+        }
+    }
+
+    private func moveOnShelf(_ id: String, by translation: CGSize) {
+        guard let origin = shelfOrigin(of: id), let entry = shelf.first(where: { $0.id == id }),
+              let slot = shelfSlot(at: CGPoint(x: origin.x + translation.width, y: origin.y + translation.height), size: entry.size) else { return cancelPin() }
+        stopDragWait()
+        pointerMove = nil
+        shelfDrop = (id, slot)
+        change(.edit) {
+            gesture = nil
+            carry = nil
+            layShelf()
+            updateVisible()
         }
     }
 

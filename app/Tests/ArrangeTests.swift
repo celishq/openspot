@@ -217,6 +217,83 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, [id])
     }
 
+    private func away(_ id: String, to target: CGPoint) throws -> CGSize {
+        let index = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
+        let rect = model.placements[index].rect
+        let origin = SpotTokens.gridOrigin()
+        return CGSize(width: target.x - origin.x - rect.minX, height: target.y - origin.y - rect.minY)
+    }
+
+    func testAPinnedShelfSpotLeavesItsSlotAndTheOthersHoldStill() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = model.shelfOrigin(of: "alpha")
+        let zeta = model.shelfOrigin(of: "zeta")
+
+        model.pin("mango")
+
+        XCTAssertEqual(shelf, ["alpha", "zeta"])
+        XCTAssertEqual(model.shelfOrigin(of: "alpha"), alpha)
+        XCTAssertEqual(model.shelfOrigin(of: "zeta"), zeta)
+    }
+
+    func testACardDroppedOnTheShelfTakesTheSlotUnderItAndShiftsOnlyWhatIsInItsWay() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a", "b"])
+        let alpha = try XCTUnwrap(model.shelfOrigin(of: "alpha"))
+        let mango = model.shelfOrigin(of: "mango")
+        let move = try away("b", to: alpha)
+
+        model.dragSpot("b", by: move)
+        model.dropSpot(by: move)
+
+        XCTAssertEqual(order, ["a"])
+        XCTAssertEqual(model.shelfOrigin(of: "b"), alpha)
+        XCTAssertNotEqual(model.shelfOrigin(of: "alpha"), alpha)
+        XCTAssertEqual(model.shelfOrigin(of: "mango"), mango)
+    }
+
+    func testACardDroppedPastTheEndOfASideFallsToItsEnd() async throws {
+        try await arrangeWithOff(["alpha"], on: ["a", "b"])
+        let alpha = try XCTUnwrap(model.shelfOrigin(of: "alpha"))
+        let move = try away("b", to: CGPoint(x: alpha.x, y: alpha.y + 600))
+
+        model.dragSpot("b", by: move)
+        model.dropSpot(by: move)
+
+        let b = try XCTUnwrap(model.shelfOrigin(of: "b"))
+        XCTAssertEqual(model.shelfOrigin(of: "alpha"), alpha)
+        XCTAssertLessThan(b.y, alpha.y + 600)
+        XCTAssertGreaterThan(b.y, alpha.y)
+    }
+
+    func testAShelfSpotDroppedOnTheShelfMovesToTheSlotUnderIt() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = try XCTUnwrap(model.shelfOrigin(of: "alpha"))
+        let zeta = try XCTUnwrap(model.shelfOrigin(of: "zeta"))
+        let move = CGSize(width: alpha.x - zeta.x, height: alpha.y - zeta.y)
+
+        model.dragShelfSpot("zeta", by: move)
+        model.dropShelfSpot(by: move)
+
+        XCTAssertNil(model.pin)
+        XCTAssertEqual(model.shelfOrigin(of: "zeta"), alpha)
+        XCTAssertNotEqual(model.shelfOrigin(of: "alpha"), alpha)
+    }
+
+    func testReopeningArrangePacksTheShelfByNameAgain() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = model.shelfOrigin(of: "alpha")
+        let mango = model.shelfOrigin(of: "mango")
+        model.pin("alpha")
+        XCTAssertNotEqual(model.shelfOrigin(of: "mango"), alpha)
+
+        model.endEditing()
+        model.beginEditing()
+
+        XCTAssertEqual(shelf, ["mango", "zeta"])
+        XCTAssertEqual(model.shelfOrigin(of: "mango"), alpha)
+        XCTAssertNotEqual(model.shelfOrigin(of: "mango"), mango)
+    }
+
     func testASpotTakenOffByItsMinusComesBackByAPin() async throws {
         try await spots(["a", "b"])
         model.takeOffGrid("a")

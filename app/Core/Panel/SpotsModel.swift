@@ -292,6 +292,8 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var shelfScroll: CGFloat = 0
     public internal(set) var shelfLayout: ShelfLayout?
     @ObservationIgnored var shelfRoom: (screen: CGSize, panelOrigin: CGPoint)?
+    @ObservationIgnored var shelfSlots: [String: ShelfSlot] = [:]
+    @ObservationIgnored var shelfDrop: (id: String, slot: ShelfSlot)?
     public internal(set) var offGrid: [Entry] = []
     @ObservationIgnored var offGridWords: [String] = []
     public internal(set) var shelf: [Entry] = []
