@@ -9,7 +9,8 @@ A row that carries its value can be peeked with no work from your spot:
 
 - `text=` shows the whole text.
 - `url=` shows the link and its host.
-- `file=` shows the picture, or the file's thumbnail.
+- `file=` shows the picture, or the file's thumbnail. A `.mov`, `.mp4` or `.m4v` plays muted on a loop once the peek
+  is open, and `⌘K` pauses it.
 - `icon=#rrggbb` shows the colour.
 
 The row's `title` and `detail` show under it.
@@ -59,6 +60,9 @@ A `button` in a peek is an action of its row's `⌘K` menu. It does one of these
 | `paste`   | Copies its text and pastes it into the app in front.                     |
 | `open`    | Opens its link, or the file at its path.                                 |
 | `run`     | Runs your spot with that id, as a button of the sheet does, with the row. |
+
+A button whose id starts with another button's id and a dot, such as `copy-as.hex` after `copy-as`, sits in that
+button's submenu. A copied colour peeks this way with Copy as › HEX, RGB, RGBA, HSL and SwiftUI.
 
 Openspot runs `copy`, `paste` and `open` itself, so your spot doesn't run. They still need the uses of your spot, such
 as `clipboard`.

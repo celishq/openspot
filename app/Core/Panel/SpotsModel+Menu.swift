@@ -120,7 +120,10 @@ extension SpotsModel {
     }
 
     func extras(on target: Target) -> [CommandAction] {
-        if openSheetID != nil, let item = target.item { return (Peek(item: item) == nil ? [] : [.peek]) + PeekAct.actions(of: item.peek) }
+        if openSheetID != nil, let item = target.item {
+            let playback: [CommandAction] = if isPeeking, case .video = peek?.look { [.playback(isPlaying: !isPeekPaused)] } else { [] }
+            return (Peek(item: item) == nil ? [] : [.peek]) + playback + PeekAct.actions(of: item.peek)
+        }
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []

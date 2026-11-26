@@ -14,7 +14,7 @@ struct SpotPeekView: View {
                     .spotGlass(in: shape)
                     .morph(isOpen ? 1 : 0, opacity: { 1 - SheetMorph.cardOpacity(at: $0) })
                 if let peek = model.peek {
-                    PeekFace(peek: peek)
+                    PeekFace(model: model, peek: peek)
                         .frame(width: rect.width, height: rect.height)
                         .offset(x: rect.minX, y: rect.minY)
                         .morph(isOpen ? 1 : 0, opacity: { SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
@@ -26,7 +26,17 @@ struct SpotPeekView: View {
     }
 }
 
+private struct PeekVideo: View {
+    let model: SpotsModel
+    let path: String
+
+    var body: some View {
+        SpotPeekVideo(path: path, isPlaying: model.peekPlays)
+    }
+}
+
 private struct PeekFace: View {
+    let model: SpotsModel
     let peek: Peek
 
     private var inner: SpotRoundShape {
@@ -62,6 +72,9 @@ private struct PeekFace: View {
                 .clipShape(inner)
         case .file(let path):
             SpotPeekThumbnail(path: path)
+        case .video(let path):
+            PeekVideo(model: model, path: path)
+                .clipShape(inner)
         case .color(let hex):
             inner.fill(SpotColorBar.color(hex))
         case .text(let text):

@@ -100,6 +100,8 @@ extension SpotsModel {
             perform(act, by: target.entry.spot)
         } else if case .group = action.kind {
             return
+        } else if action.kind == .playback {
+            isPeekPaused.toggle()
         } else if place.isDetached {
             let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
             if asks, place == .window {

@@ -35,6 +35,11 @@ extension SpotsModel {
         return true
     }
 
+    public var peekPlays: Bool {
+        guard isShown, isPeekGrown, !isPeekPaused, case .video = peek?.look else { return false }
+        return true
+    }
+
     func closePeek() {
         guard isPeeking else { return }
         isPeeking = false
@@ -50,7 +55,10 @@ extension SpotsModel {
     func takePeek() {
         if openSheetID == nil, isPeeking { isPeeking = false }
         let next = isPeeking ? peekedItem.flatMap(Peek.init(item:)) : nil
-        if next != peek { peek = next }
+        if next != peek {
+            peek = next
+            if isPeekPaused { isPeekPaused = false }
+        }
         placePeek(beside: next == nil ? nil : openSheet?.sheetRect)
         readAhead(around: next == nil ? nil : peekedItem)
     }
@@ -73,6 +81,7 @@ extension SpotsModel {
         guard let sheet, isShown else {
             guard peekRect != nil else { return }
             guard isShown else { return dropPeek() }
+            if isPeekGrown { isPeekGrown = false }
             change(.sheet(isOpen: false), { isPeekOpen = false }, completion: { [weak self] in
                 guard self?.isPeekOpen == false else { return }
                 self?.dropPeek()
@@ -97,15 +106,23 @@ extension SpotsModel {
                 guard let self, isPeekGrowing else { return }
                 isPeekGrowing = false
                 guard peekRect != nil, isPeeking else { return }
-                change(.sheet(isOpen: true)) { isPeekOpen = true }
+                grow()
             }
         } else if !isPeekOpen, !isPeekGrowing {
-            change(.sheet(isOpen: true)) { isPeekOpen = true }
+            grow()
         }
+    }
+
+    private func grow() {
+        change(.sheet(isOpen: true), { isPeekOpen = true }, completion: { [weak self] in
+            guard let self, isPeekOpen, !isPeekGrown else { return }
+            isPeekGrown = true
+        })
     }
 
     private func dropPeek() {
         isPeekGrowing = false
+        if isPeekGrown { isPeekGrown = false }
         if isPeekOpen { isPeekOpen = false }
         if peekRect != nil { peekRect = nil }
         if peekSource != nil { peekSource = nil }
