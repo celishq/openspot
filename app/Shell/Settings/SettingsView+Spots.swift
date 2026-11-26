@@ -81,57 +81,29 @@ extension SettingsView {
     var keysPage: some View {
         Group {
             title(of: .keys)
-            if !book.keys.clashes.isEmpty {
-                Section {
-                    ForEach(Array(book.keys.clashes.enumerated()), id: \.offset) { _, clash in
-                        HStack(spacing: SpotTokens.settingsRowGap) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(SpotTheme.settingsClash)
-                            titled(clash.title, clash.line)
-                        }
-                    }
-                }
-            }
             ForEach(book.keys.set) { keys in
                 group(keys.id) {
-                    lines(keys.rows) { row in
-                        HStack(spacing: SpotTokens.settingsValueGap) {
-                            Text(row.title)
-                                .lineLimit(1)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            keycaps(row)
-                        }
-                        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
-                        .id(row.item)
-                    }
+                    lines(keys.rows) { keyLine($0) }
                 }
             }
-            Section {
-                if let adding = book.recording.flatMap(book.rows.row), (adding.value ?? "").isEmpty {
-                    HStack(spacing: SpotTokens.settingsValueGap) {
-                        Text("\(adding.name) · \(adding.title)")
-                            .lineLimit(1)
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        keycaps(adding)
+            if !book.keys.unset.isEmpty {
+                folding("Not Set", isFolded: $isKeysFolded) {
+                    lines(book.keys.unset.flatMap(\.rows)) { row in
+                        keyLine(row, title: "\(row.name) · \(row.title)")
                     }
-                }
-            } footer: {
-                HStack {
-                    Spacer(minLength: 0)
-                    Menu("Add Shortcut…") {
-                        ForEach(book.keys.unset) { keys in
-                            Menu(keys.id) {
-                                ForEach(keys.rows) { row in
-                                    Button(row.title) { book.startRecording(row) }
-                                }
-                            }
-                        }
-                    }
-                    .fixedSize()
-                    .disabled(book.keys.unset.isEmpty)
                 }
             }
         }
+    }
+
+    func keyLine(_ row: SettingRow, title: String? = nil) -> some View {
+        HStack(spacing: SpotTokens.settingsValueGap) {
+            titled(title ?? row.title, book.keys.clash(of: row.item) ?? "")
+            Spacer(minLength: SpotTokens.settingsTrailingGap)
+            keycaps(row)
+        }
+        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
+        .id(row.item)
     }
 
     func keycaps(_ row: SettingRow) -> some View {

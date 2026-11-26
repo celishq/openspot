@@ -99,7 +99,7 @@ final class SettingsEntryTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
 
         XCTAssertEqual(host.settingsOpens, 1)
-        XCTAssertEqual(book.page, .access)
+        XCTAssertEqual(book.page, .general)
     }
 
     func testAPublishWithNoAccountOpensSettingsAtTheAccount() async throws {
@@ -158,6 +158,6 @@ final class SettingsEntryTests: PanelCase {
         model.selected = found
         model.runSelected()
         XCTAssertEqual(host.settingsOpens, 1)
-        XCTAssertEqual(book.page, .access)
+        XCTAssertEqual(book.page, .general)
     }
 }

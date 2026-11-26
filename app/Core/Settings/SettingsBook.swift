@@ -11,7 +11,8 @@ public final class SettingsBook {
     public private(set) var looks: [ListedTheme] = []
     public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
-    public private(set) var page = SettingsPage.access
+    public private(set) var page = SettingsPage.general
+    public private(set) var section = SettingsPage.Section.general
     public private(set) var back: [SettingsPage] = []
     public private(set) var forward: [SettingsPage] = []
     public private(set) var query = ""
@@ -36,8 +37,8 @@ public final class SettingsBook {
     public var title: String {
         guard query.isEmpty else { return "Search" }
         return switch page {
-        case .accessOf(let id): id.title
-        case .spotOf(let id): spots.standing(id)?.title ?? id
+        case .accessOf(let id): "\(section.title) › \(id.title)"
+        case .spotOf(let id): "\(section.title) › \(spots.standing(id)?.title ?? id)"
         default: page.section.title
         }
     }
@@ -107,6 +108,7 @@ public final class SettingsBook {
         recording = nil
         target = nil
         page = next
+        if case .top(let top) = next { section = top }
     }
 
     public func goBack() {
@@ -115,6 +117,7 @@ public final class SettingsBook {
         recording = nil
         target = nil
         page = last
+        if case .top(let top) = last { section = top }
     }
 
     public func goForward() {
@@ -123,6 +126,7 @@ public final class SettingsBook {
         recording = nil
         target = nil
         page = next
+        if case .top(let top) = next { section = top }
     }
 
     public func search(_ text: String) {
@@ -138,15 +142,17 @@ public final class SettingsBook {
         target = nil
         switch place {
         case .row(let item):
-            guard let row = rows.row(item) else { return page = .access }
+            guard let row = rows.row(item) else { return land(.general) }
             reveal(row)
         case .search(let words):
             query = words
         case .spotOf(let id) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
             page = .keys
+            section = .keys
             target = "\(id)/open"
         default:
             page = place
+            section = place.section
         }
     }
 

@@ -96,6 +96,29 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.query, "screen")
     }
 
+    func testSettingsOpensOnGeneralWithTheSectionsInTheirOrder() {
+        XCTAssertEqual(SettingsBook().page, .general)
+        XCTAssertEqual(SettingsPage.Section.allCases, [.general, .look, .keys, .spots, .access, .developer, .account])
+    }
+
+    func testADetailPageKeepsTheSectionItWasReachedFrom() async throws {
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']", "openspot screen shot")
+        await read()
+        book.land(.spots)
+
+        book.go(.spotOf("cups"))
+        book.go(.accessOf(.screen))
+        XCTAssertEqual(book.section, .spots)
+        XCTAssertEqual(book.title, "Spots › \(MacAccess.screen.title)")
+        book.goBack()
+        XCTAssertEqual(book.section, .spots)
+        book.go(.access)
+        book.go(.spotOf("cups"))
+
+        XCTAssertEqual(book.section, .access)
+        XCTAssertEqual(book.title, "Access › Cups")
+    }
+
     func testEachPlaceReadsBackFromItsWords() {
         let places: [SettingsPage] = [.access, .accessOf(.screen), .spots, .spotOf("tools/a"), .keys, .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
 
@@ -285,8 +308,8 @@ final class SettingsBookTests: PanelCase {
         await book.set(try row("mugs/open"), to: "option+ctrl+k")
 
         XCTAssertEqual(book.keys.clashing, ["cups/open", "mugs/open"])
-        XCTAssertEqual(book.keys.clashes.map(\.title), ["⌃⌥K does two things"])
-        XCTAssertEqual(book.keys.clashes.map(\.line), ["Cups · Open and Mugs · Open. Change one of them."])
+        XCTAssertEqual(book.keys.clash(of: "cups/open"), "Also Mugs · Open")
+        XCTAssertNil(book.keys.clash(of: "cups/key.fill"))
     }
 
     func testAUseSaysTheAccessItNeedsAndMayAskFor() {

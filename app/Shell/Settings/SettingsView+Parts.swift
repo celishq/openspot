@@ -27,16 +27,18 @@ extension SettingsView {
             if !found.rows.isEmpty {
                 group("Settings") {
                     lines(found.rows) { row in
-                        self.row(action: { book.reveal(row) }) {
-                            Text("\(row.name) · \(row.title)")
-                                .lineLimit(1)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            if row.kind == .key {
-                                keycaps(row).allowsHitTesting(false)
-                            } else if row.kind != .secret {
-                                Text(book.value(of: row).word).foregroundStyle(.secondary).lineLimit(1)
+                        if row.kind == .key {
+                            keyLine(row, title: "\(row.name) · \(row.title)")
+                        } else {
+                            self.row(action: { book.reveal(row) }) {
+                                Text("\(row.name) · \(row.title)")
+                                    .lineLimit(1)
+                                Spacer(minLength: SpotTokens.settingsTrailingGap)
+                                if row.kind != .secret {
+                                    Text(book.value(of: row).word).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                                chevron
                             }
-                            chevron
                         }
                     }
                 }

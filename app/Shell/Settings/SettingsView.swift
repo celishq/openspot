@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: PageView {
     let model: SpotsModel
     @State var isFolded = true
+    @State var isKeysFolded = true
     @State var isAboutShown = false
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
@@ -73,7 +74,7 @@ struct SettingsView: PageView {
     }
 
     private var accountRow: some View {
-        let isChosen = book.query.isEmpty && book.page.section == .account
+        let isChosen = book.query.isEmpty && book.section == .account
         let account = book.account
         return HStack(spacing: SpotTokens.settingsGroupGap) {
             SettingsAvatar(side: SpotTokens.settingsAccountTile)
@@ -81,7 +82,7 @@ struct SettingsView: PageView {
                 Text(account?.signedIn == true ? account?.handle.map { "@\($0)" } ?? "Account" : "Sign In")
                     .fontWeight(.medium)
                     .lineLimit(1)
-                Text(account?.signedIn == true ? "Account" : "Publish your spots")
+                Text("Account")
                     .font(SpotType.settingsLine)
                     .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.secondary)
                     .lineLimit(1)
@@ -99,7 +100,7 @@ struct SettingsView: PageView {
 
     private var chosen: Binding<SettingsPage.Section?> {
         Binding(
-            get: { book.query.isEmpty ? book.page.section : nil },
+            get: { book.query.isEmpty ? book.section : nil },
             set: { if let section = $0 { book.go(.top(section)) } }
         )
     }

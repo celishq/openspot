@@ -2,7 +2,7 @@ import Foundation
 
 public enum SettingsPage: Hashable, Sendable {
     public enum Section: String, CaseIterable, Encodable, Identifiable, Sendable {
-        case access, spots = "spot", keys, look, account, general, developer
+        case general, look, keys, spots = "spot", access, developer, account
 
         public var id: Self {
             self
