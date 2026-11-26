@@ -15,7 +15,7 @@ public final class Store {
     public private(set) var ask: StoreAsk?
     public internal(set) var trail = PageTrail(StoreStop(place: .mine, spot: nil))
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:] {
-        didSet { searches = shelves.mapValues { SearchList($0) { ($0.spot.name, $0.spot.subtitle, $0.spot.keywords) } } }
+        didSet { searches = shelves.mapValues { SearchList($0) { SearchText(title: $0.spot.name, subtitle: $0.spot.subtitle, keywords: $0.spot.keywords) } } }
     }
     @ObservationIgnored private var searches: [StorePlace: SearchList<StoreCard>] = [:]
     @ObservationIgnored private var opening: String?

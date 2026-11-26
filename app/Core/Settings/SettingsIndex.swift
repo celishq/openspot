@@ -20,9 +20,9 @@ public struct SettingsIndex: Sendable {
     public init() {}
 
     init(accesses: [AccessList.Entry], standings: [SpotStanding], rows: [SettingRow]) {
-        self.accesses = SearchList(accesses) { ($0.id.title, nil, []) }
-        self.standings = SearchList(standings) { ($0.title, $0.detail, []) }
-        self.rows = SearchList(rows) { ($0.title, $0.detail, $0.kind == .key ? ["shortcut", "key"] : []) }
+        self.accesses = SearchList(accesses) { SearchText(title: $0.id.title) }
+        self.standings = SearchList(standings) { SearchText(title: $0.title, subtitle: $0.detail) }
+        self.rows = SearchList(rows) { SearchText(title: $0.title, subtitle: $0.detail, keywords: $0.kind == .key ? ["shortcut", "key"] : []) }
     }
 
     public func found(_ query: String) -> Found {

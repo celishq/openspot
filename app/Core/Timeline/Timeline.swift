@@ -152,7 +152,7 @@ final class Timeline: Sendable {
             let text = SearchQuery(text: query.text ?? "")
             if !text.text.isEmpty {
                 let search = kept.search ?? SearchList(kept.entries.sorted { $0.at > $1.at }) {
-                    ($0.title, $0.value, [$0.app].compactMap { $0 } + $0.files.map { ($0.original as NSString).lastPathComponent })
+                    SearchText(title: $0.title, subtitle: $0.value, keywords: [$0.app].compactMap { $0 } + $0.files.map { ($0.original as NSString).lastPathComponent })
                 }
                 kept.search = search
                 let byID = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })

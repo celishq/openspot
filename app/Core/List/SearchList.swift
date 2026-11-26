@@ -2,24 +2,15 @@ import Foundation
 
 public struct SearchList<Element> {
     private let elements: [Element]
-    private let items: [SpotItem]
     private let index: SearchIndex
 
-    public init() {
-        self.init([]) { _ in ("", nil, []) }
-    }
-
-    public init(_ elements: [Element], text: (Element) -> (title: String, subtitle: String?, keywords: [String])) {
+    public init(_ elements: [Element] = [], text: (Element) -> SearchText = { _ in SearchText(title: "") }) {
         self.elements = elements
-        items = elements.enumerated().map { offset, element in
-            let words = text(element)
-            return SpotItem(title: words.title, subtitle: words.subtitle, run: String(offset), keywords: words.keywords)
-        }
-        index = SearchIndex(items)
+        index = SearchIndex(elements.map(text))
     }
 
     public func matching(_ query: SearchQuery) -> [Element] {
-        query.ranking(index, items: items, among: Array(items.indices), weights: PickWeights([])).map { elements[$0] }
+        query.ranking(index, among: Array(elements.indices)) { _ in 0 }.map { elements[$0] }
     }
 }
 

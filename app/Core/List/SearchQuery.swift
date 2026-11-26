@@ -33,11 +33,12 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
+        let weights = PickWeights(recent)
+        return ranking(SearchIndex(items.map(\.searchText)), among: Array(items.indices)) { weights.weight(of: items[$0].run) }.map { items[$0] }
     }
 
-    func ranking(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Int] {
-        ranked(index, items: items, among: offsets, weights: weights)
+    func ranking(_ index: SearchIndex, among offsets: [Int], weight: (Int) -> Double) -> [Int] {
+        ranked(index, among: offsets, weight: weight)
             .sorted { ($0.rank, -$0.weight, $0.offset) < ($1.rank, -$1.weight, $1.offset) }
             .map(\.offset)
     }
@@ -58,10 +59,10 @@ public struct SearchQuery: Equatable, Sendable {
 
     typealias Ranked = (rank: Int, weight: Double, offset: Int)
 
-    func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Ranked] {
+    func ranked(_ index: SearchIndex, among offsets: [Int], weight: (Int) -> Double) -> [Ranked] {
         index.withItems { folded in
             offsets.compactMap { offset in
-                match(folded[offset]).map { (rank: $0, weight: weights.weight(of: items[offset].run), offset: offset) }
+                match(folded[offset]).map { (rank: $0, weight: weight(offset), offset: offset) }
             }
         }
     }

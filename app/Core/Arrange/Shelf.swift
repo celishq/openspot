@@ -18,7 +18,7 @@ public final class Shelf {
     func take(offGrid next: [SpotsModel.Entry]) {
         guard next != offGrid else { return }
         offGrid = next
-        found = SearchList(next) { ($0.spot.name, nil, $0.spot.keywords) }
+        found = SearchList(next) { SearchText(title: $0.spot.name, keywords: $0.spot.keywords) }
         filter()
     }
 

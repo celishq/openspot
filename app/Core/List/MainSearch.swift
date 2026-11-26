@@ -31,7 +31,7 @@ struct MainSearch: Sendable {
                 let among = before?.matches(of: query, in: list)
                 let offsets = list.search == .off ? [] : among ?? Array(list.all.indices)
                 rankedCount += offsets.count
-                let matches = query.ranked(texts, items: list.all, among: offsets, weights: list.weights)
+                let matches = query.ranked(texts, among: offsets) { list.weights.weight(of: list.all[$0].run) }
                 kept.append(Kept(query: query, items: list.all, texts: texts, search: list.search, recent: list.recent, matches: matches.map(\.offset)))
                 return SearchQuery.best(matches, count: count).map { (list: index, match: $0) }
             }
@@ -47,6 +47,6 @@ struct MainSearch: Sendable {
         guard list.search == .script else { return list.searchIndex }
         if let before, before.search == .script, before.items == list.all { return before.texts }
         indexBuilds += 1
-        return SearchIndex(list.all)
+        return SearchIndex(list.all.map(\.searchText))
     }
 }
