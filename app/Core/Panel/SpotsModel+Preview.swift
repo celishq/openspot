@@ -61,28 +61,38 @@ extension SpotsModel {
         takePreview()
     }
 
+    private func previewKey(of item: SpotItem) -> String {
+        ([openSheetID ?? "", item.run] + item.fields.map { "\($0.key)=\($0.value)" }).joined(separator: "\n")
+    }
+
     func takePreview() {
-        if openSheetID == nil { isPreviewing = false }
+        if openSheetID == nil {
+            if isPreviewing { isPreviewing = false }
+            if !ownPreviews.isEmpty { ownPreviews = [:] }
+        }
         let item = isPreviewing ? previewedItem : nil
-        let next = item.flatMap { ownPreviews[$0.run] ?? ItemPreview(item: $0) }
+        let key = item.map(previewKey)
+        let next = item.flatMap { item in key.flatMap { ownPreviews[$0] } ?? ItemPreview(item: item) }
         if next != preview { preview = next }
         let place = next == nil ? nil : openSheet?.sheetRect
         if place != previewPlace {
             previewPlace = place
             if let place { host.showPreview(beside: place) } else { host.hidePreview() }
         }
-        if let item, ownPreviews[item.run] == nil, let asked = previewSpot(of: item) { askPreview(of: item, in: asked.spot, type: asked.type) }
+        guard key != previewAsked else { return }
+        previewAsk?.cancel()
+        previewAsked = key
+        if let item, let key, ownPreviews[key] == nil, let asked = previewSpot(of: item) { askPreview(of: item, key: key, in: asked.spot, type: asked.type) }
     }
 
-    private func askPreview(of item: SpotItem, in spot: Spot, type: String?) {
-        previewAsk?.cancel()
+    private func askPreview(of item: SpotItem, key: String, in spot: Spot, type: String?) {
         let typed: [TextBlock.Field] = type.map { [.init(key: "input.type", value: $0)] } ?? []
         let input = TextBlock(fields: [.init(key: "input.item", value: item.run)] + item.carried.map { .init(key: "input.\($0.key)", value: $0.value) } + typed).text
         previewAsk = Task { [weak self, runs] in
             guard let text = try? await runs.answer(of: spot, EventName.itemPreview, input: input, limit: Self.previewLimit), !Task.isCancelled, let self else { return }
             guard let own = ItemPreview.own(text, of: item.run) else { return }
             if ownPreviews.count >= Self.ownPreviewLimit { ownPreviews.removeAll() }
-            ownPreviews[item.run] = own
+            ownPreviews[key] = own
             asOnePress { takePreview() }
         }
     }

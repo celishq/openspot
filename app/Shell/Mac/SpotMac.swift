@@ -7,6 +7,7 @@ final class SpotMac: MacEvents {
     private static let unlocked = Notification.Name("com.apple.screenIsUnlocked")
     private var observers: [NSObjectProtocol] = []
     private var lockObservers: [NSObjectProtocol] = []
+    private var isLocked = false
     private let system = SpotSystemEvents()
 
     nonisolated var mac: Mac {
@@ -47,11 +48,17 @@ final class SpotMac: MacEvents {
         observers.forEach(center.removeObserver)
         lockObservers.forEach(screens.removeObserver)
         lockObservers = [
-            screens.addObserver(forName: Self.locked, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { heard(.away) }
+            screens.addObserver(forName: Self.locked, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.isLocked = true
+                    heard(.away)
+                }
             },
-            screens.addObserver(forName: Self.unlocked, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { heard(.back) }
+            screens.addObserver(forName: Self.unlocked, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.isLocked = false
+                    heard(.back)
+                }
             }
         ]
         observers = [
@@ -70,9 +77,9 @@ final class SpotMac: MacEvents {
             center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated { heard(.sleep) }
             },
-            center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { _ in
+            center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
-                    heard(.back)
+                    if self?.isLocked == false { heard(.back) }
                     heard(.named(EventName.screenWake, value: nil))
                 }
             },

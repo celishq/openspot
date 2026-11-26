@@ -22,11 +22,12 @@ final class SpotPreviewWindow: NSPanel {
     }
 
     func show(beside sheet: CGRect, in panel: NSWindow) {
-        let area = panel.screen?.visibleFrame ?? .infinite
+        guard let area = panel.screen?.visibleFrame else { return hide() }
         let right = panel.frame.minX + sheet.maxX + SpotTokens.previewGap
         let leftEdge = panel.frame.minX + sheet.minX - SpotTokens.previewGap
         let room = max(area.maxX - right, leftEdge - area.minX)
         let width = min(area.width * SpotTokens.previewScreenShare, room)
+        guard width >= SpotTokens.previewMinWidth else { return hide() }
         let x = area.maxX - right >= width ? right : leftEdge - width
         let top = panel.frame.maxY - sheet.minY
         setFrame(NSRect(x: x, y: top - sheet.height, width: width, height: sheet.height), display: false)

@@ -27,6 +27,15 @@ final class ItemPreviewTests: PanelCase {
         XCTAssertEqual(host.previews.count, 1)
     }
 
+    func testTheShownHintSaysClosePreviewOnceThePreviewOpens() async throws {
+        try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
+        model.followHint()
+
+        _ = model.handleKey(space)
+
+        try await wait("the hint of the open preview") { self.model.sheetHint.groups.contains { $0.words == "Close Preview" } }
+    }
+
     func testEscapeClosesThePreviewFirstAndThenTheSheet() async throws {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
         _ = model.handleKey(space)
@@ -103,6 +112,8 @@ final class ItemPreviewTests: PanelCase {
         _ = model.handleKey(space)
 
         try await wait("the preview of the type") { self.model.preview?.isOwn == true }
+        model.closeMenu()
+        model.closeMenu()
         XCTAssertEqual(colorRuns, ["item.preview|color|#ff0000"])
         let red = try XCTUnwrap(model.target)
         XCTAssertEqual(model.actionMenu(on: red)?.rows.map(\.title).contains("Copy as RGBA"), true)
