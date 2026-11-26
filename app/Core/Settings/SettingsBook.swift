@@ -6,17 +6,13 @@ import Observation
 public final class SettingsBook {
     public private(set) var access = AccessFacts()
     public private(set) var spots = SpotStandings()
-    public private(set) var keys = KeyMap()
     public private(set) var rows = SettingRows()
     public private(set) var looks: [ListedTheme] = []
     public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
-    public private(set) var page = SettingsPage.general
-    public private(set) var mark = SettingsMark.section(.general)
+    public private(set) var trail = SettingsTrail()
     public private(set) var found = SettingsIndex.Found.none
     public private(set) var shownSpots: [SpotStanding] = []
-    public private(set) var back: [SettingsPage] = []
-    public private(set) var forward: [SettingsPage] = []
     public private(set) var query = "" {
         didSet { if query != oldValue { find() } }
     }
@@ -28,11 +24,9 @@ public final class SettingsBook {
     @ObservationIgnored weak var model: SpotsModel?
     @ObservationIgnored public internal(set) var searchRows = ItemList()
     @ObservationIgnored var rowsRead: Task<Void, Never>?
-    @ObservationIgnored private var landing: SettingsPage?
+    @ObservationIgnored private var landing: SettingsPlace?
     @ObservationIgnored private var reading: Task<Void, Never>?
     @ObservationIgnored private var hasRead = false
-    @ObservationIgnored private var backMarks: [SettingsMark] = []
-    @ObservationIgnored private var forwardMarks: [SettingsMark] = []
 
     public init() {}
 
@@ -40,19 +34,26 @@ public final class SettingsBook {
         !query.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
-    public var title: String {
-        guard query.isEmpty else { return "Search" }
-        return switch page {
-        case .accessOf(let id): "\(markTitle) › \(id.title)"
-        case .spotOf(let id): spots.standing(id)?.title ?? id
-        default: page.section.title
-        }
+    public var page: SettingsPage {
+        trail.now.page
     }
 
-    private var markTitle: String {
-        switch mark {
-        case .section(let section): section.title
-        case .spot(let id): spots.standing(id)?.title ?? id
+    public var mark: SettingsPage {
+        trail.now.mark
+    }
+
+    public var title: String {
+        guard query.isEmpty else { return "Search" }
+        if case .accessOf(let id) = page { return "\(title(of: mark)) › \(id.title)" }
+        return title(of: page)
+    }
+
+    private func title(of page: SettingsPage) -> String {
+        switch page {
+        case .top(let section): section.title
+        case .account: "Account"
+        case .accessOf(let id): id.title
+        case .spotOf(let id): spots.standing(id)?.title ?? id
         }
     }
 
@@ -64,21 +65,12 @@ public final class SettingsBook {
         if shown != shownSpots { shownSpots = shown }
     }
 
-    private static func mark(of page: SettingsPage, after mark: SettingsMark) -> SettingsMark {
-        switch page {
-        case .top(let section): .section(section)
-        case .spotOf(let id): .spot(id)
-        case .accessOf: mark
-        default: .section(page.section)
-        }
-    }
-
     public func value(of row: SettingRow) -> SettingValue {
         let text = pending[row.item] ?? row.value ?? ""
         return SettingValue(text.isEmpty ? row.default ?? "" : text, of: row.kind)
     }
 
-    func open(at place: SettingsPage?) {
+    func open(at place: SettingsPlace?) {
         isOpen = true
         landing = place
         if let place { land(place) }
@@ -122,7 +114,6 @@ public final class SettingsBook {
         let isIndexed = next.access == access && next.spots == spots && next.rows == rows
         if next.access != access { access = next.access }
         if next.spots != spots { spots = next.spots }
-        if next.keys != keys { keys = next.keys }
         if next.rows != rows { rows = next.rows }
         if next.looks != looks { looks = next.looks }
         if next.account != account { account = next.account }
@@ -135,37 +126,23 @@ public final class SettingsBook {
 
     public func go(_ next: SettingsPage) {
         guard next != page || !query.isEmpty else { return }
-        if query.isEmpty {
-            back.append(page)
-            backMarks.append(mark)
-        }
-        forward = []
-        forwardMarks = []
+        let remembers = query.isEmpty
         query = ""
         recording = nil
         target = nil
-        page = next
-        mark = Self.mark(of: next, after: mark)
+        trail.go(next, remembers: remembers)
     }
 
     public func goBack() {
-        guard let last = back.popLast() else { return }
-        forward.append(page)
-        forwardMarks.append(mark)
         recording = nil
         target = nil
-        page = last
-        mark = backMarks.popLast() ?? Self.mark(of: last, after: mark)
+        _ = trail.goBack()
     }
 
     public func goForward() {
-        guard let next = forward.popLast() else { return }
-        back.append(page)
-        backMarks.append(mark)
         recording = nil
         target = nil
-        page = next
-        mark = forwardMarks.popLast() ?? Self.mark(of: next, after: mark)
+        _ = trail.goForward()
     }
 
     public func search(_ text: String) {
@@ -173,31 +150,26 @@ public final class SettingsBook {
         query = text
     }
 
-    public func land(_ place: SettingsPage) {
+    public func land(_ place: SettingsPlace) {
         query = ""
         recording = nil
-        back = []
-        forward = []
-        backMarks = []
-        forwardMarks = []
         target = nil
         switch place {
         case .row(let item):
-            guard let row = rows.row(item) else { return land(.general) }
+            guard let row = rows.row(item) else { return trail.land(.general) }
             reveal(row)
         case .search(let words):
+            trail.land(page)
             query = words
-        case .spotOf(let id) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
-            page = .general
-            mark = .section(.general)
-        default:
-            page = place
-            mark = Self.mark(of: place, after: .section(place.section))
+        case .page(.spotOf(let id)) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
+            trail.land(.general)
+        case .page(let page):
+            trail.land(page)
         }
     }
 
     public func reveal(_ row: SettingRow) {
-        land(row.spot == ReservedSetting.appSpot ? .top(row.section) : spots.standing(row.spot) == nil ? .general : .spotOf(row.spot))
+        land(.page(row.spot == ReservedSetting.appSpot ? .top(row.section ?? .general) : spots.standing(row.spot) == nil ? .general : .spotOf(row.spot)))
         target = row.item
     }
 

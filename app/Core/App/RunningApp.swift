@@ -29,7 +29,7 @@ public protocol RunningApp: Sendable {
     func grant() async -> AccessGrant?
     func endGrant() async
     func restart() async -> Bool
-    func openSettings(at place: SettingsPage?) async
+    func openSettings(at place: SettingsPlace?) async
 }
 
 extension RunningApp {
@@ -70,5 +70,5 @@ extension RunningApp {
         false
     }
 
-    public func openSettings(at place: SettingsPage?) async {}
+    public func openSettings(at place: SettingsPlace?) async {}
 }

@@ -5,10 +5,9 @@ import SwiftUI
 extension SettingsView {
     var accountPage: some View {
         let account = book.account
-        let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.signedIn {
-                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", SettingsPage.Section.account.line) {
+                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", AccountStatus.line) {
                     Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
                 }
@@ -30,9 +29,6 @@ extension SettingsView {
                         Button("Show My Words…") { step = .words }
                     }
                 }
-                if !rows.isEmpty {
-                    group(nil) { lines(rows) { settingLine($0) } }
-                }
                 Section {
                     HStack {
                         titled("Sign out", "Removes your key from this Mac.")
@@ -41,7 +37,7 @@ extension SettingsView {
                     }
                 }
             } else {
-                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", SettingsPage.Section.account.line) {
+                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", AccountStatus.line) {
                     HStack(spacing: SpotTokens.settingsRowGap) {
                         Button("Use My Own Key…") { step = .signIn }
                         Button("How It Works…") { step = .how }

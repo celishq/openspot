@@ -1,6 +1,8 @@
 import Foundation
 
 public struct AccountStatus: PrintedRecord, Equatable, Sendable {
+    public static let line = "Your account signs the spots you publish, so people know that updates come from you."
+
     public let signedIn: Bool
     public let npub: String?
     public let handle: String?

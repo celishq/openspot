@@ -70,7 +70,7 @@ extension SettingsView {
 
     func keyLine(_ row: SettingRow, title: String? = nil) -> some View {
         HStack(spacing: SpotTokens.settingsValueGap) {
-            titled(title ?? row.title, book.keys.clash(of: row.item) ?? "")
+            titled(title ?? row.title, book.rows.clash(of: row.item) ?? "")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             keycaps(row)
         }
@@ -80,7 +80,7 @@ extension SettingsView {
 
     func keycaps(_ row: SettingRow) -> some View {
         let caps = book.value(of: row).caps
-        let clash = book.keys.clashing.contains(row.item)
+        let clash = book.rows.clashing.contains(row.item)
         let isRecording = book.recording == row.item
         let field = SpotRoundShape(radius: SpotTokens.settingsRecordCorner)
         let ink: Color = isRecording ? .accentColor : clash ? SpotTheme.settingsClash : caps.isEmpty ? .secondary : .primary

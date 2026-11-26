@@ -24,8 +24,8 @@ struct SettingsView: PageView {
             reveal: reveal,
             target: book.target,
             query: Binding(get: { book.query }, set: { book.search($0) }),
-            back: book.back.isEmpty ? nil : { book.goBack() },
-            forward: book.forward.isEmpty ? nil : { book.goForward() }
+            back: book.trail.back.isEmpty ? nil : { book.goBack() },
+            forward: book.trail.forward.isEmpty ? nil : { book.goForward() }
         ) {
             sidebar
         } content: {
@@ -55,8 +55,8 @@ struct SettingsView: PageView {
     private var sidebar: some View {
         List(selection: chosen) {
             accountRow
-                .tag(SettingsMark.section(.account))
-            ForEach(SettingsPage.Section.sidebar) { section in
+                .tag(SettingsPage.account)
+            ForEach(SettingsPage.Section.allCases) { section in
                 let count = section == .general ? book.spots.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
@@ -70,7 +70,7 @@ struct SettingsView: PageView {
                             .background(SpotTheme.settingsBadge, in: Circle())
                     }
                 }
-                .tag(SettingsMark.section(section))
+                .tag(SettingsPage.top(section))
             }
             if !book.shownSpots.isEmpty {
                 Section("Spots") {
@@ -84,7 +84,7 @@ struct SettingsView: PageView {
                                 Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
                             }
                         }
-                        .tag(SettingsMark.spot(standing.id))
+                        .tag(SettingsPage.spotOf(standing.id))
                     }
                 }
             }
@@ -110,16 +110,10 @@ struct SettingsView: PageView {
         .padding(.vertical, SpotTokens.settingsAccountPadding / 2)
     }
 
-    private var chosen: Binding<SettingsMark?> {
+    private var chosen: Binding<SettingsPage?> {
         Binding(
             get: { book.query.isEmpty ? book.mark : nil },
-            set: { mark in
-                switch mark {
-                case .section(let section): book.go(.top(section))
-                case .spot(let id): book.go(.spotOf(id))
-                case nil: break
-                }
-            }
+            set: { if let page = $0 { book.go(page) } }
         )
     }
 
@@ -132,11 +126,10 @@ struct SettingsView: PageView {
             case .top(.access): accessPage
             case .top(.general): generalPage
             case .top(.look): lookPage
-            case .top(.account): accountPage
+            case .account: accountPage
             case .top(let section): rowsPage(section)
             case .accessOf(let id): book.access.access(id).map { accessPage(of: $0) }
             case .spotOf(let id): book.spots.standing(id).map { spotPage(of: $0) }
-            case .row, .search: EmptyView()
             }
         }
     }

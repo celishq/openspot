@@ -59,7 +59,7 @@ struct AppCalls {
     func settings(at place: String?) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("app settings") }
         return CommandAnswer.work {
-            await app.openSettings(at: place.map { SettingsPage(place: $0) ?? .general })
+            await app.openSettings(at: place.map { SettingsPlace(place: $0) ?? .general })
             return ""
         }
     }

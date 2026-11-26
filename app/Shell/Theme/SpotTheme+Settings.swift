@@ -44,9 +44,7 @@ extension SpotTheme {
     static func settings(_ section: SettingsPage.Section) -> Color {
         switch section {
         case .access: .blue
-        case .spots: .purple
         case .look: Color(white: 0.15)
-        case .account: .indigo
         case .general: .gray
         case .developer: Color(white: 0.3)
         }

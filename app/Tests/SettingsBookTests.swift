@@ -33,7 +33,7 @@ final class SettingsBookTests: PanelCase {
     }
 
     private func land(_ place: String) throws {
-        book.land(try XCTUnwrap(SettingsPage(place: place), "no place \(place)"))
+        book.land(try XCTUnwrap(SettingsPlace(place: place), "no place \(place)"))
     }
 
     private func row(_ item: String) throws -> SettingRow {
@@ -112,10 +112,10 @@ final class SettingsBookTests: PanelCase {
 
     func testSettingsOpensOnGeneralWithTheSectionsInTheirOrder() {
         XCTAssertEqual(SettingsBook().page, .general)
-        XCTAssertEqual(SettingsPage.Section.sidebar, [.general, .look, .access, .developer])
+        XCTAssertEqual(SettingsPage.Section.allCases, [.general, .look, .access, .developer])
         XCTAssertEqual(SettingsPage.Section.access.title, "Privacy")
-        XCTAssertEqual(SettingsPage(place: "privacy"), .access)
-        XCTAssertEqual(SettingsPage(place: "access"), .access)
+        XCTAssertEqual(SettingsPlace(place: "privacy"), .access)
+        XCTAssertEqual(SettingsPlace(place: "access"), .access)
     }
 
     func testASpotPageMarksItsRowAndAnAccessPageKeepsTheMarkItCameFrom() async throws {
@@ -124,19 +124,19 @@ final class SettingsBookTests: PanelCase {
         book.land(.general)
 
         book.go(.spotOf("cups"))
-        XCTAssertEqual(book.mark, .spot("cups"))
+        XCTAssertEqual(book.mark, .spotOf("cups"))
         XCTAssertEqual(book.title, "Cups")
         book.go(.accessOf(.screen))
-        XCTAssertEqual(book.mark, .spot("cups"))
+        XCTAssertEqual(book.mark, .spotOf("cups"))
         XCTAssertEqual(book.title, "Cups › \(MacAccess.screen.title)")
         book.go(.access)
         book.go(.accessOf(.screen))
 
-        XCTAssertEqual(book.mark, .section(.access))
+        XCTAssertEqual(book.mark, .access)
         XCTAssertEqual(book.title, "Privacy › \(MacAccess.screen.title)")
         book.goBack()
         book.goBack()
-        XCTAssertEqual(book.mark, .spot("cups"))
+        XCTAssertEqual(book.mark, .spotOf("cups"))
     }
 
     func testTheSidebarListsEachSpotOnceByNameAndASearchNarrowsIt() async throws {
@@ -155,11 +155,11 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testEachPlaceReadsBackFromItsWords() {
-        let places: [SettingsPage] = [.access, .accessOf(.screen), .spotOf("tools/a"), .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
+        let places: [SettingsPlace] = [.access, .accessOf(.screen), .spotOf("tools/a"), .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
 
-        XCTAssertEqual(places.map { SettingsPage(place: $0.place) }, places)
-        XCTAssertNil(SettingsPage(place: "access/nothing"))
-        XCTAssertNil(SettingsPage(place: "nowhere"))
+        XCTAssertEqual(places.map { SettingsPlace(place: $0.place) }, places)
+        XCTAssertNil(SettingsPlace(place: "access/nothing"))
+        XCTAssertNil(SettingsPlace(place: "nowhere"))
     }
 
     func testBackAndForwardWalkThePagesSeen() async throws {
@@ -173,7 +173,7 @@ final class SettingsBookTests: PanelCase {
         book.goForward()
 
         XCTAssertEqual(book.page, .look)
-        XCTAssertEqual(book.back, [.access, .developer])
+        XCTAssertEqual(book.trail.back.map(\.page), [.access, .developer])
     }
 
     func testASetWritesThroughSettingSetAndARemovalOfItsValueTakesItAway() async throws {
@@ -240,15 +240,15 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testAChoiceWithNoValueShowsItsDefault() {
-        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spots, icon: "", options: ["name", "date"], default: "date")
+        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: nil, icon: "", options: ["name", "date"], default: "date")
 
         XCTAssertEqual(book.value(of: row), .text("date"))
     }
 
     func testAValueReadsAsItsKind() {
-        let toggle = SettingRow(spot: "notes", name: "Notes", key: "menubar", title: "Menu bar", value: "true", kind: .toggle, section: .spots, icon: "")
-        let key = SettingRow(spot: "notes", name: "Notes", key: "open", title: "Open", value: "ctrl+option+k", kind: .key, section: .spots, icon: "")
-        let secret = SettingRow(spot: "notes", name: "Notes", key: "token", title: "Token", value: SettingRow.secretValue, kind: .secret, section: .spots, icon: "")
+        let toggle = SettingRow(spot: "notes", name: "Notes", key: "menubar", title: "Menu bar", value: "true", kind: .toggle, section: nil, icon: "")
+        let key = SettingRow(spot: "notes", name: "Notes", key: "open", title: "Open", value: "ctrl+option+k", kind: .key, section: nil, icon: "")
+        let secret = SettingRow(spot: "notes", name: "Notes", key: "token", title: "Token", value: SettingRow.secretValue, kind: .secret, section: nil, icon: "")
 
         XCTAssertTrue(book.value(of: toggle).isOn)
         XCTAssertEqual(book.value(of: key).caps, ["⌃", "⌥", "K"])
@@ -352,9 +352,9 @@ final class SettingsBookTests: PanelCase {
         await book.set(try row("cups/open"), to: "ctrl+option+k")
         await book.set(try row("mugs/open"), to: "option+ctrl+k")
 
-        XCTAssertEqual(book.keys.clashing, ["cups/open", "mugs/open"])
-        XCTAssertEqual(book.keys.clash(of: "cups/open"), "Also Mugs · Open")
-        XCTAssertNil(book.keys.clash(of: "cups/key.fill"))
+        XCTAssertEqual(book.rows.clashing, ["cups/open", "mugs/open"])
+        XCTAssertEqual(book.rows.clash(of: "cups/open"), "Also Mugs · Open")
+        XCTAssertNil(book.rows.clash(of: "cups/key.fill"))
     }
 
     func testAUseSaysTheAccessItNeedsAndMayAskFor() {
