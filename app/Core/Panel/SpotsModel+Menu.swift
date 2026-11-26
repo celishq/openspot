@@ -120,6 +120,7 @@ extension SpotsModel {
     }
 
     func extras(on target: Target) -> [CommandAction] {
+        if openSheetID != nil, let item = target.item { return Peek(item: item) == nil ? [] : [.peek] }
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []

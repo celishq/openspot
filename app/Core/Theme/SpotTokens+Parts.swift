@@ -7,6 +7,9 @@ extension SpotTokens {
     public static let tipWidth: CGFloat = 280
     public static let tipLines = 4
     public static let submenuGap: CGFloat = 4
+    public static let peekGap: CGFloat = 12
+    public static let peekWidth: CGFloat = 340
+    public static let peekHeight: CGFloat = 380
     public static let colorShare: CGFloat = 0.7
     public static let colorCornerShare: CGFloat = 0.25
     public static let cardLineReach: CGFloat = 6

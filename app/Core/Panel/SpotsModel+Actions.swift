@@ -94,7 +94,9 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
-        if place.isDetached {
+        if action == .peek {
+            togglePeek()
+        } else if place.isDetached {
             let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
             if asks, place == .window {
                 toast(.failure("\(action.title) asks with a form or a second press, which a window does not show yet."))
