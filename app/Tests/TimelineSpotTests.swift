@@ -8,6 +8,8 @@ final class TimelineSpotTests: BuiltInCase {
         }
     }
 
+    private let keptDays = "setting.keep=30 days\n"
+
     private var log: URL {
         root.appendingPathComponent("effects")
     }
@@ -38,7 +40,7 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     private func rows(_ input: String? = nil) async throws -> [SpotItem] {
-        try await timeline.items(input: input, timeout: 60).items
+        try await timeline.items(input: input ?? keptDays, timeout: 60).items
     }
 
     func testTheRowsShowNewestFirstUnderTheirDay() async throws {
@@ -104,7 +106,7 @@ final class TimelineSpotTests: BuiltInCase {
     func testTheSpotIsTitledTimelineAndNotByItsNewestEntry() async throws {
         try add(.text, "newest")
 
-        let shown = try await timeline.items(input: "input.event=panel.open\n", timeout: 60)
+        let shown = try await timeline.items(input: "input.event=panel.open\n" + keptDays, timeout: 60)
 
         XCTAssertEqual(shown.root?.value("title"), "Timeline")
         XCTAssertFalse(try timeline.triggers.events.contains(EventName.panelOpen))
@@ -113,7 +115,7 @@ final class TimelineSpotTests: BuiltInCase {
     func testTheSheetKeepsTheTitleOfTheSpotAndNotOfTheNewestEntry() async throws {
         try add(.text, "Screenshot 2026-11-25 at 23.32.04.png")
 
-        let frame = try await timeline.items(timeout: 60)
+        let frame = try await timeline.items(input: keptDays, timeout: 60)
 
         XCTAssertEqual(frame.root?.value("title"), "Timeline")
         XCTAssertEqual(frame.items.first?.title, "Screenshot 2026-11-25 at 23.32.04.png")
@@ -156,7 +158,7 @@ final class TimelineSpotTests: BuiltInCase {
     func testTheSheetSaysCopyOnReturnAndOffersPasteOnCommandReturnAndATextShowsAa() async throws {
         try add(.text, "hello")
 
-        let frame = try await timeline.items(timeout: 60)
+        let frame = try await timeline.items(input: keptDays, timeout: 60)
 
         XCTAssertEqual(frame.items.map(\.openTitle), ["Copy"])
         XCTAssertEqual(frame.items.map(\.picture), [.symbol("textformat")])

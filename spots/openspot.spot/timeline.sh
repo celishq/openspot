@@ -34,7 +34,7 @@ forgotten="$OPENSPOT_DATA/forgotten"
 case "$1" in
   show)
     days=$(value setting.keep | tr -dc 0-9)
-    openspot timeline keep "${days:-30}" || exit 1
+    openspot timeline keep "$days" || exit 1
     list ""
     ;;
   sheet.text) list "$(value value)" "$(value limit)" ;;
@@ -54,7 +54,6 @@ case "$1" in
     openspot timeline forget "$id" || exit 1
     printf '%s' "$id" > "$forgotten"
     openspot toast --id forgot --action restore "Forgot it. Click to put it back."
-    list ""
     ;;
   restore)
     id=$(cat "$forgotten" 2>/dev/null)

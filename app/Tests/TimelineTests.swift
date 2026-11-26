@@ -263,6 +263,22 @@ final class TimelineTests: PanelCase {
         try await wait("the show after the add") { self.shows == before + 1 }
     }
 
+    func testAForgetRunsTheShowOfAnOpenSheetThatReadsTheTimelineAgain() async throws {
+        let id = try await add(["text=gone"])
+        _ = try await listed(["--all"], of: "reader")
+        model.isShown = true
+        model.panelWillShow()
+        model.press("reader")
+        try await wait("the open sheet") { self.model.transition.phase == .open && self.shows >= 1 }
+        try await wait("the end of each call") { self.model.sheets["reader"]?.calls.isEmpty == true }
+        let before = shows
+
+        let answer = try await call(["forget", id], of: "reader")
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        try await wait("the show after the forget") { self.shows == before + 1 }
+    }
+
     func testARemovedSpotNoLongerReadsTheTimeline() async throws {
         _ = try await listed(["--all"], of: "reader")
         XCTAssertEqual(model.runs.timeline.readers(of: "notes"), ["reader"])
