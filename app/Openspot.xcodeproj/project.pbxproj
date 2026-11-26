@@ -238,6 +238,7 @@
 		2C97E93550CB40308FDFA28A /* SpotType+Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64FE653497134B94A2A3DD1 /* SpotType+Parts.swift */; };
 		2CD1E07A53CE8F8193739AE8 /* ShelfLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24BB3333F7E603FFC264B05 /* ShelfLayout.swift */; };
 		2CDB660E401427CCC3ECA174 /* AccountHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D6B763F8EEBA98A98B8C9E /* AccountHandle.swift */; };
+		2D068C8371A3A8D865220678 /* PeekAct.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF507D44612EDA486F50665 /* PeekAct.swift */; };
 		2D0710D8EED8AB3AD0ABBD71 /* CommandHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5330859B3A63E91199D476 /* CommandHold.swift */; };
 		2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D37D4729D1CBB46B75278F /* OpenspotItem.swift */; };
 		2D6F6E09E97F7B1A842E73A6 /* ScriptProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */; };
@@ -719,6 +720,7 @@
 		95DBA21904489BF03C5AAE90 /* PeekBlocksTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38FC10DEA3E6AB81271C40E /* PeekBlocksTests.swift */; };
 		95E9AF05A4ABDF4FA9AE2075 /* CardMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6FBC67648B13F55341FB8 /* CardMark.swift */; };
 		95F17DC37911F1BB5DC34F89 /* PageSidebarRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32F46F20A310386D2D088635 /* PageSidebarRow.swift */; };
+		9609F04F49BA1FBDD06C0E7F /* PeekActTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 625D6DDBE169903376A2FAF2 /* PeekActTests.swift */; };
 		96241D04883C1353AFC4D0FE /* ViewBuilds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 598DAF2CC3A9FC8A72C6152A /* ViewBuilds.swift */; };
 		9628CF93B6BAA70C2795989C /* KeptScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CB6F9B8ACB8E9D0F6994A6 /* KeptScan.swift */; };
 		9638AFF34B3EF9A6DF3B2D40 /* GlobalKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */; };
@@ -1841,6 +1843,7 @@
 		6166CE78629F6275BCE69B74 /* PowerCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerCallTests.swift; sourceTree = "<group>"; };
 		61A7DE8B0D7A6C8385032724 /* TimelineSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSpotTests.swift; sourceTree = "<group>"; };
 		61D78D44AC947ADB6300778B /* SpotSheetPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPreview.swift; sourceTree = "<group>"; };
+		625D6DDBE169903376A2FAF2 /* PeekActTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekActTests.swift; sourceTree = "<group>"; };
 		62B24D36B429CBB0F07FEC1E /* SpotRuns+Timers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Timers.swift"; sourceTree = "<group>"; };
 		62C7BFB5BD886B5504BBD14A /* PageLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLink.swift; sourceTree = "<group>"; };
 		62DE1B0770D13E317B53F6BC /* SymbolsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolsCall.swift; sourceTree = "<group>"; };
@@ -2553,6 +2556,7 @@
 		EB237E53D64CA21AE2663BC7 /* SystemKeysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemKeysTests.swift; sourceTree = "<group>"; };
 		EB8B60927B6B65387FC5CCAF /* SpotGlyphPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlyphPicture.swift; sourceTree = "<group>"; };
 		EBCC8CA6FA724310DA86F7F0 /* BatchCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchCalls.swift; sourceTree = "<group>"; };
+		EBF507D44612EDA486F50665 /* PeekAct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekAct.swift; sourceTree = "<group>"; };
 		EC0E700894711BC5C2EF2334 /* SheetHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetHeader.swift; sourceTree = "<group>"; };
 		EC14C902E128EAA08A66B0B2 /* StoreGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreGroup.swift; sourceTree = "<group>"; };
 		EC669B26F525901897FDF679 /* PlaygroundPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundPanel.swift; sourceTree = "<group>"; };
@@ -3412,6 +3416,7 @@
 			isa = PBXGroup;
 			children = (
 				6C97F9163A67108365415CE4 /* Peek.swift */,
+				EBF507D44612EDA486F50665 /* PeekAct.swift */,
 			);
 			path = Peek;
 			sourceTree = "<group>";
@@ -3621,6 +3626,7 @@
 				EF4DE0A27D456871791AEA8F /* PanelRefusalTests.swift */,
 				7D60A67961EA840AA7C90653 /* PanelSearchTests.swift */,
 				AB84E5714FEF2B0FAB42FE77 /* PanelViewReadsTests.swift */,
+				625D6DDBE169903376A2FAF2 /* PeekActTests.swift */,
 				F38FC10DEA3E6AB81271C40E /* PeekBlocksTests.swift */,
 				CE6CA404510EE3BF9CA3CD93 /* PeekTests.swift */,
 				424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */,
@@ -5426,6 +5432,7 @@
 				672CF22D1E7A5BC134417256 /* PanelScene.swift in Sources */,
 				379E4E7D1DC62336EA6FCCBB /* PanelSearch.swift in Sources */,
 				3EE1F30DEA3CD6B72C7AAB98 /* Peek.swift in Sources */,
+				2D068C8371A3A8D865220678 /* PeekAct.swift in Sources */,
 				CB7374DDBB93578E37E49AE3 /* PickWeights.swift in Sources */,
 				4F9EE8C4F8713C64E33B997B /* PictureFile+Frames.swift in Sources */,
 				5189C339DB9B568559B04A2B /* PictureFile.swift in Sources */,
@@ -6262,6 +6269,7 @@
 				E1E20E08705BA2C3A23F4AC7 /* PanelRefusalTests.swift in Sources */,
 				C9128208FE5A6A1BE717D2F5 /* PanelSearchTests.swift in Sources */,
 				C2E8D872D195FC056BF97256 /* PanelViewReadsTests.swift in Sources */,
+				9609F04F49BA1FBDD06C0E7F /* PeekActTests.swift in Sources */,
 				95DBA21904489BF03C5AAE90 /* PeekBlocksTests.swift in Sources */,
 				5D449DEE84AB40F29DFC7356 /* PeekTests.swift in Sources */,
 				B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */,

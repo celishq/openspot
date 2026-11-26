@@ -15,6 +15,7 @@ public struct CommandAction: Equatable, Sendable {
         case word(String)
         case history
         case peek
+        case act(PeekAct)
         case open
         case secret(String)
         case option(String)
@@ -23,6 +24,10 @@ public struct CommandAction: Equatable, Sendable {
     public static let history = CommandAction(kind: .history, title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
 
     public static let peek = CommandAction(kind: .peek, title: "Peek", key: ActionKey(text: "cmd+p"), scope: .item, after: .stay)
+
+    static func act(_ act: PeekAct, title: String) -> CommandAction {
+        CommandAction(kind: .act(act), title: title, scope: .item, after: .close)
+    }
 
     public static let open = CommandAction(kind: .open, title: "Open", scope: .spot, after: .stay)
 
@@ -87,6 +92,7 @@ public struct CommandAction: Equatable, Sendable {
         case .word(let name): "openspot.word." + name
         case .history: "openspot.history"
         case .peek: "openspot.peek"
+        case .act(let act): "openspot.act." + act.name
         case .open: "openspot.open"
         case .secret(let key): "openspot.secret." + key
         case .option(let key): "openspot.option." + key

@@ -96,4 +96,22 @@ extension SpotsModel {
         if peekSource != nil { peekSource = nil }
         host.reach(nil)
     }
+
+    func perform(_ act: PeekAct, by spot: Spot) {
+        if isShown { host.dismiss() }
+        if let url = act.url { return host.open(url) }
+        guard let api = runs.api else { return }
+        let caller = SpotCaller(spot: spot)
+        Task { [weak self] in
+            for arguments in act.calls {
+                let request = CommandRequest(arguments: arguments, folder: "/", caller: caller)
+                guard let work = api.work(for: request, input: { act.input }) else { return }
+                let answer = await work()
+                guard answer.code == 0 else {
+                    self?.toast(.failure(answer.errors.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    return
+                }
+            }
+        }
+    }
 }

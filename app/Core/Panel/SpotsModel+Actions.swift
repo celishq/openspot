@@ -96,6 +96,8 @@ extension SpotsModel {
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
         if action == .peek {
             togglePeek()
+        } else if case .act(let act) = action.kind {
+            perform(act, by: target.entry.spot)
         } else if place.isDetached {
             let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
             if asks, place == .window {
