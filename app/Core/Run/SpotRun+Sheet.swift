@@ -110,7 +110,7 @@ extension SpotRun {
     }
 
     func stopShows() {
-        if let show = running(Self.showKey), !hearsEvents { stop(show) }
+        if let show = running(Self.showKey), !keepsEventRun { stop(show) }
         if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
@@ -125,6 +125,10 @@ extension SpotRun {
 
     var hearsEvents: Bool {
         isWanted || spot.uses.contains(.timeline)
+    }
+
+    private var keepsEventRun: Bool {
+        isWanted || spot.uses.contains(.timeline) && shownEvent?.isEvent == true
     }
 
     func settleScript() {
@@ -144,8 +148,8 @@ extension SpotRun {
     }
 
     private func stopUnwantedShow() {
-        guard !hearsEvents else { return }
-        if let show = running(Self.showKey), !finishesShow { stop(show) }
+        guard !isWanted else { return }
+        if let show = running(Self.showKey), !finishesShow, !keepsEventRun { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

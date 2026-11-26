@@ -130,6 +130,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the new read") { self.log() == ["show", "show"] }
     }
 
+    func testTheSheetOfASpotThatUsesTheTimelineStopsWhenThePanelCloses() async throws {
+        try script(toml: "uses = ['timeline']\n\n[on]\n\"clipboard.change\" = true", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        runs.panelClosed()
+        try await allEnded()
+
+        XCTAssertFalse(exists("went-on"))
+    }
+
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
         menuBar.insert("script")
         try script(toml: "[on]\nevery = 1", "printf 'text=t\\ntitle=1\\n'")
