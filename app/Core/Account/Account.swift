@@ -1,11 +1,16 @@
 import Foundation
 
 struct Account: Sendable {
+    static let refusal = "Only Openspot's own spots can reach your account key."
     static let checkedPlaces = 2
     private static let noWords = "This Mac holds no account words."
 
     let store: AccountStore
     let allows: @Sendable (String) async -> Bool
+
+    func admit(_ caller: Spot?) throws {
+        guard caller?.reachesAccountKey == true else { throw SpotError.failed(1, Self.refusal) }
+    }
 
     func status() throws -> AccountStatus {
         let record = try store.record()

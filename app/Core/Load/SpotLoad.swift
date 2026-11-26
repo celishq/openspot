@@ -39,9 +39,8 @@ public struct SpotLoad: Sendable {
     let failure: String?
     public let stamp: [String: [Int]]
     let sources: [String: [String]]
-    public let hasAppSpots: Bool
 
-    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:], hasAppSpots: false)
+    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:])
 
     public func result(hosted: [Spot] = []) throws -> ScanResult {
         if let failure { throw SpotError.fault(failure) }

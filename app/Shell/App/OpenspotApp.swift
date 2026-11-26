@@ -28,6 +28,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     private static let dragSourceFocusDelay: TimeInterval = 0.2
+    private static let startWait: TimeInterval = 5
     static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?
@@ -56,6 +57,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var isLaunched = false
     private var showsAtLaunch = false
     private var openedAtLaunch: [URL] = []
+    private var startsAgain = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make(toasts: model.toasts)
@@ -136,6 +138,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         if showsAtLaunch { showPanel() }
         if !openedAtLaunch.isEmpty { model.openInStore(openedAtLaunch) }
         model.runs.listen(to: mac)
+        await model.resumeGrant()
     }
 
     @concurrent
@@ -155,6 +158,21 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         spotsWatch?.stop()
         commandSocket?.close()
         model.quit()
+        if startsAgain { Self.startAgain() }
+    }
+
+    func restart(after pause: TimeInterval) {
+        startsAgain = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { NSApp.terminate(nil) }
+    }
+
+    private static func startAgain() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        configuration.activates = false
+        let started = DispatchSemaphore(value: 0)
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in started.signal() }
+        _ = started.wait(timeout: .now() + startWait)
     }
 
     @objc private func pressItem() {

@@ -16,7 +16,7 @@ extension SpotsModel {
             guard openSheetID == nil else { return }
             closeMenu()
             missedSearch.drop()
-            hold(nil, motion: .edit)
+            showDetails(nil)
             if session == .arrange { host.arrange(true) }
             change(.edit) {
                 editing = session

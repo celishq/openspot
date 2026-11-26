@@ -61,11 +61,6 @@ id = "snippets"
 size = "small"
 
 [[spots]]
-id = "openspot/settings"
-size = "small"
-key = "cmd+,"
-
-[[spots]]
 id = "translate"
 size = "small"
 

@@ -47,10 +47,23 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    public mutating func addSettings(in config: ConfigFile, secrets: SecretStore, read: Config? = nil, defaults: SpotChoices = SpotChoices()) {
+    public func allowing(_ entries: [SpotLock.Entry]) -> ScanResult {
+        var scan = self
+        scan.files = files.map { file in
+            SpotFile(id: file.id, spots: file.spots.map { spot in
+                guard !spot.isBuiltIn, spot.host == nil, let entry = entries.first(where: { $0.holds(spot.id) }) else { return spot }
+                var spot = spot
+                spot.uses.formUnion(entry.uses)
+                return spot
+            })
+        }
+        return scan
+    }
+
+    public mutating func addSettings(in config: ConfigFile, read: Config? = nil, defaults: SpotChoices = SpotChoices()) {
         let read = read ?? config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { spot in
-            spot.takingSettings(in: config, secrets: secrets, isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id)).hidingSource(read.setting(ReservedSetting.attachment, of: spot.id) == "false")
+            spot.takingRows(isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id)).hidingSource(read.setting(ReservedSetting.attachment, of: spot.id) == "false")
         }) }
     }
 }

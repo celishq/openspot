@@ -158,26 +158,12 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with screencapture in place of openspot screen") }
         if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
         if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
-        for arguments in texts.flatMap(calls) {
+        for arguments in texts.flatMap(WrittenCalls.calls) {
             guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
             let line = "Call openspot \(arguments[0]) \(arguments[1]) without \(needed.use.rawValue) in the uses of its spot.toml"
             if !lines.contains(line) { lines.append(line) }
         }
         return lines
-    }
-
-    private static func calls(in text: String) -> [[String]] {
-        let shell = text.matches(of: /openspot[ \t]+([a-z]+)[ \t]+([a-z-]+)((?:[ \t]+[^\s;|&)]+)*)/).map { match in
-            [String(match.1), String(match.2)] + match.3.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(unquoted)
-        }
-        let inline = text.matches(of: /openspot\.call\(\s*\[([^\]]*)\]/).map { match in
-            match.1.split(separator: ",").map(unquoted)
-        }
-        return shell + inline
-    }
-
-    private static func unquoted(_ word: Substring) -> String {
-        word.trimmingCharacters(in: CharacterSet(charactersIn: " \t\"'"))
     }
 
     private static func listed(_ words: [String]) -> String {

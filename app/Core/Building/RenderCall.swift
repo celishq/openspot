@@ -6,6 +6,7 @@ public enum RenderCall: NounCall {
     case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
     case panel(String, scene: PanelScene = PanelScene())
     case store(String, place: String?, spot: String?, review: String?)
+    case settings(at: String?, path: String, isLight: Bool)
 
     private static let rule = CallRule(flags: .ownProcess)
 
@@ -24,16 +25,20 @@ public enum RenderCall: NounCall {
             guard size != .some(nil) else { return nil }
             return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1], isLight: fit.has("--light"))
         },
-        CommandVerb("panel", "[--arrange] [--search <text>] [--swap <id>] [--hold] <file.png>", "Draws the panel with each installed spot on its grid; with --arrange, Arrange over the screen with the words of --search in its field and the spot of --swap lifted over the last card; with --hold, the grid while ⌘ is held.", rule: rule) { words in
+        CommandVerb("panel", "[--arrange] [--search <text>] [--swap <id>] [--hold] [--light] <file.png>", "Draws the panel with each installed spot on its grid, dark or light; with --arrange, Arrange over the screen with the words of --search in its field and the spot of --swap lifted over the last card; with --hold, the grid while ⌘ is held; with only --search, what the search finds.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            let scene = PanelScene(isArranging: fit.has("--arrange"), search: fit.value("--search"), swap: fit.value("--swap"), isHeld: fit.has("--hold"))
-            guard scene.isArranging || (scene.search == nil && scene.swap == nil) else { return nil }
+            let scene = PanelScene(isArranging: fit.has("--arrange"), search: fit.value("--search"), swap: fit.value("--swap"), isHeld: fit.has("--hold"), isLight: fit.has("--light"))
+            guard scene.isArranging || scene.swap == nil else { return nil }
             guard !(scene.isArranging && scene.isHeld) else { return nil }
             return Self.panel(fit.rest[0], scene: scene)
         },
         CommandVerb("store", "[--place <name>] [--spot <id>] [--review <id>] <file.png>", "Draws the window of the Store at My spots, or at the place --place names, such as Openspot, with the page of --spot open, or the review of an install of --review over it.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return Self.store(fit.rest[0], place: fit.value("--place"), spot: fit.value("--spot"), review: fit.value("--review"))
+        },
+        CommandVerb("settings", "[--at <where>] [--light] <file.png>", "Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light.", rule: rule) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.settings(at: fit.value("--at"), path: fit.rest[0], isLight: fit.has("--light"))
         }
     ])
 

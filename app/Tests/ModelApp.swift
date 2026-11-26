@@ -28,7 +28,11 @@ struct ModelApp: RunningApp {
     func gridSpots() async -> [ArrangedSpot] { await model.gridSpots() }
     func pin(_ id: String) async -> GridPin { await model.pin(id) }
     func reveal(_ id: String) async -> Bool { false }
-    func playground(_ file: URL?, isCareful: Bool) async {}
+    func playground(_ file: URL?) async {}
     func changeSetting(_ key: String, of spot: String) async -> Bool { false }
     func allows(_ reason: String) async -> Bool { false }
+    func grant(_ id: String, needs: [MacAccess]) async -> Bool { await model.grant(id, needs: needs) }
+    func grant() async -> AccessGrant? { await model.grant }
+    func endGrant() async { await model.endGrant() }
+    func openSettings(at place: SettingsPage?) async { await model.openSettings(at: place) }
 }

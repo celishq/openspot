@@ -32,6 +32,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
+            .overlay(alignment: .topTrailing) { WaitingMark(model: model, entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
@@ -223,6 +224,28 @@ private struct FailureMark: View {
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
                 .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
+        }
+    }
+}
+
+private struct WaitingMark: View {
+    let model: SpotsModel
+    let entry: SpotsModel.Entry
+    let size: SpotSize
+
+    var body: some View {
+        if entry.item == nil, model.waiting.contains(entry.spot.id), model.failure(of: entry) == nil {
+            let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
+            let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
+            Image(systemName: "lock.fill")
+                .font(SpotType.cornerFault)
+                .foregroundStyle(SpotTheme.ink)
+                .frame(width: SpotTokens.cornerMark, height: SpotTokens.cornerMark)
+                .background(SpotTheme.cornerFill, in: cap)
+                .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+                .offset(x: -inset, y: inset)
+                .allowsHitTesting(false)
+                .accessibilityLabel("Needs you in Settings")
         }
     }
 }

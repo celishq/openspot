@@ -37,7 +37,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](#a-toast) has the rest. It works in `show`. |
 | `openspot toast --remove <id>`                      | Takes your toast with the id away.                                       |
 | `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
-| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
+| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. On stdin, blocks after the value draw its [details](../connect/attachments.md#give-a-value). It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
 | `openspot attachment add clipboard [--within <age>]` | Puts what the clipboard holds in the panel's field: its files, a link, a text or an image, and nothing for a password. The chip keeps the first million characters of a longer text, and the spot that takes it gets the whole text, read when people hand it on. An image is saved to a file only then. With `--within`, it adds only a copy that Openspot first saw within the age, as `clipboard read` takes it. It needs `attachment` and `clipboard` in `uses`. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a page of your spot over the sheet.                        |
 | `openspot route back [--root]`                      | Goes back one page, or to the first.                                     |
@@ -53,7 +53,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot cache get <name>`                         | Prints the value your spot keeps as `<name>`, and runs its filler when it is missing or old. |
 | `openspot cache age <name>`                         | Prints the seconds since your spot kept `<name>`, or nothing.            |
 | `openspot cache set <name>`                         | Keeps stdin as `<name>`, and asks your spot again for the panel's search. |
-| `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
+| `openspot spot open <id>`                           | Opens the panel on a spot, or its window.                                |
 | `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>` or `openspot selection read <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
 | `openspot clipboard read [--within <age>]` | Prints the text on the clipboard. With `--within`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |

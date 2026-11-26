@@ -42,7 +42,7 @@ public final class SpotsModel {
             takeCards()
             spotListIsStale = true
             askAnswers()
-            takePreview()
+            takeDetails()
             showVisible()
             prepareCardGlyphs()
         }
@@ -50,7 +50,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            takePreview()
+            takeDetails()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -72,29 +72,24 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
-            if attachments.selectedChip != oldValue.selectedChip {
-                previewBuilds += 1
-                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
-            }
         }
     }
-    @ObservationIgnored var chipPreview: AttachmentPreview?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
     public private(set) var promptWord = SearchPrompt.grid
-    public internal(set) var preview: AttachmentPreview? {
+    public internal(set) var details: AttachmentDetails? {
         didSet {
-            let room = preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
-            if fieldRoom != room { fieldRoom = room }
+            let room = Self.room(of: details)
+            if detailsRoom != room { detailsRoom = room }
+            if let details, heldDetails != details { heldDetails = details }
         }
     }
-    public private(set) var fieldRoom: CGFloat = 0
+    public private(set) var heldDetails: AttachmentDetails?
+    public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
-    @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
-    @ObservationIgnored var previewBuilds = 0
     @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
@@ -133,6 +128,10 @@ public final class SpotsModel {
     }
     public internal(set) var confirming: GlobalKey?
     public private(set) var openSheetID: String?
+    public internal(set) var waiting: Set<String> = []
+    @ObservationIgnored public internal(set) var grant: AccessGrant?
+    @ObservationIgnored var grantWatch: Task<Void, Never>?
+    @ObservationIgnored var waitingRead: Task<Void, Never>?
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
@@ -323,10 +322,10 @@ public final class SpotsModel {
     @ObservationIgnored var flashWatch: Task<Void, Never>?
     @ObservationIgnored private var scanned: [Spot] = []
     @ObservationIgnored private var load = SpotLoad.empty
-    @ObservationIgnored private var installed: [SpotLock.Entry] = []
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
-    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot])?
+    @ObservationIgnored private var allowed: [SpotLock.Entry] = []
+    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot], allowed: [SpotLock.Entry])?
     @ObservationIgnored private(set) var kept = KeptConfig() {
         didSet {
             if kept.config.settings != oldValue.config.settings { runs.take(settings: kept.config.settings) }
@@ -337,7 +336,7 @@ public final class SpotsModel {
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
-    @ObservationIgnored public private(set) var account: AccountSheet!
+    @ObservationIgnored public let settingsBook = SettingsBook()
     @ObservationIgnored private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: AppPlaces = .standard, runs: SpotRuns? = nil) {
@@ -361,12 +360,7 @@ public final class SpotsModel {
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
-        let environment = self.runs.environment
-        account = AccountSheet(store: files.account, links: AccountSheet.Links(
-            allows: { [weak self] reason in await self?.allows(reason) ?? false },
-            copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: environment)) != nil },
-            userName: { NSFullUserName() }
-        ))
+        settingsBook.model = self
     }
 
     public var config: Config {
@@ -410,15 +404,16 @@ public final class SpotsModel {
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load, installed) = await Self.read(config, folder, secrets, lock)
+            let (next, load, allowed) = await Self.read(config, folder, secrets, lock)
             self.load = load
-            self.installed = installed
+            self.allowed = allowed
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
         await task.value
+        readWaiting()
     }
 
     @concurrent
@@ -433,23 +428,22 @@ public final class SpotsModel {
         host.applyConfig(config)
         kept = next
         let folder = files.spots
-        let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
-        guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
-        var scan = (try? load.result(hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
+        let hosted = reviewed.map { [$0.spot] } ?? []
+        guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.allowed != allowed }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
+        var scan = ((try? load.result(hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
+        scan.addSettings(in: files.config, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
-        runs.isCareful = config.isCareful
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
         let unreviewed = scan.spots.filter { spot in
-            !spot.triggers.schedule.isEmpty && spot.host == nil && !spot.isBuiltIn && !folder.isCore(spot) && !installed.contains { $0.holds(spot.id) }
+            !spot.triggers.schedule.isEmpty && spot.host == nil && !spot.isBuiltIn && !folder.isCore(spot) && !allowed.contains { $0.holds(spot.id) }
         }
         runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps, unreviewed: Set(unreviewed.map(\.id)))
         lastScan = scan
-        loaded = (load.stamp, hosted)
+        loaded = (load.stamp, hosted, allowed)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps
@@ -462,6 +456,7 @@ public final class SpotsModel {
             toast(.failure(problems.joined(separator: " ")))
         }
         self.problems = problems
+        settingsBook.refresh()
     }
 
     public func spotsChanged() async {
@@ -503,15 +498,12 @@ public final class SpotsModel {
             case .keys:
                 host.applyConfig(config)
                 holdAssignedKeys(config)
-            case .careful:
-                runs.isCareful = config.isCareful
             case .spots, .value:
                 break
             }
         }
         if case .value(let spot, let caller) = change {
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
-            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.show(need: .change) }
         }
         runs.showOfferedItems()
     }
@@ -563,6 +555,8 @@ public final class SpotsModel {
     public func panelWillShow() {
         asOnePress {
             isPanelHidden = false
+            readWaiting()
+            settingsBook.readRows()
             finishPick()
             selected = 0
             openAttachment()
@@ -634,9 +628,6 @@ public final class SpotsModel {
         case .frame(let frame):
             markFound(id)
             if id == openSheetID { takeKeyField() }
-            if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
-                settingsChanged(of: owner)
-            }
         case .landed:
             host.land(id)
         case .closed:
@@ -653,18 +644,6 @@ public final class SpotsModel {
         case .attachment(let value):
             takeAttachment(value, of: id)
         }
-    }
-
-    private func settingsChanged(of spot: String) {
-        let next = files.config.readKept()
-        let isNewValue = next.config.settings != config.settings
-        if next.config.arrangement.menuBar != arrangement.menuBar {
-            configChanged(.spots([spot]), to: next)
-        } else if take(next, changing: [.keys, .settings]) {
-            host.applyConfig(config)
-            holdAssignedKeys(config)
-        }
-        if isNewValue { configChanged(.value(spot: spot, caller: nil), to: next) }
     }
 
     public func chooseFiles(for id: String) -> Bool {

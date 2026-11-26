@@ -47,7 +47,7 @@ final class AccountMarkerTests: BuiltInCase {
         if !FileManager.default.fileExists(atPath: core.appendingPathComponent(SpotsFolder.appName).path) {
             try FileManager.default.copyItem(at: repoSpots.appendingPathComponent(SpotsFolder.appName), to: core.appendingPathComponent(SpotsFolder.appName))
         }
-        let ids = try SpotsFolder(url: spots, core: core).scan().scripts.filter(\.reachesAccountKey).map(\.id) + [AccountSheet.id]
+        let ids = try SpotsFolder(url: spots, core: core).scan().scripts.filter(\.reachesAccountKey).map(\.id)
         let command = tools.appendingPathComponent("openspot")
         var said: [String] = []
         for id in ids {
@@ -79,88 +79,6 @@ final class AccountMarkerTests: BuiltInCase {
         try keepTheKey()
 
         for said in try await runsSaid() {
-            XCTAssertFalse(said.contains(marker), said)
-        }
-    }
-
-    func testTheWholeFlowLeavesNoWordWhereAScriptOrACallerReads() async throws {
-        let app = app, mac = mac
-        let sheet = AccountSheet(store: store, links: AccountSheet.Links(
-            allows: { await app.allows($0) },
-            copy: { mac.copied.append($0); return true },
-            userName: { "Tony Pinkevych" }
-        ))
-        var lines: [String] = []
-        var failures: [String] = []
-        let frame = { (arguments: [String], input: String?, page: String?) async -> String in
-            let value = arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? ""
-            let message = (arguments == ["show"] ? "input.event=sheet.open\n" : "") + value + (page.map { "input.route=\($0)\n" } ?? "") + (input ?? "")
-            do {
-                let answer = try await sheet.answer(Array(arguments.prefix(1)), input: message)
-                lines.append("\(answer.effects)")
-                return answer.frame
-            } catch {
-                failures.append((error as? SpotError)?.reason ?? "\(error)")
-                return ""
-            }
-        }
-        let picks = { (text: String) -> [(place: Int, word: String)] in
-            text.split(separator: "\n").filter { $0.hasPrefix("button=pick-") }.map { line in
-                let rest = line.dropFirst("button=pick-".count)
-                return (Int(rest.prefix { $0 != "-" }) ?? 0, String(rest.drop { $0 != "-" }.dropFirst()))
-            }
-        }
-
-        let check = { (words: [String], wrongFirst: Bool) async throws in
-            _ = await frame(["about"], nil, nil)
-            let shown = await frame(["reveal"], nil, "about")
-            XCTAssertTrue(shown.contains("title=\(words[0])"), shown)
-            _ = await frame(["wrote"], nil, "about")
-            let asked = await frame(["show"], nil, "check")
-            let places = Array(Set(picks(asked).map(\.place))).sorted()
-            XCTAssertEqual(places.count, 2, asked)
-            if wrongFirst {
-                let wrong = try XCTUnwrap(picks(asked).first { $0.place == places[0] && $0.word != words[places[0] - 1] })
-                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, "check")
-                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, "check")
-                return
-            }
-            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, "check") }
-        }
-
-        _ = await frame(["new"], nil, nil)
-        _ = await frame(["create"], "input.handle=tony\n", "handle")
-        XCTAssertEqual(try store.record()?.handle, "tony")
-        let made = try XCTUnwrap(try store.key()?.words)
-        try await check(made, true)
-        XCTAssertFalse(try store.record()?.isBackedUp == true)
-        try await check(made, false)
-        XCTAssertTrue(try store.record()?.isBackedUp == true)
-        _ = await frame(["leave"], nil, nil)
-        _ = await frame(["sign_out"], nil, "leave")
-        XCTAssertNil(try store.key())
-        _ = await frame(["own"], nil, nil)
-        _ = await frame(["phrase", "abandon abandon"], nil, "restore")
-        _ = await frame(["sign_in"], "input.phrase=\(phrase)\n", "restore")
-        let words = try XCTUnwrap(try store.key()?.words)
-        XCTAssertEqual(words.joined(separator: " "), phrase)
-        try keepTheKey()
-        _ = await frame(["show"], nil, nil)
-        try await check(words, true)
-        try await check(words, false)
-        XCTAssertTrue(try store.record()?.isBackedUp == true)
-        await app.set(allows: false)
-        _ = await frame(["reveal"], nil, "about")
-        _ = await frame(["sign_out"], nil, "leave")
-        await app.set(allows: true)
-        _ = await frame(["new"], nil, "publish:evil")
-
-        let verbs = await verbsSaid()
-        let ran = try await runsSaid()
-        runs.quit()
-        let reached = verbs + ran + lines + failures + mac.copied + [everything(in: root.appendingPathComponent("logs")), everything(in: root.appendingPathComponent("stats"))]
-        XCTAssertFalse(failures.isEmpty)
-        for said in reached {
             XCTAssertFalse(said.contains(marker), said)
         }
     }

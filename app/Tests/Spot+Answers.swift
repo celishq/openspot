@@ -5,7 +5,7 @@ import Foundation
 extension Spot {
     private func output(_ handler: String, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let message = (input ?? "") + TestSettings.text
-        return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, handler, input: message.isEmpty ? nil : message, limit: timeout), kinds: self.kinds)
+        return Frame(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: self, handler, input: message.isEmpty ? nil : message, limit: timeout), kinds: self.kinds)
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -32,7 +32,7 @@ extension Spot {
     }
 
     func sheetFaults(timeout: TimeInterval) async throws -> [String] {
-        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, ScriptEntry.show.name, limit: timeout)).sheetFaults
+        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: self, ScriptEntry.show.name, limit: timeout)).sheetFaults
     }
 
     private func message(_ action: CommandAction, item: SpotItem?, inputs: [TextBlock.Field] = []) -> Message {
@@ -59,7 +59,7 @@ extension Spot {
     }
 
     func hook(_ handler: String, card: String, origin: String) async -> Bool {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         let answer = await withCheckedContinuation { continuation in
             if let now = runs.answer(handler, of: self, card: card, origin: origin, later: { continuation.resume(returning: !$0.isEmpty) }) {
                 continuation.resume(returning: !now.isEmpty)

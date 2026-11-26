@@ -14,7 +14,7 @@ enum CheckCall: NounCall {
     func work(in context: CallContext) -> CommandAPI.Work? {
         let calls = CheckCalls(input: context.input, places: context.places, place: context.folder, callers: context.runs?.callers)
         return switch self {
-        case .folder(let path, let form): calls.folder(path, form: form, careful: context.careful)
+        case .folder(let path, let form): calls.folder(path, form: form)
         case .sheet: calls.sheet()
         }
     }

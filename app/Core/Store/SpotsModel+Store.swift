@@ -15,13 +15,8 @@ extension SpotsModel {
     func accountKey() async throws -> AccountKey? {
         let account = Account(store: files.account, allows: { [weak self] reason in await self?.allows(reason) ?? false })
         if let key = try await Task.detached(priority: .userInitiated, operation: { try await account.signing() }).value { return key }
-        if let account = entries.first(where: { $0.id == AccountSheet.id }) {
-            host.present()
-            _ = push(FlowSheet(spot: account.id))
-        }
         toast(.failure("Set up your account, then share again."))
+        openSettings(at: .account)
         return nil
     }
-
-
 }

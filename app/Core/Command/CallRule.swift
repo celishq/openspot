@@ -16,6 +16,7 @@ public struct CallRule: Equatable, Sendable {
         }
 
         public static let startsScripts = Flags(rawValue: 1)
+        public static let reachesKey = Flags(rawValue: 2)
         public static let readsInput = Flags(rawValue: 4)
         public static let ownProcess = Flags(rawValue: 8)
         public static let events = Flags(rawValue: 16)
@@ -28,13 +29,17 @@ public struct CallRule: Equatable, Sendable {
     public var inShow: InShow
     public var flags: Flags
     public var onlyPerson: String?
+    public var needs: Set<MacAccess>
+    public var mayNeed: Set<MacAccess>
 
-    public init(use: SpotUse? = nil, used: String = "", inShow: InShow = .free, flags: Flags = [], onlyPerson: String? = nil) {
+    public init(use: SpotUse? = nil, used: String = "", inShow: InShow = .free, flags: Flags = [], onlyPerson: String? = nil, needs: Set<MacAccess> = [], mayNeed: Set<MacAccess> = []) {
         self.use = use
         self.used = used
         self.inShow = inShow
         self.flags = flags
         self.onlyPerson = onlyPerson
+        self.needs = needs
+        self.mayNeed = mayNeed
     }
 
     var act: (effect: String, words: String?) {

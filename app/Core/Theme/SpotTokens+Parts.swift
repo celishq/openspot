@@ -58,33 +58,31 @@ extension SpotTokens {
     public static let attachmentFarShadowDrop: CGFloat = 6
     public static let attachmentDot: CGFloat = 4
     public static let attachmentDotGap: CGFloat = 3
-    public static let attachmentValueRise: CGFloat = 8
     public static let attachmentGap: CGFloat = 8
-    public static let previewLines = 2
-    public static let previewCaptionGap: CGFloat = 4
+    public static let detailsLineLimit = 2
 
-    public static let attachmentValuePadding: CGFloat = 9
-    public static var attachmentValueFoot: CGFloat { padding + glyphInset }
-    public static let attachmentValueLineGap: CGFloat = 1
+    public static let detailsTop: CGFloat = 9
+    public static var detailsFoot: CGFloat { padding + glyphInset }
+    public static let detailsLineGap: CGFloat = 1
     static let lineShare: CGFloat = 1.25
     static let glyphWidthShare: CGFloat = 0.55
 
-    public static var attachmentValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
-    public static var attachmentPicture: CGFloat { attachmentValueRoom(lines: 1) - attachmentValuePadding - attachmentValueFoot }
-    public static var attachmentPictureRadius: CGFloat { min(attachmentPicture * 0.224 * cardRadius / builtIn.radius.card, attachmentPicture / 2) }
-    public static let attachmentPictureGap: CGFloat = 8
+    public static var detailsWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
+    public static var detailsContentHeight: CGFloat { detailsHeight(lines: detailsLineLimit) - detailsTop - detailsFoot }
+    public static var detailsPicture: CGFloat { detailsHeight(lines: 1) - detailsTop - detailsFoot }
+    public static let detailsPictureGap: CGFloat = 8
 
-    public static func attachmentValueLines(of text: String, besidePicture: Bool = false) -> Int {
+    public static func detailsLines(of text: String, besidePicture: Bool = false) -> Int {
         guard !text.isEmpty else { return besidePicture ? 1 : 0 }
         let width = CGFloat(text.count) * CGFloat(layout.type.body) * glyphWidthShare
-        let room = attachmentValueWidth - (besidePicture ? attachmentPicture + attachmentPictureGap : 0)
-        return min(previewLines, max(1, Int((width / room).rounded(.up))))
+        let room = detailsWidth - (besidePicture ? detailsPicture + detailsPictureGap : 0)
+        return min(detailsLineLimit, max(1, Int((width / room).rounded(.up))))
     }
 
-    public static func attachmentValueRoom(lines: Int) -> CGFloat {
+    public static func detailsHeight(lines: Int) -> CGFloat {
         let caption = CGFloat(layout.type.detail) * lineShare
-        let body = lines == 0 ? 0 : attachmentValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
-        return (attachmentValuePadding + attachmentValueFoot + caption + body).rounded(.up)
+        let body = lines == 0 ? 0 : detailsLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
+        return (detailsTop + detailsFoot + caption + body).rounded(.up)
     }
 
     public static var attachmentFit: Int {
@@ -194,6 +192,83 @@ extension SpotTokens {
     public static let playgroundTextIdeal: CGFloat = 440
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
+    public static let settingsWindowSize = CGSize(width: 880, height: 620)
+    public static let settingsWindowMinSize = CGSize(width: 680, height: 460)
+    public static let settingsSidebarMin: CGFloat = 200
+    public static let settingsSidebarIdeal: CGFloat = 240
+    public static let settingsSidebarMax: CGFloat = 320
+    public static let settingsPagePadding: CGFloat = 24
+    public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
+    public static var settingsHeroReveal: CGFloat { settingsPagePadding + settingsHeroAvatar + settingsHeroGap }
+    public static var settingsHeadingReveal: CGFloat { settingsPagePadding + settingsTitleLine }
+    public static let settingsTitleLine: CGFloat = 32
+    public static let settingsHeadingGap: CGFloat = 20
+    public static let settingsAccountTile: CGFloat = 28
+    public static let settingsAccountPadding: CGFloat = 8
+    public static let settingsAccountCorner: CGFloat = 8
+    public static let settingsAccountInset: CGFloat = 10
+    public static let settingsFormWidth: CGFloat = 640
+    public static let settingsBarFade: CGFloat = 14
+    public static let settingsSectionTile: CGFloat = 20
+    public static let settingsRowTile: CGFloat = 22
+    public static let settingsHeaderTile: CGFloat = 52
+    public static let settingsHeroAvatar: CGFloat = 72
+    public static let settingsHeroGap: CGFloat = 8
+    public static let settingsFoundTile: CGFloat = 24
+    public static let settingsSpotIcon: CGFloat = 44
+    public static let settingsTileCorner: CGFloat = 0.225
+    public static let settingsBadge: CGFloat = 18
+    public static let settingsRowGap: CGFloat = 10
+    public static let settingsCorner: CGFloat = 10
+    public static let settingsRim: CGFloat = 0.5
+    public static let settingsGroupGap: CGFloat = 8
+    public static let settingsHeaderGap: CGFloat = 14
+    public static let settingsHeaderPadding: CGFloat = 16
+    public static let settingsTitleGap: CGFloat = 4
+    public static let settingsLineGap: CGFloat = 1
+    public static let settingsTrailingGap: CGFloat = 8
+    public static let settingsValueGap: CGFloat = 12
+    public static let settingsRecordHeight: CGFloat = 22
+    public static let settingsRecordWidth: CGFloat = 132
+    public static let settingsRecordRing: CGFloat = 1
+    public static let settingsRecordClear: CGFloat = 5
+    public static let settingsRecordCorner: CGFloat = 5
+    public static let settingsKeyName: CGFloat = 150
+    public static let settingsFieldWidth: CGFloat = 220
+    public static let settingsUseGap: CGFloat = 6
+    public static let settingsLookColumn: CGFloat = 170
+    public static let settingsLookGap: CGFloat = 18
+    public static let settingsLookHeight: CGFloat = 104
+    public static let settingsLookWords: CGFloat = 6
+    public static let settingsLookTopInset: CGFloat = 14
+    public static let settingsLookRing: CGFloat = 3
+    public static let settingsLookCardRing: CGFloat = 4
+    public static let settingsLookCheckInset: CGFloat = 6
+    public static let settingsSheetWidth: CGFloat = 460
+    public static let settingsSheetPadding: CGFloat = 24
+    public static let settingsSheetGap: CGFloat = 14
+    public static let settingsSheetTop: CGFloat = 6
+    public static let settingsWordsGapX: CGFloat = 24
+    public static let settingsWordsGapY: CGFloat = 8
+    public static let settingsWordsNumber: CGFloat = 18
+    public static let settingsPhraseHeight: CGFloat = 76
+    public static let settingsPhrasePadding: CGFloat = 6
+    public static let settingsPhraseCorner: CGFloat = 7
+    public static let settingsGrantPadding: CGFloat = 22
+    public static let settingsGrantCorner: CGFloat = 16
+    public static let settingsGrantShadow: CGFloat = 24
+    public static let settingsGrantDrop: CGFloat = 10
+    public static let settingsGrantStep: CGFloat = 22
+    public static let settingsGrantStepGap: CGFloat = 12
+    public static let settingsSwitchHeight: CGFloat = 38
+    public static let settingsSwitchPadding: CGFloat = 10
+    public static let settingsSwitchInset: CGFloat = 3
+    public static let settingsSwitchRing: CGFloat = 1.5
+    public static let settingsSwitchCorner: CGFloat = 8
+    public static let settingsSwitchFrame: CGFloat = 8
+    public static let settingsAppIcon: CGFloat = 22
+    public static let settingsDot: CGFloat = 7
+    public static let settingsDetailGap: CGFloat = 2
 
     public static let builtIn = Theme.Layout()
     public static let windowFooterGap: CGFloat = builtIn.space.columnGap
@@ -219,18 +294,4 @@ extension SpotTokens {
     public static let storeMediaHeight: CGFloat = 240
     public static let storeAskWidth: CGFloat = 440
     public static let storeAskRadius: CGFloat = 16
-
-    public static let emblemSide: CGFloat = 26
-    public static var publisherPlace: CGSize { CGSize(width: partsWidth, height: 178) }
-    public static let publisherTiltReach = CGSize(width: 10, height: 7)
-    public static let publisherRatio = 263.0 / 166.0
-    public static let publisherRadius: CGFloat = 14
-    public static let publisherInset: CGFloat = 16
-    public static let publisherLineGap: CGFloat = 8
-    public static let publisherCatchShift: CGFloat = 0.8
-    public static let publisherPillBlur: CGFloat = 6
-    public static let publisherPillGap: CGFloat = 5
-    public static let publisherPillHeight: CGFloat = 22
-    public static let publisherPillCharWidth = 6.3
-    public static let publisherPillRoom = 33.0
 }

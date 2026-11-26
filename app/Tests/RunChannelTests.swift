@@ -73,8 +73,7 @@ final class RunChannelTests: SpotRunsCase {
         }
     }
 
-    func testInCarefulModeACallOfASpotStillReachesItsApp() async throws {
-        runs.isCareful = true
+    func testACallOfASandboxedSpotStillReachesItsApp() async throws {
         try script(toml: "uses = ['spots']\n\(TestSpot.command)", "\(call("setting set tone careful")) 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
 
         try await press()
@@ -176,7 +175,6 @@ final class RunChannelTests: SpotRunsCase {
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         let socket = try XCTUnwrap(CommandSocket(folder: config, api: try XCTUnwrap(runs.api)))
         defer { socket.close() }
-        runs.isCareful = true
         try script("writer", toml: "uses = ['files']", "echo a > '\(outside.path)/'\"$1\"")
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)

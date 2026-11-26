@@ -11,6 +11,6 @@ public enum PlaygroundCommand: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         guard case .open(let path) = self else { return nil }
-        return PlaygroundCalls(folder: context.folder, app: context.app).open(path, isCareful: context.isCareful)
+        return PlaygroundCalls(folder: context.folder, app: context.app).open(path)
     }
 }

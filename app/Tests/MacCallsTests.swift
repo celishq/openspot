@@ -173,9 +173,8 @@ final class MacCallsTests: XCTestCase {
     }
 
     @MainActor
-    func testInCarefulModeASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
+    func testASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
         let runs = SpotRuns()
-        runs.isCareful = true
         let fenced = runs.callers.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
         let free = runs.callers.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
         let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs)
@@ -201,7 +200,7 @@ final class MacCallsTests: XCTestCase {
         let desktop = try await answer(["screen", "shot", "display:1", "e.png"], fenced, in: home.appendingPathComponent("Desktop"))
         let anywhere = try await answer(["screen", "shot", "display:1", "f.png"], free, in: outside)
 
-        XCTAssertEqual(shot.errors, "Careful mode keeps Shots from writing \(outside.appendingPathComponent("a.png").path). Name a file in its data folder or a temp folder, or add `files` to `uses` in its spot.toml.\n")
+        XCTAssertEqual(shot.errors, "Openspot keeps Shots from writing \(outside.appendingPathComponent("a.png").path). Name a file in its data folder or a temp folder, or add `files` to `uses` in its spot.toml.\n")
         XCTAssertEqual([shot.code, events.code, linked.code, climbed.code], [1, 1, 1, 1])
         XCTAssertEqual([own.code, temp.code, desktop.code, anywhere.code], [0, 0, 0, 0], own.errors + temp.errors + desktop.errors)
         XCTAssertEqual(acts.all, ["shot c.png in shots", "shot d.png in \(FileManager.default.temporaryDirectory.lastPathComponent)", "shot e.png in Desktop", "shot f.png in \(outside.lastPathComponent)"])

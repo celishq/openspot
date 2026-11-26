@@ -8,6 +8,7 @@ final class ReservedSettingTests: XCTestCase {
 
     func testASettingOfAPlaceOfASpotRunsTheCallThatDoesTheWork() {
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "menubar", "true")?.value as? SettingCall, .menuBar(spot: "notes", isShown: true))
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "window", "true")?.value as? SettingCall, .window(spot: "notes", isWindow: true))
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false")?.value as? SettingCall, .set(spot: "notes", key: "enabled", value: "false"))
         XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake")?.value as? SettingCall, .key(spot: "shelf", act: .float, key: "shake"))
         XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left", "ctrl+left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: "ctrl+left"))
@@ -19,8 +20,8 @@ final class ReservedSettingTests: XCTestCase {
     func testASettingOfTheAppRunsTheCallThatDoesTheWork() {
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "true")?.value as? SettingCall, .login(true))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "link", "false")?.value as? SettingCall, .link(false))
-        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "careful", "true")?.value as? SettingCall, .careful(true))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "slow", "true")?.value as? SettingCall, .slow(true))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "theme", "Night")?.value as? SettingCall, .theme("Night"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space")?.value as? SettingCall, .appKey(name: "panel-key", key: "ctrl+space"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f")?.value as? SettingCall, .appKey(name: "fix-key", key: "ctrl+f"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "yes")?.value as? CallFault, .refused("`login` takes `true` or `false`, such as `openspot setting set --spot openspot login true`."))

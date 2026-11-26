@@ -74,7 +74,7 @@ final class AppWordsTests: XCTestCase {
             body: "printf '%s %s\\n' \"$1\" \"$(sed -n 's/^input.item=//p')\" >> '\(heard.path)'"
         )
         let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         runs.take(scan, menuBar: [], stamps: [:])
         defer { runs.quit() }
         let acts = try XCTUnwrap(runs.sheets["openspot/acts"])

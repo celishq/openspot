@@ -7,10 +7,6 @@ final class SnoozeTabPanelTests: PanelCase {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
     }
 
-    private var core: URL {
-        folder.appendingPathComponent("core", isDirectory: true)
-    }
-
     private var tools: URL {
         folder.appendingPathComponent("tools", isDirectory: true)
     }

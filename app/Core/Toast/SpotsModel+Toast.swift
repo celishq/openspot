@@ -8,12 +8,12 @@ extension SpotsModel {
 
     private func press(fixing note: ToastNote, of spot: String) -> @MainActor @Sendable () -> Void {
         switch note.fix {
-        case .url(let url): { [weak self] in self?.host.open(url) }
-        case .settings: { [weak self] in
-            self?.host.show()
-            self?.openSettings()
+        case .url(let url): { [weak self] in
+            if let access = MacAccess(pane: url), self?.openSettings(at: .accessOf(access)) == true { return }
+            self?.host.open(url)
         }
         case .schedule(let id): { [weak self] in self?.runs.allowSchedule(of: id) }
+        case .settings: { [weak self] in self?.openSettings(at: .keys) }
         case nil: { [weak self] in self?.press(note, of: spot) }
         }
     }

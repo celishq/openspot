@@ -11,15 +11,19 @@ extension SpotsModel {
     }
 
     func openSheet(on key: ActionKey) -> Bool {
-        guard openSheetID == nil, let id = spot(openedBy: key) else { return false }
+        guard let id = spot(openedBy: key) else { return key == Self.settingsKey && openSettings() }
+        guard openSheetID == nil || place(ofSheet: id) == .window else { return false }
         endEditing(moving: false)
         pushFirst(id, moving: true)
         return true
     }
 
     func spot(openedBy key: ActionKey) -> String? {
-        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        let chosen = arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        return chosen
     }
+
+    static let settingsKey = ActionKey(name: ",", isCommand: true)
 
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
@@ -83,7 +87,7 @@ extension SpotsModel {
     public func openEdit(of entry: Entry) -> Bool {
         let spot = entry.spot
         guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn, !folder.isCore(spot),
-              let sheet = runs.editSheet(of: spot)
+              let sheet = runs.editSheet(of: spot, isOwn: !folder.isCore(spot))
         else { return false }
         pushFirst(sheet.spot.id, moving: true)
         return true
@@ -231,6 +235,15 @@ extension SpotsModel {
         } catch {
             toast(.failure("\(form.action.title) failed. \(Self.reason(error))"))
         }
+    }
+
+    public func keep(secret value: String, key: String, of spot: String) async -> String? {
+        if value.count < SecretStore.shortest {
+            return "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value."
+        }
+        if let failure = await Self.keep(value, key: key, of: spot, in: files.secrets) { return failure }
+        configChanged(.value(spot: spot, caller: nil), to: kept)
+        return nil
     }
 
     private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {

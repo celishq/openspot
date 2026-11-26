@@ -22,9 +22,9 @@ final class PlacesTests: PanelCase {
 
         XCTAssertTrue(try entry("shelf").isOnGrid)
         XCTAssertEqual(model.menuBarMarks.map(\.id), ["shelf"])
-        let settings = try XCTUnwrap(try entry("shelf").spot.settingsSheet)
+        let settings = try XCTUnwrap(try entry("shelf").spot.rows)
         XCTAssertEqual(settings.keys.map(\.act), [.open, .float])
-        XCTAssertTrue(settings.sheet(in: model.config, secrets: [:]).contains("title=Open in a window"))
+        XCTAssertTrue(settings.rows(in: model.config, secrets: [:]).contains { $0.title == "Open in a window" })
         model.float("shelf")
         XCTAssertEqual(host.floats, ["shelf"])
         model.land("shelf")

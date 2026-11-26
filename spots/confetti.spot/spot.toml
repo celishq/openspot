@@ -8,4 +8,4 @@ source = ["confetti"]
 title = "Play"
 
 [settings]
-look = { type = "text", title = "Look" }
+look = { type = "choice", title = "Look", options = ["Colorful", "Gold", "Metallic"], default = "Colorful" }

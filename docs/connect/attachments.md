@@ -127,10 +127,19 @@ case "$1" in
 esac
 ```
 
-- `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
+- `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of its details,
   `app=`, the bundle ID of the app whose icon the chip shows, and `icon=`, which takes what `icon` in `spot.toml`
   takes. With none of these, it takes them on stdin, as `openspot browser tab` prints them, and adds nothing when stdin
   holds no value.
+- After the value, on stdin, more blocks draw its details under the field in place of its title, where a class with
+  the [`details:`](../reference/classes.md#variants) prefix applies. They take `text`, `number`, `series`, `picture` and `icon` blocks and a
+  first block of the frame's own keys, such as `class`, in the room of two lines. A block of any other kind fails with
+  exit code 2:
+
+  ```text
+  printf 'url=%s\ntitle=%s\n\ntext=host\ntitle=%s\ndetail=%s\n' "$url" "$title" "$title" "$host" | openspot attachment add
+  ```
+
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
 - `openspot browser tab` and `openspot selection read` read what people work on inside Openspot. A source needs
@@ -156,7 +165,7 @@ esac
 
 - While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`. When it fails, or gives no answer in 3 seconds, the field shows why, such as `Openspot can't read Safari. Allow it in Openspot's settings.`
-  when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens the Attachments spot, where people allow it, and the next Tab reads again.
+  when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens the Attachments spot. Its Access row opens Settings at Access, where people allow it, and the next Tab reads again.
 - A chip shows only when a spot has a row for it. A source runs only when some spot has a row for some
   kind.
 - A source stays off the grid and out of the search. The Attachments spot lists it, and Return there hides or shows its

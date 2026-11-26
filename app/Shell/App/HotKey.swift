@@ -5,28 +5,58 @@ import OpenspotCore
 enum HotKey {
     struct Registration {
         fileprivate let id: UInt32
-        fileprivate let reference: EventHotKeyRef
     }
 
-    nonisolated(unsafe) private static var actions: [UInt32: () -> Void] = [:]
+    private struct Held {
+        let shortcut: Shortcut
+        let action: () -> Void
+        var reference: EventHotKeyRef?
+    }
+
+    nonisolated(unsafe) private static var held: [UInt32: Held] = [:]
     nonisolated(unsafe) private static var nextID: UInt32 = 1
     nonisolated(unsafe) private static var isInstalled = false
+    nonisolated(unsafe) private static var pausedMode: UnsafeMutableRawPointer?
+    nonisolated(unsafe) private static var isPaused = false
 
     static func register(_ shortcut: Shortcut, action: @escaping () -> Void) -> Registration? {
         installHandler()
         let id = nextID
         nextID += 1
-        var reference: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(signature: OSType(0x4F505348), id: id)
-        guard RegisterEventHotKey(shortcut.code, carbonModifiers(of: shortcut), hotKeyID, GetApplicationEventTarget(), 0, &reference) == noErr,
-              let reference else { return nil }
-        actions[id] = action
-        return Registration(id: id, reference: reference)
+        let reference = isPaused ? nil : add(shortcut, id: id)
+        guard isPaused || reference != nil else { return nil }
+        held[id] = Held(shortcut: shortcut, action: action, reference: reference)
+        return Registration(id: id)
     }
 
     static func unregister(_ registration: Registration) {
-        UnregisterEventHotKey(registration.reference)
-        actions[registration.id] = nil
+        held[registration.id]?.reference.map { _ = UnregisterEventHotKey($0) }
+        held[registration.id] = nil
+    }
+
+    static func pause(_ pauses: Bool) {
+        guard pauses != isPaused else { return }
+        isPaused = pauses
+        if pauses {
+            pausedMode = PushSymbolicHotKeyMode(OptionBits(kHIHotKeyModeAllDisabled))
+            for id in held.keys {
+                held[id]?.reference.map { _ = UnregisterEventHotKey($0) }
+                held[id]?.reference = nil
+            }
+        } else {
+            pausedMode.map { PopSymbolicHotKeyMode($0) }
+            pausedMode = nil
+            for (id, key) in held {
+                held[id]?.reference = add(key.shortcut, id: id)
+            }
+        }
+    }
+
+    private static func add(_ shortcut: Shortcut, id: UInt32) -> EventHotKeyRef? {
+        var reference: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: OSType(0x4F505348), id: id)
+        guard RegisterEventHotKey(shortcut.code, carbonModifiers(of: shortcut), hotKeyID, GetApplicationEventTarget(), 0, &reference) == noErr else { return nil }
+        return reference
     }
 
     private static func carbonModifiers(of shortcut: Shortcut) -> UInt32 {
@@ -53,7 +83,7 @@ enum HotKey {
                 nil,
                 &id
             )
-            HotKey.actions[id.id]?()
+            HotKey.held[id.id]?.action()
             return noErr
         }, 1, &spec, nil, nil)
     }

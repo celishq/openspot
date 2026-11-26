@@ -144,7 +144,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |
 | `<field>`, `<switch>`, `<choice>` | When its value changes.               | `value`, the new value.                              |
-| `<setting>`          | When people press Return on a setting that isn't a `secret` and has no `options`. | none              |
+| `<setting>`          | When `openspot setting change <setting>` runs, for a setting that isn't a `secret` and has no `options`. | none |
 
 ## Environment variables
 

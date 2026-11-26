@@ -11,8 +11,8 @@ final class SpotPlayground: NSObject, NSApplicationDelegate {
     private var closed: CheckedContinuation<Void, Never>?
     private var watch: NSObjectProtocol?
 
-    private init(path: String?, isCareful: Bool) {
-        let model = SpotPlaygroundModel(path: path, isCareful: isCareful)
+    private init(path: String?) {
+        let model = SpotPlaygroundModel(path: path)
         self.model = model
         window = SpotSheetWindow.make(title: "Openspot playground", name: "playground-window", size: SpotTokens.playgroundSize, content: SpotPlaygroundView(model: model))
         window.minSize = CGSize(
@@ -27,7 +27,7 @@ final class SpotPlayground: NSObject, NSApplicationDelegate {
 
     static func run(path: String?) -> Never {
         let app = NSApplication.shared
-        let playground = SpotPlayground(path: path, isCareful: false)
+        let playground = SpotPlayground(path: path)
         kept.insert(playground)
         app.delegate = playground
         app.setActivationPolicy(.regular)
@@ -38,8 +38,8 @@ final class SpotPlayground: NSObject, NSApplicationDelegate {
         exit(0)
     }
 
-    static func show(path: String?, isCareful: Bool) async {
-        let playground = SpotPlayground(path: path, isCareful: isCareful)
+    static func show(path: String?) async {
+        let playground = SpotPlayground(path: path)
         kept.insert(playground)
         playground.window.show()
         await withTaskCancellationHandler {

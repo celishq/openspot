@@ -23,9 +23,8 @@ extension SpotsModel {
         }
     }
 
-    public func updateVisible(holding motion: PanelMotion? = .edit) {
-        hold(shownPreview(of: query), motion: motion)
-        showVisible()
+    public func updateVisible() {
+        showDetails(shownDetails(of: query), with: showVisible)
     }
 
     func showVisible() {
@@ -65,11 +64,11 @@ extension SpotsModel {
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),
-            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
+            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() } + [settingsBook.searchRows],
             search: mainSearch,
             limit: Self.searchLimit - answers.count,
             answers: Array(answers),
-            sources: sources.map(\.spot),
+            sources: sources.map(\.spot) + [SettingsBook.searchSpot],
             isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
         takeFound(ask)
@@ -109,7 +108,7 @@ extension SpotsModel {
         holdsRows = false
         let isFixed = content.isFixed
         if isGridFixed != isFixed { isGridFixed = isFixed }
-        let top = fieldRoom
+        let top = detailsRoom
         if isFixed, let gesture {
             let shown = Set(visible.map(\.id))
             if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
@@ -147,6 +146,11 @@ extension SpotsModel {
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }
 
+    func searchRowsChanged() {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty, content == .search else { return }
+        showVisible()
+    }
+
     func noteMiss() {
         guard let search = missedSearch.take() else { return }
         runs.usage.missed(search, at: runs.now())
@@ -154,7 +158,7 @@ extension SpotsModel {
 
     func takeQuery(_ text: String) {
         hideAttachments(for: text)
-        hold(shownPreview(of: text), motion: .edit)
+        showDetails(shownDetails(of: text))
         query = text
     }
 

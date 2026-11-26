@@ -61,6 +61,20 @@ extension OpenspotApp: SpotsHost {
         windows.window(entry)
     }
 
+    func focusWindow(_ id: String) {
+        windows.focus(id)
+    }
+
+    func showSettings() {
+        if model.isShown { panel?.hide() }
+        recordFront()
+        windows.openSettings()
+    }
+
+    func focusSettings() {
+        windows.focusSettings()
+    }
+
     func takesDrop(at point: NSPoint) -> Bool {
         liesOnPanelDrop(point) || windows.floatTakesDrop(at: point)
     }

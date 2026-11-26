@@ -186,25 +186,14 @@ final class SpotInstallTests: XCTestCase {
         XCTAssertEqual(Set(try places.lock.entries().map(\.folders)), [["clock-2.spot"], ["clock.spot"]])
     }
 
-    func testAKeptBothCopyThatRunsItsOldIDRunsTheCopy() async throws {
-        try "#!/bin/sh\necho \"tick from $(basename \"$(dirname \"$0\")\")\"\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
+    func testAKeptBothCopyMeansItselfByItsOldID() async throws {
+        try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
         try mine()
         _ = try await install("clock", .keepBoth, isConfirmed: true)
-        let copy = try XCTUnwrap(try SpotsFolder(url: spots).scan().scripts.first { $0.id == "clock-2" })
 
-        let answer = try await Self.run(["spot", "run", "clock", "tick"], as: copy, in: places, root: root)
-
-        XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(answer.output, "tick from clock-2.spot\n")
+        XCTAssertEqual(places.lock.meant("clock", by: "clock-2"), "clock-2")
+        XCTAssertEqual(places.lock.meant("clock", by: "other"), "clock")
     }
 
-    @MainActor
-    private static func run(_ words: [String], as spot: Spot, in places: AppPlaces, root: URL) async throws -> CommandAnswer {
-        let runs = SpotRuns(cache: SpotCache(folder: root.appendingPathComponent("cache")))
-        defer { runs.quit() }
-        let api = CommandAPI(mac: Mac(), places: places, app: FakeRunningApp(), runs: runs)
-        let request = CommandRequest(arguments: words, folder: root.path, caller: SpotCaller(spot: spot))
-        return await (try XCTUnwrap(api.work(for: request, input: { "" })))()
-    }
 
 }

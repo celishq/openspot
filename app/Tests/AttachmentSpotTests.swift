@@ -9,27 +9,13 @@ final class AttachmentSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [SpotItem] {
-        try await attachments.items(timeout: 60).items.filter { $0.section == nil }
-    }
-
-    private func access() async throws -> [SpotItem] {
-        try await attachments.items(timeout: 60).items.filter { $0.section == "Access" }
+        try await attachments.items(timeout: 60).items.filter { $0.section == nil && $0.run != "access" }
     }
 
     private func press(_ handler: String, on item: String) async throws {
         try await attachments.perform(handler, input: "input.item=\(item)\n", timeout: 60)
     }
 
-    private func press(_ row: SpotItem) async throws {
-        let keys = row.fields.map { "input.item.\($0.key)=\($0.value)\n" }.joined()
-        try await attachments.perform("press", input: "input.item=\(row.run)\n" + keys, timeout: 60)
-    }
-
-    private func opened() throws -> () -> [String] {
-        let log = root.appendingPathComponent("opened")
-        try fake("open", "echo \"$*\" >> '\(log.path)'")
-        return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
-    }
 
     override func setUp() async throws {
         try await super.setUp()
@@ -70,53 +56,19 @@ final class AttachmentSpotTests: BuiltInCase {
         try await press("settings", on: "tab")
 
         let opened = await app.opened
-        XCTAssertEqual(opened, ["settings tab"])
+        XCTAssertEqual(opened, ["settings at spot/tab"])
     }
 
-    func testAccessListsEachReaderWithWhetherMacOSLetsOpenspotReadIt() async throws {
-        reads.set(installed: ["com.apple.Safari", "com.google.Chrome"], access: ["com.apple.Safari": .allowed, "com.google.Chrome": .unknown, "com.apple.finder": .denied], trust: .unasked)
+    func testTheLastRowOpensAccessInSettingsAndNoReaderIsListed() async throws {
+        let rows = try await attachments.items(timeout: 60).items
 
-        let rows = try await access()
-
-        XCTAssertEqual(rows.map(\.title), ["Safari", "Chrome", "Finder", "Selected text"])
-        XCTAssertEqual(rows.map(\.subtitle), ["Allowed", "Open the app to check", "Not allowed", "Not asked"])
-        XCTAssertEqual(rows.first?.picture, .file("/Applications/Safari.app"))
-        XCTAssertEqual(rows.map(\.openTitle), ["Manage in System Settings", "Open Chrome", "Open System Settings", "Ask for access"])
-        XCTAssertEqual(rows.map { $0.hides ?? [] }, Array(repeating: ["settings"], count: 4))
+        XCTAssertEqual(rows.last?.run, "access")
+        XCTAssertEqual(rows.last?.openTitle, "Open in Settings")
+        XCTAssertFalse(rows.contains { $0.section == "Access" })
+        try await press("press", on: "access")
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["settings at access"])
         let faults = try await attachments.sheetFaults(timeout: 60)
         XCTAssertEqual(faults, [])
-    }
-
-    func testReturnOnAnAppNotAskedAsksMacOSForIt() async throws {
-        reads.set(installed: ["com.google.Chrome"], access: ["com.google.Chrome": .unasked])
-        let rows = try await access()
-        let chrome = try XCTUnwrap(rows.first)
-
-        try await press(chrome)
-
-        XCTAssertTrue(reads.asks.contains("com.google.Chrome true"), reads.asks.joined(separator: ", "))
-    }
-
-    func testReturnOnSelectedTextNotAskedAsksForAccessibility() async throws {
-        reads.set(trust: .unasked)
-        let rows = try await access()
-        let selection = try XCTUnwrap(rows.last)
-
-        try await press(selection)
-
-        XCTAssertTrue(reads.asks.contains("accessibility true"), reads.asks.joined(separator: ", "))
-    }
-
-    func testReturnOnAReaderNotAllowedOpensItsPaneOfSystemSettings() async throws {
-        let opened = try opened()
-        reads.set(access: ["com.apple.finder": .denied], trust: .denied)
-        let rows = try await access()
-
-        for row in rows { try await press(row) }
-
-        XCTAssertEqual(opened(), [
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ])
     }
 }

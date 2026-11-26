@@ -28,20 +28,12 @@ struct CallContext {
         request.place
     }
 
-    var isCareful: Bool {
-        runs?.callers.isCareful == true
-    }
-
     var channel: Spot? {
         request.isFromGroup ? nil : caller
     }
 
-    var careful: Set<SpotUse>? {
-        isCareful ? Set(SpotUse.allCases) : nil
-    }
-
     var fence: (caller: Spot, sandbox: Sandbox)? {
-        guard isCareful, let caller, !caller.uses.contains(.files) else { return nil }
+        guard let caller, !caller.uses.contains(.files) else { return nil }
         return (caller, Sandbox(uses: caller.uses))
     }
 }

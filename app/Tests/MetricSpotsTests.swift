@@ -166,6 +166,26 @@ final class MetricSpotsTests: SpotRunsCase {
         XCTAssertEqual(log("open.log"), ["-a Activity Monitor", "x-apple.systempreferences:com.apple.BluetoothSettings"])
     }
 
+    func testSystemShowsTheBatteryAndTheCPUOfNowWhenThePanelOpensAgain() async throws {
+        try copy("system")
+        let tools = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\nprintf '%s\\n' '0.0 launchd'\n".writeScript(to: tools.appendingPathComponent("ps"))
+        let script = folder.appendingPathComponent("system.spot/system.sh")
+        func run(_ handler: String, input: String = "") async throws -> String {
+            var text = ""
+            for try await frame in ScriptProcess(url: script, arguments: [handler], mode: .once(input: input), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
+            return text
+        }
+
+        _ = try await run("show", input: "input.event=panel.open\n")
+        _ = try await run("system.load", input: "input.value=cpu=100 memory=40\n")
+        try "#!/bin/sh\nprintf '%s\\n' ' -InternalBattery-0 (id=1)\t60%; discharging; 1:30 remaining present: true'\n".writeScript(to: tools.appendingPathComponent("pmset"))
+        let frame = try await run("show", input: "input.event=panel.open\n")
+
+        XCTAssertTrue(frame.contains("title=Battery\nvalue=60\n"), frame)
+        XCTAssertTrue(frame.contains("title=CPU\nmax=100\nunit=%\nvalue=0\n"), frame)
+    }
+
     func testSystemReadsTheBatteryAndTheDevicesAgainOverWhatAnOlderFormKept() async throws {
         try copy("system")
         let data = ScriptProcess.dataFolder(base: runs.environment, dataName: "system")

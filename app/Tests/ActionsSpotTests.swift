@@ -21,7 +21,7 @@ final class ActionsSpotTests: BuiltInCase {
         }
 
         let opened = await app.opened
-        XCTAssertEqual(opened, ["settings weather", "edit weather", "share weather", "delete weather", "grid"])
+        XCTAssertEqual(opened, ["settings at spot/weather", "edit weather", "share weather", "delete weather", "grid"])
     }
 
     func testChangeIconHandsEachChoiceToTheIconSpotAndResetShowsOnlyOnACardWithItsOwnIcon() async throws {

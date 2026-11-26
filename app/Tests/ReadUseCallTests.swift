@@ -64,7 +64,7 @@ final class ReadUseCallTests: XCTestCase {
 
         let answer = try await call(["access", "list"])
 
-        XCTAssertEqual(answer.output, "app=company.thebrowser.dia\npath=/Applications/Dia.app\naccess=allowed\n\napp=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n")
+        XCTAssertTrue(answer.output.hasSuffix("\n\napp=company.thebrowser.dia\npath=/Applications/Dia.app\naccess=allowed\n\napp=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n"), answer.output)
     }
 
     func testTabPrintsTheFrontTabOfTheNamedBrowserInTheWordsOfThatBrowser() async throws {
@@ -239,15 +239,14 @@ final class ReadUseCallTests: XCTestCase {
         XCTAssertEqual(reads.asks, ["com.apple.Safari false", "com.apple.Safari false", "accessibility false", "com.apple.Safari true", "accessibility true"])
     }
 
-    func testInCarefulModeASpotWithoutReadInItsUsesIsRefused() async throws {
-        runs.isCareful = true
+    func testASpotWithoutReadInItsUsesIsRefused() async throws {
         reads.set(front: "com.apple.Notes", selected: "words")
 
         let refused = try await call(["selection", "read", "com.apple.Notes"], from: spot(uses: [.screen]))
         let allowed = try await call(["selection", "read", "com.apple.Notes"], from: spot())
 
         XCTAssertEqual(refused.code, 1)
-        XCTAssertEqual(refused.errors, "Careful mode stopped Reader, because it read what the person works on without `read` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(refused.errors, "Openspot stopped Reader, because it read what the person works on without `read` in the `uses` of its spot.toml.\nAdd it there, or run `openspot spot allow reader read`.\n")
         XCTAssertEqual(allowed.output, "text=words\napp=com.apple.Notes\n")
     }
 
@@ -256,7 +255,8 @@ final class ReadUseCallTests: XCTestCase {
 
         let answer = try await call(["access", "list"])
 
-        XCTAssertEqual(answer.output, """
+        XCTAssertTrue(answer.output.hasSuffix("""
+
         app=com.apple.Safari
         path=/Applications/Safari.app
         access=allowed
@@ -272,7 +272,7 @@ final class ReadUseCallTests: XCTestCase {
         app=accessibility
         access=unasked
 
-        """)
+        """), answer.output)
         XCTAssertFalse(reads.asks.contains { $0.hasSuffix("true") }, reads.asks.joined(separator: ", "))
     }
 

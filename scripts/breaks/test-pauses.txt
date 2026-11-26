@@ -26,8 +26,6 @@ app/Tests/ScriptProcessTests.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
-app/Tests/SettingsSpotTests.swift	Task.sleep
-app/Tests/SettingsSpotTests.swift	Task.sleep
 app/Tests/SheetStreamTests.swift	Task.sleep
 app/Tests/SpotCheckTests.swift	Task.sleep
 app/Tests/SpotDropTests.swift	Task.sleep

@@ -7,7 +7,7 @@ enum SelectionCall: NounCall {
         CommandVerb(
             "read", "<app>",
             "Prints what is selected in the app, and its app=: a file= for each file selected in Finder, or the text= selected in another app. It prints nothing when the app is not running or has no selection.",
-            rule: ReadSources.rule
+            rule: ReadSources.selectionRule
         ) { $0.one.map(Self.read) }
     ])
 

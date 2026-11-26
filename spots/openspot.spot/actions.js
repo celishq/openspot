@@ -6,7 +6,7 @@ export default {
     await env.spot.share(item);
   },
   async settings({ item }, env) {
-    await env.spot.settings(item);
+    await env.app.settings({ at: `spot/${item}` });
   },
   async edit({ item }, env) {
     await env.spot.edit(item);

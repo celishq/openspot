@@ -114,7 +114,7 @@ struct SpotsView: View {
 
     private func morph(of card: SpotSheetCard?, at frame: CGRect?) -> SheetMorph? {
         guard sheetID != nil else { return nil }
-        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.fieldRoom), sheet: sheetRect, source: .field) }
+        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.detailsRoom), sheet: sheetRect, source: .field) }
         return SheetMorph(card: frame, sheet: sheetRect)
     }
 

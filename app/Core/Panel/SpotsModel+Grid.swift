@@ -116,6 +116,7 @@ extension SpotsModel {
     }
 
     private func runShown(_ entry: Entry) {
+        if openWaiting(entry.spot.id) { return }
         switch content {
         case .attachment: give(to: entry)
         case .slash: launch(entry, with: slash?.text ?? "")
@@ -136,7 +137,7 @@ extension SpotsModel {
 
     public func press(_ id: String) {
         asOnePress {
-            guard let entry = entry(id) else { return }
+            guard let entry = entry(id), !openWaiting(entry.spot.id) else { return }
             if let sheet = sheets[id], sheet.awaitsAnswer {
                 sheet.afterAnswer { [weak self] in self?.press(id) }
                 return
@@ -159,6 +160,10 @@ extension SpotsModel {
 
     public func run(_ entry: Entry) {
         missedSearch.drop()
+        if entry.spot.id == SettingsBook.searchSpot.id, let item = entry.item {
+            openSettings(at: SettingsBook.place(of: item))
+            return
+        }
         if let item = entry.item, let list = self.entry(entry.spot.id) {
             if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)
@@ -191,14 +196,11 @@ extension SpotsModel {
 
     @discardableResult
     public func openSettings(of entry: Entry) -> Bool {
-        guard let id = settingsSheet(of: entry) else { return false }
-        pushFirst(id, moving: true)
-        return true
+        hasSettings(entry) && openSettings(at: .spotOf(entry.id))
     }
 
-    public func settingsSheet(of entry: Entry) -> String? {
-        guard entry.item == nil, let settings = entry.spot.settingsSheet, settings.hasRows(in: config) else { return nil }
-        return SpotSettings.sheetID(of: entry.id)
+    public func hasSettings(_ entry: Entry) -> Bool {
+        entry.item == nil && entry.spot.rows != nil
     }
 
     var soleHint: String? {

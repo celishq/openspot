@@ -92,7 +92,7 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
 - Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, keys and Dock presence, and
-  the system material, not glass, so the glass of what it shows stands out. It ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+  the system material, not glass, so the glass of what it shows stands out. A window with a hint ends with `SpotWindowFooter`, its hint and Done; Settings ends at its content, as System Settings does. `make verify` runs `scripts/check-windows.sh`, which fails on a window
   that `Shell/` makes elsewhere, except the panel and its parts, the screen backdrop under it, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
@@ -173,6 +173,10 @@ Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMoti
 fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `Core/Motion/` holds the geometry and the clock of each motion, such as `SheetMorph`, `SheetPush` and `SheetOpening`. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`, except the base that `SpotSpring` builds for each spring of `SpotMotion`.
+
+- A motion takes its kind from `SpotMotion` and each value from `MotionTokens`. A transition only fades, on the motion of
+  its change, and adds no offset, scale or curve of its own. When no kind or token fits, propose a new one to the person
+  before you add it.
 
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.

@@ -16,6 +16,8 @@ final class FakeHost: SpotsHost {
     var landings: [String] = []
     var arranged: [Bool] = []
     var windows: [String] = []
+    var settingsOpens = 0
+    var settingsFocuses = 0
     var phases: [SheetTransition.Phase] = []
     var openings: [String?] = []
     var app = "/Apps/Openspot"
@@ -147,6 +149,20 @@ final class FakeHost: SpotsHost {
         windows.append(entry.id)
     }
 
+    var focusedWindows: [String] = []
+
+    func showSettings() {
+        settingsOpens += 1
+    }
+
+    func focusSettings() {
+        settingsFocuses += 1
+    }
+
+    func focusWindow(_ id: String) {
+        focusedWindows.append(id)
+    }
+
     func copy(_ file: URL) {}
 
     func prepare(_ items: [SpotItem], glyphs: [String]) async {
@@ -166,7 +182,8 @@ final class FakeHost: SpotsHost {
     private(set) var disagreements = 0
     private(set) var hintWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var hiddenWrites: [(motion: PanelMotion?, depth: Int, query: String?)] = []
-    private(set) var previewWrites: [(motion: PanelMotion?, depth: Int)] = []
+    private(set) var detailsWrites: [(motion: PanelMotion?, depth: Int)] = []
+    private(set) var placementWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var menuFootWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var fieldDropWrites: [(motion: PanelMotion?, depth: Int)] = []
 
@@ -183,14 +200,16 @@ final class FakeHost: SpotsHost {
         let hint = model.map { ($0.gridHint, $0.sheetHint) }
         let hidden = model?.isAttachmentHidden
         let query = model?.query
-        let preview = model?.preview
+        let details = model?.details
+        let placements = model?.placements
         let menuFoot = model?.menuContentHeight
         let showsDrop = model?.showsFieldDrop
         changeDepth += 1
         body()
         changeDepth -= 1
         if let hidden, hidden != model?.isAttachmentHidden { hiddenWrites.append((motion, changeDepth, query)) }
-        if let model, preview != model.preview { previewWrites.append((motion, changeDepth)) }
+        if let model, details != model.details { detailsWrites.append((motion, changeDepth)) }
+        if let model, placements != model.placements { placementWrites.append((motion, changeDepth)) }
         if let model, menuFoot != model.menuContentHeight { menuFootWrites.append((motion, changeDepth)) }
         if let model, showsDrop != model.showsFieldDrop { fieldDropWrites.append((motion, changeDepth)) }
         if let model, let hint, hint != (model.gridHint, model.sheetHint) { hintWrites.append((motion, changeDepth)) }

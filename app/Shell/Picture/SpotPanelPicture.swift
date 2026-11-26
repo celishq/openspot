@@ -7,7 +7,7 @@ enum SpotPanelPicture {
     private static let settle = 0.8
 
     static func run(path: String, scene: PanelScene = PanelScene()) -> Never {
-        SpotPicture.start()
+        SpotPicture.start(isLight: scene.isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
@@ -21,6 +21,11 @@ enum SpotPanelPicture {
             }
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForShows()
+            if let search = scene.search {
+                model.search(search)
+                try? await Task.sleep(for: .milliseconds(300))
+                await model.waitForShows()
+            }
             model.selected = -1
             if scene.isHeld, let first = model.placements.first {
                 model.hold([.command])

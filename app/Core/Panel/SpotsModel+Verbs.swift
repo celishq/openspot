@@ -10,9 +10,6 @@ extension SpotsModel {
         switch act {
         case .edit where folder.isCore(entry.spot), .prompt where folder.isCore(entry.spot):
             toast(.failure("\(entry.state.title) comes with Openspot, so it cannot be edited. Make a spot of your own with New spot."))
-        case .settings:
-            if !isShown { host.show() }
-            if !openSettings(of: entry) { toast(.failure("\(entry.state.title) has nothing to set.")) }
         case .edit:
             if openEdit(of: entry) {
                 if !isShown { host.show() }

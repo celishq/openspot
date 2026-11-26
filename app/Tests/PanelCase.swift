@@ -25,7 +25,7 @@ class PanelCase: XCTestCase {
         let host = FakeHost()
         self.host = host
         let files = AppPlaces(
-            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults
         )
@@ -46,6 +46,10 @@ class PanelCase: XCTestCase {
 
     var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
+    }
+
+    var core: URL {
+        folder.appendingPathComponent("core", isDirectory: true)
     }
 
     let back = ActionKey(name: "[", isCommand: true)

@@ -5,21 +5,19 @@ public struct SpotCheck: Sendable {
     public let timeout: TimeInterval
     public let views: ViewLibrary
     let programs: SwiftProgram
-    let careful: Set<SpotUse>?
     let callers: SpotCallers?
     let environment: [String: String]
 
     public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), environment: [String: String] = ProcessInfo.processInfo.environment) {
-        self.init(folder: folder, timeout: timeout, views: views, programs: programs, careful: nil, callers: nil, environment: environment)
+        self.init(folder: folder, timeout: timeout, views: views, programs: programs, callers: nil, environment: environment)
     }
 
-    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String] = ProcessInfo.processInfo.environment) {
+    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), callers: SpotCallers?, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.environment = environment
         self.folder = folder
         self.timeout = timeout
         self.views = views
         self.programs = programs
-        self.careful = careful
         self.callers = callers
     }
 
@@ -82,10 +80,8 @@ public struct SpotCheck: Sendable {
             findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         let runs = await SpotRuns(environment: environment, swift: programs, callers: callers ?? SpotCallers())
-        if careful != nil { await MainActor.run { runs.isCareful = true } }
-        for var script in scan.scripts where script.hasSheet && !unbuilt.contains(script.id) {
+        for script in scan.scripts where script.hasSheet && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }
-            if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, ScriptEntry.show.name, limit: timeout)
