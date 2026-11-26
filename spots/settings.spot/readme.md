@@ -1,1 +1,1 @@
-Opens a pane of System Settings. Type part of its name, such as Wi-Fi or Displays, in the search.
+Opens a pane of System Settings. Type part of its name, such as Wi-Fi or Displays, in the search. Turn on Sections in its Settings to find the sections inside each pane too, such as Display Brightness.
