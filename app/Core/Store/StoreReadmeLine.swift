@@ -71,9 +71,10 @@ public enum StoreReadmeLine: Equatable, Sendable {
     private static func inline(_ text: String) -> AttributedString {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var shown = (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
-        for run in shown.runs where run.inlinePresentationIntent?.contains(.code) == true {
-            let joined = String(shown[run.range].characters).replacingOccurrences(of: " ", with: "\u{00A0}").replacingOccurrences(of: "-", with: "\u{2011}")
-            shown.characters.replaceSubrange(run.range, with: joined)
+        let code = shown.runs.filter { $0.inlinePresentationIntent?.contains(.code) == true }.map { ($0.range, $0.attributes) }
+        for (range, attributes) in code.reversed() {
+            let joined = String(shown[range].characters).replacingOccurrences(of: " ", with: "\u{00A0}").replacingOccurrences(of: "-", with: "-\u{2060}")
+            shown.replaceSubrange(range, with: AttributedString(joined, attributes: attributes))
         }
         return shown
     }
