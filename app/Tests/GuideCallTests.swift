@@ -81,6 +81,25 @@ final class GuideCallTests: XCTestCase {
         XCTAssertEqual(first.output, "# Your first spot\n\nMake a folder. Its keys are in Keys (`openspot guide spottoml/keys`).\n")
     }
 
+    func testAWordPrintsEachReferenceRowThatNamesItUnderItsHeader() async throws {
+        let stay = try await answer("stay")
+        let on = try await answer("[on]")
+
+        XCTAssertEqual(stay.output, """
+        | Key     | Type | Is                        |
+        | ------- | ---- | ------------------------- |
+        | `stay`  | bool | Whether it keeps running. |
+        From `openspot guide spottoml/keys`.
+
+        | Key      | Is                          |
+        | -------- | --------------------------- |
+        | `stay`   | Not a key of on.            |
+        From `openspot guide spottoml/on`.
+
+        """)
+        XCTAssertTrue(on.output.hasPrefix("## [on]\n"), on.output)
+    }
+
     func testAHeadingInAFenceIsNoSection() async throws {
         let missing = try await answer("a-list/not-a-section")
 

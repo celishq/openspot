@@ -28,6 +28,8 @@ enum GuideCall: NounCall {
                     return CommandAnswer(output: Self.list(topics))
                 case .topic(let name):
                     if let topic = guide.topic(name) { return CommandAnswer(output: topic.text) }
+                    if let rows = guide.rows(naming: name) { return CommandAnswer(output: rows) }
+                    if let section = guide.section(named: name) { return CommandAnswer(output: section.text) }
                     let found = GuideTopic.found(name, in: topics)
                     if found.count == 1 { return CommandAnswer(output: found[0].text) }
                     if !found.isEmpty { return CommandAnswer(output: Self.list(found)) }
