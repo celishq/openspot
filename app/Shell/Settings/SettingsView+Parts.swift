@@ -3,7 +3,7 @@ import SwiftUI
 
 extension SettingsView {
     var results: some View {
-        let found = book.index.found(book.query)
+        let found = book.found
         return Group {
             title(.heading, EmptyView(), "Results for “\(book.query)”", found.isEmpty ? "No row matches. Check the spelling, or try other words." : "Every row of every section that matches.") {}
             if !found.accesses.isEmpty {

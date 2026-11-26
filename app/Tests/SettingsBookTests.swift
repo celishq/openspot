@@ -106,22 +106,40 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(SettingsPage(place: "access"), .access)
     }
 
-    func testADetailPageKeepsTheSectionItWasReachedFrom() async throws {
+    func testASpotPageMarksItsRowAndAnAccessPageKeepsTheMarkItCameFrom() async throws {
         try script("cups", toml: "title = 'Cups'\nuses = ['screen']", "openspot screen shot")
         await read()
-        book.land(.spots)
+        book.land(.general)
 
         book.go(.spotOf("cups"))
+        XCTAssertEqual(book.mark, .spot("cups"))
+        XCTAssertEqual(book.title, "Cups")
         book.go(.accessOf(.screen))
-        XCTAssertEqual(book.section, .spots)
-        XCTAssertEqual(book.title, "Spots › \(MacAccess.screen.title)")
-        book.goBack()
-        XCTAssertEqual(book.section, .spots)
+        XCTAssertEqual(book.mark, .spot("cups"))
+        XCTAssertEqual(book.title, "Cups › \(MacAccess.screen.title)")
         book.go(.access)
-        book.go(.spotOf("cups"))
+        book.go(.accessOf(.screen))
 
-        XCTAssertEqual(book.section, .access)
-        XCTAssertEqual(book.title, "Access › Cups")
+        XCTAssertEqual(book.mark, .section(.access))
+        XCTAssertEqual(book.title, "Privacy › \(MacAccess.screen.title)")
+        book.goBack()
+        book.goBack()
+        XCTAssertEqual(book.mark, .spot("cups"))
+    }
+
+    func testTheSidebarListsEachSpotOnceByNameAndASearchNarrowsIt() async throws {
+        try script("mugs", toml: "title = 'Mugs'\n[actions.pour]\ntitle = 'Pour'", "")
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'", "openspot screen shot")
+        accesses.set(.screen, to: .denied)
+        await read()
+
+        XCTAssertEqual(book.shownSpots.filter { ["cups", "mugs"].contains($0.id) }.map(\.id), ["cups", "mugs"])
+        XCTAssertTrue(try XCTUnwrap(book.shownSpots.first { $0.id == "cups" }).lacks)
+        book.search("pour")
+
+        XCTAssertEqual(book.shownSpots.map(\.id), ["mugs"])
+        book.search("")
+        XCTAssertGreaterThan(book.shownSpots.count, 1)
     }
 
     func testEachPlaceReadsBackFromItsWords() {

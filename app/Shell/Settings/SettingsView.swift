@@ -68,7 +68,23 @@ struct SettingsView: PageView {
                             .background(SpotTheme.settingsBadge, in: Circle())
                     }
                 }
-                .tag(section)
+                .tag(SettingsMark.section(section))
+            }
+            if !book.shownSpots.isEmpty {
+                Section("Spots") {
+                    ForEach(book.shownSpots) { standing in
+                        HStack(spacing: SpotTokens.settingsGroupGap) {
+                            SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsSectionTile)
+                            Text(standing.title)
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                            if standing.lacks {
+                                Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
+                            }
+                        }
+                        .tag(SettingsMark.spot(standing.id))
+                    }
+                }
             }
         }
         .listStyle(.sidebar)
@@ -77,7 +93,7 @@ struct SettingsView: PageView {
     }
 
     private var accountRow: some View {
-        let isChosen = book.query.isEmpty && book.section == .account
+        let isChosen = book.query.isEmpty && book.mark == .section(.account)
         let account = book.account
         return HStack(spacing: SpotTokens.settingsGroupGap) {
             SettingsAvatar(side: SpotTokens.settingsAccountTile)
@@ -101,10 +117,16 @@ struct SettingsView: PageView {
         .padding(SpotTokens.settingsAccountInset)
     }
 
-    private var chosen: Binding<SettingsPage.Section?> {
+    private var chosen: Binding<SettingsMark?> {
         Binding(
-            get: { book.query.isEmpty ? book.section : nil },
-            set: { if let section = $0 { book.go(.top(section)) } }
+            get: { book.query.isEmpty ? book.mark : nil },
+            set: { mark in
+                switch mark {
+                case .section(let section): book.go(.top(section))
+                case .spot(let id): book.go(.spotOf(id))
+                case nil: break
+                }
+            }
         )
     }
 

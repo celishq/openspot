@@ -6,6 +6,8 @@ public struct SettingsIndex: Sendable {
         public let standings: [SpotStanding]
         public let rows: [SettingRow]
 
+        static let none = Found(accesses: [], standings: [], rows: [])
+
         public var isEmpty: Bool {
             accesses.isEmpty && standings.isEmpty && rows.isEmpty
         }

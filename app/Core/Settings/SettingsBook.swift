@@ -12,10 +12,14 @@ public final class SettingsBook {
     public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
     public private(set) var page = SettingsPage.general
-    public private(set) var section = SettingsPage.Section.general
+    public private(set) var mark = SettingsMark.section(.general)
+    public private(set) var found = SettingsIndex.Found.none
+    public private(set) var shownSpots: [SpotStanding] = []
     public private(set) var back: [SettingsPage] = []
     public private(set) var forward: [SettingsPage] = []
-    public private(set) var query = ""
+    public private(set) var query = "" {
+        didSet { if query != oldValue { find() } }
+    }
     public private(set) var target: String?
     public private(set) var recording: String?
     private var pending: [String: String] = [:]
@@ -27,6 +31,8 @@ public final class SettingsBook {
     @ObservationIgnored private var landing: SettingsPage?
     @ObservationIgnored private var reading: Task<Void, Never>?
     @ObservationIgnored private var hasRead = false
+    @ObservationIgnored private var backMarks: [SettingsMark] = []
+    @ObservationIgnored private var forwardMarks: [SettingsMark] = []
 
     public init() {}
 
@@ -37,9 +43,33 @@ public final class SettingsBook {
     public var title: String {
         guard query.isEmpty else { return "Search" }
         return switch page {
-        case .accessOf(let id): "\(section.title) › \(id.title)"
-        case .spotOf(let id): "\(section.title) › \(spots.standing(id)?.title ?? id)"
+        case .accessOf(let id): "\(markTitle) › \(id.title)"
+        case .spotOf(let id): spots.standing(id)?.title ?? id
         default: page.section.title
+        }
+    }
+
+    private var markTitle: String {
+        switch mark {
+        case .section(let section): section.title
+        case .spot(let id): spots.standing(id)?.title ?? id
+        }
+    }
+
+    private func find() {
+        let next = isSearching ? index.found(query) : .none
+        if next != found { found = next }
+        let ids = Set(next.standings.map(\.id) + next.rows.map(\.spot))
+        let shown = isSearching ? spots.all.filter { ids.contains($0.id) } : spots.all
+        if shown != shownSpots { shownSpots = shown }
+    }
+
+    private static func mark(of page: SettingsPage, after mark: SettingsMark) -> SettingsMark {
+        switch page {
+        case .top(let section): .section(section)
+        case .spotOf(let id): .spot(id)
+        case .accessOf: mark
+        default: .section(page.section)
         }
     }
 
@@ -96,37 +126,46 @@ public final class SettingsBook {
         if next.rows != rows { rows = next.rows }
         if next.looks != looks { looks = next.looks }
         if next.account != account { account = next.account }
-        if !isIndexed { index = SettingsIndex(accesses: access.all, standings: spots.all, rows: rows.all) }
+        if !isIndexed {
+            index = SettingsIndex(accesses: access.all, standings: spots.all, rows: rows.all)
+            find()
+        }
         take(rows: rows.all)
     }
 
     public func go(_ next: SettingsPage) {
         guard next != page || !query.isEmpty else { return }
-        if query.isEmpty { back.append(page) }
+        if query.isEmpty {
+            back.append(page)
+            backMarks.append(mark)
+        }
         forward = []
+        forwardMarks = []
         query = ""
         recording = nil
         target = nil
         page = next
-        if case .top(let top) = next { section = top }
+        mark = Self.mark(of: next, after: mark)
     }
 
     public func goBack() {
         guard let last = back.popLast() else { return }
         forward.append(page)
+        forwardMarks.append(mark)
         recording = nil
         target = nil
         page = last
-        if case .top(let top) = last { section = top }
+        mark = backMarks.popLast() ?? Self.mark(of: last, after: mark)
     }
 
     public func goForward() {
         guard let next = forward.popLast() else { return }
         back.append(page)
+        backMarks.append(mark)
         recording = nil
         target = nil
         page = next
-        if case .top(let top) = next { section = top }
+        mark = forwardMarks.popLast() ?? Self.mark(of: next, after: mark)
     }
 
     public func search(_ text: String) {
@@ -139,6 +178,8 @@ public final class SettingsBook {
         recording = nil
         back = []
         forward = []
+        backMarks = []
+        forwardMarks = []
         target = nil
         switch place {
         case .row(let item):
@@ -148,10 +189,10 @@ public final class SettingsBook {
             query = words
         case .spotOf(let id) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
             page = .general
-            section = .general
+            mark = .section(.general)
         default:
             page = place
-            section = place.section
+            mark = Self.mark(of: place, after: .section(place.section))
         }
     }
 

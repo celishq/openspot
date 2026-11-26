@@ -76,7 +76,7 @@ public enum SettingsPage: Hashable, Sendable {
         case .spotOf(let id): "spot/\(id)"
         case .row(let item): "row/\(item)"
         case .search(let words): "search/\(words)"
-        case .top(let section): section.title.lowercased()
+        case .top(let section): section.rawValue
         }
     }
 
