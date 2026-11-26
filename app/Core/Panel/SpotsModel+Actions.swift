@@ -113,7 +113,7 @@ extension SpotsModel {
         } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
             show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
         } else if case .command(let command) = action.kind {
-            if isShown { host.dismiss() }
+            if isShown, action.after == .close { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
         } else if action.after == .stay {
             perform(action, on: target)
