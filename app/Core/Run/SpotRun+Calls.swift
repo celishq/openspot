@@ -175,7 +175,7 @@ extension SpotRun {
                 showsAgain = false
                 sheetAgain = false
                 eventAgain = nil
-                if let event, spot.uses.contains(.timeline) { show(need: .clock, event: event) }
+                if let event, spot.hearsEventsHidden { show(need: .clock, event: event) }
             }
         case (.ask(let ask), .failed(let error)):
             take(error, of: ask)
