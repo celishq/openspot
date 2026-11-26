@@ -308,6 +308,7 @@
 		3E02EBFACD66957E5A9EC41B /* ShowEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8B16B5571081D086B73543 /* ShowEvent.swift */; };
 		3E71CB5A4ED0E5BBB7F49911 /* SpotLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D226CD2AD159F64D65F4037D /* SpotLoadTests.swift */; };
 		3EB3ED5505B381CB1E731726 /* PanelCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = E345B88BAC41A77FBEDEF770 /* PanelCase.swift */; };
+		3EB659B453E791C2E19BA8E9 /* SettingsExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC23603E16AABA6127DB9ED /* SettingsExplainer.swift */; };
 		3EFE619D86B16F5FF7153698 /* InputLogSpanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9D96F5B7F915FCCD751403 /* InputLogSpanTests.swift */; };
 		3F26B82E21C7E21135E92B77 /* ShelfLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D9DD7DA5B876FE074BFD0F /* ShelfLayoutTests.swift */; };
 		3F389D3A873B6B97B5E798BB /* CommandConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43A6F7420B66E45DD5A02DCF /* CommandConnection.swift */; };
@@ -1256,6 +1257,7 @@
 		FE356AB5C24D98757A45996F /* SpotsModel+Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4D444DDC7AB9F057FE3633 /* SpotsModel+Entry.swift */; };
 		FE4AA37AE9C87E0D975076A7 /* SpotsModel+Arrange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68F181B81CFE1795A9ABDB04 /* SpotsModel+Arrange.swift */; };
 		FEE67321ABE626D912E61208 /* SpotGlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15259B829C14FBC3A05EB7FF /* SpotGlassEffect.swift */; };
+		FF211F47BFB2414B8F0A1B12 /* SettingsFact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57529E865273D278935F3D34 /* SettingsFact.swift */; };
 		FF36618C318D1C7A27BA6F59 /* RunCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B11BBD4F4286CF09A535F3A /* RunCall.swift */; };
 		FF70785D97F0A9912DAE4E72 /* SpotSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEF5FDD7805656647E97A4A /* SpotSample.swift */; };
 		FFA86C8AB423062EB3721496 /* SpotFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04EAD151E5E058F2D0C0B967 /* SpotFormView.swift */; };
@@ -1379,6 +1381,7 @@
 		0AFBB33279C1CECA85540126 /* ClipboardContentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardContentsTests.swift; sourceTree = "<group>"; };
 		0B0AB60FF3C911FCCABA17CB /* ActionMenuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenuSession.swift; sourceTree = "<group>"; };
 		0B1E649427CE73F65D6EB3FE /* KeptConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeptConfig.swift; sourceTree = "<group>"; };
+		0BC23603E16AABA6127DB9ED /* SettingsExplainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsExplainer.swift; sourceTree = "<group>"; };
 		0BD63B47E879F33F5171BD09 /* AnswerMatches.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerMatches.swift; sourceTree = "<group>"; };
 		0BD6B1DDE368F35A0546DB0E /* ShortcutsSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSpotTests.swift; sourceTree = "<group>"; };
 		0BF074AA7F98BF3655D5116B /* ViewTree+States.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewTree+States.swift"; sourceTree = "<group>"; };
@@ -1732,6 +1735,7 @@
 		55E790130B641BEE6E10C80B /* NumberLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberLook.swift; sourceTree = "<group>"; };
 		567645B84EE28613BC728ED2 /* SystemSettingsSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsSpotTests.swift; sourceTree = "<group>"; };
 		569D00B01EBE89845BA5EB5B /* MacAccesses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAccesses.swift; sourceTree = "<group>"; };
+		57529E865273D278935F3D34 /* SettingsFact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsFact.swift; sourceTree = "<group>"; };
 		57B5FBD640FCB2293EED7F00 /* ItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemList.swift; sourceTree = "<group>"; };
 		57E0A35CA5EE202ED05736C1 /* ToastFix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastFix.swift; sourceTree = "<group>"; };
 		597CEAA0B3890DEC34E577FE /* TriggerCallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerCallsTests.swift; sourceTree = "<group>"; };
@@ -2775,6 +2779,7 @@
 				C8A03764FA3752B3375BBB8D /* PublisherCard.swift */,
 				B73F2A6CEF772A766327013C /* SettingsAccountSheet.swift */,
 				ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */,
+				0BC23603E16AABA6127DB9ED /* SettingsExplainer.swift */,
 				41B45A99ABD0FAD9D147AF16 /* SettingsGrantSheet.swift */,
 				CBB683504E3A7D87BE844BC2 /* SettingsSpotIcon.swift */,
 				FAB6631D4077507E1A4D5901 /* SettingsTile.swift */,
@@ -3857,6 +3862,7 @@
 				212784211CBFD8180B007CFE /* SettingsBook.swift */,
 				A8573A19C30EA855E63249D8 /* SettingsBook+Account.swift */,
 				F72125ECA96414D3268AA0B6 /* SettingsBook+Search.swift */,
+				57529E865273D278935F3D34 /* SettingsFact.swift */,
 				33A221C6F5EFE1673DE88C45 /* SettingsFacts.swift */,
 				A46603E8F123967E19A4E53A /* SettingsIndex.swift */,
 				D839E262156F537D4B78FABF /* SettingsPage.swift */,
@@ -5337,6 +5343,7 @@
 				BE69D46A2BB8A532920C7C3A /* SettingsBook+Account.swift in Sources */,
 				3CBA6B10A65347B4CA9AFCFB /* SettingsBook+Search.swift in Sources */,
 				0EE40620E3A80D282C76B9B3 /* SettingsBook.swift in Sources */,
+				FF211F47BFB2414B8F0A1B12 /* SettingsFact.swift in Sources */,
 				F984B399291DB929B040B211 /* SettingsFacts.swift in Sources */,
 				169A87AF715165B836B988A7 /* SettingsIndex.swift in Sources */,
 				499E22FE0543F51B5F1A4F1E /* SettingsPage.swift in Sources */,
@@ -5662,6 +5669,7 @@
 				0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */,
 				E5EECE33AF4E21EEC65EA7B0 /* SettingsAccountSheet.swift in Sources */,
 				9E5A03F3F3E95182E93C19CC /* SettingsAvatar.swift in Sources */,
+				3EB659B453E791C2E19BA8E9 /* SettingsExplainer.swift in Sources */,
 				F040669722CDCB1A5D768AD7 /* SettingsGrantSheet.swift in Sources */,
 				DB0F611001CC179255D01C17 /* SettingsPicture.swift in Sources */,
 				8A20F417D3E1753C6B0A3D94 /* SettingsSpotIcon.swift in Sources */,

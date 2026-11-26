@@ -124,10 +124,10 @@ struct SettingsView: PageView {
         } else {
             switch book.page {
             case .top(.access): accessPage
-            case .top(.general): generalPage
+            case .top(.general): sectionPage(.general, rowsTitle: "Openspot") { needsYou }
             case .top(.look): lookPage
             case .account: accountPage
-            case .top(let section): rowsPage(section)
+            case .top(let section): sectionPage(section)
             case .accessOf(let id): book.access.access(id).map { accessPage(of: $0) }
             case .spotOf(let id): book.spots.standing(id).map { spotPage(of: $0) }
             }

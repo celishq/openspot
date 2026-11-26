@@ -376,7 +376,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.access.needed.map(\.id), [.screen])
         XCTAssertFalse(book.access.unneeded.contains { $0.id == .screen })
         XCTAssertEqual(book.spots.waiting.map(\.id), ["cups"])
-        XCTAssertEqual(Set(book.looks.map(\.group)), ["Built In"])
+        XCTAssertEqual(Set(book.looks.map(\.group)), [.builtIn])
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }

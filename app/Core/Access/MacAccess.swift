@@ -49,12 +49,12 @@ public enum MacAccess: String, CaseIterable, Sendable {
         }
     }
 
-    public static let about: [(text: String, symbol: String)] = [
-        ("Asked once, when you add or update a spot", "plus.app"),
-        ("Each spot gets only what it declares", "checklist"),
-        ("A use it didn’t declare is refused", "hand.raised"),
-        ("Turn a spot off to stop it", "power"),
-        ("Turn an access off in System Settings to stop every spot", "gearshape")
+    public static let about = [
+        SettingsFact("Asked once, when you add or update a spot", "plus.app"),
+        SettingsFact("Each spot gets only what it declares", "checklist"),
+        SettingsFact("A use it didn’t declare is refused", "hand.raised"),
+        SettingsFact("Turn a spot off to stop it", "power"),
+        SettingsFact("Turn an access off in System Settings to stop every spot", "gearshape")
     ]
 
     public var purpose: String {

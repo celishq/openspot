@@ -68,46 +68,10 @@ extension SettingsView {
     }
 
     var about: some View {
-        VStack(alignment: .leading, spacing: SpotTokens.settingsSheetGap) {
-            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                Text("How access works")
-                    .font(SpotType.settingsTitle)
-                Text("A spot uses a feature of your Mac only through Openspot, and only after you allow it once.")
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
-                ForEach(MacAccess.about, id: \.symbol) { fact in
-                    aboutLine(Image(systemName: fact.symbol).foregroundStyle(.secondary), Text(fact.text))
-                }
-            }
-            VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
-                ForEach(SpotReadiness.allCases, id: \.self) { state in
-                    aboutLine(
-                        Circle().fill(SpotTheme.settingsState(state)).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot),
-                        Text("\(Text(state.word).fontWeight(.medium))  \(Text(state.line).foregroundStyle(.secondary))")
-                    )
-                }
-            }
-            HStack {
-                Spacer()
-                Button("Done") { isAboutShown = false }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-            }
-            .controlSize(.large)
-            .padding(.top, SpotTokens.settingsSheetTop)
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(SpotTokens.settingsSheetPadding)
-        .frame(width: SpotTokens.settingsSheetWidth, alignment: .leading)
-    }
-
-    private func aboutLine(_ mark: some View, _ words: Text) -> some View {
-        HStack(spacing: SpotTokens.settingsRowGap) {
-            mark.frame(width: SpotTokens.settingsRowTile)
-            words
-        }
+        SettingsExplainer(title: "How access works", line: "A spot uses a feature of your Mac only through Openspot, and only after you allow it once.", facts: MacAccess.about, states: SpotReadiness.allCases) { isAboutShown = false }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(SpotTokens.settingsSheetPadding)
+            .frame(width: SpotTokens.settingsSheetWidth, alignment: .leading)
     }
 
     @ViewBuilder

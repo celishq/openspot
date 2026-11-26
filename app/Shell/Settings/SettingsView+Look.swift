@@ -6,13 +6,13 @@ extension SettingsView {
     var lookPage: some View {
         Group {
             title(of: .look)
-            ForEach(["Built In", "Yours"], id: \.self) { name in
-                let looks = book.looks.filter { $0.group == name }
-                if !looks.isEmpty || name == "Yours" {
-                    group(name) {
+            ForEach(ListedTheme.Group.allCases) { kind in
+                let looks = book.looks.filter { $0.group == kind }
+                if !looks.isEmpty || kind == .yours {
+                    group(kind.rawValue) {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
                             ForEach(looks) { tile($0) }
-                            if name == "Yours" { makeTile }
+                            if kind == .yours { makeTile }
                         }
                     }
                 }

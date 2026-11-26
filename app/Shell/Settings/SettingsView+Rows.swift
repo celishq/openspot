@@ -2,10 +2,9 @@ import OpenspotCore
 import SwiftUI
 
 extension SettingsView {
-    var generalPage: some View {
+    var needsYou: some View {
         let waiting = book.spots.waiting
         return Group {
-            title(of: .general)
             if !waiting.isEmpty {
                 group(waiting.count == 1 ? "1 spot needs you" : "\(waiting.count) spots need you") {
                     lines(waiting) { standing in
@@ -18,14 +17,14 @@ extension SettingsView {
                     }
                 }
             }
-            group("Openspot") { lines(book.rows.rows(in: .general)) { settingLine($0) } }
         }
     }
 
-    func rowsPage(_ section: SettingsPage.Section) -> some View {
+    func sectionPage(_ section: SettingsPage.Section, rowsTitle: String? = nil, @ViewBuilder top: () -> some View = { EmptyView() }) -> some View {
         Group {
             title(of: section)
-            group(nil) { lines(book.rows.rows(in: section)) { settingLine($0) } }
+            top()
+            group(rowsTitle) { lines(book.rows.rows(in: section)) { settingLine($0) } }
         }
     }
 }
