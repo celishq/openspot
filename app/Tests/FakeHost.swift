@@ -174,7 +174,6 @@ final class FakeHost: SpotsHost {
         cardGlyphs.append(glyphs)
     }
 
-
     private(set) var changeDepth = 0
     private(set) var disagreements = 0
     private(set) var hintWrites: [(motion: PanelMotion?, depth: Int)] = []

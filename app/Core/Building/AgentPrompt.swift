@@ -39,7 +39,7 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     public func fixing(_ file: URL, faults: [String]) -> String {
-        brief(of: file, task: "Openspot does not load this spot. Fix it.", facts: ["Openspot does not load it, and says:\n" + faults.joined(separator: "\n")], request: Self.loadAgain)
+        brief(of: file, task: "Openspot does not load this spot. Fix it.", facts: ["Openspot says:\n" + faults.joined(separator: "\n")], request: Self.loadAgain)
     }
 
     public func changing(_ file: URL, wish: String? = nil, failure: String? = nil, evidence: SpotEvidence? = nil) -> String {

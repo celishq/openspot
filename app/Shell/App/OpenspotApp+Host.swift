@@ -143,7 +143,6 @@ extension OpenspotApp: SpotsHost {
         SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyph)
     }
 
-
     func nextFrame(_ body: @escaping @MainActor () -> Void) {
         frame.run(in: panel?.contentView, body)
     }

@@ -33,7 +33,6 @@ final class SpotQuietHost: SpotsHost {
     func prepare(_ items: [SpotItem], glyphs: [String]) async {}
     func prepareCards(glyphs: [String]) {}
 
-
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         body()
         completion()
