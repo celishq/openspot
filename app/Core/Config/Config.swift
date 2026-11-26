@@ -251,7 +251,7 @@ public struct Config: Equatable, Sendable {
         case nil: break
         default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side", "places", "commands"].contains(key) {
+        for key in table.keys.sorted() where !ReservedSetting.choiceKeys.union(["id", "size", "window", "letter", "key", "side", "places", "commands"]).contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice
