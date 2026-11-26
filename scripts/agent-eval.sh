@@ -12,7 +12,14 @@ if [ "$1" = "--run" ]; then
   place="$out/$label/runs/$task-$n"
   rm -rf "$place"
   mkdir -p "$place/spots" "$place/work"
-  prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  if [ -f "$tasks/$task/ask" ]; then
+    [ ! -d "$tasks/$task/seed" ] || cp -R "$tasks/$task/seed/." "$place/spots/"
+    eval "set -- $(cat "$tasks/$task/ask")"
+    prompt=$("$real" --config "$place" prompt "$@" </dev/null | sed "s|\"$real\"|openspot|g")
+  else
+    prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  fi
+  printf '%s\n' "$prompt" >"$place/prompt.txt"
   if [ -f "$tasks/$task/live" ]; then
     until mkdir "$out/live.lock" 2>/dev/null; do sleep 2; done
     trap 'rmdir "$out/live.lock" 2>/dev/null' EXIT
