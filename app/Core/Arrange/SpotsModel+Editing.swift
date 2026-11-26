@@ -63,7 +63,7 @@ extension SpotsModel {
         entry.item == nil && entry.spot.host == nil && entry.spot.fault == nil
     }
 
-    public func takeOffGrid(_ id: String) {
+    public func takeOffGrid(_ id: String, to slot: ShelfSlot? = nil) {
         asOnePress {
             guard let entry = visible.first(where: { $0.id == id }), takesOffGrid(entry) else { return }
             let next: KeptConfig
@@ -75,6 +75,7 @@ extension SpotsModel {
             }
             change(.edit, {
                 reload(patching: nil, to: next)
+                if let slot { layShelf(placing: (id, slot)) }
                 carryToShelf()
             }, completion: { self.endLanding(of: id) })
         }

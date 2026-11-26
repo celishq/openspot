@@ -51,12 +51,12 @@ extension SpotsModel {
             let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
             if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
                 let corner = SpotTokens.gridOrigin(scrollOffset: gridScroll)
-                shelfDrop = shelfSlot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size).map { (entry.id, $0) }
+                let slot = shelfSlot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size)
                 stopDragWait()
                 pointerMove = nil
                 gesture = nil
                 if landing != nil { landing = nil }
-                return takeOffGrid(entry.id)
+                return takeOffGrid(entry.id, to: slot)
             }
             let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home
             guard let landed = drag.moved(to: target), target != drag.home else { return cancelDrag() }

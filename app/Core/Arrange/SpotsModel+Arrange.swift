@@ -40,12 +40,10 @@ extension SpotsModel {
         layShelf()
     }
 
-    func layShelf() {
+    func layShelf(placing drop: (id: String, slot: ShelfSlot)? = nil) {
         guard let room = shelfRoom else { return }
         let panel = CGRect(x: room.panelOrigin.x + SpotTokens.halo, y: room.panelOrigin.y + SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight)
         let isFull = shelfQuery.trimmingCharacters(in: .whitespaces).isEmpty
-        let drop = shelfDrop
-        shelfDrop = nil
         let ids = shelf.map(\.id)
         let next = ShelfLayout(
             screen: room.screen,
@@ -94,7 +92,6 @@ extension SpotsModel {
         if !shelfQuery.isEmpty { shelfQuery = "" }
         shelfScroll = 0
         shelfSlots = [:]
-        shelfDrop = nil
         takeShelf()
     }
 
@@ -178,10 +175,9 @@ extension SpotsModel {
               let slot = shelfSlot(at: CGPoint(x: origin.x + translation.width, y: origin.y + translation.height), size: entry.size) else { return cancelPin() }
         stopDragWait()
         pointerMove = nil
-        shelfDrop = (id, slot)
         change(.edit, {
             gesture = nil
-            layShelf()
+            layShelf(placing: (id, slot))
             carryToShelf()
             updateVisible()
         }, completion: { self.endLanding(of: id) })
