@@ -110,7 +110,7 @@ extension SpotRun {
     }
 
     func stopShows() {
-        if let show = running(Self.showKey) { stop(show) }
+        if let show = running(Self.showKey), !hearsEvents { stop(show) }
         if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
@@ -144,7 +144,7 @@ extension SpotRun {
     }
 
     private func stopUnwantedShow() {
-        guard !isWanted else { return }
+        guard !hearsEvents else { return }
         if let show = running(Self.showKey), !finishesShow { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
     }

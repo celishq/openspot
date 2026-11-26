@@ -99,7 +99,13 @@ final class TimelineSpotTests: BuiltInCase {
     func testReturnOnALinkOpensIt() async throws {
         try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["open https://a.com"])
+        XCTAssertEqual(effects, ["open -- https://a.com"])
+    }
+
+    func testReturnOnALinkThatIsNotOfTheWebPastesItAndOpensNothing() async throws {
+        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.url=file:///Applications/Calculator.app\n", timeout: 60)
+
+        XCTAssertEqual(effects, ["clipboard copy |file:///Applications/Calculator.app", "clipboard paste"])
     }
 
     func testCopyCopiesWithNoPaste() async throws {
@@ -175,6 +181,6 @@ final class TimelineSpotTests: BuiltInCase {
         try await timeline.perform("use", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
         try await timeline.perform("use", input: "input.kind=url\ninput.url=https://a.com\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "open https://a.com"])
+        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "open -- https://a.com"])
     }
 }

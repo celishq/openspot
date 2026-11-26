@@ -144,6 +144,26 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(blocks.first?.value("file"), original.path)
     }
 
+    func testAFolderKeepsOnlyALink() async throws {
+        let original = folder.appendingPathComponent("project", isDirectory: true)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+
+        _ = try await add(["file=\(original.path)"])
+
+        let blocks = try await listed()
+        XCTAssertEqual(blocks.first?.value("file"), original.path)
+    }
+
+    func testAKeyedAddThatFailsKeepsTheOldEntry() async throws {
+        _ = try await add(["text=a", "key=k"])
+
+        let bad = try await call(["add", "text=", "key=k"])
+
+        XCTAssertEqual(bad.code, 2)
+        let blocks = try await listed()
+        XCTAssertEqual(blocks.map { $0.value("text") }, ["a"])
+    }
+
     func testAnEntryOlderThanTheKeptDaysIsDroppedWithItsDay() async throws {
         let old = ISO8601DateFormatter().string(from: clock.time.addingTimeInterval(-40 * 86_400))
         _ = try await add(["text=old", "at=\(old)"])

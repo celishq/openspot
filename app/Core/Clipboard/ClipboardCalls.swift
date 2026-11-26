@@ -30,7 +30,7 @@ struct ClipboardCalls {
     func blocks(images: URL, within limit: TimeInterval? = nil, runs: SpotRuns? = nil) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
             if let limit, let runs, await !runs.isCopy(within: limit) { return "" }
-            guard let mac else { return "" }
+            guard let mac, mac.types().isDisjoint(with: ClipboardContents.unkeptTypes) else { return "" }
             switch ClipboardContents(of: mac) {
             case .none:
                 return ""
@@ -45,9 +45,12 @@ struct ClipboardCalls {
             case .image(let kind):
                 guard let data = autoreleasepool(invoking: { mac.image() }) else { return "" }
                 let folder = images.appendingPathComponent("blocks", isDirectory: true)
-                try? FileManager.default.removeItem(at: folder)
+                let hourAgo = Date().addingTimeInterval(-3_600)
+                for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
+                    if let made = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, made < hourAgo { try? FileManager.default.removeItem(at: old) }
+                }
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                let file = folder.appendingPathComponent("Copied image \(mac.count()).\(kind)")
+                let file = folder.appendingPathComponent("Copied image \(mac.count()) \(UUID().uuidString.prefix(8)).\(kind)")
                 try data.write(to: file, options: .atomic)
                 return TextBlock(fields: [.init(key: "picture", value: file.path), .init(key: "title", value: "Copied image")]).text
             }

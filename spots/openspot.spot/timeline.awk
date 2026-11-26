@@ -51,7 +51,9 @@ function source(spot,    name) {
   }
   icon = (kind == "url" ? "link" : (kind == "file" ? "doc" : (kind == "picture" ? f["picture"] : "text.alignleft")))
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
-  if (kind == "text" || kind == "url") printf "%s=%s\nkeywords=%s\n", kind, f[kind], substr(f[kind], 1, 200)
+  if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
+  if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]
+  if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
   if (kind == "file" || kind == "picture") printf "file=%s\n", f[kind]
   if (f["text.file"] != "") printf "whole=%s\n", f["text.file"]
   printf "open.title=%s\n", (kind == "url" ? "Open" : "Paste")

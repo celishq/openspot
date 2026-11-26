@@ -63,7 +63,7 @@ five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole
 
 Openspot keeps each entry for 30 days, then drops it with its day. A picture, and a file of up to 25 MB on the disk of
 your home folder, is kept as a copy, so the entry keeps it after people delete the file. `file=` of such an entry names
-the copy. A larger file, or one on another disk, keeps only its path.
+the copy. A larger file, a folder, or a file on another disk, keeps only its path.
 
 The timeline also stays within 2 GB in all. Past that, its oldest entries go first.
 

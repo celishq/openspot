@@ -116,7 +116,7 @@ enum TimelineCall: NounCall {
                 guard (isForget ? timeline.forget(id, at: now) : timeline.restore(id)) != nil else {
                     return CommandAnswer(errors: isForget ? "The entry `\(id)` is already forgotten.\n" : "The entry `\(id)` is not forgotten, or was forgotten more than 10 minutes ago.\n", code: 1)
                 }
-                await runs.timelineChanged(found.spot, by: caller?.id)
+                await runs.timelineChanged(found.spot, by: nil)
                 return CommandAnswer()
             }
         }

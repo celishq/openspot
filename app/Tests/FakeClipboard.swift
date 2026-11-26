@@ -41,6 +41,15 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
         }
     }
 
+    func copy(_ text: String, marked types: Set<String>) {
+        lock.withLock {
+            textValue = text
+            typesValue = types.union([ClipboardContents.textType])
+            filesValue = []
+            countValue += 1
+        }
+    }
+
     func copy(concealed text: String) {
         lock.withLock {
             textValue = text

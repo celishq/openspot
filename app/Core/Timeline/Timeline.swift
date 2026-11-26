@@ -100,12 +100,13 @@ public final class Timeline: Sendable {
         try kept.withLock { kept in
             read(&kept)
             if let until = kept.choices.pausedUntil, now < until { return nil }
-            let id = String(UUID().uuidString.prefix(8)).lowercased()
+            var id = Self.newID()
+            while kept.folded[id] != nil { id = Self.newID() }
             let at = draft.at ?? now
-            if let key = draft.key, let old = kept.entries.firstIndex(where: { $0.spot == spot && $0.key == key && $0.forgotten == nil }) {
-                remove([kept.entries[old].id], from: &kept)
-            }
             let entry = try make(draft, id: id, spot: spot, at: at)
+            if let key = draft.key, let old = kept.entries.first(where: { $0.spot == spot && $0.key == key && $0.forgotten == nil }) {
+                remove([old.id], from: &kept)
+            }
             kept.entries.append(entry)
             kept.folded[id] = entry.words.folded
             append(entry)
@@ -203,7 +204,8 @@ public final class Timeline: Sendable {
         let link = TimelineEntry.File(path: path, original: path, isKept: false)
         guard folder != nil, FileManager.default.fileExists(atPath: path) else { return link }
         try? FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        guard isPicture || (Self.size(of: source) <= Self.cloneLimit && Self.volume(of: source) == Self.volume(of: place)) else { return link }
+        guard (try? source.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, Self.size(of: source) <= Self.cloneLimit else { return link }
+        guard isPicture || Self.volume(of: source) == Self.volume(of: place) else { return link }
         var target = place.appendingPathComponent(source.lastPathComponent)
         var number = 2
         while FileManager.default.fileExists(atPath: target.path) {
@@ -224,17 +226,18 @@ public final class Timeline: Sendable {
         guard let folder else { return }
         if let choices = KeptFile<Choices>(url: folder.appendingPathComponent("choices.json")).read(or: Choices()) { kept.choices = choices }
         let decoder = JSONDecoder()
+        var found: [String: TimelineEntry] = [:]
         for spotFolder in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] {
             for file in (try? FileManager.default.contentsOfDirectory(at: spotFolder, includingPropertiesForKeys: nil)) ?? [] where file.pathExtension == "jsonl" {
                 guard let data = try? Data(contentsOf: file) else { continue }
                 for line in data.split(separator: UInt8(ascii: "\n")) {
                     guard let entry = try? decoder.decode(TimelineEntry.self, from: line) else { continue }
-                    kept.entries.removeAll { $0.id == entry.id }
-                    kept.entries.append(entry)
-                    kept.folded[entry.id] = entry.words.folded
+                    found[entry.id] = entry
                 }
             }
         }
+        kept.entries = found.values.sorted { $0.at < $1.at }
+        for entry in kept.entries { kept.folded[entry.id] = entry.words.folded }
     }
 
     private func cut(_ kept: inout Kept, at now: Date) {
@@ -296,8 +299,12 @@ public final class Timeline: Sendable {
     }
 
     private func day(of date: Date) -> String {
-        let parts = Calendar(identifier: .gregorian).dateComponents(in: .current, from: date)
+        let parts = Calendar(identifier: .gregorian).dateComponents(in: .gmt, from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private static func newID() -> String {
+        String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(16)).lowercased()
     }
 
     private static func folderName(of spot: String) -> String {
@@ -318,14 +325,7 @@ public final class Timeline: Sendable {
     }
 
     private static func size(of url: URL) -> Int64 {
-        guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey]) else { return 0 }
-        guard values.isDirectory == true else { return Int64(values.fileSize ?? 0) }
-        var total: Int64 = 0
-        guard let files = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
-        for case let file as URL in files {
-            total += Int64((try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
-        }
-        return total
+        Int64((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
     }
 
     private static func volume(of url: URL) -> NSObject? {

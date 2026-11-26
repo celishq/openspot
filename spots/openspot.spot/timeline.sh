@@ -38,8 +38,12 @@ copy() {
 # Pastes the entry into the front app, or opens a link.
 use() {
   if [ "$(value "${1}kind")" = url ]; then
-    open "$(value "${1}url")"
-    exit 0
+    case $(value "${1}url") in
+      http://* | https://*)
+        open -- "$(value "${1}url")"
+        exit 0
+        ;;
+    esac
   fi
   copy "$1" || exit 1
   exec openspot clipboard paste
@@ -69,7 +73,8 @@ case "$1" in
     id=$(cat "$forgotten" 2>/dev/null)
     rm -f "$forgotten"
     openspot toast --remove forgot
-    [ -n "$id" ] && openspot timeline restore "$id"
+    [ -n "$id" ] || exit 0
+    openspot timeline restore "$id"
     ;;
   pause) openspot timeline pause 1h && openspot toast "Timeline keeps nothing for an hour." ;;
   resume) openspot timeline resume && openspot toast "Timeline keeps what you copy again." ;;
