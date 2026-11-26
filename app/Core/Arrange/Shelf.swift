@@ -4,12 +4,11 @@ import Observation
 @MainActor
 @Observable
 public final class Shelf {
-    public private(set) var offGrid: [SpotsModel.Entry] = []
+    private var found = SearchList<SpotsModel.Entry>()
     public private(set) var spots: [SpotsModel.Entry] = []
     public private(set) var query = ""
     public private(set) var layout: ShelfLayout?
     @ObservationIgnored public private(set) var scroll: CGFloat = 0
-    @ObservationIgnored private var found = SearchList<SpotsModel.Entry>()
     @ObservationIgnored private var room: (screen: CGSize, panelOrigin: CGPoint)?
     @ObservationIgnored private var slots: [String: ShelfSlot] = [:]
 
@@ -17,9 +16,12 @@ public final class Shelf {
 
     func take(offGrid next: [SpotsModel.Entry]) {
         guard next != offGrid else { return }
-        offGrid = next
         found = SearchList(next) { SearchText(title: $0.spot.name, keywords: $0.spot.keywords) }
         filter()
+    }
+
+    public var offGrid: [SpotsModel.Entry] {
+        found.all
     }
 
     func search(_ text: String) -> Bool {

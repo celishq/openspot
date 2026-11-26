@@ -1,17 +1,19 @@
 import Foundation
 
 public struct SearchList<Element> {
-    private let elements: [Element]
+    public let all: [Element]
     private let index: SearchIndex
 
     public init(_ elements: [Element] = [], text: (Element) -> SearchText = { _ in SearchText(title: "") }) {
-        self.elements = elements
+        all = elements
         index = SearchIndex(elements.map(text))
     }
 
     public func matching(_ query: SearchQuery) -> [Element] {
-        query.ranking(index, among: Array(elements.indices)) { _ in 0 }.map { elements[$0] }
+        query.ranking(index, among: Array(all.indices)) { _ in 0 }.map { all[$0] }
     }
 }
 
 extension SearchList: Sendable where Element: Sendable {}
+
+extension SearchList: Equatable where Element: Equatable {}
