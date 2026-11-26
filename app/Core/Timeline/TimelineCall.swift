@@ -89,7 +89,7 @@ enum TimelineCall: NounCall {
             let reader = caller?.id
             return {
                 if let reader { timeline.note(reader: reader, of: spots) }
-                let now = await runs.timeNow()
+                let now = runs.clock.now()
                 let entries = timeline.list(Timeline.Query(spots: spots, within: within ?? nil, text: text, limit: limit), at: now)
                 return CommandAnswer(output: entries.map(\.block).joined(separator: "\n"))
             }
@@ -98,7 +98,7 @@ enum TimelineCall: NounCall {
                 return { CommandAnswer(errors: "`\(text)` is not a count of days. Write a whole number above 0, such as 30.\n", code: 2) }
             }
             return {
-                timeline.keep(days: days, at: await runs.timeNow())
+                timeline.keep(days: days, at: runs.clock.now())
                 return CommandAnswer()
             }
         case .pause(let text):
@@ -106,19 +106,19 @@ enum TimelineCall: NounCall {
                 return { CommandAnswer(errors: "`\(text)` is not an age. Write seconds, or a number with s, m, h or d, such as 1h.\n", code: 2) }
             }
             return {
-                let now = await runs.timeNow()
+                let now = runs.clock.now()
                 timeline.pause(until: now.addingTimeInterval(age), at: now)
                 return CommandAnswer()
             }
         case .resume:
             return {
-                timeline.pause(until: nil, at: await runs.timeNow())
+                timeline.pause(until: nil, at: runs.clock.now())
                 return CommandAnswer()
             }
         case .forget(let id), .restore(let id):
             let isForget = if case .forget = self { true } else { false }
             return {
-                let now = await runs.timeNow()
+                let now = runs.clock.now()
                 guard let found = timeline.entry(id), Self.reaches(found.spot, from: caller) else {
                     return CommandAnswer(errors: "The timeline has no entry `\(id)` that this spot can reach. `openspot timeline list` prints its entries.\n", code: 1)
                 }
@@ -155,7 +155,7 @@ enum TimelineCall: NounCall {
         let timeline = runs.timeline
         return {
             do {
-                guard let entry = try timeline.add(draft, of: spot, at: await runs.timeNow()) else { return CommandAnswer() }
+                guard let entry = try timeline.add(draft, of: spot, at: runs.clock.now()) else { return CommandAnswer() }
                 await runs.timelineChanged(spot, by: spot)
                 return CommandAnswer(output: entry.id + "\n")
             } catch {

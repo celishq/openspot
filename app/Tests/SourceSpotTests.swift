@@ -12,7 +12,7 @@ final class SourceSpotTests: AttachmentCase {
         var environment = TestEnvironment.values
         environment["PATH"] = client.deletingLastPathComponent().path + ":" + (environment["PATH"] ?? "/usr/bin:/bin")
         model.quit()
-        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause))
+        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause, timeline: model.files.timeline))
         host.model = model
         model.runs.api = CommandAPI(mac: Mac(clipboard: board, reads: reads), places: model.files, app: ModelApp(model: model), runs: model.runs)
         model.runs.listen(to: board)

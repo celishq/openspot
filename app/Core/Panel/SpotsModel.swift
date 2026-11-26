@@ -350,7 +350,7 @@ public final class SpotsModel {
             stats: files.stats,
             timers: files.timers,
             schedule: files.schedule,
-            timeline: Timeline(folder: files.timeline)
+            timeline: files.timeline
         )
         self.runs = runs
         toasts = Toasts(clock: runs.clock)

@@ -1,24 +1,29 @@
 import Foundation
 import Synchronization
 
-public final class Timeline: Sendable {
-    public static let keptDays = 30
-    public static let byteLimit: Int64 = 2 << 30
-    public static let entryLimit: Int64 = 25 << 20
+final class Timeline: Sendable {
+    static let keptDays = 30
+    static let byteLimit: Int64 = 2 << 30
+    static let entryLimit: Int64 = 25 << 20
     static let heldText = 16 << 10
     static let forgottenAge: TimeInterval = 600
+    private static let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        return calendar
+    }()
 
-    public struct Draft: Equatable, Sendable {
-        public let kind: AttachmentValue.Kind
-        public let values: [String]
-        public var title: String?
-        public var app: String?
-        public var icon: String?
-        public var detail: String?
-        public var key: String?
-        public var at: Date?
+    struct Draft: Equatable, Sendable {
+        let kind: AttachmentValue.Kind
+        let values: [String]
+        var title: String?
+        var app: String?
+        var icon: String?
+        var detail: String?
+        var key: String?
+        var at: Date?
 
-        public init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
+        init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
             self.kind = kind
             self.values = values
             self.title = title
@@ -30,13 +35,13 @@ public final class Timeline: Sendable {
         }
     }
 
-    public struct Query: Equatable, Sendable {
-        public var spots: Set<String>?
-        public var within: TimeInterval?
-        public var text: String?
-        public var limit: Int?
+    struct Query: Equatable, Sendable {
+        var spots: Set<String>?
+        var within: TimeInterval?
+        var text: String?
+        var limit: Int?
 
-        public init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, limit: Int? = nil) {
+        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, limit: Int? = nil) {
             self.spots = spots
             self.within = within
             self.text = text
@@ -44,9 +49,9 @@ public final class Timeline: Sendable {
         }
     }
 
-    public struct Choices: Codable, Equatable, Sendable {
-        public var keptDays = Timeline.keptDays
-        public var pausedUntil: Date?
+    struct Choices: Codable, Equatable, Sendable {
+        var keptDays = Timeline.keptDays
+        var pausedUntil: Date?
     }
 
     private struct Kept {
@@ -57,34 +62,34 @@ public final class Timeline: Sendable {
         var readers: [String: Set<String>?] = [:]
     }
 
-    private let folder: URL?
+    private let folder: URL
     private let byteLimit: Int64
     private let kept = Mutex(Kept())
 
-    public init(folder: URL?, byteLimit: Int64 = Timeline.byteLimit) {
+    init(folder: URL, byteLimit: Int64 = Timeline.byteLimit) {
         self.folder = folder
         self.byteLimit = byteLimit
     }
 
-    public func keep(days: Int, at now: Date) {
-        change(at: now) { $0.keptDays = max(1, days) }
+    func keep(days: Int, at now: Date) {
+        change(at: now) { $0.keptDays = days }
     }
 
-    public func pause(until time: Date?, at now: Date) {
+    func pause(until time: Date?, at now: Date) {
         change(at: now) { $0.pausedUntil = time }
     }
 
-    public func cut(at now: Date) -> Date? {
+    func cut(at now: Date) -> Date? {
         kept.withLock { kept in
             read(&kept)
             cut(&kept, at: now)
             let forgotten = kept.entries.compactMap(\.forgotten).min().map { $0.addingTimeInterval(Self.forgottenAge + 1) }
-            let oldest = kept.entries.filter { $0.forgotten == nil }.map(\.at).min().map { Self.dayStart(of: $0).addingTimeInterval(Double(kept.choices.keptDays) * 86_400) }
+            let oldest = kept.entries.filter { $0.forgotten == nil }.map(\.at).min().map { Self.end(of: $0, days: kept.choices.keptDays) }
             return [forgotten, oldest].compactMap { $0 }.min()
         }
     }
 
-    public func unload() {
+    func unload() {
         kept.withLock { kept in
             kept.entries = []
             kept.folded = [:]
@@ -96,7 +101,7 @@ public final class Timeline: Sendable {
         kept.withLock { $0.isRead }
     }
 
-    public func choices() -> Choices {
+    func choices() -> Choices {
         kept.withLock { kept in
             read(&kept)
             return kept.choices
@@ -109,12 +114,12 @@ public final class Timeline: Sendable {
             let before = kept.choices
             body(&kept.choices)
             guard kept.choices != before else { return }
-            KeptFile<Choices>(url: folder?.appendingPathComponent("choices.json")).write(kept.choices)
+            KeptFile<Choices>(url: folder.appendingPathComponent("choices.json")).write(kept.choices)
             cut(&kept, at: now)
         }
     }
 
-    public func add(_ draft: Draft, of spot: String, at now: Date) throws -> TimelineEntry? {
+    func add(_ draft: Draft, of spot: String, at now: Date) throws -> TimelineEntry? {
         try kept.withLock { kept in
             read(&kept)
             if let until = kept.choices.pausedUntil, now < until { return nil }
@@ -133,7 +138,7 @@ public final class Timeline: Sendable {
         }
     }
 
-    public func list(_ query: Query, at now: Date) -> [TimelineEntry] {
+    func list(_ query: Query, at now: Date) -> [TimelineEntry] {
         kept.withLock { kept in
             read(&kept)
             cut(&kept, at: now)
@@ -151,26 +156,30 @@ public final class Timeline: Sendable {
         }
     }
 
-    public func entry(_ id: String) -> TimelineEntry? {
+    func entry(_ id: String) -> TimelineEntry? {
         kept.withLock { kept in
             read(&kept)
             return kept.entries.first { $0.id == id }
         }
     }
 
-    public func forget(_ id: String, at now: Date) -> TimelineEntry? {
+    func forget(_ id: String, at now: Date) -> TimelineEntry? {
         mark(id, forgotten: now)
     }
 
-    public func restore(_ id: String) -> TimelineEntry? {
+    func restore(_ id: String) -> TimelineEntry? {
         mark(id, forgotten: nil)
     }
 
-    public func note(reader: String, of spots: Set<String>?) {
+    func note(reader: String, of spots: Set<String>?) {
         kept.withLock { _ = $0.readers.updateValue(spots, forKey: reader) }
     }
 
-    public func readers(of spot: String) -> [String] {
+    func drop(reader: String) {
+        kept.withLock { _ = $0.readers.removeValue(forKey: reader) }
+    }
+
+    func readers(of spot: String) -> [String] {
         kept.withLock { kept in kept.readers.filter { $0.value.map { $0.contains(spot) } ?? true }.map(\.key).sorted() }
     }
 
@@ -195,7 +204,7 @@ public final class Timeline: Sendable {
         case .text, .url:
             let text = draft.values.first ?? ""
             bytes = Int64(text.utf8.count)
-            if text.utf8.count > Self.heldText, folder != nil {
+            if text.utf8.count > Self.heldText {
                 let file = place.appendingPathComponent("text.txt")
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
                 try Data(text.utf8).write(to: file, options: .atomic)
@@ -220,10 +229,9 @@ public final class Timeline: Sendable {
     private func keep(_ path: String, in place: URL) -> TimelineEntry.File {
         let source = URL(fileURLWithPath: path)
         let link = TimelineEntry.File(path: path, original: path, isKept: false)
-        guard folder != nil, FileManager.default.fileExists(atPath: path) else { return link }
-        try? FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         guard (try? source.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, Self.size(of: source) <= Self.entryLimit else { return link }
-        guard Self.volume(of: source) == Self.volume(of: place) else { return link }
+        guard let volume = Self.volume(of: source), volume == Self.volume(of: folder) else { return link }
+        try? FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         var target = place.appendingPathComponent(source.lastPathComponent)
         var number = 2
         while FileManager.default.fileExists(atPath: target.path) {
@@ -241,7 +249,6 @@ public final class Timeline: Sendable {
     private func read(_ kept: inout Kept) {
         guard !kept.isRead else { return }
         kept.isRead = true
-        guard let folder else { return }
         if let choices = KeptFile<Choices>(url: folder.appendingPathComponent("choices.json")).read(or: Choices()) { kept.choices = choices }
         let decoder = JSONDecoder()
         var found: [String: TimelineEntry] = [:]
@@ -259,13 +266,15 @@ public final class Timeline: Sendable {
     }
 
     private func cut(_ kept: inout Kept, at now: Date) {
-        let oldest = day(of: now.addingTimeInterval(-Double(kept.choices.keptDays - 1) * 86_400))
-        let old = kept.entries.filter { day(of: $0.at) < oldest || $0.forgotten.map { now.timeIntervalSince($0) > Self.forgottenAge } == true }
+        let days = kept.choices.keptDays
+        let old = kept.entries.filter { Self.end(of: $0.at, days: days) <= now || $0.forgotten.map { now.timeIntervalSince($0) > Self.forgottenAge } == true }
         var gone = Set(old.map(\.id))
         var bytes = kept.entries.reduce(Int64(0)) { $0 + (gone.contains($1.id) ? 0 : $1.bytes) }
-        for entry in kept.entries.sorted(by: { $0.at < $1.at }) where bytes > byteLimit && !gone.contains(entry.id) {
-            gone.insert(entry.id)
-            bytes -= entry.bytes
+        if bytes > byteLimit {
+            for entry in kept.entries.sorted(by: { $0.at < $1.at }) where bytes > byteLimit && !gone.contains(entry.id) {
+                gone.insert(entry.id)
+                bytes -= entry.bytes
+            }
         }
         if !gone.isEmpty { remove(gone, from: &kept) }
     }
@@ -285,7 +294,8 @@ public final class Timeline: Sendable {
     }
 
     private func append(_ entry: TimelineEntry) {
-        guard let file = file(of: entry.spot, day: day(of: entry.at)), let line = try? JSONEncoder().encode(entry) else { return }
+        let file = file(of: entry.spot, day: day(of: entry.at))
+        guard let line = try? JSONEncoder().encode(entry) else { return }
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard let handle = FileHandle(forWritingAtPath: file.path) else {
             try? (line + Data("\n".utf8)).write(to: file, options: .atomic)
@@ -297,7 +307,7 @@ public final class Timeline: Sendable {
     }
 
     private func write(day: String, of spot: String, _ entries: [TimelineEntry]) {
-        guard let file = file(of: spot, day: day) else { return }
+        let file = file(of: spot, day: day)
         let lines = entries.filter { $0.spot == spot && self.day(of: $0.at) == day }.compactMap { try? JSONEncoder().encode($0) }
         guard !lines.isEmpty else {
             try? FileManager.default.removeItem(at: file)
@@ -308,23 +318,21 @@ public final class Timeline: Sendable {
         try? lines.map { $0 + Data("\n".utf8) }.reduce(Data(), +).write(to: file, options: .atomic)
     }
 
-    private func file(of spot: String, day: String) -> URL? {
-        folder?.appendingPathComponent(Self.folderName(of: spot), isDirectory: true).appendingPathComponent("\(day).jsonl")
+    private func file(of spot: String, day: String) -> URL {
+        folder.appendingPathComponent(Self.folderName(of: spot), isDirectory: true).appendingPathComponent("\(day).jsonl")
     }
 
     private func blobs(of spot: String, day: String) -> URL {
-        (folder ?? FileManager.default.temporaryDirectory).appendingPathComponent(Self.folderName(of: spot), isDirectory: true).appendingPathComponent(day, isDirectory: true)
+        folder.appendingPathComponent(Self.folderName(of: spot), isDirectory: true).appendingPathComponent(day, isDirectory: true)
     }
 
     private func day(of date: Date) -> String {
-        let parts = Calendar(identifier: .gregorian).dateComponents(in: .gmt, from: date)
+        let parts = Self.calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
-    private static func dayStart(of date: Date) -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        return calendar.startOfDay(for: date)
+    private static func end(of date: Date, days: Int) -> Date {
+        calendar.startOfDay(for: date).addingTimeInterval(Double(days) * 86_400)
     }
 
     private static func newID() -> String {
@@ -353,6 +361,8 @@ public final class Timeline: Sendable {
     }
 
     private static func volume(of url: URL) -> NSObject? {
-        (try? url.resourceValues(forKeys: [.volumeIdentifierKey]))?.volumeIdentifier as? NSObject
+        if let volume = (try? url.resourceValues(forKeys: [.volumeIdentifierKey]))?.volumeIdentifier as? NSObject { return volume }
+        let parent = url.deletingLastPathComponent()
+        return parent.path == url.path ? nil : volume(of: parent)
     }
 }

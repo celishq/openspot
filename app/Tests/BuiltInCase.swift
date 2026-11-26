@@ -92,7 +92,7 @@ class BuiltInCase: XCTestCase {
         spots = root.appendingPathComponent("spots")
         core = root.appendingPathComponent("core")
         tools = root.appendingPathComponent("tools")
-        runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"), callers: TestEnvironment.callers)
+        runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"), callers: TestEnvironment.callers, timeline: root.appendingPathComponent("timeline"))
         for folder in [spots!, core!, tools!] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }

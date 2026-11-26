@@ -13,7 +13,7 @@ final class TimelineTests: PanelCase {
         try await super.setUp()
         let files = model.files
         model.quit()
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(clock: clock.value, stopPause: stopPause, timeline: Timeline(folder: store)))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(clock: clock.value, stopPause: stopPause, timeline: store))
         host.model = model
         takeCalls()
         try script("notes", toml: "title = 'Notes'\nuses = ['timeline']", "printf 'item=a\\ntitle=A\\n'")
@@ -176,6 +176,8 @@ final class TimelineTests: PanelCase {
 
         let blocks = try await listed()
         XCTAssertEqual(blocks.first?.value("file"), original.path)
+        let kept = try FileManager.default.contentsOfDirectory(atPath: store.appendingPathComponent("notes").path)
+        XCTAssertEqual(kept.filter { !$0.hasSuffix(".jsonl") }, [])
     }
 
     func testAKeyedAddThatFailsKeepsTheOldEntry() async throws {
@@ -259,6 +261,16 @@ final class TimelineTests: PanelCase {
         _ = try await add(["text=fresh"])
 
         try await wait("the show after the add") { self.shows == before + 1 }
+    }
+
+    func testARemovedSpotNoLongerReadsTheTimeline() async throws {
+        _ = try await listed(["--all"], of: "reader")
+        XCTAssertEqual(model.runs.timeline.readers(of: "notes"), ["reader"])
+
+        try FileManager.default.removeItem(at: spots.appendingPathComponent("reader.spot"))
+        await model.reload()
+
+        XCTAssertEqual(model.runs.timeline.readers(of: "notes"), [])
     }
 
     func testAnAddRunsNoShowOfAClosedSheet() async throws {

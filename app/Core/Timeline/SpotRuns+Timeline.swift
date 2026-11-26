@@ -1,10 +1,6 @@
 import Foundation
 
 extension SpotRuns {
-    func timeNow() -> Date {
-        now()
-    }
-
     static let timelineHold: TimeInterval = 60
 
     func timelineUsed() {

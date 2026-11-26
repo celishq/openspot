@@ -55,7 +55,7 @@ public final class SpotRuns {
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
-    @ObservationIgnored public let timeline: Timeline
+    @ObservationIgnored let timeline: Timeline
     @ObservationIgnored let timelineWatch: DueWatch
     @ObservationIgnored var timelineUse: Date?
     @ObservationIgnored let timerWatch: DueWatch
@@ -118,11 +118,11 @@ public final class SpotRuns {
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers(),
         cache: SpotCache? = nil,
-        timeline: Timeline? = nil
+        timeline: URL? = nil
     ) {
         self.environment = environment
         self.cache = cache ?? .standard(environment: environment)
-        self.timeline = timeline ?? Timeline(folder: nil)
+        self.timeline = Timeline(folder: timeline ?? FileManager.default.temporaryDirectory.appendingPathComponent("openspot-timeline-\(UUID().uuidString)", isDirectory: true))
         self.callers = callers
         self.log = log
         self.swift = swift
@@ -164,6 +164,7 @@ public final class SpotRuns {
             if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
             sheet.stopShows()
+            timeline.drop(reader: id)
         }
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
         showMarks()
