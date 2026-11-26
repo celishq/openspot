@@ -73,13 +73,13 @@ public struct AgentPrompt: Equatable, Sendable {
         let close = references.isEmpty ? [] : ["Find a spot that does something close in \(references.map(\.path).joined(separator: " or ")), and read it."]
         return [
             "Run \(quoted) guide build-and-check-a-spot, and follow it.",
-            "Run \(quoted) guide --topics, and read each topic that the request needs, such as \(quoted) guide a-list-you-can-press."
+            "Run \(quoted) guide --topics, and read each topic that the request needs."
         ] + close
     }
 
     private func rules(for id: String) -> [String] {
         [
-            "It's done when \(quoted) check spots --json \"\(folder.path)\" prints [].",
+            "It's done when \(quoted) check spots --json \"\(folder.path)\" prints [], and its card looks right in \(quoted) render spot \(id) --card wide card.png.",
             "At the end, run \(quoted) spot open \(id) --select, and tell me what the spot runs on my Mac."
         ]
     }
