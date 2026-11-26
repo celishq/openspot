@@ -47,8 +47,8 @@ enum SpotCommandLine {
             SpotArrangePicture.run(path: path, scene: scene)
         case RenderCall.panel(let path, let scene) as RenderCall:
             SpotPanelPicture.run(path: path, scene: scene)
-        case RenderCall.store(let path, let place, let spot, let review) as RenderCall:
-            SpotStorePicture.run(path: path, place: place, spot: spot, review: review)
+        case RenderCall.store(let path, let place, let spot, let review, let isTrying) as RenderCall:
+            SpotStorePicture.run(path: path, place: place, spot: spot, review: review, isTrying: isTrying)
         case RenderCall.settings(let at, let path, let isLight) as RenderCall:
             SettingsPicture.run(path: path, at: at, isLight: isLight)
         case HelperCall.capability(SpotTranslation.capability.name) as HelperCall:

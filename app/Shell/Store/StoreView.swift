@@ -6,6 +6,7 @@ struct StoreView: PageView {
     let model: SpotsModel?
     @State var isTrying = false
     @State var areFilesFolded = true
+    @State var sample: StoreSample?
     @State private var shownAsk: StoreAsk?
 
     var body: some View {
@@ -30,6 +31,7 @@ struct StoreView: PageView {
         }
         .onChange(of: store.ask) { _, ask in if let ask { shownAsk = ask } }
         .sheet(isPresented: $isTrying) { trySheet }
+        .task(id: store.page?.id) { await loadSample() }
         .onChange(of: store.page?.id) {
             isTrying = false
             areFilesFolded = true

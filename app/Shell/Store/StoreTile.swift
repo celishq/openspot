@@ -38,12 +38,7 @@ struct StoreTile: View {
         .draggable(card.id) { StoreTileLift(card: card) }
     }
 
-    @ViewBuilder
     private var preview: some View {
-        if let preview = card.preview {
-            StoreCardPreview(spot: card.spot, preview: preview)
-        } else {
-            SettingsSpotIcon(spot: card.spot, side: SpotTokens.storePreviewIcon)
-        }
+        StoreCardPreview(spot: card.spot, face: card.preview.face, size: card.preview.size)
     }
 }

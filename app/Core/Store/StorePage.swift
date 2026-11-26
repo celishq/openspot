@@ -11,6 +11,6 @@ public struct StorePage: Equatable, Sendable {
     public let button: StoreButton
     public let hasSample: Bool
     public let runsSample: Bool
-    public let preview: StorePreview?
+    public let preview: StorePreview
     public let files: [StoreFile]
 }

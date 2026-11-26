@@ -183,9 +183,11 @@ final class StoreTests: XCTestCase {
         store.choose(.source(.builtIn(examples)))
 
         let clock = try XCTUnwrap(store.cards.first { $0.id == "clock" })
-        XCTAssertEqual(clock.preview?.size, .wide)
-        XCTAssertEqual(clock.preview?.face.draws(on: .wide), true)
-        XCTAssertNil(store.cards.first { $0.id == "paste" }?.preview)
+        XCTAssertEqual(clock.preview.size, .wide)
+        XCTAssertTrue(clock.preview.face.draws(on: .wide))
+        let paste = try XCTUnwrap(store.cards.first { $0.id == "paste" })
+        XCTAssertEqual(paste.preview.size, .wide)
+        XCTAssertFalse(paste.preview.face.draws(on: .wide))
     }
 
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
@@ -256,7 +258,7 @@ final class StoreTests: XCTestCase {
         await store.read()
         store.choose(.source(.builtIn(examples)))
         await store.open("paste")
-        XCTAssertEqual(store.page?.preview?.size, .wide)
+        XCTAssertEqual(store.page?.preview.size, .wide)
 
         await store.installPage()
 

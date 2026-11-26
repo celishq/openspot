@@ -84,6 +84,10 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "--search", "home city", "--light", "a.png"])?.value as? RenderCall, .panel("a.png", scene: PanelScene(search: "home city", isLight: true)))
         XCTAssertNil(CommandLineCall(arguments: ["render", "panel", "--swap", "clock", "a.png"])?.value as? RenderCall)
         XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png", place: nil, spot: nil, review: nil))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["render", "store", "--spot", "clock", "--try", "a.png"])?.value as? RenderCall, .store("a.png", place: nil, spot: "clock", review: nil, isTrying: true)
+        )
+        XCTAssertNil(CommandLineCall(arguments: ["render", "store", "--try", "a.png"])?.value as? RenderCall)
         XCTAssertEqual(CommandLineCall(arguments: ["render", "settings", "a.png"])?.value as? RenderCall, .settings(at: nil, path: "a.png", isLight: false))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "settings", "--at", "access/screen", "--light", "a.png"])?.value as? RenderCall, .settings(at: "access/screen", path: "a.png", isLight: true))
         XCTAssertEqual(CommandLineCall(arguments: ["render"])?.value as? CallFault, .unknown(["render"]))

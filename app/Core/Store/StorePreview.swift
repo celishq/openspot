@@ -4,11 +4,13 @@ public struct StorePreview: Equatable, Sendable {
     public let face: ViewTree
     public let size: SpotSize
 
-    init?(of spot: Spot) {
-        guard let text = try? String(contentsOf: SpotSample.text(beside: spot.url), encoding: .utf8) else { return nil }
-        let face = Frame(text: text, kinds: spot.kinds).face
-        guard let size = ([spot.size] + SpotSize.all).first(where: face.draws) else { return nil }
+    public init(face: ViewTree, spot: Spot) {
         self.face = face
-        self.size = size
+        size = ([spot.size] + SpotSize.all).first(where: face.draws) ?? spot.size
+    }
+
+    init(of spot: Spot) {
+        let text = try? String(contentsOf: SpotSample.text(beside: spot.url), encoding: .utf8)
+        self.init(face: text.map { Frame(text: $0, kinds: spot.kinds).face } ?? .empty, spot: spot)
     }
 }

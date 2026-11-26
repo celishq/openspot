@@ -70,23 +70,19 @@ extension StoreView {
         title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile), page.spot.name, pageLine(page)) {
             HStack(spacing: SpotTokens.settingsValueGap) {
                 button(page)
-                if page.preview == nil, page.hasSample, model != nil {
-                    Button("Try") { isTrying = true }
-                }
             }
             .padding(.top, SpotTokens.settingsTitleGap)
         }
-        if let preview = page.preview {
-            Section {
-                VStack(spacing: SpotTokens.storeTilePadding) {
-                    StoreCardPreview(spot: page.spot, preview: preview)
-                    if page.hasSample, model != nil {
-                        Button("Try") { isTrying = true }
-                    }
+        Section {
+            VStack(spacing: SpotTokens.storeTilePadding) {
+                let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
+                StoreCardPreview(spot: page.spot, face: preview.face, size: preview.size)
+                if sample?.id == page.id, model != nil {
+                    Button("Try") { isTrying = true }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, SpotTokens.storeTilePadding)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, SpotTokens.storeTilePadding)
         }
         group("About") {
             StoreReadmeView(lines: page.shown, name: page.spot.name)
@@ -152,21 +148,14 @@ extension StoreView {
 
     @ViewBuilder
     var trySheet: some View {
-        if let model, let page = store.page {
-            VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: page.spot, run: nil)) {
-                    await SpotSample.output(of: page.spot, runsScript: page.runsSample, runs: model.runs)
-                }
-                HStack {
-                    Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
-                        .font(SpotType.settingsLine)
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: SpotTokens.settingsTrailingGap)
-                    Button("Done") { isTrying = false }
-                        .keyboardShortcut(.cancelAction)
-                }
-            }
-            .padding(SpotTokens.storeInset)
+        if let model, let page = store.page, let sample, sample.id == page.id {
+            StoreTry(model: model, spot: page.spot, output: sample.output, hasSheet: sample.hasSheet) { isTrying = false }
         }
+    }
+
+    func loadSample() async {
+        guard let model, let page = store.page, page.hasSample else { return }
+        guard let output = await SpotSample.output(of: page.spot, runsScript: page.runsSample, runs: model.runs), store.page?.id == page.id else { return }
+        sample = StoreSample(id: page.id, output: output)
     }
 }
