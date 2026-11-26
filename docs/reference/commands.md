@@ -60,6 +60,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot spot open <id>`                           | Opens the panel on a spot, or its window.                                |
 | `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>` or `openspot selection read <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
 | `openspot clipboard read [--within <age>]` | Prints the text on the clipboard. With `--within`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
+| `openspot clipboard read --blocks [--within <age>]` | Prints the copy in its kind, as `openspot timeline add` takes it: `text=`, `url=`, `file=` once for each file, or `picture=` with the image saved to a file. It prints nothing for a password. |
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
 In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.

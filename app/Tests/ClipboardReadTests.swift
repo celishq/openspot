@@ -37,6 +37,52 @@ final class ClipboardReadTests: XCTestCase {
         XCTAssertEqual([fresh.code, old.code], [0, 0])
     }
 
+    func testBlocksPrintEachKindOfCopyAsLinesOfItsKind() async throws {
+        board.copy("two\nlines")
+        let text = try await call(["--blocks"])
+        board.copy("https://a.com/x\n")
+        let link = try await call(["--blocks"])
+        let files = [folder.appendingPathComponent("a.txt"), folder.appendingPathComponent("b.txt")]
+        board.copy(files: files)
+        let copied = try await call(["--blocks"])
+
+        XCTAssertEqual(text.output, "text=two\\nlines\n")
+        XCTAssertEqual(link.output, "url=https://a.com/x\n")
+        XCTAssertEqual(copied.output, "file=\(files[0].path)\nfile=\(files[1].path)\n")
+    }
+
+    func testBlocksSaveAPictureToAFile() async throws {
+        board.copy(image: Data([1, 2, 3]), kind: "png")
+
+        let answer = try await call(["--blocks"])
+
+        let block = try XCTUnwrap(TextBlock.blocks(in: answer.output).first)
+        let picture = try XCTUnwrap(block.value("picture"))
+        XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: picture)), Data([1, 2, 3]))
+        XCTAssertTrue(picture.hasSuffix(".png"), picture)
+        XCTAssertEqual(block.value("title"), "Copied image")
+    }
+
+    func testBlocksPrintNothingForAPasswordOrAnEmptyText() async throws {
+        board.copy(concealed: "hunter2")
+        let password = try await call(["--blocks"])
+        board.copy("  \n")
+        let blank = try await call(["--blocks"])
+
+        XCTAssertEqual([password.output, blank.output], ["", ""])
+        XCTAssertEqual([password.code, blank.code], [0, 0])
+    }
+
+    func testBlocksTakeWithin() async throws {
+        board.copy("fresh")
+        let fresh = try await call(["--blocks", "--within", "60"])
+        clock.advance(by: 61)
+        let old = try await call(["--within", "60", "--blocks"])
+
+        XCTAssertEqual([fresh.output, old.output], ["text=fresh\n", ""])
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read", "--blocks"])?.value as? ClipboardCall, .blocks(within: nil))
+    }
+
     func testWithinTakesAnAgeAboveZeroInSecondsOrWithItsUnit() {
         for words in [["--within"], ["--within", "0"], ["--within", "0m"], ["--within", "soon"], ["--within", "2w"], ["--within", "5", "x"]] {
             XCTAssertNil(CommandLineCall(arguments: ["clipboard", "read"] + words)?.value as? ClipboardCall, words.joined(separator: " "))
