@@ -8,10 +8,13 @@ struct StoreSpotMenu: View {
     let id: String
     let spot: Spot
     let isCore: Bool
+    let opens: Bool
 
     var body: some View {
         if let model {
-            Button("Open") { model.openSpot(id) }
+            if opens {
+                Button("Open") { model.openSpot(id) }
+            }
             if model.hasSettings(ofSpot: id) {
                 Button("Settings") { model.openSettings(ofSpot: id) }
             }

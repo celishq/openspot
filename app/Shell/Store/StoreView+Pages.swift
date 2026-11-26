@@ -73,7 +73,7 @@ extension StoreView {
             }
             chevron
         }
-        .contextMenu { StoreSpotMenu(store: store, model: model, id: card.id, spot: card.spot, isCore: card.mark == .core) }
+        .contextMenu { StoreSpotMenu(store: store, model: model, id: card.id, spot: card.spot, isCore: card.mark == .core, opens: true) }
     }
 
     @ViewBuilder
@@ -92,6 +92,10 @@ extension StoreView {
                     }
                     Spacer(minLength: SpotTokens.settingsTrailingGap)
                     HStack(spacing: SpotTokens.settingsValueGap) {
+                        if page.button != .install {
+                            Text(badge(page.button))
+                                .foregroundStyle(.secondary)
+                        }
                         if sample?.id == page.id, model != nil {
                             Button("Try") { isTrying = true }
                         }
@@ -173,17 +177,34 @@ extension StoreView {
             Button("Install") { Task { await store.installPage() } }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
-        case .update:
-            Button("Update") { Task { await store.update(page.id) } }
-                .buttonStyle(.borderedProminent)
-        case .edited:
-            Button("Revert…") { Task { await store.revert(page.id) } }
-        case .installed:
-            Label("Installed", systemImage: "checkmark")
-                .foregroundStyle(.secondary)
-        case .locked:
-            Label("Comes with Openspot", systemImage: "lock.fill")
-                .foregroundStyle(.secondary)
+        case .update, .edited, .installed, .locked:
+            if page.button == .update {
+                Button("Update") { Task { await store.update(page.id) } }
+                    .buttonStyle(.borderedProminent)
+            } else if let model {
+                Button("Open") { model.openSpot(page.id) }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            Menu {
+                StoreSpotMenu(store: store, model: model, id: page.id, spot: page.spot, isCore: page.button == .locked, opens: page.button == .update)
+                if page.button == .edited {
+                    Button("Revert…") { Task { await store.revert(page.id) } }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+            }
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("More")
+        }
+    }
+
+    private func badge(_ button: StoreButton) -> String {
+        switch button {
+        case .locked: "Comes with Openspot"
+        case .edited: "Edited"
+        case .install, .installed, .update: "Installed"
         }
     }
 
