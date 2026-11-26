@@ -151,8 +151,8 @@ under a heading for each day. Type to find an entry by its words.
 
 | Key        | Does                                                                  |
 | ---------- | --------------------------------------------------------------------- |
-| Return     | Pastes the entry into the app you were in, or opens a link.           |
-| `⌘C`       | Copies the entry.                                                     |
+| Return     | Copies the entry.                                                     |
+| `⌘` Return | Pastes the entry into the app you were in.                            |
 | `⌘⌫`       | Forgets the entry. Click the message that shows to put it back.       |
 
 - The Clipboard spot keeps each copy, also while the panel is closed. It keeps a picture, and a file of up to 25 MB,

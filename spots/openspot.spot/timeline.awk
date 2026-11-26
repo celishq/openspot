@@ -56,7 +56,8 @@ function source(spot,    name) {
   if (f["spot"] != "clipboard") detail = detail " · " source(f["spot"])
   if (count++ == 0) {
     printf "title=Timeline\n\n"
-    printf "button=copy\ntitle=Copy\nshortcut=cmd+c\nscope=item\n\n"
+    printf "button=press\ntitle=Copy\nscope=item\n\n"
+    printf "button=paste\ntitle=Paste\nshortcut=cmd+return\nscope=item\n\n"
     printf "button=forget\ntitle=Forget\nshortcut=cmd+backspace\nscope=item\nclose=false\n\n"
     printf "items=list\n"
   }
@@ -64,13 +65,13 @@ function source(spot,    name) {
     printf "\nbox=day-%s\nparent=list\ntitle=%s\n", day, day_title(day)
     last = day
   }
-  icon = f["icon"] != "" ? f["icon"] : (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : (f["text"] ~ /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/ ? tolower(f["text"]) : "text.alignleft")))
+  icon = f["icon"] != "" ? f["icon"] : (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : (f["text"] ~ /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/ ? tolower(f["text"]) : "textformat")))
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
   if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]
   if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
   if (kind == "file") printf "file=%s\n", f[kind]
-  printf "open.title=%s\n", (kind == "url" ? "Open" : "Paste")
+  printf "open.title=Copy\n"
 }
 
 END {

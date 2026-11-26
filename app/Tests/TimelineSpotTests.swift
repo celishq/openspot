@@ -54,7 +54,7 @@ final class TimelineSpotTests: BuiltInCase {
         let older = try XCTUnwrap(rows.last?.section)
         XCTAssertFalse(["Today", "Yesterday"].contains(older), older)
         XCTAssertFalse(older.contains("  "), older)
-        XCTAssertEqual(rows.map(\.openTitle), ["Paste", "Open", "Paste"])
+        XCTAssertEqual(rows.map(\.openTitle), ["Copy", "Copy", "Copy"])
         XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
     }
 
@@ -125,34 +125,30 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(found.map(\.title), ["needle"])
     }
 
-    func testReturnOnATextCopiesAndPastesIt() async throws {
+    func testReturnCopiesAnEntryOfEachKind() async throws {
         try await timeline.perform("press", input: "input.item=a\ninput.item.kind=text\ninput.item.text=two\\nlines\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=b\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=c\ninput.item.kind=file\ninput.item.file=/tmp/kept.txt\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |two", "lines", "clipboard paste"])
+        XCTAssertEqual(effects, ["clipboard copy |two", "lines", "toast Copied.", "clipboard copy |https://a.com", "toast Copied.", "clipboard copy /tmp/kept.txt|", "toast Copied."])
     }
 
-    func testReturnOnAFileCopiesTheFileAndPastesIt() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=file\ninput.item.file=/tmp/kept.txt\n", timeout: 60)
+    func testCommandReturnPastesAnEntryAndALinkToo() async throws {
+        try await timeline.perform("paste", input: "input.item=a\ninput.item.kind=text\ninput.item.text=hello\n", timeout: 60)
+        try await timeline.perform("paste", input: "input.item=b\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy /tmp/kept.txt|", "clipboard paste"])
+        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "clipboard copy |https://a.com", "clipboard paste"])
     }
 
-    func testReturnOnALinkOpensIt() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
+    func testTheSheetSaysCopyOnReturnAndOffersPasteOnCommandReturnAndATextShowsAa() async throws {
+        try add(.text, "hello")
 
-        XCTAssertEqual(effects, ["open -- https://a.com"])
-    }
+        let frame = try await timeline.items(timeout: 60)
 
-    func testReturnOnALinkThatIsNotOfTheWebPastesItAndOpensNothing() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.url=file:///Applications/Calculator.app\n", timeout: 60)
-
-        XCTAssertEqual(effects, ["clipboard copy |file:///Applications/Calculator.app", "clipboard paste"])
-    }
-
-    func testCopyCopiesWithNoPaste() async throws {
-        try await timeline.perform("copy", input: "input.item=a\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
-
-        XCTAssertEqual(effects, ["clipboard copy |https://a.com", "toast Copied."])
+        XCTAssertEqual(frame.items.map(\.openTitle), ["Copy"])
+        XCTAssertEqual(frame.items.map(\.picture), [.symbol("textformat")])
+        XCTAssertEqual(frame.actions.first { $0.title == "Paste" }?.key, ActionKey(text: "cmd+return"))
+        XCTAssertFalse(frame.actions.contains { $0.key == ActionKey(text: "cmd+c") }, "\(frame.actions.map(\.title))")
     }
 
     func testForgetTakesTheEntryOutAndTheToastPutsItBack() async throws {
@@ -219,7 +215,7 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Timeline · "), true)
         XCTAssertEqual(rows.first?.subtitle?.hasSuffix(" · 2 lines"), true)
         XCTAssertEqual(rows.first.flatMap(AttachmentValue.init(row:)), AttachmentValue(text: "cafe 3\nsecond line", title: "cafe 3"))
-        XCTAssertEqual(rows.first?.openTitle, "Paste")
+        XCTAssertEqual(rows.first?.openTitle, "Copy")
     }
 
     func testTheSearchShowsAColourAsASquareOfItself() async throws {
@@ -241,10 +237,9 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first?.file, "/tmp/cafe.png")
     }
 
-    func testUsePastesATextAndOpensALinkAsReturnInTheSheetDoes() async throws {
-        try await timeline.perform("use", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
-        try await timeline.perform("use", input: "input.kind=url\ninput.url=https://a.com\n", timeout: 60)
+    func testCopyCopiesAsReturnInTheSheetDoes() async throws {
+        try await timeline.perform("copy", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "open -- https://a.com"])
+        XCTAssertEqual(effects, ["clipboard copy |hello", "toast Copied."])
     }
 }

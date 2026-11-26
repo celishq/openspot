@@ -2,8 +2,8 @@
 . "$OPENSPOT_SH"
 
 # The timeline of every spot, newest first, under a heading for each day: the newest 500 entries, or the 500 newest
-# that hold each word typed in the sheet. Return pastes a text, a picture or a file into the front app and opens a link,
-# ⌘C copies, ⌘⌫ forgets the entry, with a toast that puts it back, and Tab hands it to a spot that takes it.
+# that hold each word typed in the sheet. Return copies an entry, ⌘Return pastes it into the front app, ⌘⌫ forgets
+# it, with a toast that puts it back, and Tab hands it to a spot that takes it.
 
 
 # Prints the frame of the entries that hold the words of $1.
@@ -29,19 +29,6 @@ copy() {
   esac
 }
 
-# Pastes the entry into the front app, or opens a link.
-use() {
-  if [ "$(value "${1}kind")" = url ]; then
-    case $(value "${1}url") in
-      http://* | https://*)
-        open -- "$(value "${1}url")"
-        exit 0
-        ;;
-    esac
-  fi
-  copy "$1" || exit 1
-  exec openspot clipboard paste
-}
 
 forgotten="$OPENSPOT_DATA/forgotten"
 case "$1" in
@@ -54,10 +41,14 @@ case "$1" in
   command) exec openspot spot open openspot/timeline ;;
   press)
     [ "$(value item)" = empty ] && exit 0
-    use item.
+    copy item. && openspot toast "Copied."
     ;;
-  use) use "" ;;
-  copy) copy item. && openspot toast "Copied." ;;
+  paste)
+    [ "$(value item)" = empty ] && exit 0
+    copy item. || exit 1
+    exec openspot clipboard paste
+    ;;
+  copy) copy "" && openspot toast "Copied." ;;
   forget)
     id=$(value item)
     openspot timeline forget "$id" || exit 1
