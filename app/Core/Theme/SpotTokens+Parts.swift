@@ -90,7 +90,7 @@ extension SpotTokens {
     }
 
     public static func fieldRect(room: CGFloat) -> CGRect {
-        CGRect(x: halo, y: halo, width: gridWidth, height: cell + room)
+        CGRect(x: halo, y: halo, width: gridWidth, height: layout.fieldHeight + room)
     }
 
     public static func attachmentStack(count: Int) -> CGFloat {
@@ -244,12 +244,11 @@ extension SpotTokens {
     public static let settingsLookGap: CGFloat = 18
     public static let settingsLookHeight: CGFloat = 150
     public static let settingsLookSpots = 6
-    public static let settingsLookColumns: CGFloat = 4
-    public static let settingsLookRows: CGFloat = 3
+    public static let settingsLookHalo: CGFloat = 3
+    public static let settingsLookFade: CGFloat = 0.75
+    public static let settingsLookFill: CGFloat = 0.92
     public static let settingsLookWords: CGFloat = 6
-    public static let settingsLookTopInset: CGFloat = 14
     public static let settingsLookRing: CGFloat = 3
-    public static let settingsLookCardRing: CGFloat = 4
     public static let settingsLookDash: [CGFloat] = [5, 4]
     public static let settingsWishLines = 3
     public static let settingsSheetWidth: CGFloat = 460

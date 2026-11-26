@@ -107,8 +107,8 @@ extension SettingsView {
     private func preview(_ look: ListedTheme, spots: [LookSpot]) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         let swatch = colorScheme == .dark ? look.colours.dark : look.colours.light
-        let panel = LookPanel(swatch: swatch, layout: look.layout, isClear: look.colours.glass == .clear, spots: spots)
-        let scale = (SpotTokens.settingsLookHeight - 2 * SpotTokens.settingsLookTopInset) / panel.size.height
+        let panel = LookPanel(palette: LookPalettes.shared.palette(of: look), swatch: swatch, layout: look.layout, spots: spots)
+        let scale = SpotTokens.settingsLookHeight * SpotTokens.settingsLookFill / panel.size.height
         return ZStack {
             swatch.background.color
             LinearGradient(colors: [swatch.accent.color.opacity(SpotTheme.settingsLookWall), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)

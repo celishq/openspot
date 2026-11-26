@@ -2,67 +2,82 @@ import OpenspotCore
 import SwiftUI
 
 struct LookPanel: View {
+    let palette: SpotPalette
     let swatch: Theme.Appearance
     let layout: Theme.Layout
-    let isClear: Bool
     let spots: [LookSpot]
 
-    private var cell: CGFloat { CGFloat(layout.space.cell) }
-    private var gap: CGFloat { CGFloat(layout.space.columnGap) }
+    private var faces: SpotType.Faces { SpotType.Faces(layout.type) }
     private var padding: CGFloat { CGFloat(layout.space.padding) }
+    private var rowGap: CGFloat { CGFloat(layout.space.rowGap) }
+    private var halo: CGFloat { CGFloat(layout.space.padding) * SpotTokens.settingsLookHalo }
 
     var size: CGSize {
-        let (columns, rows) = (SpotTokens.settingsLookColumns, SpotTokens.settingsLookRows)
-        return CGSize(width: columns * cell + (columns - 1) * gap + 2 * padding, height: rows * cell + (rows - 1) * CGFloat(layout.space.rowGap) + 2 * padding)
+        let width = layout.width(columns: SpotTokens.columns)
+        let height = layout.fieldHeight + rowGap + layout.height(rows: 1) + rowGap + layout.height(rows: 1)
+        return CGSize(width: width + 2 * halo, height: height + 2 * halo)
     }
 
     var body: some View {
-        let plate = SpotRoundShape(radius: CGFloat(layout.radius.card) + padding)
-        VStack(alignment: .leading, spacing: CGFloat(layout.space.rowGap)) {
-            field
-            HStack(spacing: gap) {
-                ForEach(0..<2, id: \.self) { card(at: $0, columns: 2) }
-            }
-            HStack(spacing: gap) {
-                ForEach(2..<6, id: \.self) { card(at: $0, columns: 1) }
+        let faces = faces
+        ZStack {
+            backdrop
+            VStack(alignment: .leading, spacing: rowGap) {
+                field(faces)
+                HStack(spacing: CGFloat(layout.space.columnGap)) {
+                    ForEach(0..<2, id: \.self) { card(at: $0, size: .wide, faces: faces) }
+                }
+                HStack(spacing: CGFloat(layout.space.columnGap)) {
+                    ForEach(2..<6, id: \.self) { card(at: $0, size: .small, faces: faces) }
+                }
             }
         }
-        .padding(padding)
-        .frame(width: size.width, height: size.height, alignment: .top)
-        .background(swatch.background.color.opacity(isClear ? SpotTheme.settingsLookClearFill : SpotTheme.settingsLookPanelFill), in: plate)
-        .overlay(plate.strokeBorder(isClear ? SpotTheme.settingsLookClearRim : swatch.ink.color.opacity(SpotTheme.settingsLookCell), lineWidth: SpotTokens.settingsLookCardRing / 2))
+        .frame(width: size.width, height: size.height)
     }
 
-    private var field: some View {
-        HStack(spacing: SpotTokens.fieldTextGap) {
+    private var backdrop: some View {
+        ZStack {
+            if layout.backdrop.style != .tint { Rectangle().fill(.ultraThinMaterial) }
+            if layout.backdrop.style != .blur { palette.backdropTint }
+        }
+        .mask(SpotRoundShape(radius: CGFloat(layout.radius.card) + halo / 2).padding(halo / 2).blur(radius: halo * SpotTokens.settingsLookFade))
+    }
+
+    private var glass: Glass {
+        (palette.glassVariant == .clear ? Glass.clear : Glass.regular).tint(palette.glassTint)
+    }
+
+    private func field(_ faces: SpotType.Faces) -> some View {
+        let shape = SpotRoundShape(radius: layout.corner(for: .strip))
+        return HStack(spacing: SpotTokens.fieldTextGap) {
             Image(systemName: "magnifyingglass")
             Text("Search")
         }
-        .font(SpotType.input)
-        .foregroundStyle(swatch.ink.color.opacity(SpotTheme.settingsLookHint))
+        .font(faces.input)
+        .foregroundStyle(swatch.ink.color.opacity(swatch.secondary))
         .padding(.horizontal, padding)
-        .frame(maxWidth: .infinity, minHeight: cell, maxHeight: cell, alignment: .leading)
-        .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: SpotRoundShape(radius: cell / 2))
+        .frame(width: layout.width(columns: SpotTokens.columns), height: layout.fieldHeight, alignment: .leading)
+        .spotGlass(glass, in: shape)
     }
 
-    private func card(at index: Int, columns: Int) -> some View {
+    private func card(at index: Int, size: SpotSize, faces: SpotType.Faces) -> some View {
         let spot = spots.isEmpty ? nil : spots[index % spots.count]
-        let shape = SpotRoundShape(radius: columns == 1 ? cell / 2 : CGFloat(layout.radius.card))
-        let isChosen = index == 0
-        return HStack(spacing: SpotTokens.wordsGap) {
+        let shape = SpotRoundShape(radius: layout.corner(for: size))
+        return HStack(spacing: layout.wordsGap) {
             Image(systemName: spot?.symbol ?? "square")
-                .font(.system(size: CGFloat(layout.space.glyph), weight: .semibold))
-                .foregroundStyle(isChosen ? swatch.accent.color : swatch.ink.color)
-            if columns > 1, let name = spot?.name, !name.isEmpty {
+                .font(SpotType.glyph)
+                .foregroundStyle(index == 0 ? swatch.accent.color : swatch.ink.color)
+                .frame(width: CGFloat(layout.space.glyph), height: CGFloat(layout.space.glyph))
+            if size.columns > 1, let name = spot?.name, !name.isEmpty {
                 Text(name)
-                    .font(SpotType.title)
+                    .font(faces.title)
                     .foregroundStyle(swatch.ink.color)
                     .lineLimit(1)
             }
         }
-        .padding(.horizontal, columns > 1 ? padding : 0)
-        .frame(width: CGFloat(columns) * cell + CGFloat(columns - 1) * gap, height: cell, alignment: columns > 1 ? .leading : .center)
-        .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: shape)
-        .overlay(shape.strokeBorder(isChosen ? swatch.accent.color : .clear, lineWidth: SpotTokens.settingsLookCardRing))
+        .padding(.horizontal, size.columns > 1 ? padding : 0)
+        .frame(width: layout.width(columns: size.columns), height: layout.height(rows: size.rows), alignment: size.columns > 1 ? .leading : .center)
+        .background(swatch.ink.color.opacity(swatch.fill), in: shape)
+        .spotGlass(glass, in: shape)
     }
 }

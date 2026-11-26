@@ -194,6 +194,22 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(layout.motion.pressBounce, 0.2)
     }
 
+    func testAThemesOwnLayoutGivesTheSizesAndCornersTheAppDrawsWithIt() {
+        let layout = Theme(text: dracula).layout
+        let used = SpotTokens.layout
+        defer { SpotTokens.take(used) }
+
+        SpotTokens.take(layout)
+
+        for size in SpotSize.all {
+            XCTAssertEqual(layout.corner(for: size), SpotTokens.corner(for: size), "\(size)")
+            XCTAssertEqual(layout.width(columns: size.columns), SpotTokens.width(columns: size.columns))
+            XCTAssertEqual(layout.height(rows: size.rows), SpotTokens.height(rows: size.rows))
+        }
+        XCTAssertNotEqual(layout.corner(for: .strip), Theme.Layout().corner(for: .strip))
+        XCTAssertEqual(layout.fieldHeight, SpotTokens.fieldRect(room: 0).height)
+    }
+
     func testAnExactValueTakesThePlaceOfItsRuleAndFeedsTheRulesAfterIt() {
         let theme = Theme(text: """
         [dark]
