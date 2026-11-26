@@ -450,7 +450,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         if grid != config.grid { grid = config.grid }
-        if let store, Set(scan.spots.map(\.id)) != Set(scanned.map(\.id)) { Task { await store.read() } }
+        if let store, Set(scan.spots.map(\.url)) != Set(scanned.map(\.url)) { Task { await store.read() } }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()

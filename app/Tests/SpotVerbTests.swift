@@ -437,6 +437,20 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the Store drops Weather") { !store.cards.contains { $0.id == "weather" } }
     }
 
+    func testAnOpenStoreShowsTheBuiltInSpotThatARemovedCopyLeavesBehind() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("confetti.spot/confetti.sh"), toml: "title = 'Confetti'")
+        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("confetti.spot/confetti.sh"), toml: "title = 'Confetti'")
+        await model.reload()
+        let store = Store(places: model.files)
+        model.store = store
+        await store.read()
+        let before = try XCTUnwrap(store.cards.first { $0.id == "confetti" }).mark
+
+        XCTAssertTrue(model.act(.delete, on: "confetti"))
+
+        try await wait("the Store marks Confetti anew") { store.cards.first { $0.id == "confetti" }?.mark != before }
+    }
+
     func testTheSecretOfARemovedSpotGoesWithIt() async throws {
         try script("weather", toml: "title = 'Weather'\n\n[settings]\ntoken = { type = 'secret' }")
         try script("clock", toml: "title = 'Clock'\n\n[settings]\ntoken = { type = 'secret' }")
