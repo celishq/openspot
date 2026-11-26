@@ -123,6 +123,10 @@ extension SpotRun {
         isInView || runs.wants(spot) || (!calls.isEmpty && script.keepsState)
     }
 
+    var hearsEvents: Bool {
+        isWanted || spot.uses.contains(.timeline)
+    }
+
     func settleScript() {
         link.settle()
     }

@@ -70,6 +70,15 @@ The timeline also stays within 2 GB in all. Past that, its oldest entries go fir
 `openspot timeline forget <id>` takes an entry out. `openspot timeline restore <id>` brings it back within 10 minutes,
 and after that it's gone.
 
+## Keep what happens while the panel is closed
+
+A spot with `timeline` in its `uses` gets the events of its `[on]` at all times, not only while it shows. The
+Clipboard spot that comes with Openspot keeps each copy this way:
+
+```text
+clipboard.change) openspot clipboard read --blocks | openspot timeline add >/dev/null ;;
+```
+
 ## Read another timeline
 
 A spot reads only its own timeline. `--spot clipboard` reads the timeline of the spot `clipboard`, and `--all` reads

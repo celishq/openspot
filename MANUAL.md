@@ -115,7 +115,7 @@ free slot, as `openspot grid pin <id>` does.
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to hide or show its card in the field.
+Search for Attachments, and press Return on Selection, Browser Tab or Clipboard to hide or show its card in the field.
 `⌘` Return opens the Settings of one. Its last row, Access, opens Settings at Access, which shows whether
 macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
@@ -129,7 +129,7 @@ changes until you press Tab.
 
 - Typing filters the actions that take the card. Backspace edits only the text.
 - When the text starts with `/`, Tab completes the slash command instead.
-- A card shows only when a spot takes it. Fresh Copy shows what you copied in the last 2 minutes.
+- A card shows only when a spot takes it. Clipboard shows what you copied in the last 2 minutes.
 
 Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
 Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in

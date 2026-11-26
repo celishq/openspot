@@ -102,7 +102,7 @@ extension SpotRuns {
     }
 
     func watchClipboard(looksNow: Bool = false) {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.triggers.events.contains(EventName.clipboard) }
+        let isWanted = sheets.values.contains { $0.hearsEvents && $0.spot.triggers.events.contains(EventName.clipboard) }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
@@ -185,7 +185,7 @@ extension SpotRuns {
     }
 
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {
-        for sheet in sheets.values where (showsEachSpot || sheet.isWanted) && sheet.spot.triggers.admits(name, value: value) {
+        for sheet in sheets.values where (showsEachSpot || sheet.hearsEvents) && sheet.spot.triggers.admits(name, value: value) {
             sheet.show(need: showsEachSpot ? .change : .clock, event: .event(name, value: value))
         }
     }
