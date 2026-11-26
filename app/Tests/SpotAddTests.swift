@@ -315,7 +315,7 @@ final class SpotAddTests: XCTestCase {
         let first = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(first.code, 1)
-        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nCoffee: every 60 seconds\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nEvery 60 seconds\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
@@ -506,7 +506,7 @@ final class SpotAddTests: XCTestCase {
         let refused = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(refused.code, 1)
-        XCTAssertEqual(refused.errors, "This version can do more.\nCan also: Delete files with rm\nRuns by itself: Coffee: every 60 seconds\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        XCTAssertEqual(refused.errors, "This version can do more.\nCan also: Delete files with rm\nRuns by itself: Every 60 seconds\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
         XCTAssertEqual(try files(in: spots), before)
     }
 

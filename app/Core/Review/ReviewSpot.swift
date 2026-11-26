@@ -120,18 +120,30 @@ public struct ReviewSpot: Equatable, Sendable {
     static let otherKeySubtitle = "Signed by another key"
 
     private static func selfRuns(in scan: ScanResult) -> [String] {
-        return scan.scripts.compactMap { script in
+        let runs: [(name: String, moments: [String])] = scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
             case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
             for event in script.triggers.events where event != EventName.sheetOpen && event != EventName.sheetText {
-                moments.append(event == EventName.panelOpen ? "when the panel opens" : "on \(event)")
+                if event == EventName.appLaunch, script.mode == .stay, script.showsAtLaunch { continue }
+                moments.append(eventWords[event] ?? "on \(event)")
             }
             if let every = script.triggers.every { moments.append("every \(every) seconds") }
-            return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
+            return moments.isEmpty ? nil : (script.name, moments)
+        }
+        return runs.map { run in
+            let said = run.moments.joined(separator: ", ")
+            return runs.count > 1 ? "\(run.name): \(said)" : said.prefix(1).uppercased() + said.dropFirst()
         }
     }
+
+    private static let eventWords = [
+        EventName.panelOpen: "when the panel opens", EventName.appLaunch: "when Openspot starts", EventName.appUpdate: "when Openspot downloads an update",
+        EventName.clipboard: "when you copy", EventName.frontApp: "when you switch apps", EventName.screenWake: "when the screen wakes",
+        EventName.systemLoad: "every 5 seconds while it shows", EventName.powerChange: "when the power changes", EventName.diskMount: "when a disk mounts",
+        EventName.deviceConnect: "when a USB device connects", EventName.spotWant: "when it first shows"
+    ]
 
     private static func bindings(in scan: ScanResult, folder: URL, core: URL?) -> [(binding: Manifest.Binding, shown: String)] {
         let own = Set(scan.scripts.map(\.id))

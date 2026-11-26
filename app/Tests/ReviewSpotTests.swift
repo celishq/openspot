@@ -160,7 +160,13 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns by itself\nWhen the panel opens, every 30 seconds\n"), text)
+    }
+
+    func testItNamesEachEventInPlainWords() throws {
+        let review = try review("title = 'Clock'\n\n[on]\n\"app.launch\" = true\n\"clipboard.change\" = true")
+
+        XCTAssertEqual(review.lines.first { $0.title == "Runs by itself" }?.words, ["When Openspot starts, when you copy"])
     }
 
     func testItShowsTheUsesThatTheHeaderNames() throws {
@@ -272,14 +278,14 @@ final class ReviewSpotTests: XCTestCase {
         let review = try review("title = 'Weather'\nstay = true")
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
+        XCTAssertTrue(text.contains("Runs by itself\nKeeps running while it is in use\n"), text)
     }
 
     func testAScriptThatAlwaysStaysSaysSo() throws {
         let review = try review("title = 'Relay'\nstay = true\n\n[on]\n\"app.launch\" = true")
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
+        XCTAssertTrue(text.contains("Runs by itself\nKeeps running while Openspot runs\n"), text)
     }
 
     func testItNamesEachFileItReplaces() throws {
