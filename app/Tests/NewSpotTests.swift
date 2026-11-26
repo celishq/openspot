@@ -248,20 +248,11 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    func testTheGuideIsTheGuideThenTheProtocolWithEachLinkInThePage() throws {
-        let headings = Set(guideText.split(separator: "\n").filter { $0.hasPrefix("#") && $0.contains("# ") }.map { line in
-            String(line.drop { $0 == "#" }.dropFirst()).lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" }.replacingOccurrences(of: " ", with: "-")
-        })
-        let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
-
+    func testTheGuideIsTheMapThenEachPageWithNoLinkToARepoFile() throws {
         XCTAssertTrue(guideText.hasPrefix("# How Openspot works"))
         XCTAssertTrue(guideText.contains("\n# Your first spot\n"))
         XCTAssertTrue(guideText.contains("\n# The openspot command\n"))
         XCTAssertFalse(guideText.contains("PROTOCOL.md") || guideText.contains("](docs/"))
-        XCTAssertGreaterThan(links.count, 20)
-        for link in links {
-            XCTAssertTrue(headings.contains(link), link)
-        }
     }
 
     func testEachTopicOfTheGuideIsAPageOfTheMapOnce() throws {

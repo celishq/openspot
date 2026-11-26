@@ -5,6 +5,7 @@ struct Guide: Sendable {
     let topics: [GuideTopic]
 
     init(text: String, pages: [String: String]) {
+        let text = text.replacingOccurrences(of: #"\[([^\]\n]+)\]\(#([^)\s]+)\)"#, with: "$1 (`openspot guide $2`)", options: .regularExpression)
         self.text = text
         topics = GuideTopic.all(in: text) + pages.sorted { $0.key < $1.key }.map { name, page in
             let head = page.split(separator: "\n").first.map { String($0.drop { $0 == "#" || $0 == " " }) } ?? name

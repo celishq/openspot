@@ -75,6 +75,12 @@ final class GuideCallTests: XCTestCase {
         XCTAssertFalse(on.output.contains("## Keys"), on.output)
     }
 
+    func testALinkPrintsAsTheCommandThatOpensIt() async throws {
+        let first = try await answer("your-first-spot")
+
+        XCTAssertEqual(first.output, "# Your first spot\n\nMake a folder. Its keys are in Keys (`openspot guide spottoml/keys`).\n")
+    }
+
     func testAHeadingInAFenceIsNoSection() async throws {
         let missing = try await answer("a-list/not-a-section")
 
