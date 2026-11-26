@@ -112,7 +112,7 @@ final class ClipboardReadTests: XCTestCase {
         let old = try await call(["--within", "60", "--blocks"])
 
         XCTAssertEqual([fresh.output, old.output], ["text=fresh\n", ""])
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read", "--blocks"])?.value as? ClipboardCall, .blocks(within: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read", "--blocks"])?.value as? ClipboardCall, .read(within: nil, blocks: true))
     }
 
     func testWithinTakesAnAgeAboveZeroInSecondsOrWithItsUnit() {

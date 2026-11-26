@@ -3,8 +3,7 @@ import Foundation
 public enum ClipboardCall: NounCall {
     case copy(String?)
     case paste
-    case read(within: TimeInterval?)
-    case blocks(within: TimeInterval?)
+    case read(within: TimeInterval?, blocks: Bool = false)
 
     static let noun = CommandNoun("clipboard", group: .mac, verbs: [
         CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", inShow: .changes("changes the clipboard"))) { words in
@@ -16,7 +15,7 @@ public enum ClipboardCall: NounCall {
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
             let isBlocks = words.fit?.has("--blocks") == true
-            return Self.within(in: words.fit).map { isBlocks ? Self.blocks(within: $0) : Self.read(within: $0) }
+            return Self.within(in: words.fit).map { Self.read(within: $0, blocks: isBlocks) }
         }
     ])
 
@@ -41,10 +40,10 @@ public enum ClipboardCall: NounCall {
         return switch self {
         case .copy(let path): calls.copy(path, input: context.input)
         case .paste: calls.paste()
-        case .read(nil): calls.read()
-        case .read(let within?): context.runs.map { calls.read(within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
-        case .blocks(nil): calls.blocks(images: context.places.clipboard)
-        case .blocks(let within?): context.runs.map { calls.blocks(images: context.places.clipboard, within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
+        case .read(nil, false): calls.read()
+        case .read(let within?, false): context.runs.map { calls.read(within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
+        case .read(nil, true): calls.blocks(images: context.places.clipboard)
+        case .read(let within?, true): context.runs.map { calls.blocks(images: context.places.clipboard, within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
         }
     }
 }
