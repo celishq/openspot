@@ -165,13 +165,13 @@ esac
 
 - While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`. When it fails, or gives no answer in 3 seconds, the field shows why, such as `Openspot can't read Safari. Allow it in Openspot's settings.`
-  when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens the Attachments spot. Its Access row opens Settings at Access, where people allow it, and the next Tab reads again.
+  when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens Settings at the source's page, where people allow it, and the next Tab reads again.
 - A chip shows only when a spot has a row for it. A source runs only when some spot has a row for some
   kind.
-- A source stays off the grid and out of the search. The Attachments spot lists it, and Return there hides or shows its
-  chip. A hidden source runs no `attachment.pick` and no `show` at the open of the panel, and gives no chip. Its spot stays
-  on. `openspot setting set --spot <id> attachment false` hides it, and `openspot setting set --spot <id> attachment`
-  shows it again.
+- A source stays off the grid and out of the search. Its page in Settings holds a Show as attachment row, which hides or
+  shows its chip, and `⌘K` on its chip opens that page. A hidden source runs no `attachment.pick` and no `show` at the open
+  of the panel, and gives no chip. Its spot stays on. `openspot setting set --spot <id> attachment false` hides it, and
+  `openspot setting set --spot <id> attachment true` shows it again.
 
 ## Hand on a row
 
