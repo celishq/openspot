@@ -6,6 +6,7 @@ final class Timeline: Sendable {
     static let byteLimit: Int64 = 2 << 30
     static let entryLimit: Int64 = 25 << 20
     static let heldText = 16 << 10
+    static let peekLimit = 64 << 10
     static let forgottenAge: TimeInterval = 600
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -22,8 +23,9 @@ final class Timeline: Sendable {
         var detail: String?
         var key: String?
         var at: Date?
+        var peek: [TextBlock]
 
-        init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
+        init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil, peek: [TextBlock] = []) {
             self.kind = kind
             self.values = values
             self.title = title
@@ -32,6 +34,7 @@ final class Timeline: Sendable {
             self.detail = detail
             self.key = key
             self.at = at
+            self.peek = peek
         }
     }
 
@@ -226,10 +229,33 @@ final class Timeline: Sendable {
                 files.append(file)
             }
         }
+        var peekFile: String?
+        if !draft.peek.isEmpty {
+            let text = keep(draft.peek, of: id, in: place)
+            let file = place.appendingPathComponent("peek.frame")
+            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+            try Data(text.utf8).write(to: file, options: .atomic)
+            peekFile = file.path
+            bytes += Int64(text.utf8.count)
+        }
         return TimelineEntry(
             id: id, spot: spot, at: at, kind: draft.kind, value: value, textFile: textFile, files: files, title: draft.title ?? Self.title(of: draft),
-            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, bytes: bytes, forgotten: nil
+            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, bytes: bytes, peekFile: peekFile, forgotten: nil
         )
+    }
+
+    private func keep(_ peek: [TextBlock], of id: String, in place: URL) -> String {
+        let old = peek.first?.value(BlockKind.peek.word)
+        let new = "peek-\(id)"
+        let head = TextBlock(fields: [.init(key: BlockKind.peek.word, value: new), .init(key: ViewNode.parentKey, value: id)] + (peek.first?.fields.dropFirst().filter { $0.key != ViewNode.parentKey } ?? []))
+        let parts = peek.dropFirst().filter { $0.value(PeekAct.runKey) == nil }.map { block in
+            TextBlock(fields: block.fields.map { field in
+                if field.key == ViewNode.parentKey, field.value == old { return .init(key: field.key, value: new) }
+                if field.key == "icon", block.fields.first?.key == BlockKind.picture.word, field.value.hasPrefix("/") { return .init(key: field.key, value: keep(field.value, in: place).path) }
+                return field
+            })
+        }
+        return ([head] + parts).map(\.text).joined(separator: "\n")
     }
 
     private func keep(_ path: String, in place: URL) -> TimelineEntry.File {

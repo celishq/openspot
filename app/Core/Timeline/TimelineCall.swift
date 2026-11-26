@@ -16,7 +16,7 @@ enum TimelineCall: NounCall {
     static let noun = CommandNoun("timeline", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, the line under it in `detail=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A file up to 25 MB on the same disk is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value. It works in a show.",
+            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, the line under it in `detail=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A file up to 25 MB on the same disk is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value; a `peek=` block after them and the blocks under it are kept as the peek of the entry, up to 64 KB, with no `run=` button and a copy of each picture. It works in a show.",
             rule: CallRule(use: .timeline, used: "added to its timeline")
         ) { Self.add($0.rest) },
         CommandVerb(
@@ -80,9 +80,10 @@ enum TimelineCall: NounCall {
                 return Self.add(fields, of: spot, to: runs)
             }
             return {
-                let fields = (TextBlock.blocks(in: await context.input()).first?.fields ?? []).filter { Self.keys.contains($0.key) }
+                let blocks = TextBlock.blocks(in: await context.input())
+                let fields = (blocks.first?.fields ?? []).filter { Self.keys.contains($0.key) }
                 guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
-                return await Self.add(fields, of: spot, to: runs)()
+                return await Self.add(fields, of: spot, to: runs, peek: Self.peek(in: blocks.dropFirst()))()
             }
         case .list(let other, let all, let within, let text, let limit):
             let spots: Set<String>? = all ? nil : other.map { [$0] } ?? caller.map { [$0.id] }
@@ -136,7 +137,19 @@ enum TimelineCall: NounCall {
         return caller.id == spot || caller.uses.contains(.read)
     }
 
-    private static func add(_ fields: [TextBlock.Field], of spot: String, to runs: SpotRuns) -> CommandAPI.Work {
+    private static func peek(in blocks: ArraySlice<TextBlock>) -> [TextBlock] {
+        guard let head = blocks.first, head.fields.first?.key == BlockKind.peek.word, let id = head.value(BlockKind.peek.word) else { return [] }
+        var held: Set<String> = [id]
+        var peek = [head]
+        for block in blocks.dropFirst() {
+            guard let parent = block.value(ViewNode.parentKey), held.contains(parent) else { break }
+            if let own = block.fields.first?.value, !own.isEmpty { held.insert(own) }
+            peek.append(block)
+        }
+        return peek
+    }
+
+    private static func add(_ fields: [TextBlock.Field], of spot: String, to runs: SpotRuns, peek: [TextBlock] = []) -> CommandAPI.Work {
         let note = { (key: String) in fields.last { $0.key == key }?.value }
         guard let (kind, values) = AttachmentValue.Kind.value(in: fields) else {
             return { CommandAnswer(errors: "`openspot timeline add` takes one kind of value: text=, url= or file= once for each file.\n", code: 2) }
@@ -151,12 +164,14 @@ enum TimelineCall: NounCall {
             }
             at = time
         }
-        let draft = Timeline.Draft(kind: kind, values: values, title: note("title"), app: note("app"), icon: note("icon"), detail: note("detail"), key: note("key"), at: at)
+        let isOver = peek.map(\.text).joined(separator: "\n").utf8.count > Timeline.peekLimit
+        let draft = Timeline.Draft(kind: kind, values: values, title: note("title"), app: note("app"), icon: note("icon"), detail: note("detail"), key: note("key"), at: at, peek: isOver ? [] : peek)
         let timeline = runs.timeline
         return {
             do {
                 guard let entry = try timeline.add(draft, of: spot, at: runs.clock.now()) else { return CommandAnswer() }
                 await runs.timelineChanged(spot, by: spot)
+                guard !isOver else { return CommandAnswer(output: entry.id + "\n", errors: "The peek is over 64 KB, so the timeline keeps the entry without it.\n", code: 1) }
                 return CommandAnswer(output: entry.id + "\n")
             } catch {
                 return CommandAnswer(errors: "Openspot could not keep the entry: \(error.localizedDescription)\n", code: 1)

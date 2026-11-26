@@ -103,6 +103,19 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.color), ["#666666", nil, "#ff3b30"])
     }
 
+    func testTheRowOfAnEntryWithAPeekCarriesItAndTheNextRowStaysItsOwn() async throws {
+        let peek = TextBlock.blocks(in: "peek=p\n\ntext=hex\nparent=p\ntitle=#FF0000\n\nbutton=rgb\nparent=p\ntitle=Copy RGB\ncopy=rgb(255 0 0)\n")
+        let id = try XCTUnwrap(try runs.timeline.add(Timeline.Draft(kind: .text, values: ["#ff0000"], peek: peek), of: "clipboard", at: Date().addingTimeInterval(1))).id
+        try add(.text, "plain")
+
+        let rows = try await rows()
+
+        XCTAssertEqual(rows.map(\.title), ["#ff0000", "plain"])
+        XCTAssertEqual(rows.first?.peek.map(\.firstLine), ["peek=peek-\(id)", "text=hex", "button=rgb"])
+        XCTAssertEqual(rows.first.map { PeekAct.actions(of: $0.peek).map(\.title) }, ["Copy RGB"])
+        XCTAssertEqual(rows.last?.peek, [])
+    }
+
     func testTheSpotIsTitledTimelineAndNotByItsNewestEntry() async throws {
         try add(.text, "newest")
 

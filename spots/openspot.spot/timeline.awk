@@ -1,7 +1,8 @@
 # Turns the entries that `openspot timeline list` prints into the rows of the Timeline sheet: a group for each day, and
 # a row for each entry, with its time and the detail its spot gave under its title, or else what it holds, such as
 # `09:57 · 3 lines` or `09:57 · github.com`, and the spot it came from when that is not Clipboard. The icon is the one
-# its spot gave, or else that of its kind; a colour such as `#ff3b30` shows as a square of itself.
+# its spot gave, or else that of its kind; a colour such as `#ff3b30` shows as a square of itself. The peek its spot
+# gave follows its row, so ⌘P shows it.
 BEGIN {
   RS = ""; FS = "\n"; count = 0
   split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday", names, " ")
@@ -79,6 +80,10 @@ function source(spot,    name) {
   if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
   if (kind == "file") printf "file=%s\n", f[kind]
   printf "open.title=Copy\n"
+  if (f["peek.file"] != "") {
+    while ((getline block < f["peek.file"]) > 0) printf "\n%s\n", block
+    close(f["peek.file"])
+  }
 }
 
 END {
