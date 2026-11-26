@@ -5,6 +5,9 @@ enum TimelineCall: NounCall {
     case list(spot: String?, all: Bool, within: TimeInterval?, text: String?, limit: Int?)
     case forget(String)
     case restore(String)
+    case keep(String)
+    case pause(String)
+    case resume
 
     private static let keys = ["text", "url", "file", "picture", "title", "app", "icon", "key", "at"]
     private static let notes: Set<String> = ["title", "app", "icon", "key", "at"]
@@ -28,7 +31,13 @@ enum TimelineCall: NounCall {
         },
         CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
         CommandVerb("restore", "<id>", "Brings back an entry that `openspot timeline forget` took out.", rule: CallRule(use: .timeline, used: "restored an entry")) { $0.one.map(Self.restore) },
+        CommandVerb("keep", "<days>", "Keeps each entry for the days, 30 by default, and drops what is older.", rule: CallRule(use: .timeline, used: "changed how long the timeline keeps", onlyPerson: Self.personOnly)) { $0.one.map(Self.keep) },
+        CommandVerb("pause", "<age>", "Adds nothing to any timeline for the age, such as 1h.", rule: CallRule(use: .timeline, used: "paused the timeline", onlyPerson: Self.personOnly)) { $0.one.map(Self.pause) },
+        CommandVerb("resume", "", "Ends a pause of the timeline.", rule: CallRule(use: .timeline, used: "resumed the timeline", onlyPerson: Self.personOnly)) { $0.none ? Self.resume : nil },
     ])
+
+    private static let personOnly = "cannot change the timeline of every spot. Only you can, in the Settings of Timeline or with `openspot timeline` in Terminal."
+
 
     func rule(_ rule: CallRule, spot: String?) -> CallRule {
         var rule = rule
@@ -75,6 +84,28 @@ enum TimelineCall: NounCall {
                 let entries = timeline.list(Timeline.Query(spots: spots, within: within, text: text, limit: limit), at: now)
                 return CommandAnswer(output: entries.map(\.block).joined(separator: "\n"))
             }
+        case .keep(let text):
+            guard let days = Int(text), days > 0 else {
+                return { CommandAnswer(errors: "`\(text)` is not a count of days. Write a whole number above 0, such as 30.\n", code: 2) }
+            }
+            return {
+                timeline.keep(days: days, at: await runs.timeNow())
+                return CommandAnswer()
+            }
+        case .pause(let text):
+            guard let age = Int(text).map(TimeInterval.init) ?? Manifest.Triggers.age(text), age > 0 else {
+                return { CommandAnswer(errors: "`\(text)` is not an age. Write seconds, or a number with s, m, h or d, such as 1h.\n", code: 2) }
+            }
+            return {
+                let now = await runs.timeNow()
+                timeline.pause(until: now.addingTimeInterval(age), at: now)
+                return CommandAnswer()
+            }
+        case .resume:
+            return {
+                timeline.pause(until: nil, at: await runs.timeNow())
+                return CommandAnswer()
+            }
         case .forget(let id), .restore(let id):
             let isForget = if case .forget = self { true } else { false }
             return {
@@ -117,7 +148,7 @@ enum TimelineCall: NounCall {
         let timeline = runs.timeline
         return {
             do {
-                let entry = try timeline.add(draft, of: spot, at: await runs.timeNow())
+                guard let entry = try timeline.add(draft, of: spot, at: await runs.timeNow()) else { return CommandAnswer() }
                 await runs.timelineChanged(spot, by: spot)
                 return CommandAnswer(output: entry.id + "\n")
             } catch {

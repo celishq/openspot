@@ -144,6 +144,22 @@ Vivaldi and Opera. To read another browser, name its bundle ID and its family, `
 A browser of the Chromium family answers as Chrome does, and one of the Safari family as Safari does. A line for a
 browser that Openspot already reads changes its family.
 
+## Find what you copied
+
+Type `/timeline`, or search for Timeline, and press Return. It lists what you copied in the last 30 days, newest first,
+under a heading for each day. Type to find an entry by its words.
+
+| Key        | Does                                                                  |
+| ---------- | --------------------------------------------------------------------- |
+| Return     | Pastes the entry into the app you were in, or opens a link.           |
+| `⌘C`       | Copies the entry.                                                     |
+| `⌘⌫`       | Forgets the entry. Click the message that shows to put it back.       |
+
+- The Clipboard spot keeps each copy, also while the panel is closed. It keeps a picture, and a file of up to 25 MB,
+  as a copy, so the entry still pastes after you delete the file. It keeps nothing that a password manager copied.
+- Timeline's Settings set Keep for. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
+- Turn off Keep history in the Settings of Clipboard to keep no copy.
+
 ## Rename a slash command
 
 Rename or remove a slash command, or keep a spot out of the search, in `~/.config/openspot/config.toml`. Here `/note`

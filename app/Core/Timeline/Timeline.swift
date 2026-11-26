@@ -42,11 +42,16 @@ public final class Timeline: Sendable {
         }
     }
 
+    public struct Choices: Codable, Equatable, Sendable {
+        public var keptDays = Timeline.keptDays
+        public var pausedUntil: Date?
+    }
+
     private struct Kept {
         var entries: [TimelineEntry] = []
         var folded: [String: String] = [:]
         var isRead = false
-        var keptDays = Timeline.keptDays
+        var choices = Choices()
         var readers: [String: Set<String>?] = [:]
     }
 
@@ -66,16 +71,35 @@ public final class Timeline: Sendable {
     }
 
     public func keep(days: Int, at now: Date) {
+        change(at: now) { $0.keptDays = max(1, days) }
+    }
+
+    public func pause(until time: Date?, at now: Date) {
+        change(at: now) { $0.pausedUntil = time }
+    }
+
+    public func choices() -> Choices {
         kept.withLock { kept in
-            kept.keptDays = max(1, days)
             read(&kept)
+            return kept.choices
+        }
+    }
+
+    private func change(at now: Date, _ body: (inout Choices) -> Void) {
+        kept.withLock { kept in
+            read(&kept)
+            let before = kept.choices
+            body(&kept.choices)
+            guard kept.choices != before else { return }
+            KeptFile<Choices>(url: folder?.appendingPathComponent("choices.json")).write(kept.choices)
             cut(&kept, at: now)
         }
     }
 
-    public func add(_ draft: Draft, of spot: String, at now: Date) throws -> TimelineEntry {
+    public func add(_ draft: Draft, of spot: String, at now: Date) throws -> TimelineEntry? {
         try kept.withLock { kept in
             read(&kept)
+            if let until = kept.choices.pausedUntil, now < until { return nil }
             let id = String(UUID().uuidString.prefix(8)).lowercased()
             let at = draft.at ?? now
             if let key = draft.key, let old = kept.entries.firstIndex(where: { $0.spot == spot && $0.key == key && $0.forgotten == nil }) {
@@ -198,6 +222,7 @@ public final class Timeline: Sendable {
         guard !kept.isRead else { return }
         kept.isRead = true
         guard let folder else { return }
+        if let choices = KeptFile<Choices>(url: folder.appendingPathComponent("choices.json")).read(or: Choices()) { kept.choices = choices }
         let decoder = JSONDecoder()
         for spotFolder in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] {
             for file in (try? FileManager.default.contentsOfDirectory(at: spotFolder, includingPropertiesForKeys: nil)) ?? [] where file.pathExtension == "jsonl" {
@@ -213,7 +238,7 @@ public final class Timeline: Sendable {
     }
 
     private func cut(_ kept: inout Kept, at now: Date) {
-        let oldest = day(of: now.addingTimeInterval(-Double(kept.keptDays - 1) * 86_400))
+        let oldest = day(of: now.addingTimeInterval(-Double(kept.choices.keptDays - 1) * 86_400))
         let old = kept.entries.filter { day(of: $0.at) < oldest || $0.forgotten.map { now.timeIntervalSince($0) > Self.forgottenAge } == true }
         var gone = Set(old.map(\.id))
         var bytes = kept.entries.reduce(Int64(0)) { $0 + (gone.contains($1.id) ? 0 : $1.bytes) }

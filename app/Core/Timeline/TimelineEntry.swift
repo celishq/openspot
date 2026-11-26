@@ -26,7 +26,7 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
     public var forgotten: Date?
 
     var block: String {
-        var fields = [TextBlock.Field(key: "item", value: id), .init(key: "title", value: title), .init(key: "spot", value: spot), .init(key: "at", value: SpotTimer.format(at))]
+        var fields = [TextBlock.Field(key: "item", value: id), .init(key: "title", value: title), .init(key: "spot", value: spot), .init(key: "at", value: Self.format(at))]
         switch kind {
         case .text, .url: fields.append(.init(key: kind.rawValue, value: value))
         case .file, .picture: fields += files.map { .init(key: kind.rawValue, value: $0.isKept ? $0.path : $0.original) }
@@ -36,6 +36,12 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
         if let icon { fields.append(.init(key: "icon", value: icon)) }
         if let key { fields.append(.init(key: "key", value: key)) }
         return TextBlock(fields: fields).text
+    }
+
+    static func format(_ date: Date) -> String {
+        let format = ISO8601DateFormatter()
+        format.timeZone = .current
+        return format.string(from: date)
     }
 
     var words: String {

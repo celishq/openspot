@@ -52,6 +52,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timeline list [--spot <id>] [--all] [--within <age>] [--text <words>] [--limit <n>]` | Prints an item for each entry of your spot's timeline, newest first. `--spot` and `--all` read other timelines and need `read`. |
 | `openspot timeline forget <id>`                     | Takes an entry out of the timeline.                                      |
 | `openspot timeline restore <id>`                    | Brings back an entry forgotten in the last 10 minutes.                   |
+| `openspot timeline keep <days>`, `pause <age>`, `resume` | Sets how many days every timeline keeps, adds nothing for the age, or ends the pause. Only you and Openspot's own spots can. |
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot you bind, and prints its values. |
 | `openspot emit <event> [<name>=<value>...]`         | Sends one of your spot's events to each spot that listens.               |
 | `openspot cache get <name>`                         | Prints the value your spot keeps as `<name>`, and runs its filler when it is missing or old. |

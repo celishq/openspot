@@ -88,6 +88,7 @@
 		0EF181099C6884E26189A957 /* NodePicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676FA685177CAFED3E9DDBA0 /* NodePicture.swift */; };
 		0F2984C8DFB5489F46485D97 /* GridExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9097B97D0B1A7C18882AE3B4 /* GridExampleTests.swift */; };
 		0F32C9BC8314BC7ECABA192C /* SpotTimers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B04B9D439D00C7F0753B0A9 /* SpotTimers.swift */; };
+		0F96EB0C57D1A3262511DD6D /* TimelineSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A7DE8B0D7A6C8385032724 /* TimelineSpotTests.swift */; };
 		0FD29095CBF2E44DCEA9028B /* AppCallsSocketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A979E9E11372D4D4D2B77F8 /* AppCallsSocketTests.swift */; };
 		0FF2CA5D05C471E51732D7B3 /* SpotItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2327252FA890BD754C4D56C4 /* SpotItem.swift */; };
 		101F10A7ECFAD0E4B819BB32 /* MacAccesses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569D00B01EBE89845BA5EB5B /* MacAccesses.swift */; };
@@ -1770,6 +1771,7 @@
 		60BFE28A6D2DB76E1F2FCD3F /* SpotKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotKind.swift; sourceTree = "<group>"; };
 		60FAF1500E1F6B256BDCC490 /* WorkWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkWindows.swift; sourceTree = "<group>"; };
 		6166CE78629F6275BCE69B74 /* PowerCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerCallTests.swift; sourceTree = "<group>"; };
+		61A7DE8B0D7A6C8385032724 /* TimelineSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSpotTests.swift; sourceTree = "<group>"; };
 		61D78D44AC947ADB6300778B /* SpotSheetPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPreview.swift; sourceTree = "<group>"; };
 		62B24D36B429CBB0F07FEC1E /* SpotRuns+Timers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Timers.swift"; sourceTree = "<group>"; };
 		62DE1B0770D13E317B53F6BC /* SymbolsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolsCall.swift; sourceTree = "<group>"; };
@@ -3637,6 +3639,7 @@
 				6C873E93C8E507D9E8B38EA9 /* ThemeReloadTests.swift */,
 				A00714417444C03CF2BC23F9 /* ThemesSpotTests.swift */,
 				47AD2235A9745DFB8FBDDD69 /* ThemeTests.swift */,
+				61A7DE8B0D7A6C8385032724 /* TimelineSpotTests.swift */,
 				6672D7C4A11F8A2A0087F05A /* TimelineTests.swift */,
 				E5BD1950F2854291BD2F37B1 /* TimerActionTests.swift */,
 				C8554B2C90CA514EDFB6D877 /* ToastNoteTests.swift */,
@@ -6211,6 +6214,7 @@
 				80C05979353DA5EBC47D0BDB /* ThemeReloadTests.swift in Sources */,
 				D5BE115929A72C5EFDCD29E6 /* ThemeTests.swift in Sources */,
 				0A34A543E6706E28E589A8A3 /* ThemesSpotTests.swift in Sources */,
+				0F96EB0C57D1A3262511DD6D /* TimelineSpotTests.swift in Sources */,
 				C1D4E7286D35881777BF8A36 /* TimelineTests.swift in Sources */,
 				4170068576B76CEB0B942FED /* TimerActionTests.swift in Sources */,
 				1400DB43B9A6085DDCD83CD8 /* ToastNoteTests.swift in Sources */,
