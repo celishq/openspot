@@ -277,6 +277,9 @@ extension SpotTokens {
 
     public static let storeInset: CGFloat = 16
     public static let storeHeadingGap: CGFloat = 10
+    public static let storeMarkerWidth: CGFloat = 18
+    public static let storeQuoteBar: CGFloat = 3
+    public static let storeCodePadding: CGFloat = 8
     public static let storeTilePadding: CGFloat = 12
     public static let storeTileRadius: CGFloat = 14
     public static let storeTileLineGap: CGFloat = 4

@@ -284,7 +284,8 @@ public final class Store {
 
     private nonisolated static func readme(beside spot: Spot) -> (lines: [String], shown: [StoreReadmeLine]) {
         let lines = SpotReadme.lines(at: SpotReadme.url(beside: spot.url))
-        return (lines, StoreReadmeLine.paragraphs(lines))
+        let shown = StoreReadmeLine.paragraphs(lines)
+        return (lines, shown.first == .heading(level: 1, text: spot.name) ? Array(shown.dropFirst()) : shown)
     }
 
     private nonisolated static func name(ofSource entry: SpotLock.Entry, in places: AppPlaces, config: Config) -> String {

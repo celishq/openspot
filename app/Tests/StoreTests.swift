@@ -189,18 +189,24 @@ final class StoreTests: XCTestCase {
     }
 
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
-        try "# Clock\n\nTells the time\nof each city.\n- one\n- two\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
+        let readme = "# Clock\n\nTells the time\nof each city.\n\n## Use\n\n- one\n  more\n- two\n1. first\n\n> A note\n> that wraps.\n\n```\nsh clock.sh\n  --zone Tokyo\n```\n"
+        try readme.write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
 
         _ = await store.show("clock", search: nil)
 
         let shown = try XCTUnwrap(store.page?.shown).map { line -> String in
             switch line {
-            case .heading(let text): "# \(text)"
+            case .heading(let level, let text): "h\(level) \(text)"
             case .text(let text): String(text.characters)
+            case .item(let marker, let text): "\(marker) \(String(text.characters))"
+            case .quote(let text): "> \(String(text.characters))"
+            case .code(let text): "code \(text)"
             case .media(let path, _): path
             }
         }
-        XCTAssertEqual(shown, ["# Clock", "Tells the time of each city.", "- one", "- two"])
+        XCTAssertEqual(shown, [
+            "Tells the time of each city.", "h2 Use", "• one more", "• two", "1. first", "> A note that wraps.", "code sh clock.sh\n  --zone Tokyo"
+        ])
     }
 
     func testOpenWithTextSearchesTheFirstSourceThatHasAMatch() async throws {
