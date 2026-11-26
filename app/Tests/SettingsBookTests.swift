@@ -74,6 +74,18 @@ final class SettingsBookTests: PanelCase {
         XCTAssertTrue(book.index.found("zzz-none").isEmpty)
     }
 
+    func testASearchForShortcutOrKeyListsEveryShortcut() async throws {
+        try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
+        await read()
+
+        let shortcuts = book.index.found("shortcut").rows
+        let keys = book.index.found("key").rows.filter { $0.kind == .key }
+
+        XCTAssertEqual(Set(shortcuts.map(\.item)), Set(book.rows.all.filter { $0.kind == .key }.map(\.item)))
+        XCTAssertTrue(shortcuts.contains { $0.item == "cups/key.fill" })
+        XCTAssertEqual(Set(keys.map(\.item)), Set(shortcuts.map(\.item)))
+    }
+
     func testItLandsWhereTheWayInAsks() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
@@ -356,7 +368,7 @@ final class SettingsBookTests: PanelCase {
         await read()
         let cups = try XCTUnwrap(book.spots.standing("cups"))
 
-        XCTAssertEqual(book.rows.groups(of: "cups").map(\.id), ["Keyboard Shortcuts", "Settings", "Where It Shows"])
+        XCTAssertEqual(book.rows.groups(of: "cups").map(\.id), ["Shortcuts", "Settings", "Where It Shows"])
         XCTAssertEqual(book.rows.groups(of: "cups")[1].rows.map(\.key), ["city"])
         XCTAssertEqual(cups.banner?.title, "Cups can’t run yet")
         XCTAssertEqual(cups.banner?.line, "It needs Screen Recording from macOS.")

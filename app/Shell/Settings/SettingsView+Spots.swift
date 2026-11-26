@@ -8,14 +8,13 @@ extension SettingsView {
             if let banner = standing.banner {
                 self.banner(standing, banner.title, banner.line)
             }
-            group("Permissions") {
-                if standing.uses.isEmpty {
-                    plain("This spot doesn’t need any permissions.")
-                }
-                lines(standing.uses) { useLine($0) }
-            }
             ForEach(book.rows.groups(of: standing.id)) { rows in
                 group(rows.id) { lines(rows.rows) { settingLine($0) } }
+            }
+            if !standing.uses.isEmpty {
+                group("Access") {
+                    lines(standing.uses) { useLine($0) }
+                }
             }
         }
     }
@@ -23,8 +22,10 @@ extension SettingsView {
     private func banner(_ standing: SpotStanding, _ title: String, _ line: String) -> some View {
         Section {
             HStack(spacing: SpotTokens.settingsRowGap) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(SpotTheme.settingsLate)
+                Circle()
+                    .fill(SpotTheme.settingsState(standing.readiness))
+                    .frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
+                    .frame(width: SpotTokens.settingsRowTile)
                 titled(title, line)
                 Spacer(minLength: SpotTokens.settingsTrailingGap)
                 fix(standing)

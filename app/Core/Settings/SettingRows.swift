@@ -28,7 +28,7 @@ public struct SettingRows: Equatable, Sendable {
 
     public func groups(of spot: String) -> [Group] {
         let rows = rows(of: spot)
-        let kinds: [(String, Set<SettingRow.Kind>)] = [("Keyboard Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where It Shows", [.toggle])]
+        let kinds: [(String, Set<SettingRow.Kind>)] = [("Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where It Shows", [.toggle])]
         return kinds.map { title, kinds in Group(id: title, rows: rows.filter { kinds.contains($0.kind) }) }.filter { !$0.rows.isEmpty }
     }
 }
