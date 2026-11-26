@@ -37,17 +37,12 @@ final class ThemesSpotTests: BuiltInCase {
         XCTAssertEqual(Set(output.items.dropLast().map { $0.hides ?? [] }), [["rename", "delete", "file"]])
         XCTAssertEqual(output.items.last?.hides ?? [], [])
         XCTAssertEqual(output.actions.map(\.title), ["Duplicate", "Rename", "Move to Trash", "Open file", "Copy prompt"])
-        XCTAssertFalse(try settingsRows().contains { $0.lowercased().contains("theme") })
     }
 
     func testItStaysOffTheGridUntilThePersonAddsIt() throws {
         let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(defaults.arrangement.isOnGrid(of: try themes.id), false)
-    }
-
-    private func settingsRows() throws -> [String] {
-        try String(contentsOf: repoSpots.appendingPathComponent("openspot.spot/settings.sh"), encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("item=") }
     }
 
     func testReturnUsesATheme() async throws {

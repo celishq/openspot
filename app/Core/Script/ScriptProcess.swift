@@ -53,14 +53,14 @@ public final class ScriptProcess: @unchecked Sendable {
     var fix: @Sendable () -> URL? = { nil }
     var channel: RunChannel?
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, clock: RunClock = RunClock(), build: (@Sendable () async throws -> URL)? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, sandbox: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, clock: RunClock = RunClock(), build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
         self.clock = clock
         self.build = build
         building = build != nil
         self.base = base
         self.folder = folder
-        self.sandbox = careful.map(Sandbox.init)
+        self.sandbox = sandbox.map(Sandbox.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
@@ -423,6 +423,11 @@ public final class ScriptProcess: @unchecked Sendable {
         handlers.forEach { $0(.zero) }
     }
 
+    private static func named(_ path: String, as name: String?) -> [String] {
+        guard let name, name != path else { return [path] }
+        return ["/bin/bash", "-c", "exec -a \"$0\" \"$@\"", name, path]
+    }
+
     private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String], fence wrapper: [String]) throws -> pid_t {
         var actions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&actions)
@@ -454,7 +459,7 @@ public final class ScriptProcess: @unchecked Sendable {
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
         let url = lock.withLock { self.url }
-        let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
+        let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + Self.named(url.path, as: name) + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }
         var started: pid_t = 0

@@ -55,10 +55,6 @@ final class InlineMode: ScriptMode {
         return true
     }
 
-    func restart() {
-        end()
-    }
-
     func end() {
         if let run { runs.dropScript(of: run.spot.id) }
         asking.dropAll()

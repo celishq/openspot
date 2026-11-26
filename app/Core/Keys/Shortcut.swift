@@ -38,7 +38,7 @@ public struct Shortcut: Hashable, Sendable {
             !isDisjoint(with: [.command, .control, .option])
         }
 
-        static var all: [Modifiers] {
+        public static var all: [Modifiers] {
             Shortcut.modifierWords.map(\.modifier)
         }
     }
@@ -99,5 +99,14 @@ public struct Shortcut: Hashable, Sendable {
 
     public var keyLabel: String {
         KeyText(modifiers: modifiers, name: name).keyLabel
+    }
+
+    public static func caps(_ text: String) -> [String] {
+        guard !text.isEmpty else { return [] }
+        var words = text.lowercased().split(separator: "+").map(String.init)
+        let name = words.popLast() ?? ""
+        let marks = [("ctrl", "⌃"), ("option", "⌥"), ("shift", "⇧"), ("cmd", "⌘")].filter { words.contains($0.0) }.map(\.1)
+        let names = ["space": "Space", "return": "↩", "tab": "⇥", "backspace": "⌫", "escape": "Esc", "left": "←", "right": "→", "up": "↑", "down": "↓", "shake": "Shake"]
+        return marks + [names[name] ?? (name.count == 1 ? name.uppercased() : name.capitalized)]
     }
 }

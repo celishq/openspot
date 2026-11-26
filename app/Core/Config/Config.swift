@@ -5,7 +5,6 @@ public struct Config: Equatable, Sendable {
         case keys
         case spots
         case settings
-        case careful
         case columns
         case rest
     }
@@ -15,9 +14,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var faults: [String] = []
     public var arrangement = SpotChoices()
     public var keys: [GlobalKey] = []
-    public private(set) var settings: [SpotSetting] = []
+    public private(set) var settings: [KeptSetting] = []
     public private(set) var stores: [Store] = []
-    public private(set) var isCareful = false
     public private(set) var theme: String?
     public private(set) var grid = GridLayout()
     private(set) var browsers = Browser.builtIn
@@ -58,11 +56,6 @@ public struct Config: Equatable, Sendable {
         kept.tables += document.tables.filter { !known.contains($0.name) }
         panelKey = shortcut(document.values["panel-key"], named: "panel-key", or: .standard)
         fixKey = shortcut(document.values["fix-key"], named: "fix-key", or: .fix)
-        switch document.values["careful"] {
-        case .boolean(let isOn)?: isCareful = isOn
-        case nil: break
-        default: faults.append("config.toml: careful is true or false.")
-        }
         switch document.values["theme"] {
         case .string(let name)?: theme = name
         case nil: break
@@ -101,14 +94,12 @@ public struct Config: Equatable, Sendable {
         if panelKey != other.panelKey || fixKey != other.fixKey || keys != other.keys { sections.insert(.keys) }
         if arrangement != other.arrangement { sections.insert(.spots) }
         if settings != other.settings { sections.insert(.settings) }
-        if isCareful != other.isCareful { sections.insert(.careful) }
         if grid != other.grid { sections.insert(.columns) }
         same.panelKey = panelKey
         same.fixKey = fixKey
         same.keys = keys
         same.arrangement = arrangement
         same.settings = settings
-        same.isCareful = isCareful
         same.theme = theme
         same.grid = grid
         same.kept = kept
@@ -117,18 +108,13 @@ public struct Config: Equatable, Sendable {
         return sections
     }
 
-    public mutating func set(_ shortcut: Shortcut, for name: String) {
+    public mutating func set(_ shortcut: Shortcut?, for name: String) {
         switch name {
         case "panel-key": panelKey = shortcut
         case "fix-key": fixKey = shortcut
         default: return
         }
-        kept.set(name, to: .string(shortcut.text))
-    }
-
-    public mutating func set(isCareful: Bool) {
-        self.isCareful = isCareful
-        kept.set("careful", to: .boolean(isCareful))
+        if let shortcut { kept.set(name, to: .string(shortcut.text)) } else { kept.remove(name) }
     }
 
     public mutating func set(theme: String) {
@@ -142,7 +128,7 @@ public struct Config: Equatable, Sendable {
     }
 
     public mutating func set(setting key: String, of spot: String, to value: String?) {
-        let new = value.map { SpotSetting(spot: spot, key: key, value: $0) }
+        let new = value.map { KeptSetting(spot: spot, key: key, value: $0) }
         if let place = settings.firstIndex(where: { $0.spot == spot && $0.key == key }) {
             settings.removeAll { $0.spot == spot && $0.key == key }
             if let new { settings.insert(new, at: place) }
@@ -181,11 +167,11 @@ public struct Config: Equatable, Sendable {
         settings.first { $0.spot == spot && $0.key == key }?.value
     }
 
-    private mutating func setting(of table: ConfigDocument.Table) -> SpotSetting? {
+    private mutating func setting(of table: ConfigDocument.Table) -> KeptSetting? {
         guard case .string(let spot)? = table["spot"], case .string(let key)? = table["key"], case .string(let value)? = table["value"] else {
             return unread(table, "config.toml: a setting needs a spot, a key and a value.")
         }
-        return SpotSetting(spot: spot, key: key, value: value)
+        return KeptSetting(spot: spot, key: key, value: value)
     }
 
     private mutating func store(of table: ConfigDocument.Table) -> Store? {

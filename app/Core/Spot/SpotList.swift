@@ -20,46 +20,93 @@ struct SpotList {
         let floatKey: String?
         let menubar: Bool
         let inMenuBar: Bool
+        let state: String
+        let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]
+                + Printed.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
     }
 
-    private struct Choice: PrintedRecord {
+    private struct Picked: PrintedRecord {
         let id: String
         let name: String
         let icon: String
         let detail: String?
         let on: Bool
         let own: Bool
+        let state: String
         let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + uses.map { ("uses", $0) }]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + Printed.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
         }
     }
 
-    private struct Value: PrintedRecord {
-        let spot: String
-        let key: String
-        let value: String
+    private struct Printed {
+        let state: String
+        let uses: [String]
+        let needs: [String]
+        let refused: [String]
+        let last: [String: String]
+        let byUse: [String: [String: String]]
 
-        var blocks: [[(String, String?)]] {
-            [[("item", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
+        init(_ standing: SpotStanding) {
+            let listed = { (values: [MacAccess]) in values.isEmpty ? nil : values.map(\.rawValue).joined(separator: ",") }
+            state = standing.readiness.rawValue
+            uses = standing.uses.map(\.id.rawValue)
+            needs = standing.missing.map(\.rawValue)
+            refused = standing.refused.map(\.rawValue)
+            last = Dictionary(uniqueKeysWithValues: standing.last.map { ($0.key.rawValue, $0.value.formatted(.iso8601)) })
+            byUse = Dictionary(uniqueKeysWithValues: standing.byUse.map { use in
+                (use.id.rawValue, ["access": listed(use.needs), "maybe": listed(use.maybe)].compactMapValues { $0 })
+            })
         }
+
+        static func fields(state: String, uses: [String], needs: [String], refused: [String], last: [String: String], byUse: [String: [String: String]]) -> [(String, String?)] {
+            [("state", state), ("uses", uses.isEmpty ? nil : uses.joined(separator: ",")), ("needs", needs.isEmpty ? nil : needs.joined(separator: ",")), ("refused", refused.isEmpty ? nil : refused.joined(separator: ","))]
+                + last.keys.sorted().map { ("last.\($0)", last[$0]) }
+                + byUse.keys.sorted().flatMap { use in ["access", "maybe"].map { ("\($0).\(use)", byUse[use]?[$0]) } }
+        }
+    }
+
+    struct Choice: Equatable, Sendable {
+        let standing: SpotStanding
+        let isOwn: Bool
     }
 
     let folder: SpotsFolder
     let config: Config
+    let scan: Result<ScanResult, Error>
+    var statuses: [MacAccess: AccessStatus] = [:]
+    var apps: [TextBlock] = []
+    var lastUses: [String: [String: Date]] = [:]
+    var refused: [String: [SpotUse: Date]] = [:]
+    var allowed: [SpotLock.Entry] = []
+
+    init(folder: SpotsFolder, config: Config) {
+        self.folder = folder
+        self.config = config
+        scan = Result { try folder.scan() }
+    }
 
     func loaded(_ form: PrintForm) throws -> String {
-        let scan = try folder.scan()
         let keys = config.keys
-        return try form.text(of: scan.scripts.map { script in
-            Loaded(
+        return try form.text(of: try loaded().map { standing in
+            let script = standing.spot
+            let printed = Printed(standing)
+            return Loaded(
                 id: script.id,
                 name: script.name,
                 icon: Self.picture(of: script),
@@ -72,27 +119,42 @@ struct SpotList {
                 float: true,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,
-                inMenuBar: config.arrangement.menuBar.contains(script.id)
+                inMenuBar: config.arrangement.menuBar.contains(script.id),
+                state: printed.state,
+                uses: printed.uses,
+                needs: printed.needs,
+                refused: printed.refused,
+                last: printed.last,
+                byUse: printed.byUse
             )
         })
     }
 
     func core(_ form: PrintForm) throws -> String {
-        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
+        try form.text(of: core().map { choice in
+            let (standing, printed) = (choice.standing, Printed(choice.standing))
+            return Picked(
+                id: standing.id, name: standing.title, icon: Self.picture(of: standing.spot), detail: standing.spot.subtitle, on: !standing.isOff, own: choice.isOwn,
+                state: printed.state, uses: printed.uses, needs: printed.needs, refused: printed.refused, last: printed.last, byUse: printed.byUse
+            )
+        })
     }
 
-    private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {
+    func loaded() throws -> [SpotStanding] {
+        try scan.get().allowing(allowed).scripts.map { readStanding(of: $0) }
+    }
+
+    func core() -> [Choice] {
         let own = folder.scanOwnIDs()
         let enabled = config.arrangement.enabled
         return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
-            return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
+            return Choice(standing: readStanding(of: spot, id: id, isOn: own.contains(id) || enabled.contains(id)), isOwn: own.contains(id))
         }
     }
 
-    func values(_ form: PrintForm, secrets: SecretStore.Values) throws -> String {
-        let hidden = secrets.sorted { $0.key < $1.key }.flatMap { spot, values in values.keys.sorted().map { Value(spot: spot, key: $0, value: FieldValues.hidden) } }
-        return try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) } + hidden)
+    private func readStanding(of spot: Spot, id: String? = nil, isOn: Bool = true) -> SpotStanding {
+        SpotStanding(spot, id: id, isOn: isOn, written: KeptCalls.shared.read(spot), statuses: statuses, last: lastUses[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
     }
 
     private static func picture(of spot: Spot) -> String {

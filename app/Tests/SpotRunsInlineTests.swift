@@ -57,7 +57,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         }
         """)
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
 
         sheet.show(need: .change)
 

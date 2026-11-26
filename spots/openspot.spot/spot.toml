@@ -107,15 +107,6 @@ uses = ["app"]
 [scripts.quit.actions.quit]
 title = "Quit"
 
-[scripts.settings]
-title = "Settings"
-icon = "gearshape"
-detail = "Choose your key"
-uses = ["app"]
-
-[scripts.settings.on]
-search = true
-
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"
@@ -152,7 +143,7 @@ title = "Attachments"
 icon = "rectangle.on.rectangle"
 detail = "Choose what the panel hands to spots"
 keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
-uses = ["spots", "read"]
+uses = ["spots"]
 edits = "attachments"
 
 [scripts.attachments.on]

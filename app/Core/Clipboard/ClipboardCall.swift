@@ -9,7 +9,7 @@ public enum ClipboardCall: NounCall {
         CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", inShow: .changes("changes the clipboard"))) { words in
             words.rest.count <= 1 ? Self.copy(words.rest.first) : nil
         },
-        CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", inShow: .changes("types in the front app"))) { $0.none ? Self.paste : nil },
+        CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", inShow: .changes("types in the front app"), needs: [.accessibility])) { $0.none ? Self.paste : nil },
         CommandVerb(
             "read", "[--within age]", "Prints the text on the clipboard, or nothing when it holds none. --within prints it only when Openspot first saw that copy within the age, such as 2m: seconds, or a number with s, m, h or d.",
             rule: CallRule(use: .clipboard, used: "read the clipboard")

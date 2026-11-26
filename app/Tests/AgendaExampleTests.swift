@@ -206,8 +206,8 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let work = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=WORK\n", limit: 30)
-            let family = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=ауфьшдн\ninput.alt=family\n", limit: 30)
+            let work = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, "sheet.text", input: "input.value=WORK\n", limit: 30)
+            let family = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, "sheet.text", input: "input.value=ауфьшдн\ninput.alt=family\n", limit: 30)
 
             XCTAssertEqual(Frame(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
             XCTAssertEqual(Frame(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
@@ -219,7 +219,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let output = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=qqq\ninput.alt=mom call\ninput.alt=standup\n", limit: 30)
+            let output = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, "sheet.text", input: "input.value=qqq\ninput.alt=mom call\ninput.alt=standup\n", limit: 30)
 
             XCTAssertEqual(Frame(text: output).items.map(\.run).filter { $0.contains(":") }, ["event:B/2"])
         }
@@ -238,7 +238,7 @@ final class AgendaExampleTests: SampleSpotsCase {
 
     @MainActor
     private static func rows(of spot: Spot, after text: String) async throws -> [String] {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         sheet.open {}
@@ -332,7 +332,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             let calendars = "calendars"
 
             let kept = { (try? self.read("setting-calendars", in: folder)).map { "setting.calendars=\($0)\n" } ?? "" }
-            let first = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: kept(), limit: 30)
+            let first = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: kept(), limit: 30)
             let form = try XCTUnwrap(ItemForm(output: Frame(text: first)))
             let choice = try XCTUnwrap(form.soleChoice)
             XCTAssertEqual(agenda.settings.map(\.id), ["calendars"])
@@ -342,12 +342,12 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(choice.options.map(\.icon), ["calendar", "calendar", "list.bullet"])
             XCTAssertEqual(choice.picks, ["A8E2", "7D10"])
 
-            let after = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: "input.calendars=7D10\n" + kept(), limit: 30)
+            let after = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: "input.calendars=7D10\n" + kept(), limit: 30)
             XCTAssertEqual(try self.read("setting-calendars", in: folder), "B1 7D10")
             XCTAssertEqual(ItemForm(output: Frame(text: after))?.soleChoice?.picks, ["A8E2"])
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: "input.calendars=B1\n" + kept(), limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: "input.calendars=B1\n" + kept(), limit: 30)
             XCTAssertEqual(try self.read("setting-calendars", in: folder), "7D10")
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: "input.calendars=7D10\n" + kept(), limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: "input.calendars=7D10\n" + kept(), limit: 30)
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))
         }
     }
@@ -358,11 +358,11 @@ final class AgendaExampleTests: SampleSpotsCase {
             try self.fakeOpenspot(in: folder)
             try "B1 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
             let calendars = "calendars"
-            let first = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: "setting.calendars=B1 7D10\n", limit: 30)
+            let first = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: "setting.calendars=B1 7D10\n", limit: 30)
             let form = try XCTUnwrap(ItemForm(output: Frame(text: first)))
             let all = try XCTUnwrap(FormDraft(form: form).selectingAll())
 
-            let after = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: (Message(calendars, inputs: all.inputs).text ?? "") + "setting.calendars=B1 7D10\n", limit: 30)
+            let after = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: (Message(calendars, inputs: all.inputs).text ?? "") + "setting.calendars=B1 7D10\n", limit: 30)
 
             XCTAssertEqual(all.values["calendars"], "B1\n7D10")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))

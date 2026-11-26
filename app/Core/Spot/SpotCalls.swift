@@ -7,8 +7,14 @@ struct SpotCalls {
     let runs: SpotRuns?
     let secrets: SecretStore
     let caller: Spot?
+    let mac: Mac
+    let access: KeptAccess
+    let api: CommandAPI
 
     init(_ context: CallContext) {
+        api = context.api
+        mac = context.mac
+        access = context.api.access
         caller = context.caller
         places = context.places
         folder = context.folder
@@ -18,9 +24,8 @@ struct SpotCalls {
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places] in
-            let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
+        CommandAnswer.work { [api] in
+            let list = await api.spotList()
             return try core ? list.core(form) : list.loaded(form)
         }
     }
@@ -59,6 +64,15 @@ struct SpotCalls {
             try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
             return "Removed \(removed).\n"
+        }
+    }
+
+    func allow(_ word: String, for id: String) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            guard let use = try SpotUse.set([word], of: id).first else { return "" }
+            let answer = try await places.lock.allow(use, for: id)
+            await app?.spotsChanged()
+            return answer
         }
     }
 
@@ -102,19 +116,18 @@ struct SpotCalls {
         }
     }
 
-    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
+    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, output: CommandOutput) -> CommandAPI.Work {
         { [places, folder, runs, caller] in
             let spots = places.readSpots()
             let found: Spot?
             do {
-                found = try spots.scan().scripts.first { $0.id == id }
+                found = try spots.scan().allowing((try? places.lock.entries()) ?? []).scripts.first { $0.id == id }
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
-            guard var spot = found else {
+            guard let spot = found else {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
-            if let careful { spot.uses.formIntersection(careful) }
             let handler: (name: String?, inputs: [TextBlock.Field])
             do {
                 handler = try Self.handler(arguments, of: spot)
@@ -127,7 +140,7 @@ struct SpotCalls {
             for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
             let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
             let run = TerminalRun(
-                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings,
                 callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
             )
             let begin = Date()

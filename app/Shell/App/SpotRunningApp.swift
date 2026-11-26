@@ -91,8 +91,8 @@ struct SpotRunningApp: RunningApp {
         await model.reveal(id)
     }
 
-    func playground(_ file: URL?, isCareful: Bool) async {
-        await SpotPlayground.show(path: file?.path, isCareful: isCareful)
+    func playground(_ file: URL?) async {
+        await SpotPlayground.show(path: file?.path)
     }
 
     func changeSetting(_ key: String, of spot: String) async -> Bool {
@@ -101,6 +101,30 @@ struct SpotRunningApp: RunningApp {
 
     func allows(_ reason: String) async -> Bool {
         await model.allows(reason)
+    }
+
+    func grant(_ id: String, needs: [MacAccess]) async -> Bool {
+        await model.grant(id, needs: needs)
+    }
+
+    func grant() async -> AccessGrant? {
+        await model.grant
+    }
+
+    func endGrant() async {
+        await model.endGrant()
+    }
+
+    func openSettings(at place: SettingsPage?) async {
+        await model.openSettings(at: place)
+    }
+
+    func restart() async -> Bool {
+        await MainActor.run {
+            guard let app = NSApp.delegate as? OpenspotApp else { return false }
+            app.restart(after: Self.answerPause)
+            return true
+        }
     }
 
 }

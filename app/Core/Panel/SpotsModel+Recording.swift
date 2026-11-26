@@ -127,7 +127,7 @@ extension SpotsModel {
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
         sheets[entry.id]?.set(item, to: key)
-        guard !entry.spot.holdsSettings, !item.staysOnPick else { return }
+        guard !item.staysOnPick else { return }
         closingPick = (item, entry)
         if isShown {
             host.dismiss()

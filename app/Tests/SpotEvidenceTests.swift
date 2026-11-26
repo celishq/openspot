@@ -28,7 +28,7 @@ final class SpotEvidenceTests: XCTestCase {
     func testACallTheHeaderDoesNotDeclareGetsTheGoalToDeclareItOrRemoveIt() throws {
         let usage = StatsLog(at: day)
         usage.called(weather, CallOutcome(seconds: 1), at: day)
-        _ = usage.used(try XCTUnwrap(SpotUseCall(name: "app quit", rule: CallRule(use: .app, used: "quit an app"))), by: Spot(id: "weather", name: "Weather", url: URL(fileURLWithPath: "/weather.sh")), at: day)
+        _ = usage.refused(UseRefusal(spot: Spot(id: "weather", name: "Weather", url: URL(fileURLWithPath: "/weather.sh")), call: try XCTUnwrap(SpotUseCall(name: "app quit", rule: CallRule(use: .app, used: "quit an app")))), at: day)
 
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
 

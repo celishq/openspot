@@ -28,7 +28,7 @@ struct ScreenCalls {
             let file = path.hasPrefix("/") ? URL(fileURLWithPath: path) : folder.appendingPathComponent(path)
             let climbs = path.split(separator: "/").contains("..")
             guard climbs || !fence.sandbox.allows(writing: file, data: data, temp: own["TMPDIR"] ?? NSTemporaryDirectory(), home: own["HOME"] ?? NSHomeDirectory()) else { continue }
-            let line = "Careful mode keeps \(fence.caller.name) from writing \(file.path). Name a file in its data folder or a temp folder, or add `files` to `uses` in its spot.toml.\n"
+            let line = "Openspot keeps \(fence.caller.name) from writing \(file.path). Name a file in its data folder or a temp folder, or add `files` to `uses` in its spot.toml.\n"
             return { CommandAnswer(errors: line, code: 1) }
         }
         return nil

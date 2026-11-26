@@ -153,20 +153,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the end that the script prints") { sheet.calls.isEmpty }
     }
 
-    func testAHeldCallThatOpenspotEndsByARestartSaysThatTheSpotStopped() async throws {
-        try holding()
-        let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
-        sheet.pressKey("hold")
-        _ = try await pid("children")
-
-        runs.isCareful = true
-
-        try await wait("the end of the held call") { sheet.calls.isEmpty }
-        XCTAssertEqual(toasts, ["Script stopped, since Openspot restarted it. Start it again to go on."])
-    }
-
     func testEachFrameWithABlockReplacesAllAndOnlyTheFrameThatEndsAReadAnswersIt() async throws {
         try script(toml: "stay = true", """
         while IFS= read -r line; do

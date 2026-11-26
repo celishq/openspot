@@ -24,8 +24,9 @@ extension SpotRun {
         let query = list.search == .script && !script.keepsState ? list.query : ""
         let typed = query.isEmpty ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
+        var message = event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search)
         let isSent = send(Call(
-            message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search),
+            message: message,
             key: Self.showKey,
             limit: runs.showLimit,
             event: event,

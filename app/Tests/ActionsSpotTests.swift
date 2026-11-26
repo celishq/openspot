@@ -24,7 +24,7 @@ final class ActionsSpotTests: BuiltInCase {
 
         let opened = await app.opened
         let changes = await app.changeList
-        XCTAssertEqual(opened, ["settings weather", "edit weather", "share weather", "delete weather", "grid"])
+        XCTAssertEqual(opened, ["settings at spot/weather", "edit weather", "share weather", "delete weather", "grid"])
         XCTAssertEqual(changes.last, .spots(["caffeinate"]))
     }
 

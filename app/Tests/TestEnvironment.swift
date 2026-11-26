@@ -1,7 +1,9 @@
 import Foundation
+@testable import OpenspotCore
 
 enum TestEnvironment {
     @TaskLocal static var values = ProcessInfo.processInfo.environment
+    @TaskLocal static var callers = SpotCallers()
 
     static func with<T>(_ changes: [String: String?], isolation: isolated (any Actor)? = #isolation, _ body: () async throws -> T) async rethrows -> T {
         var changed = values

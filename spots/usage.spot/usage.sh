@@ -19,7 +19,7 @@ case "$route" in
     id=${route#spot:}
     case "$1" in
       open-spot) exec openspot spot open "$id" ;;
-      settings) exec openspot spot settings "$id" ;;
+      settings) exec openspot app settings --at "spot/$id" ;;
       improve) exec openspot spot edit "$id" ;;
       delete) openspot spot delete "$id" && openspot route back; exit ;;
     esac

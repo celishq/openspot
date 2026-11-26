@@ -59,7 +59,7 @@ final class SpotVerbTests: XCTestCase {
 
     private let actions = """
         const calls = {
-          settings: (id) => ["spot", "settings", id],
+          settings: (id) => ["app", "settings", "--at", `spot/${id}`],
           edit: (id) => ["spot", "edit", id],
           share: (id) => ["spot", "share", id],
           delete: (id) => ["spot", "delete", id],
@@ -439,8 +439,8 @@ final class SpotVerbTests: XCTestCase {
         try script("weather", toml: "title = 'Weather'")
         await model.reload()
 
-        XCTAssertTrue(model.act(.settings, on: "weather"))
-        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "weather") }
+        XCTAssertTrue(model.openSettings(at: .spotOf("weather")))
+        XCTAssertEqual(host.settingsOpens, 1)
         XCTAssertTrue(model.act(.edit, on: "weather"))
         try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "weather") }
         XCTAssertTrue(model.act(.delete, on: "weather"))

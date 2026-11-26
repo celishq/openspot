@@ -130,7 +130,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         let sheet = runs.sheet(for: try newSpot())
         sheet.open {}
@@ -162,7 +162,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     private func edit(_ sheet: Spot, _ action: String, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await SpotRuns(environment: TestEnvironment.values).answer(of: sheet, action, input: input, limit: 60, variables: variables)
+        try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: sheet, action, input: input, limit: 60, variables: variables)
     }
 
     func testTheEditSheetIsTheSameFormForAChangeWithOpenInEditor() async throws {

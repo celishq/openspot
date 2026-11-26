@@ -1191,17 +1191,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.openItems?.selected, 1)
     }
 
-    func testCommandEnterOpensTheSettingsOfASpotWithNoPressOpenAndNotItsOwnSheet() async throws {
-        try script("list", toml: "", "printf 'item=a\\ntitle=A\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-
-        XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
-        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "list") }
-    }
-
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
         try script("apps", toml: "title = 'Apps'\n[on]\n\"panel.open\" = true\nsearch = true", "printf 'item=shortcuts\\ntitle=Shortcuts\\n'")
         try script("shortcuts", toml: "title = 'Shortcuts'\n[on]\n\"panel.open\" = true\nsearch = true", "printf 'item=daily\\ntitle=Daily\\n'")
@@ -1669,7 +1658,7 @@ final class SpotsModelTests: XCTestCase {
         await hopsEnd()
         let takes = model.hintTakes
 
-        model.openSettings()
+        XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
 
         XCTAssertEqual(model.hintTakes - takes, 1)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))

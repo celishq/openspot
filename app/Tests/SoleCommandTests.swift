@@ -49,7 +49,7 @@ final class SoleCommandTests: XCTestCase {
         try XCTUnwrap(model.entries.first { $0.id == id })
     }
 
-    func testReturnRunsTheOneCommandAtOnceAndItsSettingsRecordItsKey() async throws {
+    func testReturnRunsTheOneCommandAtOnce() async throws {
         try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -64,21 +64,6 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertNil(model.recording)
         XCTAssertNil(model.openSheetID)
         XCTAssertEqual(host.dismissals, 1)
-
-        model.isShown = true
-        model.panelWillShow()
-        model.query = "dictate"
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:key.dictate" } == true }
-        XCTAssertNil(model.recording)
-        model.toggleRecording(id: "key:dictate:key.dictate")
-        XCTAssertEqual(model.recording, "key:dictate:key.dictate")
-        model.recordTap(.option)
-        try await wait("the tap in the file") {
-            model.files.config.read().keys == [GlobalKey(spot: "dictate", act: .command("dictate"), trigger: .tap(.option))]
-        }
-        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
     }
 
     func testACommandWithConfirmAndNoKeyAsksForASecondReturn() async throws {
@@ -145,19 +130,6 @@ final class SoleCommandTests: XCTestCase {
         let menu = try XCTUnwrap(model.menu)
 
         XCTAssertEqual(menu.rows.first { $0.title == "Wipe" }?.action?.confirm, "Press again to wipe")
-    }
-
-    func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
-        try script("windows", toml: "title = 'Windows'\n[actions.left]\ntitle = 'Left'\n[actions.right]\ntitle = 'Right'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-
-        model.run(try entry("windows"))
-
-        try await wait("the key rows") { model.openSheetID == SpotSettings.sheetID(of: "windows") }
-        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["key:windows:open", "key:windows:key.left", "key:windows:key.right", "key:windows:float", "menubar:windows", "window:windows"] }
-        XCTAssertNil(model.recording)
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
@@ -275,20 +247,5 @@ final class SoleCommandTests: XCTestCase {
         try await wait("the panel") { self.model.isShown }
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
         try await wait("the command") { host.confirms == ["Ran wipe"] }
-    }
-
-    func testKeysOpenTheSettingsOfTheirSpotWhichGrowFromItsCard() async throws {
-        try script("dictate", toml: "title = 'Dictate'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        let settings = SpotSettings.sheetID(of: "dictate")
-
-        XCTAssertTrue(model.openKeys(of: "dictate"))
-        try await wait("the settings") { self.model.openSheetID == settings }
-
-        XCTAssertEqual(SpotSheetCard.of(settings, in: model)?.id, "dictate")
-        XCTAssertEqual(SpotSheetCard.of(settings, in: model)?.state?.title, "Dictate")
-        XCTAssertNil(SpotSheetCard.of("dictate", in: model)?.state)
     }
 }

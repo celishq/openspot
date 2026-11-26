@@ -19,6 +19,16 @@ public enum ThemeColor: Equatable, Sendable {
         }
     }
 
+    public var text: String {
+        switch self {
+        case .hex(let hex): hex.text
+        case .accent: "accent"
+        case .green: "green"
+        case .orange: "orange"
+        case .red: "red"
+        }
+    }
+
     public var sample: HexColor {
         switch self {
         case .hex(let hex): hex

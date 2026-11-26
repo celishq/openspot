@@ -39,7 +39,7 @@ final class SpotPlaygroundModel {
         spot.flatMap(place.lack)
     }
 
-    init(path: String?, isCareful: Bool = false) {
+    init(path: String?) {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
         disk = file.map(SpotPlaygroundFile.init)
@@ -48,7 +48,6 @@ final class SpotPlaygroundModel {
         presets = Playground.presets(guide: guide)
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
         host.onNote = { [weak self] in self?.playground.record($0) }
-        panel.model.runs.isCareful = isCareful
         panel.model.runs.onCall = { [weak self] record in
             self?.playground.take(call: PlaygroundCall(record: record))
             if let frame = record.frames.last { self?.playground.note(frame: frame) }

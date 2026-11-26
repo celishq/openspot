@@ -1,6 +1,7 @@
 # Use Openspot
 
-This page is for the person who uses Openspot: the keys of every spot, where a spot shows, and the look of the app.
+This page is for the person who uses Openspot: the keys of every spot, its Settings, where a spot shows, and the look
+of the app.
 
 ## Use the keys of a spot
 
@@ -9,7 +10,7 @@ Every spot answers the same keys, so you learn them once.
 | Key        | Does                                                                          |
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
-| `⌘` Return | Opens the spot's Settings: its keys, each setting and its places.             |
+| `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
 | `⌘Y`       | Opens the History of a spot whose Return runs its action.                     |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
@@ -17,22 +18,50 @@ Every spot answers the same keys, so you learn them once.
 - The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Turn off or
   Delete.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
+- A card with a lock can't run yet. A press of it opens Settings at the spot; see
+  [Let a spot use what it needs](#let-a-spot-use-what-it-needs).
 
-## Change a spot's Settings
+## Change Settings
 
-Each spot has its own Settings, which open when you press `⌘` Return on its card.
+Settings is one window with every setting of Openspot and of its spots. Search for Settings in the panel and press
+Return to open it, or press `⌘`, in the panel. `⌘` Return on a card opens it at that spot.
 
-1. Press `⌘` Return on a card. Its Settings list its keys first: Open, the key of each action with a title, and Float.
-2. Look further down. Each setting of the spot follows, set or Not set.
-3. Look at the end. Show in the menu bar and Open in a window come last.
+Its sidebar holds seven sections:
 
-- A key row records a key on Return, and `⌘⌫` removes it. A key is a shortcut such as `ctrl+option+k`, a shake, or a
-  tap of one modifier, such as `option`.
-- `openspot setting set` changes the same values: `icon`, `enabled`, `menubar`, `open`, `float` and `key.<action>`.
+| Section   | Holds                                                                                   |
+| --------- | --------------------------------------------------------------------------------------- |
+| Access    | What macOS gives Openspot, and each spot that can't run yet. Settings opens here, unless you open it at a spot. |
+| Spots     | A page for each spot: its state, its uses, its keys, its settings, where it shows, and Turn Off. |
+| Keys      | Every key of Openspot and of its spots. Two rows with the same key both show it red.    |
+| Look      | The themes. A click on a theme uses it.                                                 |
+| Account   | The account that signs what you publish; see [The account](TRUST.md#the-account).      |
+| General   | The keys that open Openspot and a fix, Open at login, and Use openspot in Terminal.     |
+| Developer | Slow motion, which plays every motion ten times slower.                                 |
+
+- A click on a key waits for the new key. Type it, press Esc to keep the old one, or press `⌫` to remove it. A key is
+  a shortcut such as `ctrl+option+k`, a shake, or a tap of one modifier, such as `option`.
+- A switch changes at once. A field keeps its value when you press Return, and an empty field removes it.
+- The search field at the top of the sidebar finds a row in every section. A click on a result opens its page.
+- The panel's search finds each row too. Return on one opens Settings at the row.
+- `openspot app settings --at <where>` opens Settings at a place, such as `access/screen`, `spot/notes` or `keys`.
+- `openspot setting list` prints each row, and `openspot setting set` changes the same values: `enabled`, `menubar`,
+  `window`, `open`, `float` and `key.<action>` of a spot.
+
+## Let a spot use what it needs
+
+A spot runs with each use it declares, or not at all. Settings › Access shows each spot that can't run under Needs
+you, with one line of what it lacks.
+
+- Allow… gives a spot the macOS access it lacks. It walks you through each one beside System Settings, and moves on
+  by itself when you turn it on.
+- Review… allows the use that a spot tried and its `spot.toml` doesn't name, such as `network`.
+  `openspot spot allow <id> <use>` does the same in Terminal.
+
+[Trust in Openspot](TRUST.md#settings--access) says what each state means and what Openspot passes to a spot.
 
 ## Choose where a spot shows
 
-Put any spot in the menu bar, in a float or in a window from its Settings.
+Put any spot in the menu bar, in a float or in a window from its page in Settings.
 
 Arrange the grid in Edit Spots: hold `⌘` and move the pointer over the grid, or press `⌘K` on a card and choose
 Rearrange. A release of `⌘` ends it; Rearrange stays until Done. The grid has 7 rows and 4, 6 or 8 columns, which the
@@ -47,8 +76,8 @@ bigger card pushes the others on. A spot with no room is found by search.
 ## Hand what you work on to a spot
 
 Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to turn it on or off.
-`⌘` Return opens the Settings of one that is on. Under Access, each app it reads says whether macOS lets Openspot read
-it, and Return asks for access or opens the pane of System Settings that gives it. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
+`⌘` Return opens the Settings of one that is on. Its last row, Access, opens Settings at Access, which shows whether
+macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 
 | Key        | Does                                                                                  |
@@ -93,7 +122,7 @@ commands = { note = "n" }
 
 A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
 
-Open Themes in Openspot, and press Return on a theme to use it. To change one, run `openspot theme open`, which opens
+Open Themes in Openspot, and press Return on a theme to use it, or click one in Settings › Look. To change one, run `openspot theme open`, which opens
 the file of the theme in use, or a copy of `Openspot` the first time. This file gives Openspot the look of Dracula:
 
 ```toml

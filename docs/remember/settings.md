@@ -25,8 +25,8 @@ case "$1" in
 esac
 ```
 
-Open Team clock. It shows the time in Tokyo, with Asia/Tokyo under it. Press `⌘` Return on its card to open its
-Settings, and pick another city under City.
+Open Team clock. It shows the time in Tokyo, with Asia/Tokyo under it. Press `⌘` Return on its card to open Settings
+at Team clock, and pick another city under City.
 
 ## How it works
 
@@ -38,12 +38,14 @@ setting.zone=Asia/Tokyo
 
 Until someone picks a value, the line holds the `default`. A setting with no value and no default sends no line.
 
-People find your settings in the spot's Settings, below its keys. Each row shows the setting's `title` and its value,
-or Not set. `⌘⌫` removes the value.
+People find your settings on your spot's page in Settings, below its keys. Each row shows the setting's `title` and
+its value, or Not set.
 
-Openspot asks for a `choice` itself, with a menu of its `options`, and for a `secret` in its own form. For any other
-type, Return on the row runs your script with the setting's name, such as `clock.sh zone`. Ask there, and keep the
-answer:
+Openspot asks for a `choice` itself, with a menu of its `options`, and for a `secret` in its own form. A `bool` is a
+switch. Any other type is a field: people type the value, and Return keeps it. An empty field removes the value.
+
+`openspot setting change <name>` runs your script with the setting's name as its word, for a setting that isn't a
+`secret` and has no `options`. Ask there with a form of your own, and keep the answer:
 
 ```text
 openspot setting set zone Europe/London

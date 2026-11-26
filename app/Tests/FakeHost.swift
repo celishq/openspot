@@ -15,6 +15,8 @@ final class FakeHost: SpotsHost {
     var floats: [String] = []
     var landings: [String] = []
     var windows: [String] = []
+    var settingsOpens = 0
+    var settingsFocuses = 0
     var phases: [SheetTransition.Phase] = []
     var openings: [String?] = []
     var app = "/Apps/Openspot"
@@ -138,6 +140,20 @@ final class FakeHost: SpotsHost {
     func window(_ entry: SpotsModel.Entry) {
         if model?.isShown == true { model?.panelWillHide() }
         windows.append(entry.id)
+    }
+
+    var focusedWindows: [String] = []
+
+    func showSettings() {
+        settingsOpens += 1
+    }
+
+    func focusSettings() {
+        settingsFocuses += 1
+    }
+
+    func focusWindow(_ id: String) {
+        focusedWindows.append(id)
     }
 
     func copy(_ file: URL) {}
