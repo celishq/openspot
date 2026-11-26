@@ -74,6 +74,17 @@ final class SettingsBookTests: PanelCase {
         XCTAssertTrue(book.index.found("zzz-none").isEmpty)
     }
 
+    func testTheSearchRanksRowsByWordsInAnyOrderAsThePanelDoes() async throws {
+        try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill Cups'\n[actions.later]\ntitle = 'Cups Fill Later'", "")
+        await read()
+
+        let found = book.index.found("cups fill").rows.map(\.item)
+        let initials = book.index.found("fc").rows.map(\.item)
+
+        XCTAssertEqual(found.filter { $0.hasPrefix("cups/key.") }, ["cups/key.later", "cups/key.fill"])
+        XCTAssertEqual(initials.filter { $0.hasPrefix("cups/key.") }, ["cups/key.fill"])
+    }
+
     func testASearchForShortcutOrKeyListsEveryShortcut() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
