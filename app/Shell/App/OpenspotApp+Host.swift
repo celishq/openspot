@@ -143,9 +143,6 @@ extension OpenspotApp: SpotsHost {
         SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyph)
     }
 
-    func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "DOCS", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
-    }
 
     func nextFrame(_ body: @escaping @MainActor () -> Void) {
         frame.run(in: panel?.contentView, body)

@@ -8,7 +8,7 @@ final class SpotEvidenceTests: XCTestCase {
     private let other = Spot(id: "other", name: "Other", url: URL(fileURLWithPath: "/other.sh"))
 
     private var prompt: AgentPrompt {
-        AgentPrompt(folder: URL(fileURLWithPath: "/spots"), guide: URL(fileURLWithPath: "/spots"), app: "openspot")
+        AgentPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot")
     }
 
     func testAFailingSpotGetsItsFailuresAndTheGoalToMakeEveryCallPassWithNoQuestion() throws {
@@ -19,8 +19,8 @@ final class SpotEvidenceTests: XCTestCase {
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
         let text = prompt.changing(file, failure: nil, evidence: evidence)
 
-        XCTAssertTrue(text.hasPrefix("Change the Openspot spot in \(file.path): Make every call pass, and keep what works.\n\(AgentPrompt.finishChange)\n"), text)
-        XCTAssertTrue(text.contains("- 10 calls, 4 failed: 4 timed out. The last fault: Weather took too long.\n"), text)
+        XCTAssertTrue(text.hasSuffix("<request>\nMake every call pass, and keep what works.\n</request>"), text)
+        XCTAssertTrue(text.contains("  - 10 calls, 4 failed: 4 timed out. The last fault: Weather took too long.\n"), text)
         XCTAssertTrue(text.contains("\"openspot\" spot stats --days 14 --spot weather --by version"), text)
         XCTAssertFalse(text.contains("Ask me"), text)
     }
@@ -66,9 +66,9 @@ final class SpotEvidenceTests: XCTestCase {
         XCTAssertTrue(evidence.facts.contains("Since its last change: 0 of 6 calls failed. Before it: 4 of 10 failed."), "\(evidence.facts)")
     }
 
-    func testASpotWithNoCountsHasNoEvidenceAndThePromptAsksWhatToChange() {
+    func testASpotWithNoCountsHasNoEvidenceAndThePromptAsksForAReview() {
         XCTAssertNil(SpotEvidence(of: "weather", in: StatsLog(at: day).days(14, at: day), app: "openspot"))
-        XCTAssertTrue(prompt.changing(file, failure: nil, evidence: nil).contains("Ask me what to change"))
+        XCTAssertTrue(prompt.changing(file, failure: nil, evidence: nil).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
     }
 
     func testAWishKeepsItsWordsAndGetsTheFactsBelow() throws {
@@ -79,8 +79,8 @@ final class SpotEvidenceTests: XCTestCase {
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
         let text = prompt.changing(file, wish: "Add a refresh button", evidence: evidence)
 
-        XCTAssertTrue(text.hasPrefix("Change the Openspot spot in \(file.path): Add a refresh button\n\(AgentPrompt.finishChange)\n"), text)
-        XCTAssertTrue(text.contains("What Openspot counted of this spot over the last 14 days on this Mac:\n- 1 call, 0 failed.\n"), text)
+        XCTAssertTrue(text.hasSuffix("<request>\nAdd a refresh button\n</request>"), text)
+        XCTAssertTrue(text.contains("What Openspot counted of this spot over the last 14 days on this Mac:\n  - 1 call, 0 failed.\n"), text)
         XCTAssertFalse(text.contains("Judge"), text)
     }
 }

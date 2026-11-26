@@ -2,13 +2,17 @@ import Foundation
 
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
-    public let guide: URL
+    public let references: [URL]
     public let app: String
 
-    public init(folder: URL, guide: URL, app: String) {
+    public init(folder: URL, references: [URL], app: String) {
         self.folder = folder
-        self.guide = guide
+        self.references = references
         self.app = app
+    }
+
+    public init(places: AppPlaces) {
+        self.init(folder: places.spots.url, references: [places.spots.core, places.examples?.url].compactMap { $0 }, app: Self.command(of: Bundle.main.executablePath ?? "openspot"))
     }
 
     public static func command(of app: String) -> String {
@@ -18,68 +22,66 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     public static let copied = "Prompt copied. Paste it into your agent."
-
-    static let finishAlone = "Don't ask me anything. Choose a short name and sensible defaults yourself, build it to the end, and leave it ready to use in Openspot."
+    static let wordsNeeded = "Say what the spot should do, such as `openspot prompt new show the weather in Kyiv`."
+    static let finishAlone = "Don't ask me anything. Choose a short name and sensible defaults yourself, and build it to the end."
+    static let finishChange = "Don't ask me anything. Make the change to the end, and keep what already works."
+    static let review = "Find what works poorly in this spot, such as a call that fails, a slow answer or a card that looks wrong, and fix it. If nothing does, change nothing and tell me why."
+    static let loadAgain = "Make Openspot load this spot again, and keep what it does."
 
     public func building(_ description: String) -> String {
-        """
-        Build an Openspot spot that does this: \(description)
-        \(Self.finishAlone)
-
-        \(writing)
-        \(steps(for: "<id>"))
-        """
-    }
-
-    public func interviewing() -> String {
-        """
-        Help me build an Openspot spot. Start by asking me what the spot should do: a few short, plain questions, one at a time, and wait for each answer. Then build it.
-
-        \(writing)
-        \(steps(for: "<id>"))
-        """
-    }
-
-    private var writing: String {
-        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh, and describe it in weather.spot/spot.toml. Its ID is the name of the folder with no extension."
+        AgentBrief(
+            task: "Build a new spot that does what my request says.",
+            place: place + ["Make the spot in a new folder of the spots folder."],
+            reading: reading,
+            rules: [Self.finishAlone] + rules(for: "<id>"),
+            request: description
+        ).text
     }
 
     public func fixing(_ file: URL, faults: [String]) -> String {
-        """
-        Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
-        \(faults.joined(separator: "\n"))
-
-        \(steps(for: SpotID(file: file).description))
-        """
+        brief(of: file, task: "Openspot does not load this spot. Fix it.", facts: ["Openspot does not load it, and says:\n" + faults.joined(separator: "\n")], request: Self.loadAgain)
     }
-
-    static let finishChange = "Don't ask me anything. Make the change to the end, keep what already works, and leave the spot ready to use in Openspot."
 
     public func changing(_ file: URL, wish: String? = nil, failure: String? = nil, evidence: SpotEvidence? = nil) -> String {
-        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
-        guard let goal = wish ?? evidence?.goal else {
-            return """
-            Change the Openspot spot in \(file.path). Ask me what to change before you change it.
-            \(failed)
-            \(steps(for: SpotID(file: file).description))
-            """
-        }
-        return """
-        Change the Openspot spot in \(file.path): \(goal)
-        \(failed)\(Self.finishChange)
-        \(evidence.map { "\n\($0.text)\n" } ?? "")
-        \(steps(for: SpotID(file: file).description))
-        """
+        let facts = [failure.map { "Its last call failed, and said: \($0)" }, evidence?.text].compactMap { $0 }
+        return brief(of: file, task: "Change this spot as my request says.", facts: facts, request: wish ?? evidence?.goal ?? Self.review)
     }
 
-    private func steps(for id: String) -> String {
-        """
-        First run "\(app)" guide, and read all of it.
-        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render spot \(id) --card wide card.png.
-        When it is ready, run "\(app)" check spots --json "\(folder.path)" and fix each fault until it prints [].
-        At the end of your answer, run "\(app)" spot open \(id) --select, and tell me what the spot runs on my computer.
+    private func brief(of file: URL, task: String, facts: [String], request: String) -> String {
+        let id = SpotID(file: file).description
+        return AgentBrief(
+            task: task,
+            place: place + ["The spot \(id) is in \(file.deletingLastPathComponent().path), and its main file is \(file.path)."],
+            reading: ["Read each file of the spot.", "Run \(quoted) spot log \(id). It prints the last calls that Openspot made to it."] + facts + reading,
+            rules: [Self.finishChange] + rules(for: id),
+            request: request
+        ).text
+    }
 
-        """
+    private var quoted: String {
+        "\"\(app)\""
+    }
+
+    private var place: [String] {
+        [
+            "The openspot command is \(quoted). Type it in quotes, since its path can hold a space.",
+            "The spots folder is \(folder.path)."
+        ]
+    }
+
+    private var reading: [String] {
+        let close = references.isEmpty ? [] : ["Find a spot that does something close in \(references.map(\.path).joined(separator: " or ")), and read it."]
+        return [
+            "Run \(quoted) guide build-and-check-a-spot, and follow it.",
+            "Run \(quoted) guide --topics, and read each topic that the request needs, such as \(quoted) guide a-list-you-can-press."
+        ] + close
+    }
+
+    private func rules(for id: String) -> [String] {
+        [
+            "It's done when \(quoted) check spots --json \"\(folder.path)\" prints [].",
+            "At the end, run \(quoted) spot open \(id) --select, and tell me what the spot runs on my Mac."
+        ]
     }
 
     func copy(_ text: String, base: [String: String]? = nil) async throws -> String {

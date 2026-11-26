@@ -6,20 +6,20 @@ struct PromptCalls {
     let runs: SpotRuns?
 
     func new(_ words: String) -> CommandAPI.Work {
-        CommandAnswer.work { [mac, places] in
-            let prompt = Self.prompt(in: places.spots.url, mac: mac)
-            return words.isEmpty ? prompt.interviewing() : prompt.building(words)
+        CommandAnswer.work { [places] in
+            guard !words.isEmpty else { throw SpotError.failed(1, AgentPrompt.wordsNeeded) }
+            return Self.prompt(in: places).building(words)
         }
     }
 
     func change(_ id: String, words: String, failure: String?) -> CommandAPI.Work {
-        CommandAnswer.work { [mac, places, runs] in
+        CommandAnswer.work { [places, runs] in
             let folder = places.spots
             guard !folder.isCore(id: id) else { throw SpotError.failed(1, SpotsFolder.uneditable(id)) }
             guard let spot = try folder.scan().scripts.first(where: { $0.id == id }), !spot.isBuiltIn else {
                 throw SpotError.failed(1, "Openspot cannot find \(id). Check its ID with `openspot spot list`.")
             }
-            let prompt = Self.prompt(in: folder.url, mac: mac)
+            let prompt = Self.prompt(in: places)
             let evidence = await SpotEvidence.read(of: id, runs: runs, stats: places.stats, app: prompt.app)
             return prompt.changing(spot.url, wish: words.isEmpty ? nil : words, failure: failure, evidence: evidence)
         }
@@ -34,7 +34,7 @@ struct PromptCalls {
         }
     }
 
-    private static func prompt(in folder: URL, mac: Mac) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: mac.guide ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot"))
+    private static func prompt(in places: AppPlaces) -> AgentPrompt {
+        AgentPrompt(places: places)
     }
 }

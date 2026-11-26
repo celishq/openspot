@@ -80,7 +80,7 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: time in kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\ntime in kyiv\n</request>"), prompt)
     }
 
     func testAfterACopyTheNextOpenStartsEmpty() async throws {
@@ -114,19 +114,21 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: Show the weather\nin Kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nShow the weather\nin Kyiv\n</request>"), prompt)
+        XCTAssertTrue(prompt.contains(AgentPrompt.finishAlone), prompt)
         XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
-    func testCopyPromptWithAnEmptyFieldCopiesThePromptThatAsksWhatToBuild() async throws {
-        try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
-
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
-        let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"), prompt)
-        XCTAssertFalse(prompt.contains("Build an Openspot spot that does this"))
+    func testCopyPromptWithAnEmptyFieldAsksForTheWordsAndCopiesNothing() async throws {
+        do {
+            try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
+            XCTFail("expected a fault")
+        } catch {
+            XCTAssertEqual((error as? SpotError)?.reason, AgentPrompt.wordsNeeded)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
     }
 
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
@@ -141,10 +143,10 @@ final class NewSpotTests: BuiltInCase {
 
         sheet.press(try XCTUnwrap(panel.parts.last))
 
-        for _ in 0..<6000 where (try? saved("clipboard"))?.contains("what the spot runs on my computer.") != true {
+        for _ in 0..<6000 where (try? saved("clipboard"))?.hasSuffix("</request>") != true {
             try await Task.sleep(for: .milliseconds(10))
         }
-        XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
+        XCTAssertTrue(try saved("clipboard").hasSuffix("<request>\nShow the weather here\n</request>"))
         for _ in 0..<6000 where sheet.panel?.parts.last?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(sheet.panel?.parts.last?.title, "✓ Copied")
         XCTAssertEqual(sheet.panel?.tree.look(of: "copy"), .strong)
@@ -190,20 +192,20 @@ final class NewSpotTests: BuiltInCase {
         _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=Add a refresh button\n")
 
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path): Add a refresh button\n\(AgentPrompt.finishChange)\n"), prompt)
-        XCTAssertTrue(prompt.contains("spot run weather"))
+        XCTAssertTrue(prompt.contains(spots.spotFile("weather").path), prompt)
+        XCTAssertTrue(prompt.contains(AgentPrompt.finishChange), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nAdd a refresh button\n</request>"), prompt)
         XCTAssertFalse(prompt.contains("comes with Openspot"))
     }
 
-    func testCopyPromptOnAnEmptyEditSheetAsksWhatToChangeWithTheLastFailure() async throws {
+    func testCopyPromptOnAnEmptyEditSheetAsksForAReviewWithTheLastFailure() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
         _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=\n", variables: ["OPENSPOT_EDIT_FAILURE": "The server did not answer."])
 
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path). Ask me what to change before you change it."), prompt)
-        XCTAssertTrue(prompt.contains("Its last call failed, and said: The server did not answer."))
-        XCTAssertFalse(prompt.contains(AgentPrompt.finishChange))
+        XCTAssertTrue(prompt.contains("The server did not answer."), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"), prompt)
     }
 
     func testEachSpotKeepsADraftOfItsOwnApartFromNewSpot() async throws {

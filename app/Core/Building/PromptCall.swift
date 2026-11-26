@@ -6,10 +6,10 @@ enum PromptCall: NounCall {
     case theme(String, words: String)
 
     static let noun = CommandNoun("prompt", group: .build, verbs: [
-        CommandVerb("new", "[words]...", "Prints a prompt that asks a coding agent to build a spot that does what the words say. With no words, the agent asks you first.") { words in
+        CommandVerb("new", "<words>...", "Prints a prompt that asks a coding agent to build a spot that does what the words say, to the end, with no question.") { words in
             Self.new(words.rest.joined(separator: " "))
         },
-        CommandVerb("change", "<id> [--failure <text>] [words]...", "Prints a prompt that asks a coding agent to change the spot as the words say, with what the stats counted of it over 14 days. With no words, its goal follows those counts, or the agent asks you what to change when there are none.") { words in
+        CommandVerb("change", "<id> [--failure <text>] [words]...", "Prints a prompt that asks a coding agent to change the spot as the words say, with what the stats counted of it over 14 days. With no words, its goal follows those counts, or else a review of the spot.") { words in
             guard let fit = words.fit, let id = fit.rest.first else { return nil }
             return Self.change(id: id, words: fit.rest.dropFirst().joined(separator: " "), failure: fit.value("--failure"))
         },

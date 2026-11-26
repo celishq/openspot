@@ -766,6 +766,7 @@
 		9F4ACEC00AE7D055EB3FBA4B /* CallLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CF7F72AFC15F70C5225A92 /* CallLog.swift */; };
 		9F71CE86B268C0F8AD4FFFA3 /* PowerDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4437852862EB64A7D076A69F /* PowerDaemon.swift */; };
 		9F9B2DF49399108338DD2C8B /* SpotEmptyField.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4C876B74746CC1FF5730EC /* SpotEmptyField.swift */; };
+		9FDD2B3BE3F4B4B6E1E71A7B /* AgentBrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9716F65D8BCD82F2EFABE7 /* AgentBrief.swift */; };
 		9FDF6C110E8D7788C9A9EA6A /* SpotRuns+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A7F7D23485CD4EF0080EB8 /* SpotRuns+Timeline.swift */; };
 		A02BCB45D1D7549CCE52F46E /* SpotCustomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAE72C00BE008BB9E1950EC /* SpotCustomView.swift */; };
 		A02FC05CC124EBF46DE64971 /* SettingsView+Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069343D360E7E805A8FBCF10 /* SettingsView+Parts.swift */; };
@@ -2145,6 +2146,7 @@
 		9E63AB84E04194EB709AA2C4 /* ViewThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewThemeTests.swift; sourceTree = "<group>"; };
 		9E8BA66239C52F6061DF82F7 /* StoreCarryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCarryTests.swift; sourceTree = "<group>"; };
 		9EFDB03BD1A1F45215D7295C /* ActionCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionCallTests.swift; sourceTree = "<group>"; };
+		9F9716F65D8BCD82F2EFABE7 /* AgentBrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentBrief.swift; sourceTree = "<group>"; };
 		9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneDot.swift; sourceTree = "<group>"; };
 		A00714417444C03CF2BC23F9 /* ThemesSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemesSpotTests.swift; sourceTree = "<group>"; };
 		A009EF90C9665DC589229DD4 /* NodeWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeWords.swift; sourceTree = "<group>"; };
@@ -4172,6 +4174,7 @@
 		A802EDA1FCF92A0502E9807E /* Building */ = {
 			isa = PBXGroup;
 			children = (
+				9F9716F65D8BCD82F2EFABE7 /* AgentBrief.swift */,
 				D10A6140EBF2C014F68EE080 /* AgentNote.swift */,
 				4BA2CD893CD36A22F56960F1 /* AgentPrompt.swift */,
 				A2CF7F72AFC15F70C5225A92 /* CallLog.swift */,
@@ -5154,6 +5157,7 @@
 				1E7E2C64B91EADA3912287AE /* ActionMenu.swift in Sources */,
 				4BC5969F87B3D833EA84E8D2 /* ActionMenuFrame.swift in Sources */,
 				40C92848BE459367B64121FD /* ActionMenuSession.swift in Sources */,
+				9FDD2B3BE3F4B4B6E1E71A7B /* AgentBrief.swift in Sources */,
 				BC42BFA9FFB72F5A7C5E8959 /* AgentNote.swift in Sources */,
 				B30D6A47969BC44C6722BD41 /* AgentPrompt.swift in Sources */,
 				14A69EF44CB655070ABDA755 /* AnswerMatches.swift in Sources */,

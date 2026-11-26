@@ -33,10 +33,8 @@ prompt() {
   if [ -n "$edit" ]; then
     set -- "$edit" ${OPENSPOT_EDIT_FAILURE:+--failure "$OPENSPOT_EDIT_FAILURE"} ${1:+"$1"}
     openspot prompt change "$@"
-  elif [ -n "$1" ]; then
-    openspot prompt new "$1"
   else
-    openspot prompt new
+    openspot prompt new "$1"
   fi
 }
 

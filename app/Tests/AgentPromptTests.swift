@@ -3,14 +3,24 @@ import XCTest
 
 final class AgentPromptTests: XCTestCase {
     private var folder: URL!
+    private var examples: URL!
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-prompt-\(UUID().uuidString)")
+        examples = folder.appendingPathComponent("examples")
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("Contents/MacOS"), withIntermediateDirectories: true)
     }
 
     override func tearDownWithError() throws {
         try? FileManager.default.removeItem(at: folder)
+    }
+
+    private func prompt(app: String = "openspot") -> AgentPrompt {
+        AgentPrompt(folder: folder, references: [examples], app: app)
+    }
+
+    private var weather: URL {
+        folder.appendingPathComponent("weather.spot/weather.sh")
     }
 
     func testThePromptNamesTheClientBesideTheApp() throws {
@@ -28,45 +38,71 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertEqual(AgentPrompt.command(of: app), app)
     }
 
-    func testEachStepGivesAPathWithASpaceInQuotes() {
+    func testEachCommandGivesAPathWithASpaceInQuotes() {
         let app = "/Apps/Openspot Nightly.app/Contents/Helpers/openspot"
-        let prompt = AgentPrompt(folder: folder, guide: folder, app: app).building("Show the weather")
+        let text = prompt(app: app).building("Show the weather")
 
-        XCTAssertTrue(prompt.contains("\"\(app)\" guide"))
-        XCTAssertTrue(prompt.contains("\"\(app)\" spot run"))
-        XCTAssertTrue(prompt.contains("\"\(app)\" check spots --json"))
-        XCTAssertTrue(prompt.contains("\"\(app)\" spot open"))
-        XCTAssertFalse(prompt.contains(" \(app) "))
+        XCTAssertTrue(text.contains("\"\(app)\" guide build-and-check-a-spot"))
+        XCTAssertTrue(text.contains("\"\(app)\" check spots --json"))
+        XCTAssertTrue(text.contains("\"\(app)\" spot open"))
+        XCTAssertFalse(text.contains(" \(app) "))
     }
 
-    func testTheBuildingPromptBuildsTheSpotToTheEndWithNoQuestion() {
-        let prompt = AgentPrompt(folder: folder, guide: folder, app: "openspot").building("Show the weather")
+    func testEachPromptGivesItsPartsInOneOrderWithTheRequestLast() {
+        let texts = [
+            prompt().building("Show the weather"),
+            prompt().changing(weather, wish: "Show the weather"),
+            prompt().fixing(weather, faults: ["Weather has an unknown key."])
+        ]
 
-        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: Show the weather\n\(AgentPrompt.finishAlone)\n"))
-        XCTAssertTrue(AgentPrompt.finishAlone.contains("Don't ask me"))
-        XCTAssertTrue(AgentPrompt.finishAlone.contains("ready"))
-        XCTAssertFalse(prompt.contains("questions"))
-        XCTAssertTrue(prompt.contains("weather.spot/spot.toml"))
-        XCTAssertTrue(prompt.contains("\"openspot\" guide"))
-        XCTAssertTrue(prompt.contains(folder.path))
+        for text in texts {
+            let parts = ["Where:", "Read first:", "Rules:", "<request>"].map { text.range(of: $0)?.lowerBound }
+            XCTAssertFalse(parts.contains(nil), text)
+            XCTAssertEqual(parts.compactMap { $0 }, parts.compactMap { $0 }.sorted(), text)
+            XCTAssertTrue(text.hasSuffix("</request>"), text)
+        }
+        XCTAssertTrue(texts[0].hasSuffix("<request>\nShow the weather\n</request>"))
     }
 
-    func testTheInterviewingPromptAsksWhatToBuildOneQuestionAtATimeThenBuildsIt() {
-        let prompt = AgentPrompt(folder: folder, guide: folder, app: "openspot").interviewing()
+    func testThePromptReadsTheGuideByTopicAndPointsAtWorkingSpots() {
+        let text = prompt().building("Show the weather")
 
-        XCTAssertTrue(prompt.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"))
-        XCTAssertTrue(prompt.contains("one at a time"))
-        XCTAssertTrue(prompt.contains(folder.path))
-        XCTAssertTrue(prompt.contains("\"openspot\" guide"))
-        XCTAssertTrue(prompt.contains("\"openspot\" spot open <id> --select"))
-        XCTAssertFalse(prompt.contains("does this:"))
+        XCTAssertTrue(text.contains("guide --topics"))
+        XCTAssertFalse(text.contains("read all of it"))
+        XCTAssertTrue(text.contains(examples.path))
+        XCTAssertTrue(text.contains(folder.path))
     }
 
-    func testTheChangingPromptNamesTheFileTheWishAndFinishesAlone() {
-        let file = folder.appendingPathComponent("weather.spot/weather.sh")
-        let prompt = AgentPrompt(folder: folder, guide: folder, app: "openspot").changing(file, wish: "Add a refresh button")
+    func testNoPromptAsksThePersonAnything() {
+        let texts = [
+            prompt().building("Show the weather"),
+            prompt().changing(weather),
+            prompt().fixing(weather, faults: ["Weather has an unknown key."])
+        ]
 
-        XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(file.path): Add a refresh button\n\(AgentPrompt.finishChange)\n"))
-        XCTAssertTrue(prompt.contains("\"openspot\" spot run weather"))
+        for text in texts {
+            XCTAssertTrue(text.contains("Don't ask me anything."), text)
+            XCTAssertFalse(text.contains("Ask me"), text)
+        }
+    }
+
+    func testAChangeNamesTheSpotItsLogAndItsLastFailure() {
+        let text = prompt().changing(weather, wish: "Add a refresh button", failure: "The server did not answer.")
+
+        XCTAssertTrue(text.contains(weather.path))
+        XCTAssertTrue(text.contains("spot log weather"))
+        XCTAssertTrue(text.contains("The server did not answer."))
+        XCTAssertTrue(text.hasSuffix("<request>\nAdd a refresh button\n</request>"))
+    }
+
+    func testAChangeWithNoWishAndNoCountsAsksForAReview() {
+        XCTAssertTrue(prompt().changing(weather).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
+    }
+
+    func testAFixGivesTheFaultsAndAsksToLoadTheSpotAgain() {
+        let text = prompt().fixing(weather, faults: ["Weather has an unknown key."])
+
+        XCTAssertTrue(text.contains("Weather has an unknown key."))
+        XCTAssertTrue(text.hasSuffix("<request>\n\(AgentPrompt.loadAgain)\n</request>"))
     }
 }

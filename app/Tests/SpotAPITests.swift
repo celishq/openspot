@@ -321,7 +321,7 @@ final class SpotAPITests: XCTestCase {
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {
         let answer = try await answer(["prompt", "new", "Show", "the weather"])
 
-        XCTAssertTrue(answer.output.hasPrefix("Build an Openspot spot that does this: Show the weather\n"))
+        XCTAssertTrue(answer.output.hasSuffix("<request>\nShow the weather\n</request>"))
         XCTAssertTrue(answer.output.contains(spots.path))
         XCTAssertTrue(answer.output.contains(AgentPrompt.finishAlone))
     }
@@ -332,11 +332,11 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["prompt", "change"], environment: [:])?.value as? CallFault, .unknown(["prompt", "change"]))
     }
 
-    func testThePromptWithNoWordsAsksThePersonWhatToBuild() async throws {
+    func testThePromptWithNoWordsAsksForThemAndPrintsNoPrompt() async throws {
         let answer = try await answer(["prompt", "new"])
 
-        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "new"], environment: [:])?.value as? PromptCall, .new(""))
-        XCTAssertTrue(answer.output.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"))
-        XCTAssertTrue(answer.output.contains(spots.path))
+        XCTAssertNotEqual(answer.code, 0)
+        XCTAssertEqual(answer.output, "")
+        XCTAssertTrue(answer.errors.contains(AgentPrompt.wordsNeeded), answer.errors)
     }
 }
