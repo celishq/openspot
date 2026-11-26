@@ -56,6 +56,7 @@ the row's `⌘K` menu. The Colors spot that comes with Openspot does this for co
 ```text
 [types.color]
 title = "Color"
+icon = "swatch"
 match = '^#[0-9a-fA-F]{6}$'
 
 [actions.copy-rgba]

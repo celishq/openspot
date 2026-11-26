@@ -56,15 +56,6 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
     }
 
-    func testAColourShowsAsASquareOfItself() async throws {
-        try add(.text, "#FF3B30")
-
-        let rows = try await rows()
-
-        XCTAssertEqual(rows.first?.swatch, "#ff3b30")
-        XCTAssertEqual(rows.first?.subtitle?.hasSuffix(" · Color"), true)
-    }
-
     func testTheCardShowsTheNewestEntry() async throws {
         try add(.text, "older", at: Date().addingTimeInterval(-60))
         try add(.text, "newest")

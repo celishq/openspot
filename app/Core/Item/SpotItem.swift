@@ -4,7 +4,7 @@ public struct SpotItem: Equatable, Sendable {
     public let title: String
     public let subtitle: String?
     public let run: String
-    public let picture: Icon?
+    public private(set) var picture: Icon?
     public let place: String?
     public let hides: [String]?
     public let keywords: [String]
@@ -120,6 +120,15 @@ public struct SpotItem: Equatable, Sendable {
 
     public var swatch: String? {
         picture?.color
+    }
+
+    func typed(by types: [Manifest.RowType]) -> SpotItem {
+        guard picture?.image == nil, picture?.file == nil,
+              let value = fields.first(where: { ($0.key == "text" || $0.key == "url") && !$0.value.isEmpty })?.value.trimmingCharacters(in: .whitespacesAndNewlines),
+              let icon = types.lazy.compactMap({ $0.holds(value) ? $0.icon(of: value) : nil }).first else { return self }
+        var typed = self
+        typed.picture = icon
+        return typed
     }
 
     public func path(in spot: Spot) -> String {

@@ -8,6 +8,7 @@ uses = ["clipboard"]
 
 [types.color]
 title = "Color"
+icon = "swatch"
 match = '^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|rgba?\([^()]*\)|hsla?\([^()]*\))$'
 
 [actions.copy-hex]

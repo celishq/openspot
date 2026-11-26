@@ -140,6 +140,7 @@ See [Show a preview of a row](../show/preview.md#give-a-type).
 | ------- | ---- | ----------------------------------------------------------- |
 | `title` | text | The type's name for people, such as `Color`. Required.      |
 | `match` | text | A regular expression of the whole value. Required.          |
+| `icon`  | text | The icon of each row of the type, as `icon` takes it. `swatch` shows a square of the value's colour, written as `#rrggbb`, `#rgb`, `rgb()` or `hsl()`. A row's own picture or file icon stays. |
 
 ## [events.\<name\>]
 

@@ -88,7 +88,8 @@ final class ItemPreviewTests: PanelCase {
 
         [types.color]
         title = "Color"
-        match = '^#[0-9a-fA-F]{6}$'
+        icon = "swatch"
+        match = '^(#[0-9a-fA-F]{6}|rgb\\(.*\\))$'
 
         [actions.copy-rgba]
         title = "Copy as RGBA"
@@ -145,5 +146,19 @@ final class ItemPreviewTests: PanelCase {
         XCTAssertThrowsError(try SpotFile(file: url, id: "paint")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "spot.toml: [actions.copy] inputs.color has an unknown type: colr. Use \(ValueType.names), or declare it in [types.colr].")
         }
+    }
+
+    func testARowOfATypeWithAnIconTakesItsIconAndASwatchShowsItsColour() async throws {
+        try colors()
+        try await openHistory("printf 'item=a\\ntitle=Red\\ntext=#FF0000\\nicon=text.alignleft\\n\\nitem=b\\ntitle=Blue\\ntext=rgb(0 0 255)\\n\\nitem=c\\ntitle=Note\\ntext=words\\nicon=text.alignleft\\n'")
+
+        XCTAssertEqual(model.openSheet?.list.shown.map(\.swatch), ["#ff0000", "#0000ff", nil])
+        XCTAssertEqual(model.openSheet?.list.shown.last?.symbol, "text.alignleft")
+    }
+
+    func testAColourTextOfEachFormTurnsIntoItsHex() {
+        let texts = ["#f00", "#FF3B30", "#ff3b3080", "rgb(255, 59, 48)", "rgba(0 122 255 / 50%)", "hsl(120, 100%, 25%)", "red", "#ff3b3"]
+
+        XCTAssertEqual(texts.map(ColorText.hex), ["#ff0000", "#ff3b30", "#ff3b30", "#ff3b30", "#007aff", "#008000", nil, nil])
     }
 }

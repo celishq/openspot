@@ -7,6 +7,7 @@ extension Manifest {
         public let name: String
         public let title: String
         public let match: String
+        public let icon: String?
         private let expression: NSRegularExpression
 
         init(name: String, section: String, table: ConfigDocument.Table) throws {
@@ -14,7 +15,7 @@ extension Manifest {
             guard Setting.isKey(name), !name.contains(".") else { throw fault("needs a name with no space and no dot, such as [types.color].") }
             var texts: [String: String] = [:]
             for key in table.keys {
-                guard key == "title" || key == "match" else { throw fault("has an unknown key: \(key). Use title and match.") }
+                guard key == "title" || key == "match" || key == "icon" else { throw fault("has an unknown key: \(key). Use title, match and icon.") }
                 guard case .string(let text)? = table[key], !text.isEmpty else { throw fault("takes a text in \(key).") }
                 texts[key] = text
             }
@@ -26,6 +27,7 @@ extension Manifest {
             self.name = name
             self.title = title
             self.match = match
+            icon = texts["icon"]
         }
 
         public func holds(_ text: String) -> Bool {
@@ -33,7 +35,15 @@ extension Manifest {
         }
 
         public static func == (one: RowType, other: RowType) -> Bool {
-            one.name == other.name && one.title == other.title && one.match == other.match
+            one.name == other.name && one.title == other.title && one.match == other.match && one.icon == other.icon
+        }
+
+        static let swatch = "swatch"
+
+        func icon(of value: String) -> Icon? {
+            guard let icon else { return nil }
+            guard icon == Self.swatch else { return Icon(text: icon) }
+            return ColorText.hex(of: value).map(Icon.color)
         }
     }
 }
