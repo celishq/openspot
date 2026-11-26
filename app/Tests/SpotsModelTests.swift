@@ -1216,6 +1216,21 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["settings", "settings\nsound"])
     }
 
+    func testASpotThatAnswersEachSearchIsFoundByItsOwnName() async throws {
+        try script("store", toml: "title = 'Store'\ndetail = 'Get spots'\nkeywords = ['store', 'get spots']\nanswers = 'last'\n[on]\nsearch = '\\\\S'\n[actions.open]\ntitle = 'Open Store'", "[ \"$1\" = open ] && touch \"\(folder.path)/opened\"; true")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.search("store")
+        try await wait("the Store itself") { model.visible.first?.id == "store" }
+        model.selected = 0
+        model.runSelected()
+
+        try await wait("its open action") { FileManager.default.fileExists(atPath: self.folder.appendingPathComponent("opened").path) }
+        XCTAssertFalse(try XCTUnwrap(model.entries.first { $0.id == "store" }).isOnGrid)
+    }
+
     func testTypingBuildsTheCardsAsSearchedItemsOnce() async throws {
         try script("notes", toml: "title = 'Notes'", "true")
         try script("mail", toml: "title = 'Mail'", "true")
