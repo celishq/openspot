@@ -100,6 +100,15 @@ final class GuideCallTests: XCTestCase {
         XCTAssertTrue(on.output.hasPrefix("## [on]\n"), on.output)
     }
 
+    func testFindPrintsEachPartThatHoldsEveryWordWithItsFirstLineThatDoes() async throws {
+        let found = try await answer("--find", "keeps", "running")
+        let none = try await answer("--find", "weather")
+
+        XCTAssertEqual(found.output, "spottoml/keys    | `stay`  | bool | Whether it keeps running. |\n")
+        XCTAssertEqual(none.code, 1)
+        XCTAssertEqual(none.errors, "No part of the guide holds weather. Run `openspot guide` for the map.\n")
+    }
+
     func testAHeadingInAFenceIsNoSection() async throws {
         let missing = try await answer("a-list/not-a-section")
 

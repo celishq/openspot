@@ -62,6 +62,19 @@ struct Guide: Sendable {
         return tables
     }
 
+    func find(_ words: [String]) -> [(address: String, line: String)] {
+        let words = words.map { $0.lowercased() }
+        let parts = topics.flatMap { topic in
+            [GuideTopic(slug: topic.slug, title: topic.title, text: String(topic.text.components(separatedBy: "\n## ").first ?? topic.text))] + topic.sections
+        }
+        return parts.compactMap { part in
+            let text = part.text.lowercased()
+            guard let first = words.first, words.allSatisfy({ text.contains($0) }) else { return nil }
+            let line = part.text.split(separator: "\n").first { $0.lowercased().contains(first) }.map { String($0.prefix(160)) } ?? ""
+            return (part.slug, line)
+        }
+    }
+
     var addresses: [String] {
         topics.flatMap { [$0.slug] + $0.sections.map(\.slug) }
     }

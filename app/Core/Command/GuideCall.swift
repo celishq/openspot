@@ -4,13 +4,15 @@ enum GuideCall: NounCall {
     case text
     case topics
     case topic(String)
+    case find([String])
 
     static let noun = CommandNoun("guide", group: .start, verbs: [
-        CommandVerb("", "[topic | --topics]", "Prints the guide to building a spot. Read it before you write one. A topic prints one part of it, and --topics lists them.") { words in
-            switch (words.fit?.has("--topics"), words.fit?.rest ?? []) {
-            case (false?, []): Self.text
-            case (true?, []): Self.topics
-            case (false?, let rest) where rest.count == 1 && !rest[0].hasPrefix("-"): Self.topic(rest[0])
+        CommandVerb("", "[topic | --topics | --find <words>...]", "Prints the guide to building a spot. Read it before you write one. A topic prints one part of it, --topics lists them, and --find lists each part that holds every word.") { words in
+            if let first = words.fit?.value("--find") { return GuideCall.find([first] + (words.fit?.rest ?? [])) }
+            return switch (words.fit?.has("--topics"), words.fit?.rest ?? []) {
+            case (false?, []): GuideCall.text
+            case (true?, []): GuideCall.topics
+            case (false?, let rest) where rest.count == 1 && !rest[0].hasPrefix("-"): GuideCall.topic(rest[0])
             default: nil
             }
         }
@@ -26,6 +28,11 @@ enum GuideCall: NounCall {
                 case .text: return CommandAnswer(output: guide.text)
                 case .topics:
                     return CommandAnswer(output: Self.list(topics))
+                case .find(let words):
+                    let found = guide.find(words)
+                    guard !found.isEmpty else { return CommandAnswer(errors: "No part of the guide holds \(words.joined(separator: " ")). Run `openspot guide` for the map.\n", code: 1) }
+                    let width = (found.map(\.address.count).max() ?? 0) + 4
+                    return CommandAnswer(output: found.map { $0.address.padding(toLength: width, withPad: " ", startingAt: 0) + $0.line + "\n" }.joined())
                 case .topic(let name):
                     if let topic = guide.topic(name) { return CommandAnswer(output: topic.text) }
                     if let rows = guide.rows(naming: name) { return CommandAnswer(output: rows) }
