@@ -20,7 +20,6 @@ extension SpotTheme {
     static let settingsAccountTile = Color.gray
     static let settingsBarFade = [Color.black, Color.clear]
     static let settingsSelection = Color(nsColor: .controlAccentColor)
-    static let settingsSelectedInk = Color.white
     static let settingsLookCell = 0.12
     static let settingsLookHint = 0.5
     static let settingsLookPanelFill = 0.92

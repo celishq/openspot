@@ -204,7 +204,6 @@ extension SpotTokens {
     public static let settingsHeadingGap: CGFloat = 20
     public static let settingsAccountTile: CGFloat = 28
     public static let settingsAccountPadding: CGFloat = 8
-    public static let settingsAccountCorner: CGFloat = 8
     public static let settingsAccountInset: CGFloat = 10
     public static let settingsFormWidth: CGFloat = 640
     public static let settingsBarFade: CGFloat = 14

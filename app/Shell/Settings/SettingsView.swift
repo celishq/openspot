@@ -54,6 +54,8 @@ struct SettingsView: PageView {
 
     private var sidebar: some View {
         List(selection: chosen) {
+            accountRow
+                .tag(SettingsMark.section(.account))
             ForEach(SettingsPage.Section.sidebar) { section in
                 let count = section == .general ? book.spots.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
@@ -89,11 +91,9 @@ struct SettingsView: PageView {
         }
         .listStyle(.sidebar)
         .tint(SpotTheme.settingsSelection)
-        .safeAreaInset(edge: .top) { accountRow }
     }
 
     private var accountRow: some View {
-        let isChosen = book.query.isEmpty && book.mark == .section(.account)
         let account = book.account
         return HStack(spacing: SpotTokens.settingsGroupGap) {
             SettingsAvatar(side: SpotTokens.settingsAccountTile)
@@ -103,18 +103,11 @@ struct SettingsView: PageView {
                     .lineLimit(1)
                 Text("Account")
                     .font(SpotType.settingsLine)
-                    .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Spacer(minLength: 0)
         }
-        .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.primary)
-        .padding(SpotTokens.settingsAccountPadding)
-        .background(isChosen ? SpotTheme.settingsSelection : Color.clear, in: SpotRoundShape(radius: SpotTokens.settingsAccountCorner))
-        .contentShape(Rectangle())
-        .onTapGesture { book.go(.account) }
-        .accessibilityAddTraits(.isButton)
-        .padding(SpotTokens.settingsAccountInset)
+        .padding(.vertical, SpotTokens.settingsAccountPadding / 2)
     }
 
     private var chosen: Binding<SettingsMark?> {
