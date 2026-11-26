@@ -67,7 +67,7 @@ public enum SpotCall: NounCall {
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
         act(.delete, "Moves the folder of a spot to the Trash and keeps its data, as Remove in a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
-        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app or of a spot of a store, and what of it runs by itself. The review of a spot of a store ends with Install, which copies it as store get does.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
+        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself. For a spot of a store, opens its page in the Store, where Install shows the same review.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
     private static func act(_ act: CardAct, _ about: String, rule: CallRule) -> CommandVerb {

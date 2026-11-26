@@ -65,20 +65,6 @@ final class SpotLoadTests: PanelCase {
         XCTAssertTrue(try XCTUnwrap(model.entries.first { $0.id == "own" }).spot.header === header)
     }
 
-    func testASpotAddedFromAReviewIsOnTheGridAfterTheReviewEnds() async throws {
-        await model.reload()
-        let package = folder.appendingPathComponent("drop/cups.spot")
-        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        try "#!/bin/sh\n:\n".writeScript(to: package.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
-        model.review([package])
-        try await wait("the review") { self.model.isReviewing }
-        try SpotPackage(contentsOf: package).add(to: spots)
-
-        model.endReview()
-
-        try await wait("the card") { self.model.entries.contains { $0.id == "cups" } }
-    }
-
     func testTheVersionOfASpotIsShortAndFollowsItsStamp() {
         XCTAssertEqual(SpotLoad.version(of: [1, 2, 3]).count, 8)
         XCTAssertEqual(SpotLoad.version(of: [1, 2, 3]), SpotLoad.version(of: [1, 2, 3]))

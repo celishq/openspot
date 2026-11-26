@@ -128,19 +128,6 @@ final class PressTests: PanelCase {
         XCTAssertEqual(takes, [1, 1])
     }
 
-    func testADropOfASpotFileOverAFormWorksTheHintOutOnceByTheEndOfThePress() async throws {
-        try await openChoice()
-        let package = folder.appendingPathComponent("drop/tea.spot")
-        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        try "#!/bin/sh\n:\n".writeScript(to: package.appendingPathComponent("tea.sh"), toml: "title = 'Tea'")
-
-        let takes = await takes { model.review([package]) }
-
-        XCTAssertNil(model.form)
-        XCTAssertEqual(takes, [1, 1])
-        model.reviewRead?.cancel()
-    }
-
     func testChangingTheColumnsWorksAStaleHintOutOnceByTheEndOfThePress() async throws {
         try await showGrid("notes")
         model.beginEditing()

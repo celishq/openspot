@@ -18,7 +18,7 @@ public struct SpotInstall: Equatable, Sendable {
     }
 
     public func review() throws -> ReviewSpot {
-        try ReviewSpot(installing: self)
+        try ReviewSpot(spot: SpotPackage(paths: [source.lastPathComponent], in: source.deletingLastPathComponent()), folder: spots, core: core)
     }
 
     public func clashes() -> Bool {

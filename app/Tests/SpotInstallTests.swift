@@ -105,18 +105,11 @@ final class SpotInstallTests: XCTestCase {
         let review = try XCTUnwrap(try catalog.install("clock", in: places)).review()
         let sheet = Frame(text: try review.answer(["show"]))
 
-        let button = try XCTUnwrap(sheet.parts.first { $0.id == "install" })
-        XCTAssertEqual(button.title, "Install")
+        XCTAssertNil(sheet.parts.first { $0.id == "install" })
         XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
         let text = try XCTUnwrap(sheet.parts.first { $0.id == "review" }).control
         guard case .text(let shown, _, _) = text else { return XCTFail("the review shows no text") }
         XCTAssertTrue(shown.contains("clock.spot/clock.sh\n#!/bin/sh\n"), shown)
-
-        let answer = try await review.add()
-
-        XCTAssertEqual(answer.effects, [.toast("Installed Clock.")])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot/clock.sh").path))
-        XCTAssertEqual(places.config.read().arrangement.isOnGrid(of: "clock"), false)
     }
 
     func testAnInstallOfAnIDInYourSpotsChangesNothingAndNamesBothWaysOn() async throws {
@@ -214,29 +207,4 @@ final class SpotInstallTests: XCTestCase {
         return await (try XCTUnwrap(api.work(for: request, input: { "" })))()
     }
 
-    func testTheReviewOfAnIDInYourSpotsAsksReplaceKeepBothOrStopInTheWordsOfFinder() async throws {
-        try mine()
-        let review = try XCTUnwrap(try catalog.install("clock", in: places)).review()
-        let sheet = try shown(review)
-
-        XCTAssertEqual(sheet.parts.filter { $0.id != "review" }.map(\.title), ["A spot named “Clock” already exists in your spots. Do you want to replace it with the one you’re installing?", "Keep Both", "Stop", "Replace"])
-        XCTAssertNil(sheet.parts.first { $0.id == "install" })
-
-        _ = try await review.press("stop")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock-2.spot").path))
-        XCTAssertEqual(try text("clock.spot/clock.sh"), "#!/bin/sh\necho mine\n")
-
-        let kept = try await review.press("keep-both")
-        XCTAssertEqual(kept.effects, [.toast("Installed Clock as clock-2.")])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock-2.spot/clock-2.sh").path))
-    }
-
-    func testReplaceInTheReviewTakesThePlaceOfYours() async throws {
-        try mine()
-        let review = try XCTUnwrap(try catalog.install("clock", in: places)).review()
-
-        _ = try await review.press("replace")
-
-        XCTAssertEqual(try text("clock.spot/clock.sh"), "#!/bin/sh\n")
-    }
 }

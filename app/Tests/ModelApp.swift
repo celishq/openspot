@@ -18,7 +18,10 @@ struct ModelApp: RunningApp {
     func leave(_ id: String) async -> Bool { await model.leave(id) }
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }
     func pop(_ id: String, all: Bool) async -> Bool { await all ? model.pop(in: id, all: true) : model.pop(in: id) }
-    func review(_ id: String) async -> Bool { await model.review(spot: id) }
+    func review(_ id: String) async -> Bool {
+        if await model.review(spot: id) { return true }
+        return await openStore(id, search: nil)
+    }
     func choose(for id: String) async -> Bool { false }
     func editGrid() async {}
     func gridSpots() async -> [ArrangedSpot] { await model.gridSpots() }

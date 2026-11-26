@@ -216,7 +216,7 @@ public final class Store {
         switch place {
         case .mine:
             guard let own else { return nil }
-            let review = (try? folder.scan()).flatMap { try? ReviewSpot(spot: SpotPackage(sharing: own.spot, from: $0), folder: folder.url, core: folder.core, canAdd: false) }
+            let review = (try? folder.scan()).flatMap { try? ReviewSpot(spot: SpotPackage(sharing: own.spot, from: $0), folder: folder.url, core: folder.core) }
             let entry = own.origin == .core ? nil : (try? places.lock.entries())?.first { $0.holds(id) }
             let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
             let text = readme(beside: own.spot)
@@ -228,7 +228,7 @@ public final class Store {
             guard let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
             let spotFolder = spot.url.deletingLastPathComponent()
             let review = try? ReviewSpot(
-                spot: SpotPackage(paths: [spotFolder.lastPathComponent], in: spotFolder.deletingLastPathComponent()), folder: folder.url, core: folder.core, canAdd: false
+                spot: SpotPackage(paths: [spotFolder.lastPathComponent], in: spotFolder.deletingLastPathComponent()), folder: folder.url, core: folder.core
             )
             let text = readme(beside: spot)
             return StorePage(

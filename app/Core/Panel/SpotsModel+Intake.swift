@@ -106,45 +106,12 @@ extension SpotsModel {
         closeSheet(moving: false)
     }
 
-    public func review(_ urls: [URL]) {
-        asOnePress {
-            guard let url = urls.first else { return }
-            dragWatch?.cancel()
-            endDrag()
-            finishPick()
-            closeMenu()
-            form = nil
-            closeSheet(moving: isShown)
-            endReview()
-            let folder = folder.url
-            let lock = files.lock
-            let wasShown = isShown
-            reviewRead?.cancel()
-            reviewRead = Task { [weak self] in
-                let review = await Self.review(url, folder, lock)
-                guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
-                switch review {
-                case .success(let review):
-                    show(review)
-                    if urls.count > 1 { toast(.failure("Openspot installs one spot at a time.")) }
-                case .failure(let error):
-                    toast(.failure(Self.reason(error)))
-                }
-            }
-        }
-    }
-
-    @concurrent
-    private nonisolated static func review(_ file: URL, _ folder: URL, _ lock: SpotLock) async -> Result<ReviewSpot, Error> {
-        Result { try ReviewSpot(file: file, folder: folder, lock: lock) }
-    }
-
     @discardableResult
     public func review(spot id: String) async -> Bool {
         let wasShown = isShown
         let open = flow.current
         do {
-            guard let review = try await Self.review(spot: id, in: folder, catalog: catalog, places: files).get() else { return false }
+            guard let review = try await Self.review(spot: id, in: folder).get() else { return false }
             guard isShown == wasShown, flow.current == open else { return true }
             closeSheet(moving: isShown)
             show(review)
@@ -155,13 +122,11 @@ extension SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func review(spot id: String, in folder: SpotsFolder, catalog: SpotCatalog, places: AppPlaces) async -> Result<ReviewSpot?, Error> {
+    private nonisolated static func review(spot id: String, in folder: SpotsFolder) async -> Result<ReviewSpot?, Error> {
         Result {
             let scan = try folder.scan()
-            guard let command = scan.spots.first(where: { folder.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else {
-                return try? catalog.install(id, in: places)?.review()
-            }
-            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core, canAdd: false)
+            guard let command = scan.spots.first(where: { folder.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
+            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core)
         }
     }
 
@@ -192,9 +157,13 @@ extension SpotsModel {
     }
 
     public func openInStore(_ urls: [URL]) {
-        guard let url = urls.first else { return }
-        host.openStore(file: url)
-        if urls.count > 1 { toast(.failure("Openspot opens one spot at a time.")) }
+        asOnePress {
+            guard let url = urls.first else { return }
+            dragWatch?.cancel()
+            endDrag()
+            host.openStore(file: url)
+            if urls.count > 1 { toast(.failure("Openspot opens one spot at a time.")) }
+        }
     }
 
     public func endReview() {

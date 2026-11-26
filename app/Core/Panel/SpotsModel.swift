@@ -171,7 +171,6 @@ public final class SpotsModel {
     public var dragPaths: [String] = []
     @ObservationIgnored var dragRead: Task<Void, Never>?
     @ObservationIgnored var readPaths: [String] = []
-    @ObservationIgnored var reviewRead: Task<Void, Never>?
     public var draggedSpot: SpotDrop?
     public var isPointerOverDrop = false
     public var fieldDrop: SpotDrop?

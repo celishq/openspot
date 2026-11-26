@@ -690,22 +690,15 @@ final class SpotVerbTests: XCTestCase {
         _ = try model.files.config.change { $0.add(store: StoreSource(url: friends)) }
     }
 
-    func testTheReviewOfASpotOfAStoreShowsBeforeACopyAndItsInstallMakesItSearchableOffTheGrid() async throws {
+    func testTheReviewOfASpotOfAStoreLeavesThePanelToTheStore() async throws {
         try friends()
         await model.reload()
 
-        let answer = try await call(["spot", "review", "clock"])
+        let isReviewed = await model.review(spot: "clock")
 
-        XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(model.reviewed?.name, "Clock")
+        XCTAssertFalse(isReviewed)
+        XCTAssertNil(model.reviewed)
         XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
-
-        _ = try await XCTUnwrap(model.reviewed).add()
-        await model.reload()
-
-        let clock = try XCTUnwrap(model.entries.first { $0.id == "clock" })
-        XCTAssertTrue(clock.isFound)
-        XCTAssertFalse(clock.isOnGrid)
     }
 
     func testRemoveMovesAnInstalledSpotToTheTrashAndAReinstallGetsItsDataBack() async throws {
