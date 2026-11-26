@@ -9,7 +9,7 @@ extension StoreView {
         title(.heading, EmptyView(), store.title, placeLine(source)) {}
         if let source, store.missing.contains(source.url.path) {
             group(nil) {
-                plain("Openspot cannot find \(source.url.path). Locate the folder, or remove the source. The spots you got from it stay.")
+                plain("Openspot cannot find \(source.url.path). Locate the folder, or remove the store. The spots you got from it stay.")
                 HStack {
                     Spacer(minLength: 0)
                     Button("Remove") { Task { await store.removeSource(source.url) } }

@@ -5,13 +5,14 @@ import SwiftUI
 struct StoreSidebar: View {
     let store: Store
     @State private var isOverMine = false
+    @State private var isAdding = false
 
     var body: some View {
         List(selection: Binding(get: { store.place }, set: { if let place = $0 { store.choose(place) } })) {
             mine
                 .tag(StorePlace.mine)
                 .simultaneousGesture(TapGesture().onEnded { leavePage(at: .mine) })
-            Section("Sources") {
+            Section("Stores") {
                 ForEach(store.sources, id: \.self) { source in
                     sourceRow(source)
                         .tag(StorePlace.source(source))
@@ -19,7 +20,7 @@ struct StoreSidebar: View {
                         .contextMenu {
                             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([source.url]) }
                             if source.canRemove {
-                                Button("Remove Source") { Task { await store.removeSource(source.url) } }
+                                Button("Remove Store") { Task { await store.removeSource(source.url) } }
                             }
                         }
                 }
@@ -70,16 +71,14 @@ struct StoreSidebar: View {
 
     private var addSource: some View {
         Button {
-            Task {
-                guard let folder = await SpotFolderPick.pick() else { return }
-                await store.addSource(folder)
-            }
+            isAdding = true
         } label: {
-            Label("Add Source…", systemImage: "plus")
+            Label("Add Store…", systemImage: "plus")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .padding(SpotTokens.settingsAccountInset)
+        .sheet(isPresented: $isAdding) { StoreAddSheet(store: store, isShown: $isAdding) }
     }
 }
