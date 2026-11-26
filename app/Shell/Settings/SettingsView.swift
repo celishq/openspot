@@ -6,7 +6,6 @@ struct SettingsView: PageView {
     let model: SpotsModel
     @Environment(\.colorScheme) var colorScheme
     @State var isFolded = true
-    @State var isKeysFolded = true
     @State var isAboutShown = false
     @State var isThemeAsked = false
     @State var themeWish = ""
@@ -55,8 +54,8 @@ struct SettingsView: PageView {
 
     private var sidebar: some View {
         List(selection: chosen) {
-            ForEach(SettingsPage.Section.allCases.filter { $0 != .account }) { section in
-                let count = section == .access ? book.spots.waiting.count : 0
+            ForEach(SettingsPage.Section.sidebar) { section in
+                let count = section == .general ? book.spots.waiting.count : 0
                 HStack(spacing: SpotTokens.settingsGroupGap) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
                     Text(section.title)
@@ -74,7 +73,7 @@ struct SettingsView: PageView {
         }
         .listStyle(.sidebar)
         .tint(SpotTheme.settingsSelection)
-        .safeAreaInset(edge: .bottom) { accountRow }
+        .safeAreaInset(edge: .top) { accountRow }
     }
 
     private var accountRow: some View {
@@ -116,8 +115,7 @@ struct SettingsView: PageView {
         } else {
             switch book.page {
             case .top(.access): accessPage
-            case .top(.spots): spotsPage
-            case .top(.keys): keysPage
+            case .top(.general): generalPage
             case .top(.look): lookPage
             case .top(.account): accountPage
             case .top(let section): rowsPage(section)

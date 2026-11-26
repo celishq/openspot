@@ -13,7 +13,7 @@ extension SpotsModel {
             self?.host.open(url)
         }
         case .schedule(let id): { [weak self] in self?.runs.allowSchedule(of: id) }
-        case .settings: { [weak self] in self?.openSettings(at: .keys) }
+        case .settings: { [weak self] in self?.openSettings(at: .general) }
         case nil: { [weak self] in self?.press(note, of: spot) }
         }
     }

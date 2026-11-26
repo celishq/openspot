@@ -89,7 +89,9 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.page, .general)
         XCTAssertEqual(book.target, "openspot/panel-key")
         try land("keys")
-        XCTAssertEqual(book.page, .keys)
+        XCTAssertEqual(book.page, .general)
+        try land("spot")
+        XCTAssertEqual(book.page, .general)
         try land("account")
         XCTAssertEqual(book.page, .account)
         try land("search/screen")
@@ -98,7 +100,10 @@ final class SettingsBookTests: PanelCase {
 
     func testSettingsOpensOnGeneralWithTheSectionsInTheirOrder() {
         XCTAssertEqual(SettingsBook().page, .general)
-        XCTAssertEqual(SettingsPage.Section.allCases, [.general, .look, .keys, .spots, .access, .developer, .account])
+        XCTAssertEqual(SettingsPage.Section.sidebar, [.general, .look, .access, .developer])
+        XCTAssertEqual(SettingsPage.Section.access.title, "Privacy")
+        XCTAssertEqual(SettingsPage(place: "privacy"), .access)
+        XCTAssertEqual(SettingsPage(place: "access"), .access)
     }
 
     func testADetailPageKeepsTheSectionItWasReachedFrom() async throws {
@@ -120,7 +125,7 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testEachPlaceReadsBackFromItsWords() {
-        let places: [SettingsPage] = [.access, .accessOf(.screen), .spots, .spotOf("tools/a"), .keys, .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
+        let places: [SettingsPage] = [.access, .accessOf(.screen), .spotOf("tools/a"), .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
 
         XCTAssertEqual(places.map { SettingsPage(place: $0.place) }, places)
         XCTAssertNil(SettingsPage(place: "access/nothing"))
@@ -131,14 +136,14 @@ final class SettingsBookTests: PanelCase {
         await read()
         book.land(.access)
 
-        book.go(.keys)
+        book.go(.developer)
         book.go(.look)
         book.goBack()
-        XCTAssertEqual(book.page, .keys)
+        XCTAssertEqual(book.page, .developer)
         book.goForward()
 
         XCTAssertEqual(book.page, .look)
-        XCTAssertEqual(book.back, [.access, .keys])
+        XCTAssertEqual(book.back, [.access, .developer])
     }
 
     func testASetWritesThroughSettingSetAndARemovalOfItsValueTakesItAway() async throws {
@@ -340,11 +345,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(cups.lack, "Needs Screen Recording")
         XCTAssertEqual(book.access.needed.map(\.id), [.screen])
         XCTAssertFalse(book.access.unneeded.contains { $0.id == .screen })
-        XCTAssertTrue(book.keys.set.allSatisfy { $0.rows.allSatisfy { $0.kind == .key && $0.value != nil } })
-        XCTAssertFalse(book.keys.set.contains { $0.id == "Cups" })
-        XCTAssertEqual(book.keys.unset.last?.id, "Cups")
-        XCTAssertEqual(book.keys.unset.last?.rows.map(\.key), ["open", "key.fill", "float"])
-        XCTAssertEqual(book.spots.groups.map(\.id), ["Needs Attention"])
+        XCTAssertEqual(book.spots.waiting.map(\.id), ["cups"])
         XCTAssertEqual(Set(book.looks.map(\.group)), ["Built In"])
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])

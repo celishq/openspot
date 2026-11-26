@@ -46,7 +46,6 @@ extension SpotTheme {
         switch section {
         case .access: .blue
         case .spots: .purple
-        case .keys: .gray
         case .look: Color(white: 0.15)
         case .account: .indigo
         case .general: .gray

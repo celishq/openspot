@@ -2,17 +2,6 @@ import OpenspotCore
 import SwiftUI
 
 extension SettingsView {
-    var spotsPage: some View {
-        Group {
-            title(of: .spots)
-            ForEach(book.spots.groups) { spots in
-                group(spots.id) {
-                    lines(spots.standings) { spotLine($0) }
-                }
-            }
-        }
-    }
-
     func spotPage(of standing: SpotStanding) -> some View {
         Group {
             title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {}
@@ -75,26 +64,6 @@ extension SettingsView {
                 Text(standing.readiness.word)
             }
             chevron
-        }
-    }
-
-    var keysPage: some View {
-        Group {
-            title(of: .keys)
-            ForEach(book.keys.set) { keys in
-                group(keys.id) {
-                    lines(keys.rows) { keyLine($0) }
-                }
-            }
-            if !book.keys.unset.isEmpty {
-                folding("Not Set", isFolded: $isKeysFolded) {
-                    ForEach(book.keys.unset) { keys in
-                        DisclosureGroup(keys.id) {
-                            lines(keys.rows) { keyLine($0) }
-                        }
-                    }
-                }
-            }
         }
     }
 

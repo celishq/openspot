@@ -10,18 +10,6 @@ extension SettingsView {
                 Button("How Access Works…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
-            if !book.spots.waiting.isEmpty {
-                group("Needs Attention") {
-                    lines(book.spots.waiting) { standing in
-                        row(open: .spotOf(standing.id)) {
-                            SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
-                            titled(standing.title, standing.lack)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            fix(standing)
-                        }
-                    }
-                }
-            }
             if !needed.isEmpty {
                 group("Privacy & Security") {
                     lines(needed) { access in

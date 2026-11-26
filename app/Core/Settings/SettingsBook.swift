@@ -147,9 +147,8 @@ public final class SettingsBook {
         case .search(let words):
             query = words
         case .spotOf(let id) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
-            page = .keys
-            section = .keys
-            target = "\(id)/open"
+            page = .general
+            section = .general
         default:
             page = place
             section = place.section
@@ -157,7 +156,7 @@ public final class SettingsBook {
     }
 
     public func reveal(_ row: SettingRow) {
-        land(row.spot == ReservedSetting.appSpot ? .top(row.section) : spots.standing(row.spot) == nil ? .keys : .spotOf(row.spot))
+        land(row.spot == ReservedSetting.appSpot ? .top(row.section) : spots.standing(row.spot) == nil ? .general : .spotOf(row.spot))
         target = row.item
     }
 
