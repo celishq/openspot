@@ -291,6 +291,8 @@ public final class SpotsModel {
     public var isArranging: Bool { editing == .arrange }
     public internal(set) var shelfQuery = ""
     @ObservationIgnored public internal(set) var shelfScroll: CGFloat = 0
+    public internal(set) var shelfLayout: ShelfLayout?
+    @ObservationIgnored var shelfRoom: (screen: CGSize, panelOrigin: CGPoint)?
     public internal(set) var offGrid: [Entry] = []
     @ObservationIgnored var offGridWords: [String] = []
     public internal(set) var shelf: [Entry] = []

@@ -10,7 +10,6 @@ struct SpotArrangeView: View {
     var drawsCover = true
 
     var body: some View {
-        let layout = ShelfLayout(screen: size, panel: CGRect(x: panelOrigin.x + SpotTokens.halo, y: panelOrigin.y, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight), sizes: model.shelf.map(\.size))
         ZStack(alignment: .topLeading) {
             if drawsCover {
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur)
@@ -18,9 +17,11 @@ struct SpotArrangeView: View {
             }
             SpotTheme.arrangeCover
                 .contentShape(Rectangle())
-            SpotShelf(model: model, layout: layout, panelOrigin: panelOrigin)
-                .frame(width: size.width, height: layout.band.upperBound - layout.band.lowerBound)
-                .offset(y: layout.band.lowerBound)
+            if let layout = model.shelfLayout {
+                SpotShelf(model: model, layout: layout)
+                    .frame(width: size.width, height: layout.band.upperBound - layout.band.lowerBound)
+                    .offset(y: layout.band.lowerBound)
+            }
             SpotArrangeBar(model: model)
                 .frame(width: size.width, height: SpotTokens.arrangeBar)
             SpotStoreButton(model: model)

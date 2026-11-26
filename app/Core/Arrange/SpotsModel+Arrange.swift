@@ -31,6 +31,25 @@ extension SpotsModel {
     func takeShelf() {
         let next = shelfMatches(of: shelfQuery)
         if next != shelf { shelf = next }
+        layShelf()
+    }
+
+    public func placeShelf(screen: CGSize, panelOrigin: CGPoint) {
+        shelfRoom = (screen, panelOrigin)
+        layShelf()
+    }
+
+    private func layShelf() {
+        guard let room = shelfRoom else { return }
+        let panel = CGRect(x: room.panelOrigin.x + SpotTokens.halo, y: room.panelOrigin.y, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight)
+        let next = ShelfLayout(screen: room.screen, panel: panel, sizes: shelf.map(\.size))
+        if next != shelfLayout { shelfLayout = next }
+    }
+
+    public func shelfOrigin(of id: String) -> CGPoint? {
+        guard let layout = shelfLayout, let room = shelfRoom, let index = shelf.firstIndex(where: { $0.id == id }), layout.rects.indices.contains(index) else { return nil }
+        let rect = layout.rects[index]
+        return CGPoint(x: rect.minX - room.panelOrigin.x, y: layout.band.lowerBound + SpotTokens.scrollFadeLength + rect.minY - shelfScroll - room.panelOrigin.y)
     }
 
     func shelfMatches(of text: String) -> [Entry] {
@@ -59,8 +78,8 @@ extension SpotsModel {
         takeShelf()
     }
 
-    public func dragShelfSpot(_ id: String, from origin: CGPoint, by translation: CGSize) {
-        guard isArranging, gesture?.drag == nil, resize == nil else { return }
+    public func dragShelfSpot(_ id: String, by translation: CGSize) {
+        guard isArranging, gesture?.drag == nil, resize == nil, let origin = shelfOrigin(of: id) else { return }
         let corner = CGPoint(x: origin.x + translation.width, y: origin.y + translation.height)
         if lift.origin != corner { lift.origin = corner }
         if pin?.id != id {

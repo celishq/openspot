@@ -20,7 +20,8 @@ enum SpotArrangePicture {
             model.beginEditing()
             if let search = scene.search { model.searchShelf(search) }
             let origin = CGPoint(x: ((screen.width - SpotTokens.panelWidth) / 2).rounded(), y: panelTop)
-            if let id = scene.swap { lift(id, in: model, panelOrigin: origin) }
+            model.placeShelf(screen: screen, panelOrigin: origin)
+            if let id = scene.swap { lift(id, in: model) }
             let seed = URL(fileURLWithPath: path).lastPathComponent
             let picture = ZStack(alignment: .topLeading) {
                 SpotWallpaper(seed: seed)
@@ -40,11 +41,11 @@ enum SpotArrangePicture {
         exit(0)
     }
 
-    private static func lift(_ id: String, in model: SpotsModel, panelOrigin: CGPoint) {
+    private static func lift(_ id: String, in model: SpotsModel) {
         guard let card = model.placements.last else { return }
         let grid = SpotTokens.gridOrigin()
-        let start = CGPoint(x: -SpotTokens.panelWidth / 2, y: SpotTokens.gridTop)
+        guard let start = model.shelfOrigin(of: id) else { return }
         let target = CGPoint(x: grid.x + card.rect.minX + SpotTokens.cell / 3, y: grid.y + card.rect.minY + SpotTokens.cell / 3)
-        model.dragShelfSpot(id, from: start, by: CGSize(width: target.x - start.x, height: target.y - start.y))
+        model.dragShelfSpot(id, by: CGSize(width: target.x - start.x, height: target.y - start.y))
     }
 }

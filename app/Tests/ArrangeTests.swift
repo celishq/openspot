@@ -21,9 +21,9 @@ final class ArrangeTests: PanelCase {
         return CGPoint(x: origin.x + rect.minX, y: origin.y + rect.minY)
     }
 
-    private let start = CGPoint(x: -600, y: 120)
 
-    private func toward(_ cell: GridCell) -> CGSize {
+    private func toward(_ cell: GridCell, of id: String = "zeta") -> CGSize {
+        let start = model.shelfOrigin(of: id) ?? .zero
         let target = point(of: cell)
         return CGSize(width: target.x - start.x, height: target.y - start.y)
     }
@@ -37,6 +37,7 @@ final class ArrangeTests: PanelCase {
         model.dragRest = .zero
         try await spots(off + on)
         for id in off { model.takeOffGrid(id) }
+        model.placeShelf(screen: CGSize(width: 1440, height: 900), panelOrigin: CGPoint(x: 520, y: 40))
         model.beginEditing()
     }
 
@@ -79,7 +80,7 @@ final class ArrangeTests: PanelCase {
         try await arrangeWithOff(["zeta"], on: ["a"])
         let slot = GridCell(row: 0, column: 3)
 
-        model.dragShelfSpot("zeta", from: start, by: toward(slot))
+        model.dragShelfSpot("zeta", by: toward(slot))
 
         XCTAssertEqual(model.carry?.entry.id, "zeta")
         XCTAssertEqual(model.carry?.size, .small)
@@ -98,7 +99,7 @@ final class ArrangeTests: PanelCase {
     func testASpotOverTheShelfKeepsItsOwnSizeAndADropThereLeavesItOff() async throws {
         try await arrangeWithOff(["zeta"], on: ["a"])
 
-        model.dragShelfSpot("zeta", from: start, by: CGSize(width: 10, height: 10))
+        model.dragShelfSpot("zeta", by: CGSize(width: 10, height: 10))
 
         XCTAssertNil(model.pin?.target)
         XCTAssertEqual(model.carry?.size, .wide)
@@ -114,7 +115,7 @@ final class ArrangeTests: PanelCase {
         try await arrangeWithOff(["zeta"], on: ["a", "b"])
         let cell = try XCTUnwrap(place(of: "b")).cell
 
-        model.dragShelfSpot("zeta", from: start, by: toward(cell))
+        model.dragShelfSpot("zeta", by: toward(cell))
 
         XCTAssertEqual(model.pin?.target, .slot(cell, .wide))
         XCTAssertNotEqual(place(of: "b")?.cell, cell)
@@ -132,7 +133,7 @@ final class ArrangeTests: PanelCase {
     func testAfterAPinAndAResizeTheNextSpotStillDragsIn() async throws {
         try await arrangeWithOff(["yak", "zeta"], on: ["a"])
         let slot = GridCell(row: 1, column: 0)
-        model.dragShelfSpot("zeta", from: start, by: toward(slot))
+        model.dragShelfSpot("zeta", by: toward(slot))
         model.dropShelfSpot(by: toward(slot))
         try await wait("zeta lands", until: { model.landing == nil && model.carry == nil })
 
@@ -141,10 +142,10 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(place(of: "zeta")?.size, .small)
         try await wait("the resize lands", until: { model.gesture == nil && model.landing == nil && model.carry == nil })
 
-        model.dragShelfSpot("yak", from: start, by: toward(GridCell(row: 2, column: 0)))
+        model.dragShelfSpot("yak", by: toward(GridCell(row: 2, column: 0), of: "yak"))
         XCTAssertEqual(model.pin?.id, "yak")
         XCTAssertNotNil(model.pin?.target)
-        model.dropShelfSpot(by: toward(GridCell(row: 2, column: 0)))
+        model.dropShelfSpot(by: toward(GridCell(row: 2, column: 0), of: "yak"))
         XCTAssertTrue(order.contains("yak"))
 
         model.dragSpot("zeta", by: CGSize(width: SpotTokens.cell * 2, height: 0))
@@ -156,9 +157,9 @@ final class ArrangeTests: PanelCase {
         model.dragRest = .seconds(30)
         let cell = try XCTUnwrap(place(of: "b")).cell
 
-        model.dragShelfSpot("zeta", from: start, by: toward(cell))
-        model.dragShelfSpot("zeta", from: start, by: toward(GridCell(row: 0, column: 0)))
-        model.dragShelfSpot("zeta", from: start, by: toward(cell))
+        model.dragShelfSpot("zeta", by: toward(cell))
+        model.dragShelfSpot("zeta", by: toward(GridCell(row: 0, column: 0)))
+        model.dragShelfSpot("zeta", by: toward(cell))
 
         XCTAssertEqual(place(of: "b")?.cell, cell)
         model.dropShelfSpot(by: toward(cell))
@@ -171,8 +172,8 @@ final class ArrangeTests: PanelCase {
         try await arrangeWithOff(["zeta"], on: ["a", "b"])
         let cell = try XCTUnwrap(place(of: "b")).cell
 
-        model.dragShelfSpot("zeta", from: start, by: toward(cell))
-        model.dragShelfSpot("zeta", from: start, by: CGSize(width: 10, height: 10))
+        model.dragShelfSpot("zeta", by: toward(cell))
+        model.dragShelfSpot("zeta", by: CGSize(width: 10, height: 10))
 
         XCTAssertNil(model.pin?.target)
         XCTAssertEqual(place(of: "b")?.cell, cell)

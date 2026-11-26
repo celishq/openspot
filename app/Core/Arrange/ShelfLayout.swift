@@ -9,6 +9,11 @@ public struct ShelfLayout: Equatable, Sendable {
     public let sizes: [SpotSize]
     public let rects: [CGRect]
     public let height: CGFloat
+    public let chunks: [[Int]]
+
+    public static var chunkPitch: CGFloat {
+        SpotTokens.height(rows: 2) + SpotTokens.rowGap
+    }
 
     public init(screen: CGSize, panel: CGRect, sizes wanted: [SpotSize]) {
         let margin = SpotTokens.arrangeMargin
@@ -39,6 +44,8 @@ public struct ShelfLayout: Equatable, Sendable {
         self.sizes = sizes
         self.rects = rects
         height = (rects.map(\.maxY).max() ?? 0) + SpotTokens.rowGap
+        let count = max(Int((height / Self.chunkPitch).rounded(.up)), 1)
+        chunks = (0..<count).map { chunk in rects.indices.filter { Int(rects[$0].minY / Self.chunkPitch) == chunk } }
         let fade = SpotTokens.scrollFadeLength
         band = max(SpotTokens.arrangeBar - fade, 0)...max(min(screen.height - SpotTokens.arrangeFoot + fade, screen.height), SpotTokens.arrangeBar)
     }
