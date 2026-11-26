@@ -165,11 +165,11 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(runs.timeline.list(Timeline.Query(), at: Date()).map(\.value), ["secret"])
     }
 
-    func testAChangeOfKeepForSetsTheDaysOfTheTimelineAndAListSetsNone() async throws {
-        _ = try await rows("setting.keep=7 days\n")
+    func testAnOpenSetsTheDaysOfKeepForAndATypedWordSetsNone() async throws {
+        _ = try await timeline.answer("sheet.text", input: "input.value=cafe\nsetting.keep=7 days\n", timeout: 60)
         XCTAssertEqual(runs.timeline.choices().keptDays, 30)
 
-        try await timeline.perform("setting.change", input: "setting.keep=7 days\n", timeout: 60)
+        _ = try await rows("setting.keep=7 days\n")
 
         XCTAssertEqual(runs.timeline.choices().keptDays, 7)
     }

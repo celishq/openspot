@@ -204,11 +204,6 @@ extension SpotRuns {
         runSchedule()
     }
 
-    public func settingChanged(of spot: String) {
-        guard let sheet = sheets[spot], sheet.spot.triggers.admits(EventName.settingChange, value: nil) else { return }
-        sheet.show(need: .clock, event: .event(EventName.settingChange, value: nil))
-    }
-
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {
         for sheet in sheets.values where (showsEachSpot || sheet.hearsEvents) && sheet.spot.triggers.admits(name, value: value) {
             sheet.show(need: showsEachSpot ? .change : .clock, event: .event(name, value: value))

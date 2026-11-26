@@ -12,15 +12,14 @@ public enum EventName {
     public static let deviceConnect = "device.connect"
     public static let spotWant = "spot.want"
     public static let spotChange = "spot.change"
-    public static let settingChange = "setting.change"
 
     public static let sheetOpen = "sheet.open"
     public static let panelOpen = "panel.open"
     public static let searchText = "search.text"
     public static let sheetText = "sheet.text"
     public static let attachmentPick = "attachment.pick"
-    public static let declarable = [sheetOpen, panelOpen, sheetText, spotWant, settingChange, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
-    public static let valueless = [sheetOpen, sheetText, spotWant, settingChange, clipboard, screenWake, appLaunch]
+    public static let declarable = [sheetOpen, panelOpen, sheetText, spotWant, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
+    public static let valueless = [sheetOpen, sheetText, spotWant, clipboard, screenWake, appLaunch]
 
     public static func isName(_ word: String) -> Bool {
         let parts = word.split(separator: ".", omittingEmptySubsequences: false)

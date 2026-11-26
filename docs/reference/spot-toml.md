@@ -158,7 +158,6 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |
-| `setting.change`   | itself  | none                             | When people change one of your settings, also with the panel closed. |
 | `clipboard.change` | itself  | none                             | When the clipboard changes.                               |
 | `app.front`        | itself  | its bundle ID                    | When another app comes to the front.                      |
 | `app.update`       | itself  | its version                      | When Openspot has downloaded an update.                   |
@@ -169,7 +168,7 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `disk.mount`       | itself  | its path                         | When a disk mounts.                                       |
 | `device.connect`   | itself  | its name                         | When a USB device connects.                               |
 
-An event reaches your spot only while it shows, except `app.launch`, `app.update` and `setting.change`.
+An event reaches your spot only while it shows, except `app.launch` and `app.update`.
 
 ## The app's own keys
 
