@@ -204,6 +204,19 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(order, ["b"])
     }
 
+    func testAnAppSpotDraggedOutsideThePanelInArrangeGoesToTheShelf() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("openspot.spot/new.sh"), toml: "title = 'New spot'")
+        try await arrangeWithOff([], on: ["a"])
+        let id = try XCTUnwrap(model.visible.first { $0.spot.name == "New spot" }?.id)
+        let away = CGSize(width: -900, height: 40)
+
+        model.dragSpot(id, by: away)
+        model.dropSpot(by: away)
+
+        XCTAssertFalse(order.contains(id))
+        XCTAssertEqual(shelf, [id])
+    }
+
     func testASpotTakenOffByItsMinusComesBackByAPin() async throws {
         try await spots(["a", "b"])
         model.takeOffGrid("a")
