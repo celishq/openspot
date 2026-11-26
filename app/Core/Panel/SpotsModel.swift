@@ -88,6 +88,7 @@ public final class SpotsModel {
     public private(set) var heldDetails: AttachmentDetails?
     public internal(set) var preview: ItemPreview?
     public internal(set) var previewRect: CGRect?
+    public internal(set) var previewSource: CGRect?
     public internal(set) var isPreviewOpen = false
     @ObservationIgnored var isPreviewGrowing = false
     var isPreviewing = false
@@ -579,7 +580,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
-            closePreview()
+            dropPreviewNow()
             holdCommand(false)
             endSpread()
             if attachments.spreads { attachments.fold() }

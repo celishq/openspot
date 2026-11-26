@@ -14,6 +14,11 @@ final class SpotsPanel: NSPanel {
     private var screenBackdrop: SpotScreenBackdrop?
     private var restFrame: NSRect?
     private var reachFrame: NSRect?
+    private var reached: CGRect?
+
+    var contentFrame: NSRect {
+        reachFrame ?? NSRect(x: frame.minX + place.left, y: frame.maxY - place.top - SpotTokens.panelHeight, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+    }
 
     override var canBecomeKey: Bool { true }
 
@@ -57,6 +62,7 @@ final class SpotsPanel: NSPanel {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : SpotFrontWindow.frame(of: app)
+        if restFrame == nil { reach(nil) }
         let rest = restFrame ?? frame
         guard let origin = ScreenPlace(screens: screens).origin(of: rest.size, window: window, pointer: NSEvent.mouseLocation) else { return }
         guard restFrame != nil else { return setFrameOrigin(origin) }
@@ -95,7 +101,8 @@ final class SpotsPanel: NSPanel {
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
         let height = model.gridHeight
-        return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
+        let panel = contentFrame
+        return NSRect(x: panel.minX, y: panel.maxY - height, width: panel.width, height: height).contains(point)
     }
 
     private func resize(to frame: NSRect) {
@@ -114,6 +121,7 @@ final class SpotsPanel: NSPanel {
     }
 
     func reach(_ rect: CGRect?) {
+        reached = rect
         guard restFrame == nil else { return }
         let rest = reachFrame ?? frame
         guard let rect else {
@@ -144,6 +152,7 @@ final class SpotsPanel: NSPanel {
             restFrame = next
             cover()
         }
+        if let reached { reach(reached) }
         takeBackdrop()
     }
 

@@ -65,10 +65,10 @@ extension SpotsModel {
         takePreview()
     }
 
-    public var previewSource: CGRect? {
-        guard let rect = previewRect, let sheet = openSheet?.sheetRect else { return nil }
-        let side = 2 * SpotTokens.cardRadius
-        return CGRect(x: rect.minX > sheet.minX ? sheet.maxX - side : sheet.minX, y: rect.minY, width: side, height: rect.height)
+    func dropPreviewNow() {
+        isPreviewing = false
+        if preview != nil { preview = nil }
+        dropPreview()
     }
 
     private func placePreview(beside sheet: CGRect?) {
@@ -88,6 +88,9 @@ extension SpotsModel {
         let isNew = previewRect == nil
         if rect != previewRect {
             host.reach(rect)
+            let side = 2 * SpotTokens.cardRadius
+            let source = CGRect(x: right ? sheet.maxX - side : sheet.minX, y: rect.minY, width: side, height: rect.height)
+            if source != previewSource { previewSource = source }
             previewRect = rect
         }
         if isNew {
@@ -107,6 +110,7 @@ extension SpotsModel {
         isPreviewGrowing = false
         if isPreviewOpen { isPreviewOpen = false }
         if previewRect != nil { previewRect = nil }
+        if previewSource != nil { previewSource = nil }
         host.reach(nil)
     }
 

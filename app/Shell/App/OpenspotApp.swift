@@ -78,7 +78,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             guard let self else { return nil }
             let app = NSWorkspace.shared.frontmostApplication
             return ScreenPlace.toastWindow(
-                panel: model.isWarming ? nil : panel?.frame,
+                panel: model.isWarming ? nil : panel?.contentFrame,
                 isPanelShown: model.isShown,
                 isAppInFront: app == .current,
                 front: { SpotFrontWindow.frame(of: app) }
@@ -234,7 +234,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         guard let panel, let rows = model.menu?.submenu?.rows.count else { return }
         let window = submenu ?? SpotSubmenuWindow.make(model: model)
         submenu = window
-        window.show(rows: rows, beside: row, of: menu, in: panel)
+        window.show(rows: rows, beside: row, of: menu, in: panel, at: panel.contentFrame)
     }
 
     func hideSubmenu() {
