@@ -69,4 +69,60 @@ final class ItemPreviewTests: PanelCase {
         XCTAssertNil(model.preview)
         XCTAssertEqual(host.previews.last, .some(nil))
     }
+
+    private func colors() throws {
+        try script("colors", toml: """
+        title = 'Colors'
+
+        [on]
+        "item.preview" = true
+
+        [types.color]
+        title = "Color"
+        match = '^#[0-9a-fA-F]{6}$'
+
+        [actions.copy-rgba]
+        title = "Copy as RGBA"
+        type = "color"
+        """, """
+        input=$(cat)
+        printf '%s|%s|%s\\n' "$1" "$(printf '%s\\n' "$input" | sed -n 's/^input.type=//p')" "$(printf '%s\\n' "$input" | sed -n 's/^input.item.text=//p')" >> '\(folder.appendingPathComponent("colors").path)'
+        [ "$1" = item.preview ] && printf 'text=swatch\\ntitle=rgba\\n'
+        exit 0
+        """)
+    }
+
+    private var colorRuns: [String] {
+        ((try? String(contentsOf: folder.appendingPathComponent("colors"), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
+    }
+
+    func testARowWhoseTextIsOfATypeShowsThePreviewAndTheActionsOfTheSpotThatDeclaresIt() async throws {
+        try colors()
+        try await openHistory("printf 'item=a\\ntitle=Red\\ntext=#ff0000\\n\\nitem=b\\ntitle=Note\\ntext=words\\n'")
+
+        _ = model.handleKey(space)
+
+        try await wait("the preview of the type") { self.model.preview?.isOwn == true }
+        XCTAssertEqual(colorRuns, ["item.preview|color|#ff0000"])
+        let red = try XCTUnwrap(model.target)
+        XCTAssertEqual(model.actionMenu(on: red)?.rows.map(\.title).contains("Copy as RGBA"), true)
+
+        _ = model.handleSearchKey(ActionKey(name: "down"))
+
+        XCTAssertEqual(model.preview?.isOwn, false)
+        let note = try XCTUnwrap(model.target)
+        XCTAssertEqual(model.actionMenu(on: note)?.rows.map(\.title).contains("Copy as RGBA"), false)
+    }
+
+    func testATypedActionRunsWithTheRowAndIsNoCommandOfItsOwn() async throws {
+        try colors()
+        try await openHistory("printf 'item=a\\ntitle=Red\\ntext=#ff0000\\n'")
+        let red = try XCTUnwrap(model.target)
+        let offer = try XCTUnwrap(model.typedActions(on: try XCTUnwrap(red.item)).first)
+
+        model.run(offer.action, offeredBy: offer.owner, on: red)
+
+        try await wait("the action's run") { self.colorRuns.contains("copy-rgba||#ff0000") }
+        XCTAssertEqual(model.sheets["colors"]?.spot.commands.map(\.id), [])
+    }
 }

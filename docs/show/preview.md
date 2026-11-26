@@ -48,6 +48,25 @@ Open Swatches, and press Space. The preview shows `#ff3b30` in large type.
 - Openspot draws its own preview until yours comes, and keeps yours for the row, so a second look runs nothing.
 - A preview takes up to two fifths of the screen's width, and is as tall as the sheet.
 
+## Give a type
+
+A spot that knows a kind of value draws the preview of each row that holds one, in any sheet, and adds its actions to
+the row's `⌘K` menu. The Colors spot that comes with Openspot does this for colours:
+
+```text
+[types.color]
+title = "Color"
+match = '^#[0-9a-fA-F]{6}$'
+
+[actions.copy-rgba]
+title = "Copy as RGBA"
+type = "color"
+```
+
+A copied `#ff3b30` then shows in the Timeline sheet with its colour, and `⌘K` on it offers Copy as RGBA. The sheet's
+own spot draws the preview when it answers `item.preview` itself. [spot.toml](../reference/spot-toml.md#typesname) lists
+the keys.
+
 ## Next
 
 - [Lay out a sheet](a-layout.md)

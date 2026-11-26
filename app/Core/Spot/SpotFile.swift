@@ -54,7 +54,7 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        let titled = manifest.actions.filter { $0.title != nil && !$0.isChipOnly }
+        let titled = manifest.actions.filter { $0.title != nil && !$0.isChipOnly && $0.type == nil }
         let offeredActions = try OfferedAction.read(titled, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         let commands = titled.filter { !offeredIDs.contains($0.id) }
@@ -77,7 +77,8 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
-        let isFound = !triggers.answersOnly && (offeredActions.isEmpty || triggers.lists)
+        let onlyPreviews = !manifest.types.isEmpty && triggers.events == [EventName.itemPreview] && triggers.every == nil && !triggers.lists && triggers.search == nil
+        let isFound = !triggers.answersOnly && !onlyPreviews && (offeredActions.isEmpty || triggers.lists)
         var command = Spot(
             id: id,
             name: name,
@@ -106,6 +107,7 @@ public struct SpotFile: Equatable, Sendable {
         command.actions = manifest.actions
         command.bindings = manifest.bindings
         command.events = manifest.events
+        command.types = manifest.types
         self.init(id: id, spots: [command])
     }
 

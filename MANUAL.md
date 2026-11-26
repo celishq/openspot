@@ -158,6 +158,8 @@ under a heading for each day. Type to find an entry by its words.
 
 - The Clipboard spot keeps each copy, also while the panel is closed. It keeps a picture, and a file of up to 25 MB,
   as a copy, so the entry still pastes after you delete the file. It keeps nothing that a password manager copied.
+- Space shows the selected entry beside the sheet. A colour, such as `#ff3b30`, shows as hex, RGBA and HSL, and its
+  `⌘K` menu copies it in each form.
 - Timeline's Settings set Keep for, and Show in search, which adds the three newest entries that hold your words under
   the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
 - Tab on an entry hands it to a spot that takes it, such as Translate for a text.

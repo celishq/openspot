@@ -30,6 +30,7 @@ public enum ManifestSchema {
         properties[Manifest.Action.table] = table(reference("action"))
         properties[Manifest.Binding.table] = table(reference("binding"))
         properties[Manifest.Event.table] = table(table(reference("parameter")))
+        properties[Manifest.RowType.table] = table(reference("rowType"))
         properties[scripts] = table(reference("script"))
         return ["type": "object", "additionalProperties": false, "properties": properties]
     }
@@ -52,6 +53,7 @@ public enum ManifestSchema {
         var actionProperties = action["properties"] as? [String: Any] ?? [:]
         actionProperties[Manifest.Action.inputs] = table(reference("parameter"))
         actionProperties[Manifest.Action.outputs] = table(reference("parameter"))
+        actionProperties["type"] = ["type": "string"]
         action["properties"] = actionProperties
         return [
             "texts": ["anyOf": [["type": "string"], ["type": "array", "items": ["type": "string"]]]],
@@ -59,6 +61,7 @@ public enum ManifestSchema {
             "setting": object(settingKeys, from: fields),
             "parameter": parameter,
             "action": action,
+            "rowType": object(["title", "match"], from: ["title": ["type": "string"], "match": ["type": "string"]], required: ["match", "title"]),
             "binding": object([Manifest.Binding.spotKey], from: [Manifest.Binding.spotKey: ["type": "string"]], required: [Manifest.Binding.spotKey]),
             "on": triggers,
             "script": script

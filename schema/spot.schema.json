@@ -36,6 +36,9 @@
         "title" : {
           "type" : "string"
         },
+        "type" : {
+          "type" : "string"
+        },
         "when" : {
           "type" : "string"
         }
@@ -137,6 +140,22 @@
         }
       ]
     },
+    "rowType" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "match" : {
+          "type" : "string"
+        },
+        "title" : {
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "match",
+        "title"
+      ],
+      "type" : "object"
+    },
     "script" : {
       "additionalProperties" : false,
       "properties" : {
@@ -206,6 +225,12 @@
         },
         "title" : {
           "$ref" : "#/$defs/texts"
+        },
+        "types" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/rowType"
+          },
+          "type" : "object"
         },
         "uses" : {
           "$ref" : "#/$defs/texts"
@@ -358,6 +383,12 @@
     },
     "title" : {
       "$ref" : "#/$defs/texts"
+    },
+    "types" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/rowType"
+      },
+      "type" : "object"
     },
     "uses" : {
       "$ref" : "#/$defs/texts"

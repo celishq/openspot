@@ -103,6 +103,7 @@ One table for each thing your spot does by name. Openspot runs `<script> <id>` w
 | `icon`           | text              | Its icon.                                              |
 | `confirm`        | text              | The words that ask people to press a second time.      |
 | `offers`         | [text]            | `["attachments"]`: it shows only as a row for a chip, not in the search, the `⌘K` menu or the keys. See [Offer an action](../connect/attachments.md#offer-an-action). |
+| `type`           | text              | The name of a [type](#typesname): it shows only in the `⌘K` menu of a row of that type, and runs with the row's keys as `input.item.<key>=`. |
 | `inputs.<name>`  | a type or a table | A value it takes.                                      |
 | `outputs.<name>` | a type or a table | A value it gives back, as an `out.<name>=` line.       |
 
@@ -125,6 +126,19 @@ An input, an output or a value of an event takes a type alone, such as `url = "u
 
 `name = { spot = "<id>" }` names one spot that your spot runs or listens to, such as
 `picker = { spot = "openspot/snooze" }`. A name holds no space and no dot.
+
+## [types.\<name\>]
+
+One table for each kind of value your spot knows, such as a colour. A row of any sheet whose `text=` or `url=` matches
+`match` is of the type: its preview comes from your spot's `item.preview`, with `input.type=<name>`, and its `⌘K` menu
+holds your actions with `type = "<name>"`. Openspot tests a row when people show it, so older rows gain a new type
+too. A spot with types whose `[on]` holds only `item.preview` stays off the grid and out of the search.
+See [Show a preview of a row](../show/preview.md#give-a-type).
+
+| Key     | Type | Is                                                          |
+| ------- | ---- | ----------------------------------------------------------- |
+| `title` | text | The type's name for people, such as `Color`. Required.      |
+| `match` | text | A regular expression of the whole value. Required.          |
 
 ## [events.\<name\>]
 

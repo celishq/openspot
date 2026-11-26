@@ -3,7 +3,7 @@ import Foundation
 extension Manifest {
     public struct Action: Equatable, Sendable {
         static let table = "actions"
-        static let keys: Set<String> = ["title", "icon", "confirm"]
+        static let keys: Set<String> = ["title", "icon", "confirm", "type"]
         static let appKeys: Set<String> = ["offers", "shortcut", "close", "when"]
         static let attachments = "attachments"
         static let inputs = "inputs"
@@ -13,6 +13,7 @@ extension Manifest {
         public let title: String?
         public let icon: String?
         public let confirm: String?
+        public let type: String?
         public let inputs: [Parameter]
         public let outputs: [Parameter]
         public let offers: [String]
@@ -47,7 +48,7 @@ extension Manifest {
                     guard case .string(let text)? = table[key] else { throw fault("takes a text in \(key).") }
                     texts[key] = text
                 } else {
-                    throw fault("has an unknown key: \(key). Use title, icon, confirm, inputs.<name> or outputs.<name>.")
+                    throw fault("has an unknown key: \(key). Use title, icon, confirm, type, inputs.<name> or outputs.<name>.")
                 }
             }
             self.id = id
@@ -55,6 +56,7 @@ extension Manifest {
             title = texts["title"]
             icon = texts["icon"]
             confirm = texts["confirm"]
+            type = texts["type"]
             self.inputs = inputs
             self.outputs = outputs
             offers = appValues["offers"] ?? []

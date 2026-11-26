@@ -1,0 +1,23 @@
+title = "Colors"
+icon = "paintpalette"
+detail = "Shows a copied colour, and copies it as hex, RGBA or HSL"
+uses = ["clipboard"]
+
+[on]
+"item.preview" = true
+
+[types.color]
+title = "Color"
+match = '^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|rgba?\([^()]*\)|hsla?\([^()]*\))$'
+
+[actions.copy-hex]
+title = "Copy as Hex"
+type = "color"
+
+[actions.copy-rgba]
+title = "Copy as RGBA"
+type = "color"
+
+[actions.copy-hsl]
+title = "Copy as HSL"
+type = "color"
