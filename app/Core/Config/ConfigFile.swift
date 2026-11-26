@@ -58,11 +58,11 @@ public struct ConfigFile: Equatable, Sendable {
         }
     }
 
-    public func begin(enabling ids: [String]) throws {
+    public func begin(naming ids: [String]) throws {
         try locked {
             guard try disk.read(url) == nil else { return }
             var config = Config()
-            ids.forEach { config.arrangement.set(isEnabled: true, of: $0) }
+            config.arrangement.arrange(ids)
             try disk.write(config.text, to: url)
         }
     }

@@ -41,6 +41,31 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(shown, [["tab"], ["tab"], []])
     }
 
+    func testAHiddenSourceGivesNoChipAndRunsNothingUntilItIsShown() async throws {
+        let config = ConfigFile(url: folder.appendingPathComponent("config/config.toml"))
+        try FileManager.default.createDirectory(at: config.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try config.change { $0.set(setting: "attachment", of: "tab", to: "false"); $0.set(setting: "attachment", of: "copy", to: "false") }
+        try taker(takes: "'text', 'url'")
+        try pickSource("tab", runs: "true")
+        try source("copy", adds: "text=hola")
+        try witness()
+
+        await open()
+        try await wait("the spots of the open") { self.log("witness-log").count == 1 }
+
+        XCTAssertEqual(chips, [])
+        XCTAssertEqual(log("copy-log"), [])
+        XCTAssertEqual(model.entry("copy")?.spot.isOnGrid, false)
+        model.panelWillHide()
+        model.panelDidHide()
+
+        try config.change { $0.set(setting: "attachment", of: "tab", to: nil); $0.set(setting: "attachment", of: "copy", to: nil) }
+        await open()
+
+        try await wait("both chips") { self.chips.count == 2 }
+        XCTAssertEqual(Set(chips.map(\.source)), ["tab", "copy"])
+    }
+
     func testASourceThatEndsWithNoValueLeavesNoChip() async throws {
         try taker(takes: "'url'")
         try source(adds: nil)

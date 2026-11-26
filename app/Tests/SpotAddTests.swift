@@ -315,7 +315,7 @@ final class SpotAddTests: XCTestCase {
         let first = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(first.code, 1)
-        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nCoffee: every 60 seconds\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nCoffee: every 60 seconds\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
@@ -469,7 +469,7 @@ final class SpotAddTests: XCTestCase {
         let first = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(first.code, 1)
-        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
         XCTAssertEqual(confirmed.code, 0, confirmed.errors)
         try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }\nmail = { spot = 'mailer' }"])

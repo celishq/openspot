@@ -119,14 +119,14 @@ final class AccessListTests: XCTestCase {
         XCTAssertNil(found["pick"]?["access.screen"])
     }
 
-    func testTheCoreListPrintsOffForASpotThatIsNotOn() async throws {
+    func testTheCoreListPrintsTheStateOfACoreSpotThatLacksAnAccess() async throws {
         try "#!/bin/sh\nopenspot power lid-closed\n".writeScript(to: core.appendingPathComponent("awake.spot/awake.sh"), toml: "uses = ['power', 'attachment']")
         accesses.set(.helper, to: .denied)
 
         let answer = try await call(["spot", "list", "--core"], api: api())
         let found = records(answer.output)
 
-        XCTAssertEqual(found["awake"]?["state"], "off")
+        XCTAssertEqual(found["awake"]?["state"], "access")
         XCTAssertEqual(found["awake"]?["uses"], "attachment,power")
         XCTAssertEqual(found["awake"]?["needs"], "helper")
     }

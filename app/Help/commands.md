@@ -69,13 +69,13 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet.                                |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
-| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
+| `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot. A spot that comes with Openspot refuses it, and `spot edit`, `spot delete`, `spot remove` and `prompt change` too. |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
-| `openspot spot delete <id>`                        | Moves a spot to the Trash.                                                                      |
+| `openspot spot delete <id>`                        | Moves a spot's folder to the Trash, as Remove in its ⌘K menu does. Its data stays.              |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
-| `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot spot remove <id>`                        | Moves a spot that `spot add` or `store get` added to the Trash. Its data stays.                 |
 | `openspot spot allow <id> <use>` | Lets a spot that `spot add` added make the calls of a use that its `spot.toml` doesn't name, and records the use in `spots.lock`, as an update with `--yes` does. Only the person can run it. |
-| `openspot spot list [--core] [--json]` | Prints an `item=<id>` record for each spot: its `state=` (`ready`, `access`, `review` or `off`), its `uses=`, the macOS accesses it `needs=` that are denied or not asked yet, the uses it was `refused=`, the time of its last call of each use as `last.<use>=`, and the accesses that the calls of each use need as `access.<use>=`, or may need as `maybe.<use>=`. `--core` prints each spot that comes with Openspot, with `on=`. |
+| `openspot spot list [--core] [--json]` | Prints an `item=<id>` record for each spot: its `state=` (`ready`, `access` or `review`), its `uses=`, the macOS accesses it `needs=` that are denied or not asked yet, the uses it was `refused=`, the time of its last call of each use as `last.<use>=`, and the accesses that the calls of each use need as `access.<use>=`, or may need as `maybe.<use>=`. `--core` prints each spot that comes with Openspot, with `own=` when a spot of your spots folder takes its place. |
 | `openspot setting list [--spot <id>] [--json]` | Prints a record for each row of Settings, of the app and of each spot, or of one spot, `openspot` for the app: `item=`, `spot=`, `name=` (the spot's name), `key=` (what `setting set` takes), `title=`, `value=` (`set` for a secret), `kind=`, `section=`, `icon=` and `detail=`, and for a choice its `options=` and `default=`. |
 | `openspot setting remove [--spot <id>] <key>` | Removes a value, a secret too. Only you can, in Settings or in Terminal; a spot cannot. |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
@@ -86,13 +86,17 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot that your spot binds, and waits for its values; see [Use another spot](../../docs/connect/other-spots.md). |
 | `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]` to each spot that binds it; see [Tell other spots what happened](../../docs/connect/other-spots.md#tell-other-spots-what-happened). |
 | `openspot types [id]` | Writes the types of a `.js` spot to `openspot.d.ts`, or of a `.swift` spot to `Openspot.swift`, beside its script, for the spot of the current folder when there is no id, and prints the file. |
-| `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
-| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
-| `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
+| `openspot grid edit`                               | Opens Arrange, where you pin your spots to the grid and take them off.                          |
+| `openspot grid list [--json]`                      | Prints each of your spots, the ones off the grid first, with grid=true or grid=false.           |
+| `openspot grid pin <id>`                           | Puts a spot of yours that is off the grid in the first free slot.                               |
+| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, or `added` once you have it. First it updates each spot that `store get` installed and you didn't edit, when its store has a newer version that asks for nothing new. `copy` marks a spot whose update waits for `--yes` (`update`) and one you edited (`edited`). |
+| `openspot store get <id> [--yes] [--replace] [--keep-both]` | Installs a spot of a store: copies its folder into your spots folder, where search finds it, and leaves it off the grid. A spot that the review would warn of prints the review and installs only with `--yes`. When your spots have its id, `--replace` moves yours to the Trash first, and `--keep-both` installs it under a new id, such as `ports-2`, and its own `openspot spot run ports` runs the copy. |
+| `openspot store update [<id>] [--yes]` | Updates a spot that `store get` installed to the newest version of its store, or each such spot with no id. An update that asks for a new use, binding or power prints only what it adds and needs `--yes`. A spot you edited takes no update. |
+| `openspot store revert <id> [--yes]` | Moves a spot you edited to the Trash and installs the version of its store in its place. Its data stays. |
 | `openspot store add <folder>` | Adds a folder of spot folders as a store, named like the folder, so that the Store lists its spots. |
 | `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
+| `openspot store open [<id>] [--search <text>]` | Opens the Store, at the page of a spot when given its id, or with the words of `--search` in its search. |
 | `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
-| `openspot store publish <id>` | Publishes a spot of your spots folder, with a `readme.md` beside its script, from the Store spot alone. |
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
 | `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
@@ -101,9 +105,9 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
 | `openspot render spot <id> <file.png>` | Draws the sheet of an installed spot, or with `--card <size>` its card, in the dark appearance, or the light one with `--light`. |
-| `openspot render panel [--search <words>] [--light] <file.png>` | Draws the panel with each installed spot on its grid, or with what a search finds, dark or light. |
+| `openspot render panel [--arrange] [--search <text>] [--swap <id>] [--hold] [--light] <file.png>` | Draws the panel with each installed spot on its grid, dark or light; `--search` alone draws what a search finds; `--arrange` draws Arrange over a screen, with the words of `--search` and the spot of `--swap` lifted over the last card; `--hold` draws the grid while `⌘` is held. |
 | `openspot render settings [--at <where>] [--light] <file.png>` | Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light. |
-| `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
+| `openspot render store [--place <name>] [--spot <id>] [--review <id>] <file.png>` | Draws the window of the Store at My spots, or at the place that `--place` names, such as `Openspot`, with the page of `--spot` open, or the review of an install of `--review` over it. |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
@@ -124,7 +128,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot theme list [--json]` | Prints an `item=<name>` record for each theme, with `builtin=true` and `used=true` where they hold, and its colours: `dark.background=`, `dark.ink=`, `dark.accent=`, and the same of `light`. |
 | `openspot app restart` | Ends the running app and starts it again. A guided grant at a step that needs the start, such as Screen Recording, opens again at that step. |
 | `openspot app settings [--at <where>]` | Opens the Settings window, at a place when one is given: `access`, `access/<id>`, `spot/<id>`, `row/<spot>/<key>`, `keys`, `look`, `account`, `general`, `developer` or `search/<words>`. |
-| `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish.                             |
+| `openspot account show [--json]`                   | Prints the public facts of the account that signs what you share.                               |
 | `openspot account new [<handle>]` | Makes the account key, with the handle, and prints the account's record. Only Openspot's own spots can run it. |
 | `openspot account sign-out` | Removes the account key from this Mac. Only Openspot's own spots can run it. |
 | `openspot account sync on` | Keeps the account key in iCloud Keychain; `off` stops it. Only Openspot's own spots can run it. |

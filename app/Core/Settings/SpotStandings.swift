@@ -12,16 +12,15 @@ public struct SpotStandings: Equatable, Sendable {
 
     public init() {}
 
-    init(loaded: [SpotStanding], core: [SpotList.Choice]) {
+    init(loaded: [SpotStanding]) {
         var seen = Set<String>()
-        all = (loaded + core.map(\.standing).filter(\.isOff))
+        all = loaded
             .filter { !$0.id.hasPrefix(ReservedSetting.appSpot + "/") && seen.insert($0.id).inserted }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         waiting = all.filter(\.lacks)
         groups = [
             Group(id: "Needs Attention", standings: waiting),
-            Group(id: "On", standings: all.filter { !$0.lacks && !$0.isOff }),
-            Group(id: "Turned Off", standings: all.filter { !$0.lacks && $0.isOff })
+            Group(id: "Ready", standings: all.filter { !$0.lacks })
         ].filter { !$0.standings.isEmpty }
     }
 

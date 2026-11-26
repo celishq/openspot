@@ -6,7 +6,6 @@ public struct SpotChoices: Equatable, Sendable {
         public var size: SpotSize?
         public var isOnGrid: Bool?
         public var isFound: Bool?
-        public var isEnabled: Bool?
         public var isGlobal: Bool?
         public var isInMenuBar: Bool?
         public var isWindow: Bool?
@@ -14,11 +13,10 @@ public struct SpotChoices: Equatable, Sendable {
         public var cells: [Int: GridCell]?
         public var commands: [String: String]?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
-            self.isEnabled = isEnabled
             self.isGlobal = isGlobal
             self.isInMenuBar = isInMenuBar
             self.key = key
@@ -80,12 +78,8 @@ public struct SpotChoices: Equatable, Sendable {
         Set(choices.filter { $0.isInMenuBar == true }.map(\.id))
     }
 
-    public var enabled: Set<String> {
-        Set(choices.filter { $0.isEnabled == true }.map(\.id))
-    }
-
-    public var disabled: Set<String> {
-        Set(choices.filter { $0.isEnabled == false }.map(\.id))
+    public func names(_ id: String) -> Bool {
+        places[id] != nil
     }
 
     public func ordered(_ spots: [Spot]) -> [Spot] {
@@ -115,10 +109,6 @@ public struct SpotChoices: Equatable, Sendable {
         }
     }
 
-    public mutating func set(isEnabled: Bool, of id: String) {
-        change(id) { $0.isEnabled = isEnabled }
-    }
-
     public mutating func set(isInMenuBar: Bool, of id: String) {
         change(id) { $0.isInMenuBar = isInMenuBar }
     }
@@ -139,7 +129,6 @@ public struct SpotChoices: Equatable, Sendable {
                 ("size", (choice.size?.name).map { .string($0) }),
                 ("grid", choice.isOnGrid.map { .boolean($0) }),
                 ("search", choice.isFound.map { .boolean($0) }),
-                ("enabled", choice.isEnabled.map { .boolean($0) }),
                 ("global", choice.isGlobal.map { .boolean($0) }),
                 ("tray", choice.isInMenuBar.map { .boolean($0) }),
                 ("window", choice.isWindow.map { .boolean($0) }),

@@ -69,15 +69,4 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(file.path): Add a refresh button\n\(AgentPrompt.finishChange)\n"))
         XCTAssertTrue(prompt.contains("\"openspot\" spot run weather"))
     }
-
-    func testTheCopyStepNamesTheFolderInTheAppAndItsPlaceInTheSpotsFolder() {
-        let core = URL(fileURLWithPath: "/Apps/Openspot.app/Contents/Resources/spots/cups.spot")
-        let copy = folder.appendingPathComponent("cups.spot")
-
-        let step = AgentPrompt(folder: folder, guide: folder, app: "openspot").copying(core, to: copy)
-
-        XCTAssertTrue(step.contains(core.path))
-        XCTAssertTrue(step.contains(copy.path))
-        XCTAssertTrue(step.contains("same folder name"))
-    }
 }

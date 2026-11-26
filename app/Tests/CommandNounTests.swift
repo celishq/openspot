@@ -97,13 +97,6 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(refused.errors, "Openspot stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml.\nAdd it there, or run `openspot spot allow chime network`.\n")
     }
 
-    func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
-        let answer = try await ask(["store", "publish", "x"], from: spot(uses: []))
-
-        XCTAssertEqual(answer.errors, "Only Openspot's own spots can reach your account key.\n")
-        XCTAssertNil(runs.usage.counts["chime"])
-    }
-
     func testEachVerbThatReachesTheKeyRefusesACallerThatHoldsNoKey() async throws {
         for noun in CommandNoun.all {
             for verb in noun.verbs where verb.rule.flags.contains(.reachesKey) {

@@ -9,7 +9,12 @@ final class ReservedSettingTests: XCTestCase {
     func testASettingOfAPlaceOfASpotRunsTheCallThatDoesTheWork() {
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "menubar", "true")?.value as? SettingCall, .menuBar(spot: "notes", isShown: true))
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "window", "true")?.value as? SettingCall, .window(spot: "notes", isWindow: true))
-        XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false")?.value as? SettingCall, .turn(spot: "notes", on: false))
+        XCTAssertEqual(call("setting", "set", "--spot", "selection", "attachment", "false")?.value as? SettingCall, .set(spot: "selection", key: "attachment", value: "false"))
+        XCTAssertEqual(
+            call("setting", "set", "--spot", "selection", "attachment", "no")?.value as? CallFault,
+            .refused("`attachment` takes only `false`, such as `openspot setting set --spot selection attachment false`, or no value to show the source again.")
+        )
+        XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false")?.value as? SettingCall, .set(spot: "notes", key: "enabled", value: "false"))
         XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake")?.value as? SettingCall, .key(spot: "shelf", act: .float, key: "shake"))
         XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left", "ctrl+left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: "ctrl+left"))
         XCTAssertEqual(call("setting", "set", "--spot", "move", "key.left")?.value as? SettingCall, .key(spot: "move", act: .command("left"), key: nil))
@@ -34,7 +39,6 @@ final class ReservedSettingTests: XCTestCase {
     func testTheUseOfASettingIsTheUseOfTheCallThatItRuns() {
         XCTAssertEqual(SpotUseCall(arguments: ["setting", "set", "--spot", "openspot", "login", "true"], of: "a")?.use, .app)
         XCTAssertEqual(SpotUseCall(arguments: ["setting", "set", "--spot", "notes", "menubar", "true"], of: "a")?.use, .app)
-        XCTAssertEqual(SpotUseCall(arguments: ["setting", "set", "--spot", "notes", "enabled", "true"], of: "a")?.use, .spots)
         XCTAssertNil(SpotUseCall(arguments: ["setting", "set", "folder", "/tmp"], of: "a"))
     }
 

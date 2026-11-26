@@ -21,7 +21,6 @@ final class CommandSocketTests: XCTestCase {
         func act(_ act: CardAct, on id: String) async -> Bool { true }
         func choose(for id: String) async -> Bool { true }
         func editGrid() async {}
-        func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
         func playground(_ file: URL?) async {}
 

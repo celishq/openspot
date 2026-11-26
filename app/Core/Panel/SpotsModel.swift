@@ -34,7 +34,6 @@ public final class SpotsModel {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
     }
-    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
     public private(set) var cards: [Entry] = []
     public var entries: [Entry] = [] {
@@ -42,7 +41,6 @@ public final class SpotsModel {
             entryPlaces = Dictionary(entries.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             takeCards()
             spotListIsStale = true
-            storeCards = nil
             askAnswers()
             takeDetails()
             showVisible()
@@ -170,7 +168,6 @@ public final class SpotsModel {
     public var dragPaths: [String] = []
     @ObservationIgnored var dragRead: Task<Void, Never>?
     @ObservationIgnored var readPaths: [String] = []
-    @ObservationIgnored var reviewRead: Task<Void, Never>?
     public var draggedSpot: SpotDrop?
     public var isPointerOverDrop = false
     public var fieldDrop: SpotDrop?
@@ -290,6 +287,14 @@ public final class SpotsModel {
         }
     }
     public var isEditing: Bool { editing != nil }
+    public var isArranging: Bool { editing == .arrange }
+    public internal(set) var shelfQuery = ""
+    @ObservationIgnored public internal(set) var shelfScroll: CGFloat = 0
+    public internal(set) var shelfLayout: ShelfLayout?
+    @ObservationIgnored var shelfRoom: (screen: CGSize, panelOrigin: CGPoint)?
+    public internal(set) var offGrid: [Entry] = []
+    @ObservationIgnored var offGridWords: [String] = []
+    public internal(set) var shelf: [Entry] = []
     @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []
     public internal(set) var freeCells: [GridCell] = []
@@ -300,6 +305,7 @@ public final class SpotsModel {
     public internal(set) var gesture: SpotGesture?
     public var drag: SpotDrag? { gesture?.drag }
     public var resize: SpotResize? { gesture?.resize }
+    public var pin: SpotPin? { gesture?.pin }
     public let lift = SpotLift()
     public internal(set) var landing: String?
     public internal(set) var carry: SpotCarry?
@@ -349,6 +355,7 @@ public final class SpotsModel {
         toasts = Toasts(clock: runs.clock)
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
+        self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
@@ -365,7 +372,7 @@ public final class SpotsModel {
     }
 
     public var folder: SpotsFolder {
-        files.folder(kept.config)
+        files.spots
     }
 
     public var sheets: [String: SpotRun] {
@@ -379,7 +386,7 @@ public final class SpotsModel {
     public func beginFirstLaunch() async {
         isFirstLaunch = true
         do {
-            try files.config.begin(enabling: folder.startingSpots())
+            try files.config.begin(naming: folder.startingSpots())
         } catch {
             toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
         }
@@ -420,10 +427,10 @@ public final class SpotsModel {
         let isSameConfig = config == kept.config
         host.applyConfig(config)
         kept = next
-        let folder = files.folder(config)
+        let folder = files.spots
         let hosted = reviewed.map { [$0.spot] } ?? []
         guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.allowed != allowed }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
-        var scan = ((try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
+        var scan = ((try? load.result(hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         scan.addSettings(in: files.config, read: config, defaults: defaultArrangement)
@@ -431,7 +438,10 @@ public final class SpotsModel {
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
-        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
+        let unreviewed = scan.spots.filter { spot in
+            !spot.triggers.schedule.isEmpty && spot.host == nil && !spot.isBuiltIn && !folder.isCore(spot) && !allowed.contains { $0.holds(spot.id) }
+        }
+        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps, unreviewed: Set(unreviewed.map(\.id)))
         lastScan = scan
         loaded = (load.stamp, hosted, allowed)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
@@ -516,7 +526,7 @@ public final class SpotsModel {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {
-            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement), at: min(index, next.count))
+            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore(spot)), at: min(index, next.count))
         }
         if next != entries { entries = next }
     }
@@ -530,7 +540,8 @@ public final class SpotsModel {
 
     public func rebuildEntries() {
         gridBuilds += 1
-        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement) }
+        let folder = folder
+        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore($0)) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
         if next != entries { entries = next }

@@ -76,15 +76,25 @@ struct SpotRunningApp: RunningApp {
     }
 
     func review(_ id: String) async -> Bool {
-        await model.reviewCore(id)
+        if await model.review(spot: id) { return true }
+        if await model.isOwnSpot(id) { return false }
+        return await openStore(id, search: nil)
     }
 
     func editGrid() async {
         await model.editGrid()
     }
 
-    func publish(_ id: String) async -> SpotPublish {
-        await model.publish(id)
+    func gridSpots() async -> [ArrangedSpot] {
+        await model.gridSpots()
+    }
+
+    func pin(_ id: String) async -> GridPin {
+        await model.pin(id)
+    }
+
+    func openStore(_ id: String?, search: String?) async -> Bool {
+        await StoreWindow.show(model: model, id: id, search: search)
     }
 
     func reveal(_ id: String) async -> Bool {

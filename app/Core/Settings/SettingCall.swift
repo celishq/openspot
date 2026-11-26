@@ -6,7 +6,6 @@ public enum SettingCall: NounCall {
     case remove(spot: String, key: String)
     case list(spot: String?, form: PrintForm)
     case change(spot: String, key: String)
-    case turn(spot: String, on: Bool)
     case menuBar(spot: String, isShown: Bool)
     case window(spot: String, isWindow: Bool)
     case key(spot: String, act: GlobalKey.Act, key: String?)
@@ -22,7 +21,7 @@ public enum SettingCall: NounCall {
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar, window (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, slow (true or false), panel-key, fix-key and theme (the name of a theme)."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: menubar, window (true or false), attachment (false hides the chip of a source), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, slow (true or false), panel-key, fix-key and theme (the name of a theme)."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isInShow: words.isInShow) ?? Self.set(spot: spot, key: key, value: value) }
         },
@@ -100,9 +99,10 @@ public enum SettingCall: NounCall {
         case nil: break
         }
         switch key {
-        case "enabled": return on("turns a spot on or off") { .turn(spot: spot, on: $0) }
         case SpotRows.menuBarKey: return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
         case SpotRows.windowKey: return on("changes how a spot opens") { .window(spot: spot, isWindow: $0) }
+        case ReservedSetting.attachment where value != nil && value != "false":
+            return CallFault.refused("`attachment` takes only `false`, such as `openspot setting set --spot \(spot) attachment false`, or no value to show the source again.")
         case let key where GlobalKey.Act(setting: key) != nil:
             return changing(.key(spot: spot, act: GlobalKey.Act(setting: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil
@@ -117,7 +117,6 @@ public enum SettingCall: NounCall {
         case .get(let spot, _) where other(spot): CallRule(use: .spots, used: "read a setting of another spot")
         case .list(let spot?, _) where !other(spot): CallRule()
         case .set(let spot, _, _) where other(spot), .change(let spot, _) where other(spot): CallRule(use: .spots, used: "changed a setting of another spot", inShow: rule.inShow)
-        case .turn(_, let isOn): CallRule(use: .spots, used: isOn ? "turned on a spot" : "turned off a spot")
         case .menuBar: CallRule(use: .app, used: "changed the menu bar")
         case .window: CallRule(use: .app, used: "changed how a spot opens")
         case .key, .appKey: CallRule(use: .app, used: "changed a key")
@@ -139,7 +138,6 @@ public enum SettingCall: NounCall {
         case .remove(let spot, let key): settings.remove(key, of: spot)
         case .list(let spot, let form): settings.list(of: spot, form)
         case .change(let spot, let key): settings.change(key, of: spot)
-        case .turn(let spot, let isOn): SpotCalls(context).turn([spot], on: isOn)
         case .menuBar(let spot, let isShown): MenuBarCalls(places: context.places, app: context.app).show(spot, isShown)
         case .window(let spot, let isWindow): settings.window(of: spot, isWindow)
         case .key(let spot, let act, let key): keys.set(act, of: spot, to: key)

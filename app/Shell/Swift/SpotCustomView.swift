@@ -15,7 +15,6 @@ struct SpotCustomView: View, @MainActor Equatable {
     var namesCard = false
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotMoves) private var moves
-    @Environment(\.spotCards) private var cards
     @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
     @Environment(\.spotSurfaceEdge) private var surface
@@ -50,44 +49,12 @@ struct SpotCustomView: View, @MainActor Equatable {
         return "\(source)\n\(date?.timeIntervalSince1970 ?? 0)\n\(date == nil || hasFailed ? isShown : true)"
     }
 
-    private var cardView: (String) -> AnyView {
-        let cards = cards
-        return { id in
-            var view = AnyView(EmptyView())
-            MainActor.assumeIsolated { view = cards.view(id) }
-            return view
-        }
-    }
-
-    private var cardSize: (String) -> CGSize {
-        let cards = cards
-        return { id in MainActor.assumeIsolated { cards.size(id) } }
-    }
-
-    private var sheetView: (String) -> AnyView {
-        let cards = cards
-        return { id in
-            var view = AnyView(EmptyView())
-            MainActor.assumeIsolated { view = cards.sheet(id) }
-            return view
-        }
-    }
-
     private var tipView: (String) -> AnyView {
         { text in AnyView(SpotTipPill(text: text)) }
     }
 
     private var mediaView: (String) -> AnyView {
         { source in AnyView(SpotMedia(source: source)) }
-    }
-
-    private var cornerButton: (String, String, String, @escaping () -> Void) -> AnyView {
-        let cards = cards
-        return { symbol, label, id, action in
-            var view = AnyView(EmptyView())
-            MainActor.assumeIsolated { view = cards.cornerButton(symbol, label: label, card: id, action: action) }
-            return view
-        }
     }
 
     private var close: () -> Void {
@@ -120,12 +87,8 @@ struct SpotCustomView: View, @MainActor Equatable {
             "detail": SpotType.detail,
             "metric": SpotType.metric,
             "value": SpotType.value,
-            "card": cardView,
-            "cardSize": cardSize,
-            "sheet": sheetView,
             "tip": tipView,
             "media": mediaView,
-            "cornerButton": cornerButton,
             "columnGap": SpotTokens.columnGap,
             "rowGap": SpotTokens.rowGap,
             "columns": SpotTokens.windowColumns,

@@ -21,15 +21,21 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
     }
 
-    func testStoreListsItsSpotsAndPublishesOne() {
+    func testStoreListsItsSpotsAndGetsOne() {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list"])?.value as? StoreCall, .list(.frame))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--json"])?.value as? StoreCall, .list(.json))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"])?.value as? StoreCall, .publish("timer"))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"])?.value as? StoreCall, .get("timer"))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"])?.value as? StoreCall, .get("timer", isConfirmed: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--replace"])?.value as? StoreCall, .get("timer", isConfirmed: false, clash: .replace))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--keep-both", "--yes"])?.value as? StoreCall, .get("timer", isConfirmed: true, clash: .keepBoth))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--replace", "--keep-both"])?.value as? CallFault, .unknown(["store", "get", "timer", "--replace", "--keep-both"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--yes"])?.value as? StoreCall, .get("timer", isConfirmed: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "update"])?.value as? StoreCall, .update(nil, isConfirmed: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "update", "clock", "--yes"])?.value as? StoreCall, .update("clock", isConfirmed: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "revert", "clock"])?.value as? StoreCall, .revert("clock", isConfirmed: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "revert"])?.value as? CallFault, .unknown(["store", "revert"]))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "add", "/a"])?.value as? StoreCall, .add("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "remove", "/a"])?.value as? StoreCall, .remove("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "folders", "--json"])?.value as? StoreCall, .folders(.json))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: [:], reason: "panel.open")?.value as? CallFault, .refused("`openspot store publish` changes the store, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testAccountPrintsItsFactsAndReachesTheKey() {
@@ -70,9 +76,14 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render", "sheet", "--view", "cups.swift", "a.png"])?.value as? RenderCall, .sheet("a.png", view: "cups.swift"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "card", "wide", "a.png"])?.value as? RenderCall, .card(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "card", "huge", "a.png"])?.value as? CallFault, .unknown(["render", "card", "huge", "a.png"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "a.png"])?.value as? RenderCall, .panel("a.png", search: nil, isLight: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "--search", "home city", "--light", "a.png"])?.value as? RenderCall, .panel("a.png", search: "home city", isLight: true))
-        XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "a.png"])?.value as? RenderCall, .panel("a.png"))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["render", "panel", "--arrange", "--search", "sn", "--swap", "clock", "a.png"])?.value as? RenderCall,
+            .panel("a.png", scene: PanelScene(isArranging: true, search: "sn", swap: "clock"))
+        )
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "panel", "--search", "home city", "--light", "a.png"])?.value as? RenderCall, .panel("a.png", scene: PanelScene(search: "home city", isLight: true)))
+        XCTAssertNil(CommandLineCall(arguments: ["render", "panel", "--swap", "clock", "a.png"])?.value as? RenderCall)
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "store", "a.png"])?.value as? RenderCall, .store("a.png", place: nil, spot: nil, review: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "settings", "a.png"])?.value as? RenderCall, .settings(at: nil, path: "a.png", isLight: false))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "settings", "--at", "access/screen", "--light", "a.png"])?.value as? RenderCall, .settings(at: "access/screen", path: "a.png", isLight: true))
         XCTAssertEqual(CommandLineCall(arguments: ["render"])?.value as? CallFault, .unknown(["render"]))
@@ -212,7 +223,6 @@ final class CommandLineCallTests: XCTestCase {
             (["setting", "set", "--spot", "openspot", "panel-key", "ctrl+space"], "`openspot setting set --spot openspot panel-key` sets a key of your Mac"),
             (["setting", "set", "--spot", "openspot", "fix-key", "ctrl+f"], "`openspot setting set --spot openspot fix-key` sets a key of your Mac"),
             (["setting", "set", "menubar", "true"], "`openspot setting set menubar` changes the menu bar"),
-            (["setting", "set", "enabled", "false"], "`openspot setting set enabled` turns a spot on or off"),
         ]
         for (arguments, act) in refusals {
             XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read, reason: "panel.open")?.value as? CallFault, .refused("\(act), so it cannot run in a show. Run it from a pick or an action."), arguments.joined(separator: " "))

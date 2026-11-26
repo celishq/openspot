@@ -23,11 +23,11 @@ extension SpotsModel {
         private let wordChoices: [String: String]
         public let cells: [Int: GridCell]
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices()) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices(), isCore: Bool = false) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
-            gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
+            gridChoice = choice.isOnGrid(of: spot.id) ?? (isCore && !choice.names(spot.id) ? false : defaults.isOnGrid(of: spot.id))
             searchChoice = choice.isFound(of: spot.id) ?? defaults.isFound(of: spot.id)
             wordChoices = choice.commands(of: spot.id) ?? defaults.commands(of: spot.id) ?? [:]
             cells = choice.cells(of: spot.id) ?? defaults.cells(of: spot.id) ?? [:]

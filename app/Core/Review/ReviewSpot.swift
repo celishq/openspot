@@ -3,7 +3,6 @@ import Foundation
 public struct ReviewSpot: Equatable, Sendable {
     public static let id = "openspot/install"
     static let textLimit = 256_000
-    static let installPart = "install"
 
     public let shared: SpotPackage
     public let name: String
@@ -13,12 +12,13 @@ public struct ReviewSpot: Equatable, Sendable {
     public let subtitle: String
     public let trust: String
     public let canDo: [String]
+    public let uses: [SpotUse]
+    public let lines: [ReviewLine]
     private let text: String
-    private let canAdd: Bool
-    private var source: URL?
-    private var lock: SpotLock?
 
-    public init(spot: SpotPackage, folder: URL, core: URL? = nil, canAdd: Bool = true) throws {
+    static let noFolder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)
+
+    public init(spot: SpotPackage, folder: URL, core: URL? = nil) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let logs = try spot.roots.map { try spot.releaseLog(in: $0) }
         let scan = try Self.scan(of: spot)
@@ -27,7 +27,6 @@ public struct ReviewSpot: Equatable, Sendable {
         guard let primary else { throw SpotError.fault("This file holds no spot.") }
         let runs = Self.selfRuns(in: scan)
         self.shared = spot
-        self.canAdd = canAdd
         name = primary.name
         symbol = primary.symbol
         description = primary.subtitle
@@ -38,6 +37,7 @@ public struct ReviewSpot: Equatable, Sendable {
         subtitle = release.isOtherKey ? Self.otherKeySubtitle
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
+        self.uses = uses
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
         let installed = Set(present.flatMap { (try? SpotUse.set(Manifest(beside: folder.appendingPathComponent($0)).script($0).uses, of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
@@ -52,6 +52,13 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Can also", canAlso),
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
+        lines = [
+            ReviewLine(title: "Uses", words: [uses.isEmpty ? "Nothing" : uses.map(\.rawValue).joined(separator: ", ")]),
+            ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
+            ReviewLine(title: "Can also", words: canAlso),
+            ReviewLine(title: "Binds", words: bindings.map(\.shown)),
+            ReviewLine(title: "Files", words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
+        ].filter { !$0.words.isEmpty }
         text = [
             ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",
             programs.isEmpty ? nil : Self.section(
@@ -71,16 +78,8 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined() + spot.files.filter { !$0.path.hasSuffix("/\(ReleaseLog.fileName)") }.map(Self.shown).joined(separator: "\n")
     }
 
-    public init(file: URL, folder: URL, lock: SpotLock) throws {
-        try self.init(spot: SpotPackage(contentsOf: file), folder: folder, core: SpotsFolder.core(environment: lock.environment))
-        source = file
-        self.lock = lock
-    }
-
-    func add() async throws -> HostAnswer {
-        guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
-        _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
-        return HostAnswer(frame: "", effects: [.toast("\(name) added")])
+    public var summary: String {
+        "\(name)\n\n\(trust)" + (Self.section("Files", shared.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") }) ?? "")
     }
 
     public var spot: Spot {
@@ -98,17 +97,7 @@ public struct ReviewSpot: Equatable, Sendable {
 
     private var sheet: String {
         let root = RootKey.block([.init(key: "class", value: "gap-group")]).text
-        guard canAdd else { return [root, reviewPart.text].joined(separator: "\n") }
-        return [
-            root,
-            reviewPart.text,
-            TextBlock(fields: [
-                .init(key: "button", value: Self.installPart),
-                .init(key: "title", value: "Add"),
-                .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "class", value: "bg-accent")
-            ]).text
-        ].joined(separator: "\n")
+        return [root, reviewPart.text].joined(separator: "\n")
     }
 
     private var reviewPart: TextBlock {

@@ -63,7 +63,6 @@ final class SpotVerbTests: XCTestCase {
           edit: (id) => ["spot", "edit", id],
           share: (id) => ["spot", "share", id],
           delete: (id) => ["spot", "delete", id],
-          off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
           "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", `spot=${id}`],
           "icon.file": (id) => ["spot", "run", "openspot/icon", "file", `spot=${id}`],
         };
@@ -113,10 +112,6 @@ final class SpotVerbTests: XCTestCase {
         shortcut = 'cmd+backspace'
         close = false
         offers = ['actions mine']
-        [actions.off]
-        title = 'Turn off'
-        shortcut = 'cmd+backspace'
-        offers = ['actions core']
         """
 
     private var icon: String {
@@ -224,18 +219,6 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(saved("edits")?.hasPrefix("ping|\(spots.spotFile("ping").path)|") == true)
     }
 
-    func testTurnOffInTheMenuOfACardRunsTheHandlerOfTheRealActionsAndTurnsTheSpotOff() async throws {
-        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
-        try String(contentsOf: real, encoding: .utf8).writeInline(to: core.appendingPathComponent("openspot.spot/actions.js"), toml: actionsToml)
-        try model.files.config.turn("cups", on: true)
-        _ = try await select("cups")
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        model.pressMenu(row: try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Turn off" }))
-
-        try await wait("the spot turned off") { model.files.config.read().arrangement.disabled.contains("cups") }
-    }
-
     func testAnInlineHandlerOfTheAppRunsIconThroughABinding() async throws {
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: folder.appendingPathComponent("tools/openspot"))
         let app = core.appendingPathComponent("openspot.spot")
@@ -245,7 +228,7 @@ final class SpotVerbTests: XCTestCase {
         )
         let actions = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
         try String(contentsOf: actions, encoding: .utf8).writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml + "\n[bindings]\nicon = { spot = 'openspot/icon' }")
-        try model.files.config.turn("cups", on: true)
+        try model.files.config.pin("cups", on: true)
         let target = try await select("cups")
         let draw = try XCTUnwrap(model.runs.sheets["openspot/actions"]?.spot.offeredActions.first { $0.action.id == "icon.draw" }?.action)
 
@@ -254,23 +237,15 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the sheet of the icon") { model.openSheetID == "openspot/icon" }
     }
 
-    func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
-        try model.files.config.turn("cups", on: true)
+    func testEditOnACoreSpotOpensNoEditSheetAndSaysWhyAndASpotOfTheAppHasNone() async throws {
+        try model.files.config.pin("cups", on: true)
         _ = try await select("cups")
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let rows = try XCTUnwrap(model.menu?.rows.filter { $0.action != nil })
-        XCTAssertEqual(rows.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Turn off"])
-        XCTAssertEqual(rows.first { $0.title == "Edit" }?.keyLabel, "⌘E")
-        model.closeMenu()
-        XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
-        try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "cups") && model.openParts != nil }
-        model.pressPart(try XCTUnwrap(model.openParts?.parts.last))
-        try await wait("the copy") { saved("edits") == "cups||\n" }
-        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
-        XCTAssertNil(model.menu?.rows.first { $0.title == "Open in editor" })
-        model.closeMenu()
-        model.closeSheet(moving: false)
+        XCTAssertTrue(model.act(.edit, on: "cups"))
+
+        XCTAssertEqual(host.notes, ["Cups comes with Openspot, so it cannot be edited. Make a spot of your own with New spot."])
+        XCTAssertFalse(model.openEdit(of: try XCTUnwrap(model.entries.first { $0.id == "cups" })))
+        XCTAssertNotEqual(model.openSheetID, OwnedSheet.edit.id(of: "cups"))
 
         let change = try XCTUnwrap(model.entries.first { $0.spot.editsSpots })
         XCTAssertFalse(model.openEdit(of: change))
@@ -707,6 +682,45 @@ final class SpotVerbTests: XCTestCase {
         let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
         let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { "" }))
         return await work()
+    }
+
+    private func friends(_ toml: String = "title = 'Clock'") throws {
+        let friends = folder.appendingPathComponent("friends")
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: toml)
+        _ = try model.files.config.change { $0.add(store: StoreSource(url: friends)) }
+    }
+
+    func testTheReviewOfASpotOfAStoreLeavesThePanelToTheStore() async throws {
+        try friends()
+        await model.reload()
+
+        let isReviewed = await model.review(spot: "clock")
+
+        XCTAssertFalse(isReviewed)
+        XCTAssertNil(model.reviewed)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
+    }
+
+    func testRemoveMovesAnInstalledSpotToTheTrashAndAReinstallGetsItsDataBack() async throws {
+        let friends = folder.appendingPathComponent("friends")
+        let body = "#!/bin/sh\nif [ -f \"$OPENSPOT_DATA/kept\" ]; then t=kept; else : > \"$OPENSPOT_DATA/kept\"; t=new; fi\nprintf 'item=a\\ntitle=%s\\n' \"$t\"\n"
+        try body.writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
+        _ = try model.files.config.change { $0.add(store: StoreSource(url: friends)) }
+        let installed = try await call(["store", "get", "clock"])
+        XCTAssertEqual(installed.code, 0, installed.errors)
+        let first = try await call(["spot", "run", "clock"])
+        XCTAssertTrue(first.output.contains("title=new"), first.output)
+        await model.reload()
+
+        XCTAssertTrue(model.act(.delete, on: "clock"))
+        try await wait("the toast of the removal") { self.host.confirms.contains("Moved Clock to the Trash.") }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("clock.spot/clock.sh").path))
+        XCTAssertEqual(try model.files.lock.entries().map(\.paths), [])
+        let again = try await call(["store", "get", "clock"])
+        XCTAssertEqual(again.code, 0, again.errors)
+        let second = try await call(["spot", "run", "clock"])
+        XCTAssertTrue(second.output.contains("title=kept"), second.output)
     }
 
     func testASpotThatACallWritesIsOnTheGridWhenTheCallAnswers() async throws {

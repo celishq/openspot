@@ -192,10 +192,6 @@ public final class SettingsBook {
         await run(SettingCall.removing(row.spot, row.key), as: "setting remove")
     }
 
-    public func turn(_ spot: String, on isOn: Bool) async {
-        await run(SettingCall.turn(spot: spot, on: isOn), as: "setting set")
-    }
-
     public func use(theme name: String) async {
         await run(ThemeCall.use(name), as: "theme use")
     }

@@ -40,7 +40,7 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints an item, an item=<id> block, for each spot that the app loads, with its state= (ready, access, review or off), uses=, needs= each macOS access that a call in its files or a call it made needs and that is denied or not asked yet, and last.<use>= the time of its last call of each use, then a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app and whether it is on. --json prints them as JSON, with their keys."
+            "Prints an item, an item=<id> block, for each spot that the app loads, with its state= (ready, access or review), uses=, needs= each macOS access that a call in its files or a call it made needs and that is denied or not asked yet, and last.<use>= the time of its last call of each use, then a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether a spot of your spots folder takes its place. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
@@ -60,7 +60,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 2 else { return nil }
             return Self.allow(fit.rest[0], use: fit.rest[1])
         },
-        CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
+        CommandVerb("remove", "<id>", "Moves a spot that spot add or store get added to the Trash, and drops it from spots.lock. Its data stays.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
         CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow, or its window. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
@@ -74,8 +74,8 @@ public enum SpotCall: NounCall {
         act(.edit, "Opens the file of a spot to edit, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "opened the file of a spot", inShow: .changes(window))),
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
-        act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
-        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
+        act(.delete, "Moves the folder of a spot to the Trash and keeps its data, as Remove in a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
+        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself. For a spot of a store, opens its page in the Store, where Install shows the same review.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
     private static func act(_ act: CardAct, _ about: String, rule: CallRule) -> CommandVerb {

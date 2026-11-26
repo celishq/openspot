@@ -40,7 +40,6 @@ struct SpotList {
         let name: String
         let icon: String
         let detail: String?
-        let on: Bool
         let own: Bool
         let state: String
         let uses: [String]
@@ -50,7 +49,7 @@ struct SpotList {
         let byUse: [String: [String: String]]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + Printed.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("own", String(own))] + Printed.fields(state: state, uses: uses, needs: needs, refused: refused, last: last, byUse: byUse)]
         }
     }
 
@@ -109,7 +108,7 @@ struct SpotList {
             return Loaded(
                 id: script.id,
                 name: script.name,
-                icon: Self.picture(of: script),
+                icon: script.picture,
                 detail: script.subtitle,
                 buttons: script.commands.map { offer in
                     Loaded.Offer(id: offer.id, title: offer.title ?? "", icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
@@ -134,7 +133,7 @@ struct SpotList {
         try form.text(of: core().map { choice in
             let (standing, printed) = (choice.standing, Printed(choice.standing))
             return Picked(
-                id: standing.id, name: standing.title, icon: Self.picture(of: standing.spot), detail: standing.spot.subtitle, on: !standing.isOff, own: choice.isOwn,
+                id: standing.id, name: standing.title, icon: standing.spot.picture, detail: standing.spot.subtitle, own: choice.isOwn,
                 state: printed.state, uses: printed.uses, needs: printed.needs, refused: printed.refused, last: printed.last, byUse: printed.byUse
             )
         })
@@ -146,18 +145,13 @@ struct SpotList {
 
     func core() -> [Choice] {
         let own = folder.scanOwnIDs()
-        let enabled = config.arrangement.enabled
-        return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
+        return folder.coreChoices().sorted { $0.comesBefore($1) }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
-            return Choice(standing: readStanding(of: spot, id: id, isOn: own.contains(id) || enabled.contains(id)), isOwn: own.contains(id))
+            return Choice(standing: readStanding(of: spot, id: id), isOwn: own.contains(id))
         }
     }
 
-    private func readStanding(of spot: Spot, id: String? = nil, isOn: Bool = true) -> SpotStanding {
-        SpotStanding(spot, id: id, isOn: isOn, written: KeptCalls.shared.read(spot), statuses: statuses, last: lastUses[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
-    }
-
-    private static func picture(of spot: Spot) -> String {
-        spot.image ?? spot.file ?? spot.glyph ?? spot.symbol
+    private func readStanding(of spot: Spot, id: String? = nil) -> SpotStanding {
+        SpotStanding(spot, id: id, written: KeptCalls.shared.read(spot), statuses: statuses, last: lastUses[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
     }
 }

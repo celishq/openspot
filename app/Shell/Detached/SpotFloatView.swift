@@ -30,7 +30,6 @@ struct SpotFloatView: View {
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
-        .environment(\.spotCards, SpotCardSource(model: model))
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
         .environment(\.spotViewDates, entry?.spot.viewDates ?? [:])
         .id(SpotLoadedTheme.shared.layout)

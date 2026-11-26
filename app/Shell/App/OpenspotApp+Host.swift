@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         panel?.layOut()
     }
 
+    func arrange(_ isOn: Bool) {
+        panel?.arrange(isOn)
+    }
+
     func widen() {
         SpotLoadedTheme.shared.widen()
         panel?.layOut()
@@ -106,6 +110,10 @@ extension OpenspotApp: SpotsHost {
 
     func takeFocus() {
         panel?.makeKey()
+    }
+
+    func openStore(file: URL) {
+        Task { _ = await StoreWindow.show(model: model, file: file) }
     }
 
     func allows(_ reason: String) async -> Bool {

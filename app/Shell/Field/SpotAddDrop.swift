@@ -12,7 +12,7 @@ struct SpotAddDrop: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         let paths = SpotGridDrop.paths
         guard SpotPackage.isFile(paths) else { return false }
-        model.review(paths.map { URL(fileURLWithPath: $0) })
+        model.openInStore(paths.map { URL(fileURLWithPath: $0) })
         return true
     }
 }

@@ -127,6 +127,7 @@ extension SpotsModel {
             let left = Set(next.map(\.id)).subtracting(placed)
             if left != leftOut { leftOut = left }
             runs.take(grid: placed)
+            takeOffGridSpots(placed: placed)
         }
         lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
     }
@@ -186,7 +187,7 @@ extension SpotsModel {
             } else if let file = SpotPackage.file(in: text) {
                 takeQuery("")
                 openSheet?.search("")
-                DispatchQueue.main.async { self.review([file]) }
+                DispatchQueue.main.async { self.openInStore([file]) }
             } else if let openSheet {
                 openSheet.search(text)
             } else {

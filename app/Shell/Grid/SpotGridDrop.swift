@@ -38,7 +38,7 @@ struct SpotGridDrop: DropDelegate {
         target = nil
         let paths = Self.paths
         if SpotPackage.isFile(paths) {
-            model.review(paths.map { URL(fileURLWithPath: $0) })
+            model.openInStore(paths.map { URL(fileURLWithPath: $0) })
             return true
         }
         guard let id = model.card(at: info.location) else { return false }

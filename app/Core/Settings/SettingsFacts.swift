@@ -8,9 +8,9 @@ public struct SettingsFacts: Sendable {
     let looks: [ListedTheme]
     let account: AccountStatus?
 
-    init(accesses: [AccessList.Entry], loaded: [SpotStanding], core: [SpotList.Choice], rows: [SettingRow], looks: [ListedTheme], account: AccountStatus?) {
+    init(accesses: [AccessList.Entry], loaded: [SpotStanding], rows: [SettingRow], looks: [ListedTheme], account: AccountStatus?) {
         access = AccessFacts(accesses)
-        spots = SpotStandings(loaded: loaded, core: core)
+        spots = SpotStandings(loaded: loaded)
         keys = KeyMap(rows)
         self.rows = SettingRows(rows)
         self.looks = looks

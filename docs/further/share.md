@@ -43,9 +43,8 @@ detail = "Stop what listens on a port"
 printf 'item=4120\ntitle=:3000\ndetail=node\n\nitem=812\ntitle=:5432\ndetail=postgres\n'
 ```
 
-Make it executable. The Store draws your card from it, and Try shows your sheet with it, so people see your spot
-before they add it. When you publish, Openspot keeps what it printed in `sample.frame`, so a store can show it without
-running your code.
+Make it executable. Try on your spot's page in the Store shows your sheet with it, so people see your spot before they
+add it. Put what it prints in `sample.frame` beside it, and a store shows it without running your code.
 
 ## Share it
 
@@ -65,14 +64,13 @@ message. The first time, Openspot opens Account in Settings, so you can make one
 - A shared spot holds 25 MB at most. A bigger one fails to share and says so.
 - Your files go as they are, so check them for secrets first.
 
-To put your spot in your own Store instead, press Publish on its card in the Store. Publish needs `readme.md`, and
-signs a release the same way.
+To offer your spot in the Store instead, put its folder in a folder of spots that your friend adds with Add Source….
 
 ## Add a shared spot
 
-Your friend double-clicks `Ports.spot`, or pastes it into the panel with `⌘V`. Before Openspot adds it, they see a
-review: your page, the uses, and each file. [The review before an add](../../TRUST.md#the-review-before-an-add) lists
-what it shows. From the terminal, `openspot spot add` takes the file, a folder or a git URL:
+Your friend double-clicks `Ports.spot`, drops it on the panel, or pastes it into the panel with `⌘V`. The Store opens at its page, with your
+readme and the trust lines. Install shows the review first, and adds the file as they saw it: a file changed since is
+refused. [The review before an add](../../TRUST.md#the-review-before-an-add) lists what it shows. From the terminal, `openspot spot add` takes the file, a folder or a git URL:
 
 ```text
 openspot spot add ~/Downloads/Ports.spot
@@ -80,6 +78,9 @@ openspot spot add ~/Downloads/Ports.spot
 
 When you share a new version, adding it again updates the spot. An update that adds a use waits for their yes. One
 signed by another account says so.
+
+A spot that a friend installs from a store updates from it by itself, until they edit it. They see the day of each
+version, such as "Updated 3 Nov", never a hash.
 
 ## Next
 

@@ -70,7 +70,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         if !theme.faults.isEmpty { model.toast(.failure(theme.faults.joined(separator: "\n"))) }
         let item = OpenspotItem(
             model: model, target: self, action: #selector(pressItem),
-            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
+            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.openInStore($0) }
         )
         self.item = item
         toast?.item = item
@@ -136,7 +136,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if showsAtLaunch { showPanel() }
-        if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
+        if !openedAtLaunch.isEmpty { model.openInStore(openedAtLaunch) }
         model.runs.listen(to: mac)
         await model.resumeGrant()
     }
@@ -148,7 +148,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         if isLaunched {
-            model.review(urls)
+            model.openInStore(urls)
         } else {
             openedAtLaunch = urls
         }

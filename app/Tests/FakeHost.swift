@@ -14,6 +14,7 @@ final class FakeHost: SpotsHost {
     var motions: [PanelMotion?] = []
     var floats: [String] = []
     var landings: [String] = []
+    var arranged: [Bool] = []
     var windows: [String] = []
     var settingsOpens = 0
     var settingsFocuses = 0
@@ -56,6 +57,12 @@ final class FakeHost: SpotsHost {
 
     var allowsActs = true
     var asked: [String] = []
+
+    var openedStores: [URL] = []
+
+    func openStore(file: URL) {
+        openedStores.append(file)
+    }
 
     func allows(_ reason: String) async -> Bool {
         heldDuringAsks.append(model?.holdsFocus ?? false)
@@ -182,6 +189,10 @@ final class FakeHost: SpotsHost {
 
     var isChanging: Bool {
         changeDepth > 0
+    }
+
+    func arrange(_ isOn: Bool) {
+        arranged.append(isOn)
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

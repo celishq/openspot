@@ -72,10 +72,6 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    public func copying(_ core: URL, to copy: URL) -> String {
-        "This spot comes with Openspot. First copy its folder \(core.path) to \(copy.path), with the same folder name. The copy takes the place of the built-in spot, so make each change in the copy, and leave the folder in the app as it is."
-    }
-
     private func steps(for id: String) -> String {
         """
         First run "\(app)" guide, and read all of it.

@@ -23,7 +23,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     let byUse: [UseNeeds]
     let last: [SpotUse: Date]
 
-    init(_ spot: Spot, id: String? = nil, isOn: Bool = true, written: [[String]], statuses: [MacAccess: AccessStatus], last: [String: Date], refused: [SpotUse: Date]) {
+    init(_ spot: Spot, id: String? = nil, written: [[String]], statuses: [MacAccess: AccessStatus], last: [String: Date], refused: [SpotUse: Date]) {
         let rules = Self.rules(of: spot, written: written, last: last)
         let ordered = { (set: Set<MacAccess>) in MacAccess.allCases.filter(set.contains) }
         needs = rules.reduce(Set<MacAccess>()) { $0.union($1.needs) }
@@ -42,7 +42,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         uses = declared.map { use in byUse.first { $0.id == use } ?? UseNeeds(id: use, needs: [], maybe: []) }
         let missing = Self.missing(needs, statuses: statuses)
         let undeclared = Self.undeclared(by: spot, refused: refused)
-        readiness = !isOn ? .off : !undeclared.isEmpty ? .review : missing.isEmpty ? .ready : .access
+        readiness = !undeclared.isEmpty ? .review : missing.isEmpty ? .ready : .access
         self.missing = missing
         self.refused = undeclared
         var times: [SpotUse: Date] = [:]
@@ -82,17 +82,12 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         readiness == .access || readiness == .review
     }
 
-    public var isOff: Bool {
-        readiness == .off
-    }
-
     public var lack: String {
         readiness == .review ? "Tried \(refused.map(\.rawValue).joined(separator: ", ")), which it doesn’t declare" : "Needs \(MacAccess.names(missing))"
     }
 
     public var banner: (title: String, line: String)? {
         switch readiness {
-        case .off: ("\(title) is off", "It runs again once you turn it on.")
         case .review: ("\(title) needs your review", lack)
         case .access: ("\(title) can’t run yet", "It needs \(MacAccess.names(missing)) from macOS.")
         case .ready: nil

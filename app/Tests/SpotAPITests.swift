@@ -71,21 +71,50 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(spots.map { $0["inMenuBar"] as? Bool }, [true, false])
     }
 
-    func testTheCoreListHoldsEachCoreSpotByNameAndWhetherItIsOn() async throws {
+    func testTheCoreListHoldsEachCoreSpotByNameAndWhetherAFileOfTheFolderTakesItsPlace() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"), toml: "detail = 'Open app'\nicon = 'star'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "[on]\nevery = 5")
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("files"))
-        try file.turn("zebra", on: true)
 
         let spots = try await json(["spot", "list", "--core", "--json"])
 
         XCTAssertEqual(spots.map { $0["name"] as? String }, ["Apps", "Files", "Zebra"])
-        XCTAssertEqual(spots.map { $0["on"] as? Bool }, [false, true, true])
         XCTAssertEqual(spots.map { $0["own"] as? Bool }, [false, true, false])
         XCTAssertEqual(spots.last?["detail"] as? String, "Open app")
         XCTAssertEqual(spots.last?["icon"] as? String, "star")
+    }
+
+    func testACoreSpotRefusesARemoveAnEditAndADeleteAndTheAppHearsNothing() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+
+        let remove = try await answer(["spot", "remove", "apps"])
+        let edit = try await answer(["spot", "edit", "apps"])
+        let prompt = try await answer(["spot", "prompt", "apps"])
+        let delete = try await answer(["spot", "delete", "apps"])
+        let change = try await answer(["prompt", "change", "apps"])
+
+        XCTAssertEqual(remove.errors, "`apps` comes with Openspot, so it cannot be removed. Take it off the grid with its − in Arrange.\n")
+        XCTAssertEqual(delete.errors, remove.errors)
+        XCTAssertEqual(edit.errors, "`apps` comes with Openspot, so it cannot be edited. Run `openspot spot new <name>` to make a spot of your own.\n")
+        XCTAssertEqual(prompt.errors, edit.errors)
+        XCTAssertEqual(change.errors, edit.errors)
+        XCTAssertEqual([remove, edit, prompt, delete, change].map(\.code), [1, 1, 1, 1, 1])
+        let opened = await app.opened
+        XCTAssertEqual(opened, [])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: core.appendingPathComponent("apps.spot/apps.sh").path))
+    }
+
+    func testAFileOfTheFolderThatSharesTheIdOfACoreSpotIsNotLocked() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("apps"))
+
+        let edit = try await answer(["spot", "edit", "apps"])
+
+        XCTAssertEqual(edit.code, 0, edit.errors)
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["edit apps"])
     }
 
     func testTheCoreListNamesTheUsesOfEachSpot() async throws {
@@ -97,50 +126,17 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(spots.map { $0["uses"] as? [String] }, [[], ["attachment", "clipboard"]])
     }
 
-    func testOnAndOffTurnCoreSpotsAndTellTheApp() async throws {
+    func testEnabledNoLongerTurnsASpotAndLeavesTheGridAsItIs() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
 
-        let on = try await answer(["setting", "set", "--spot", "apps", "enabled", "true"])
-        XCTAssertEqual(on, CommandAnswer())
-        _ = try await answer(["setting", "set", "--spot", "zebra", "enabled", "true"])
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps", "zebra"])
+        _ = try await answer(["setting", "set", "--spot", "apps", "enabled", "false"])
 
-        _ = try await answer(["setting", "set", "--spot", "zebra", "enabled", "false"])
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
-        let changes = await app.changes
-        XCTAssertEqual(changes, 3)
+        XCTAssertEqual(file.read().arrangement.choices, [])
+        let spots = try await json(["spot", "list", "--core", "--json"])
+        XCTAssertNil(spots.first?["on"])
     }
 
-    func testOnRefusesAnUnknownSpotAndAFileOfTheFolderAndChangesNothing() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("files"))
-
-        let unknown = try await answer(["setting", "set", "--spot", "gone", "enabled", "true"])
-        let own = try await answer(["setting", "set", "--spot", "files", "enabled", "false"])
-
-        XCTAssertEqual(unknown.errors, "`gone` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.\n")
-        XCTAssertEqual(unknown.code, 1)
-        XCTAssertEqual(own.errors, "`files` is a file in your spots folder, so it is always on.\n")
-        XCTAssertEqual(file.read().arrangement.enabled, [])
-        let changes = await app.changes
-        XCTAssertEqual(changes, 0)
-    }
-
-    func testOnTurnsBackOnAFileOfTheFolderThatEditSpotsTurnedOff() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("notes"))
-        try file.turn("notes", on: false)
-        XCTAssertEqual(file.read().arrangement.disabled, ["notes"])
-
-        let on = try await answer(["setting", "set", "--spot", "notes", "enabled", "true"])
-
-        XCTAssertEqual(on.code, 0)
-        XCTAssertEqual(file.read().arrangement.disabled, [])
-    }
-
-    func testOnWithNoSpotIsUnknown() {
-        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "--spot", "a", "enabled"], environment: [:])?.value as? CallFault, .refused("`enabled` takes `true` or `false`, such as `openspot setting set --spot a enabled true`."))
+    func testAListWithAnUnknownFlagIsUnknown() {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "list", "--all"], environment: [:])?.value as? CallFault, .unknown(["spot", "list", "--all"]))
     }
 

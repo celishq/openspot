@@ -30,17 +30,10 @@ struct SpotCalls {
         }
     }
 
-    func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [places, app] in
-            let config = try places.readSpots().turn(ids, on: isOn, in: places.config)
-            await app?.configChanged(.spots(ids), to: config)
-            return ""
-        }
-    }
-
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [places, folder, app] in
-            let answer = try await places.lock.add(SpotSource(text: source, place: folder), to: places.spots.url, isConfirmed: isConfirmed)
+            let source = SpotSource(text: source, place: folder)
+            let answer = try await places.lock.add(source, to: places.spots.url, isConfirmed: isConfirmed, naming: source.readFolderName())
             await app?.spotsChanged()
             return answer
         }
@@ -60,6 +53,7 @@ struct SpotCalls {
 
     func remove(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [places, app, secrets] in
+            try Self.refuseCore(id, .delete, in: places)
             let removed = try places.lock.remove(id, from: places.spots.url).name
             try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
@@ -94,10 +88,16 @@ struct SpotCalls {
 
     func act(_ act: CardAct, _ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot \(act.rawValue) \(id)") }
-        return CommandAnswer.work {
+        return CommandAnswer.work { [places] in
+            try Self.refuseCore(id, act, in: places)
             guard await app.act(act, on: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }
+    }
+
+    private static func refuseCore(_ id: String, _ act: CardAct, in places: AppPlaces) throws {
+        guard [.edit, .prompt, .delete].contains(act), places.spots.isCore(id: id) else { return }
+        throw SpotError.failed(1, act == .delete ? SpotsFolder.unremovable(id) : SpotsFolder.uneditable(id))
     }
 
     func editGrid() -> CommandAPI.Work {
@@ -118,7 +118,8 @@ struct SpotCalls {
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, output: CommandOutput) -> CommandAPI.Work {
         { [places, folder, runs, caller] in
-            let spots = places.readSpots()
+            let spots = places.spots
+            let id = caller.map { places.lock.meant(id, by: $0.id) } ?? id
             let found: Spot?
             do {
                 found = try spots.scan().allowing((try? places.lock.entries()) ?? []).scripts.first { $0.id == id }
@@ -189,7 +190,7 @@ struct SpotCalls {
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot review \(id)") }
         return CommandAnswer.work {
-            guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
+            guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot or a spot of a store. Run `openspot store list` to see each one.") }
             return ""
         }
     }
@@ -204,7 +205,7 @@ struct SpotCalls {
 
     func actions(_ id: String?) -> CommandAPI.Work {
         CommandAnswer.work { [places] in
-            let spots = try places.readSpots().scan().scripts.filter { id == nil || $0.id == id }
+            let spots = try places.spots.scan().scripts.filter { id == nil || $0.id == id }
             if let id, spots.isEmpty {
                 throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
             }

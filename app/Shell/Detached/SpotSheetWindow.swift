@@ -6,6 +6,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var model: SpotsModel?
     private var id = ""
     private var isPresent = false
+    var takesEscape: () -> Bool = { false }
     private var declared: CGSize?
     private var book: SettingsBook?
     private var sidebar: CGFloat?
@@ -17,7 +18,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     override func sendEvent(_ event: NSEvent) {
         if record(event) { return }
         if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
-            if key.name == "escape", !(firstResponder is NSText), book?.recording == nil { return performClose(nil) }
+            if key.name == "escape", !(firstResponder is NSText), book?.recording == nil { return takesEscape() ? () : performClose(nil) }
             if key.name != "escape", let model, model.handleFloatKey(key, in: id) { return }
         }
         super.sendEvent(event)
@@ -81,10 +82,15 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     }
 
     static func make(settings model: SpotsModel, content: some View) -> SpotSheetWindow {
-        let window = make(
-            remembers: false, title: "Settings", name: "settings-window", size: SpotTokens.settingsWindowSize, minSize: SpotTokens.settingsWindowMinSize, bridges: true, content: content
-        )
+        let window = make(pages: "Settings", name: "settings-window", content: content)
         window.book = model.settingsBook
+        return window
+    }
+
+    static func make(pages title: String, name: String, content: some View) -> SpotSheetWindow {
+        let window = make(
+            remembers: false, title: title, name: name, size: SpotTokens.settingsWindowSize, minSize: SpotTokens.settingsWindowMinSize, bridges: true, content: content
+        )
         window.declared = SpotTokens.settingsWindowSize
         window.sidebar = SpotTokens.settingsSidebarIdeal
         window.toolbarStyle = .unified

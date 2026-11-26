@@ -1,7 +1,7 @@
 [scripts.actions]
 title = "Card actions"
 icon = "ellipsis.circle"
-detail = "Share, set, edit, rearrange, change the icon of, delete or turn off a spot"
+detail = "Share, set, edit, arrange, change the icon of or remove a spot"
 uses = ["spots"]
 
 [scripts.actions.bindings]
@@ -22,10 +22,10 @@ offers = ["actions"]
 title = "Edit"
 shortcut = "cmd+e"
 close = false
-offers = ["actions mine, core"]
+offers = ["actions mine"]
 
-[scripts.actions.actions.rearrange]
-title = "Rearrange"
+[scripts.actions.actions.arrange]
+title = "Arrange"
 close = false
 offers = ["actions"]
 
@@ -47,15 +47,10 @@ close = false
 when = "hasIcon"
 
 [scripts.actions.actions.delete]
-title = "Delete"
+title = "Remove"
 shortcut = "cmd+backspace"
 close = false
 offers = ["actions mine"]
-
-[scripts.actions.actions.off]
-title = "Turn off"
-shortcut = "cmd+backspace"
-offers = ["actions core"]
 
 [scripts.icon]
 title = "Icon"
@@ -110,22 +105,28 @@ title = "Quit"
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"
-detail = "Edit Spots"
-keywords = ["edit spots"]
+detail = "Arrange your spots"
+keywords = ["arrange", "edit spots"]
 
 [scripts.spots.actions.edit]
-title = "Edit Spots"
+title = "Arrange"
+
+[scripts.spots.on]
+command = ["spots"]
 
 [scripts.store]
 title = "Store"
 icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
-uses = ["spots", "account"]
-views = ["store.swift"]
+answers = "last"
+uses = ["spots"]
 
 [scripts.store.on]
-"sheet.open" = true
+search = "\\S"
+
+[scripts.store.actions.open]
+title = "Open Store"
 
 [scripts.themes]
 title = "Themes"

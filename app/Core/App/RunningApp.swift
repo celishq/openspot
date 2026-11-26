@@ -17,7 +17,9 @@ public protocol RunningApp: Sendable {
     func act(_ act: CardAct, on id: String) async -> Bool
     func choose(for id: String) async -> Bool
     func editGrid() async
-    func publish(_ id: String) async -> SpotPublish
+    func gridSpots() async -> [ArrangedSpot]
+    func pin(_ id: String) async -> GridPin
+    func openStore(_ id: String?, search: String?) async -> Bool
     func reveal(_ id: String) async -> Bool
     func playground(_ file: URL?) async
     func changeSetting(_ key: String, of spot: String) async -> Bool
@@ -43,6 +45,17 @@ extension RunningApp {
         nil
     }
 
+    public func openStore(_ id: String?, search: String?) async -> Bool {
+        false
+    }
+
+    public func gridSpots() async -> [ArrangedSpot] {
+        []
+    }
+
+    public func pin(_ id: String) async -> GridPin {
+        .unknown
+    }
     public func grant(_ id: String, needs: [MacAccess]) async -> Bool {
         false
     }

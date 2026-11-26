@@ -101,7 +101,7 @@ struct SpotFieldView: View {
 
     private var editHeader: some View {
         HStack {
-            Text("Edit Spots")
+            Text(model.isArranging ? "Arranging spots" : "Edit Spots")
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()

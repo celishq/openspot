@@ -104,22 +104,29 @@ final class PanelDiskTests: PanelCase {
         XCTAssertEqual(reads.count, 0)
     }
 
-    func testAReviewThatLandsAfterThePanelClosedIsDropped() async throws {
-        try script("cups", toml: "title = 'Cups'", "true")
+    func testAPastedSpotFileOpensTheStoreAtIt() async throws {
+        await model.reload()
+        model.isShown = true
+        let file = folder.appendingPathComponent("Tea.spot")
+        try SpotPackage(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
+        host.pastedPaths = [file.path]
+
+        XCTAssertTrue(model.pasteSpot())
+
+        XCTAssertEqual(host.openedStores, [file])
+        XCTAssertFalse(model.isReviewing)
+    }
+
+    func testADroppedSpotFileOpensTheStoreAndNoPanelReview() async throws {
         await model.reload()
         model.isShown = true
         let package = folder.appendingPathComponent("drop/tea.spot")
-        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        try "#!/bin/sh\n:\n".writeScript(to: package.appendingPathComponent("tea.sh"), toml: "title = 'Tea'")
 
-        model.review([package])
-        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
-        XCTAssertEqual(host.dismissals, 1)
-        await model.reviewRead?.value
+        model.openInStore([package])
 
+        XCTAssertEqual(host.openedStores, [package])
         XCTAssertFalse(model.isReviewing)
         XCTAssertNil(model.flow.current)
-        XCTAssertEqual(host.presents, 0)
     }
 
     func testAWriteOfTheDraggedSpotOrOfThePointerMakesNoChangeOfItsOwn() async throws {
@@ -170,22 +177,9 @@ final class PanelDiskTests: PanelCase {
         model.followDrag()
 
         XCTAssertNil(model.draggedSpot)
-        try await wait("the words of the drop") { self.model.spotDrop?.title == "Cannot install broken" }
+        try await wait("the words of the drop") { self.model.spotDrop?.title == "Cannot open broken" }
         host.isMouseDown = false
         XCTAssertEqual(reads.count, 0)
-    }
-
-    func testAReviewOpensItsFileAwayFromThePress() async throws {
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        let package = folder.appendingPathComponent("broken.spot")
-        FileManager.default.createFile(atPath: package.path, contents: Data("no zip".utf8))
-
-        model.review([package])
-
-        XCTAssertEqual(host.notes, [])
-        try await wait("the reason") { self.host.notes == ["This file is not a spot."] }
     }
 
     func testDeleteMovesTheFilesAwayFromTheMainThread() async throws {

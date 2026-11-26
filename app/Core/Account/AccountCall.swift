@@ -9,7 +9,7 @@ public enum AccountCall: NounCall {
     private static let rule = CallRule(use: .account, used: "changed your account", inShow: .changes("changes your account"), flags: .reachesKey)
 
     static let noun = CommandNoun("account", group: .app, verbs: [
-        CommandVerb("show", "[--json]", "Prints the account that signs what you publish as one block: signedIn, npub, handle, since, backedUp and sync. --json prints it as JSON.") { words in
+        CommandVerb("show", "[--json]", "Prints the account that signs what you share as one block: signedIn, npub, handle, since, backedUp and sync. --json prints it as JSON.") { words in
             words.form.map(Self.status)
         },
         CommandVerb("new", "[<handle>]", "Makes the key that signs what you publish, named by the handle, then prints the account. Only Openspot's own spots can run it.", rule: rule) { words in

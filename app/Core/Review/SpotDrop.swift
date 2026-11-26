@@ -17,10 +17,10 @@ public struct SpotDrop: Equatable, Sendable {
             let review = try ReviewSpot(spot: SpotPackage(contentsOf: url), folder: folder)
             symbol = review.symbol
             title = review.name
-            detail = paths.count > 1 ? "Openspot installs one spot at a time" : "Drop to install"
+            detail = paths.count > 1 ? "Openspot opens one spot at a time" : "Drop to open it in the Store"
         } catch {
             symbol = "exclamationmark.triangle"
-            title = "Cannot install \(url.deletingPathExtension().lastPathComponent)"
+            title = "Cannot open \(url.deletingPathExtension().lastPathComponent)"
             detail = (error as? SpotError)?.reason ?? "Openspot cannot read this file."
         }
     }

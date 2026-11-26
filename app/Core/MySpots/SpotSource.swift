@@ -4,7 +4,9 @@ public enum SpotSource: Equatable, Sendable {
     case git(String)
     case folder(URL)
     case file(URL)
+    case builtIn(URL)
 
+    private static let builtInPrefix = "openspot:"
     private static let git = URL(fileURLWithPath: "/usr/bin/git")
 
     public init(text: String, place: URL) {
@@ -25,10 +27,53 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
+    init(recorded text: String, builtIn: StoreSource?) {
+        guard text.hasPrefix(Self.builtInPrefix), let builtIn else {
+            self.init(text: text, place: URL(fileURLWithPath: "/", isDirectory: true))
+            return
+        }
+        self = .builtIn(builtIn.url.appendingPathComponent(String(text.dropFirst(Self.builtInPrefix.count)), isDirectory: true))
+    }
+
     public var text: String {
         switch self {
         case .git(let text): text
         case .folder(let url), .file(let url): url.path
+        case .builtIn(let url): Self.builtInPrefix + url.lastPathComponent
+        }
+    }
+
+    func readFolderName() -> String? {
+        switch self {
+        case .git(let text): try? Self.name(of: text)
+        case .folder(let url), .builtIn(let url): Self.spotName(url.lastPathComponent)
+        case .file(let url): (try? SpotPackage(contentsOf: url).roots).flatMap { $0.count == 1 ? $0.first : nil }
+        }
+    }
+
+    func find() -> URL? {
+        var isFolder: ObjCBool = false
+        switch self {
+        case .folder(let url), .builtIn(let url):
+            return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue ? url : nil
+        case .git, .file:
+            return nil
+        }
+    }
+
+    var isBuiltIn: Bool {
+        if case .builtIn = self { return true }
+        return false
+    }
+
+    func version() throws -> SpotVersion? {
+        var isFolder: ObjCBool = false
+        switch self {
+        case .folder(let url), .file(let url), .builtIn(let url):
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue else { return nil }
+            return try SpotVersion(of: url)
+        case .git:
+            return nil
         }
     }
 
@@ -36,6 +81,7 @@ public enum SpotSource: Equatable, Sendable {
         to folder: URL,
         at commit: String?,
         base: [String: String],
+        naming: String? = nil,
         replacing: [String] = [],
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) },
         check: (URL, [String]) throws -> Void = { _, _ in }
@@ -43,8 +89,9 @@ public enum SpotSource: Equatable, Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
         defer { try? FileManager.default.removeItem(at: work) }
-        let (commit, paths) = try await stage(in: work, from: folder, at: commit, base: base, replacing: replacing)
-        try check(work, paths)
+        let (commit, staged) = try await stage(in: work, from: folder, at: commit, base: base, naming: naming, replacing: replacing)
+        try check(work, staged)
+        let paths = try Self.renaming(staged, in: work, as: naming)
         try Task.checkCancellation()
         let kept = paths.filter { Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
         let wholes = replacing.filter { old in !paths.contains { $0.hasPrefix(old + "/") } }
@@ -60,7 +107,7 @@ public enum SpotSource: Equatable, Sendable {
         return (commit, paths)
     }
 
-    private func stage(in work: URL, from folder: URL, at commit: String?, base: [String: String], replacing: [String]) async throws -> (commit: String?, paths: [String]) {
+    private func stage(in work: URL, from folder: URL, at commit: String?, base: [String: String], naming: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
             if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw SpotError.fault("Openspot cannot find \(text).") }
@@ -76,18 +123,54 @@ public enum SpotSource: Equatable, Sendable {
             } catch let error as SpotError {
                 throw SpotError.fault("Openspot cannot add \(text). \(error.reason)")
             }
-        case .folder(let url):
-            let name = Self.spotName(url.lastPathComponent)
+        case .folder(let url), .builtIn(let url):
+            let name = naming ?? Self.spotName(url.lastPathComponent)
             try Self.checkFree([name], in: folder, replacing: replacing)
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
+            try Self.rename(work.appendingPathComponent(name), from: SpotID(path: Self.spotName(url.lastPathComponent)).name)
             return (nil, [name])
         case .file(let url):
             let spot = try SpotPackage(contentsOf: url)
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
             let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
+            if Self.root(renaming: paths, as: naming) != nil { return (nil, paths) }
             try Self.checkFree(changed.filter { path in !replacing.contains { path.hasPrefix($0 + "/") } }, in: folder, replacing: replacing)
             return (nil, paths)
+        }
+    }
+
+    private static func root(renaming paths: [String], as naming: String?) -> (old: String, new: String)? {
+        guard let naming else { return nil }
+        let roots = Set(paths.compactMap { $0.split(separator: "/").first.map(String.init) })
+        let new = SpotID(path: naming).folderName
+        guard roots.count == 1, let old = roots.first, old != new, (old as NSString).pathExtension == SpotPackage.fileExtension else { return nil }
+        return (old, new)
+    }
+
+    private static func renaming(_ paths: [String], in work: URL, as naming: String?) throws -> [String] {
+        guard let (old, new) = root(renaming: paths, as: naming) else { return paths }
+        try FileManager.default.moveItem(at: work.appendingPathComponent(old), to: work.appendingPathComponent(new))
+        let before = SpotID(path: old).name
+        let after = SpotID(path: new).name
+        try rename(work.appendingPathComponent(new), from: before)
+        return paths.map { path in
+            var parts = path.split(separator: "/").map(String.init)
+            parts[0] = new
+            if parts.count > 1, (parts[1] as NSString).deletingPathExtension == before {
+                let kind = (parts[1] as NSString).pathExtension
+                parts[1] = kind.isEmpty ? after : after + "." + kind
+            }
+            return parts.joined(separator: "/")
+        }
+    }
+
+    private static func rename(_ folder: URL, from old: String) throws {
+        let new = SpotID(path: folder.lastPathComponent).name
+        guard new != old else { return }
+        for name in try FileManager.default.contentsOfDirectory(atPath: folder.path) where (name as NSString).deletingPathExtension == old {
+            let kind = (name as NSString).pathExtension
+            try FileManager.default.moveItem(at: folder.appendingPathComponent(name), to: folder.appendingPathComponent(kind.isEmpty ? new : new + "." + kind))
         }
     }
 

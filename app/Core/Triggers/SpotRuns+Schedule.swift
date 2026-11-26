@@ -11,6 +11,8 @@ extension SpotRuns {
         var kept = Set<String>()
         for sheet in sheets.values {
             let id = sheet.spot.id
+            let isAllowed = !unreviewed.contains(id) || schedule.isAllowed(id)
+            if schedule.isAllowed(id) { kept.insert(id) }
             for line in sheet.spot.triggers.schedule {
                 kept.insert(SpotSchedule.key(line, of: id))
                 guard let last = schedule.last(line, of: id) else {
@@ -20,7 +22,9 @@ extension SpotRuns {
                     continue
                 }
                 guard let due = line.next(after: last) else { continue }
-                if due <= time {
+                if due <= time, !isAllowed {
+                    if scheduleAsks.insert(id).inserted { onScheduleAsk(id) }
+                } else if due <= time {
                     schedule.ran(line, of: id, at: time)
                     isChanged = true
                     let late = String(max(0, Int(time.timeIntervalSince(due))))
@@ -34,6 +38,13 @@ extension SpotRuns {
         if sheets.values.contains(where: { !$0.spot.isBuiltIn && $0.spot.host == nil }), schedule.keep(only: kept) { isChanged = true }
         if isChanged { schedule.write() }
         scheduleWatch.wait(until: next, from: time) { [weak self] in self?.runSchedule() }
+    }
+
+    public func allowSchedule(of id: String) {
+        if !schedule.isRead { schedule.read() }
+        schedule.allow(id, at: now())
+        schedule.write()
+        runSchedule()
     }
 
     private static func earlier(_ one: Date?, _ two: Date?) -> Date? {

@@ -3,7 +3,7 @@ import Foundation
 extension CommandAPI {
     func spotList() async -> SpotList {
         let config = places.config.read()
-        var list = SpotList(folder: places.folder(config), config: config)
+        var list = SpotList(folder: places.spots, config: config)
         (list.statuses, list.apps) = await access.read(from: mac, browsers: config.browsers)
         list.lastUses = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
         list.refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs, stats: places.stats), spot: nil).refused
@@ -35,7 +35,7 @@ extension CommandAPI {
         let looks = ThemeCall.listed(ThemeFolder(config: places.config, builtIn: mac.theme))
         let account = try? (account ?? Account(store: places.account, allows: { _ in false })).status()
         return SettingsFacts(
-            accesses: loaded.map { AccessList(statuses: list.statuses, standings: $0).entries } ?? [], loaded: loaded ?? [], core: list.core(),
+            accesses: loaded.map { AccessList(statuses: list.statuses, standings: $0).entries } ?? [], loaded: loaded ?? [],
             rows: rows, looks: looks, account: account
         )
     }

@@ -24,7 +24,7 @@ it declares.
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `app restart`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `window`, `open`, `float`, `key.<action>` or of the spot `openspot` |
-| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `store list`, `store get`, `store update`, `store revert`, `store add`, `store remove`, `store folders`, `setting list`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
@@ -34,7 +34,7 @@ it declares.
 | `read`      | `front app`, `browser tab`, `browser tabs`, `selection read`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `store publish`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                             |
+| `account`   | `account new`, `account sign-out` and `account sync`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account). |
 
 - A call that needs a use the manifest doesn't name fails. Openspot tells you once a day for each spot and use, and the
   spot shows as Needs review in Settings until you allow the use; see [Let a spot use what it was refused](#let-a-spot-use-what-it-was-refused).
@@ -80,18 +80,17 @@ Settings opens at Access. It shows what macOS gives Openspot, and which spots ca
 - **macOS gives Openspot** lists each access that a spot needs, the spots that need it, and whether macOS allows it.
   The accesses that no spot needs fold into one row.
 
-A spot is in one of four states:
+A spot is in one of three states:
 
 | State        | Means                                                                    |
 | ------------ | ------------------------------------------------------------------------ |
 | Ready        | macOS gives Openspot each access that the spot's calls need.            |
 | Needs access | macOS doesn't give Openspot an access that the spot needs yet.          |
 | Needs review | The spot made a call of a use that its `uses` doesn't name.             |
-| Off          | You turned the spot off.                                                 |
 
 A spot that needs access or review shows a lock on its card. A press of the card opens Settings at the spot.
 
-To take an access away from one spot, turn the spot off. To take it from every spot, turn it off in System Settings.
+To take an access away from one spot of yours, remove the spot. To take it from every spot, turn it off in System Settings.
 
 ## Let a spot use what it was refused
 
@@ -121,8 +120,18 @@ and never blocks the add. A bound spot that isn't installed and doesn't come wit
   has no Command Line Tools, where the review has said that the program may not match its source. On a Mac with the
   tools, a spot that you added runs only what Openspot built there from the source you can read. A share never passes a
   carried program on: it builds a new one from the sources it ships.
-- An update with no new use and no new binding applies quietly. An update with a new use or a new binding waits for
-  `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
+- An install from a store, a drop on My spots, Install on a spot's page or `openspot store get`, shows the same review before it copies the spot's
+  folder. In the app, the review comes first, and only its Install copies. `openspot store get` prints the title, the
+  uses, Binds, Can also, Runs by itself and each file. When the review names any of them but the files, it copies
+  nothing until `--yes`.
+- A spot that `store get` installed updates from its own store. While its files are as they came, a newer version
+  applies when the Store or `openspot store list` reads the stores, or by `openspot store update`. A spot you edited
+  takes no update: `store list` marks it `edited`, and `openspot store revert` moves your copy to the Trash and puts the
+  store's version in its place. The review of an update names only what it adds.
+- A spot with a `schedule` that reached your spots folder by hand, not by an install, had no review. Before its first
+  scheduled run, a message asks you to allow it, and the run waits for your click. Openspot keeps the yes.
+- An update that asks for nothing new applies quietly. An update with a new use, binding, Can also or Runs by itself
+  waits for `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
   required with no default, and the review names each such spot.
 
 ## The sandbox
@@ -136,12 +145,12 @@ Each process of a spot runs in a sandbox, which holds `network` and `files` to w
 
 ## Signed releases
 
-A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when you share or publish
+A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when you share
 the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 
 ## The account
 
-The account is the key that signs what you publish. Its 12 words give the key as NIP-06 says, so they open the same
+The account is the key that signs what you share. Its 12 words give the key as NIP-06 says, so they open the same
 account in another Nostr client.
 
 - `openspot account show` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle`
@@ -150,6 +159,5 @@ account in another Nostr client.
   `spots/openspot.spot` that names `account` in its uses. The Account page of Settings shows, checks and takes the words
   inside the app, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
   minutes, and only for the act it was asked for. A Mac with neither a password nor Touch ID cannot unlock the key.
-- `store publish` signs with the key, so it answers only a spot of `spots/openspot.spot` that names `account` in its
-  uses, and only while the app runs. Openspot removes `account` from the uses of any other spot, and
+- Only a spot of `spots/openspot.spot` that names `account` in its uses can reach the key. Openspot removes `account` from the uses of any other spot, and
   `openspot check spots` reports it. The calls of such a spot stay out of the call log and the playground.

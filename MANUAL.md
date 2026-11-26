@@ -15,11 +15,39 @@ Every spot answers the same keys, so you learn them once.
 | `⌘K`       | Opens the menu of all actions.                                                |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
-- The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Turn off or
-  Delete.
+- The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Remove.
+- Remove, or `⌘⌫`, moves the spot's folder to the Trash. Its data and its settings stay, so the spot has them again when
+  you install it again.
+- An install of a spot whose id your spots have already asks, as Finder does: Replace moves yours to the Trash, Keep
+  Both installs the new one under a new id, such as `ports-2`, and Stop leaves both as they are.
+- A spot you installed updates from its store while you leave its files as they came. The Store shows the day of its
+  version, such as "Updated 3 Nov". An update that asks for a new use waits for your yes, and names only what it adds.
+  Once you edit the spot, it takes no update: the Store says "Edited, updates paused", and `openspot store revert`
+  moves your copy to the Trash and puts the store's version back. Its data stays.
 - Edit copies a prompt that sends an agent to the spot's file. You change a spot there, not in its Settings.
+- A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Arrange takes it off the grid.
 - A card with a lock can't run yet. A press of it opens Settings at the spot; see
   [Let a spot use what it needs](#let-a-spot-use-what-it-needs).
+
+## Get spots in the Store
+
+The Store is the window that shows which spots you have and where they come from. Open it with the Store card,
+with "Look in the Store" at the end of a search, or with `openspot store open`.
+
+1. Look at the sidebar. My spots holds each spot you have. A spot that comes with Openspot shows a lock. Under
+   Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source….
+2. Click a spot. Its page shows its readme, Try with sample data when it has some, and what it uses, runs by itself
+   and can also do, before you install it.
+3. Drag the spot onto My spots, press + on its row, or press Install on its page. While you drag, My spots says
+   Drop to install. The review opens, and nothing is copied until its Install.
+
+- The button of a page says Installed once the spot is yours, Update when a newer version waits for your yes, and
+  Revert… when you edited it. Update names only what the new version adds. Revert asks before it moves your copy to the
+  Trash.
+- The search at the top of the sidebar keeps only the spots of the chosen place that match. Back and forward step
+  through the places and pages you opened, as in Settings.
+- Each act of the Store is also a command, so an agent can do it: `openspot store list`, `store get`, `store update`,
+  `store revert`, `store add`, `store remove` and `store open`.
 
 ## Change Settings
 
@@ -31,10 +59,10 @@ Its sidebar holds seven sections:
 | Section   | Holds                                                                                   |
 | --------- | --------------------------------------------------------------------------------------- |
 | Access    | What macOS gives Openspot, and each spot that can't run yet. Settings opens here, unless you open it at a spot. |
-| Spots     | A page for each spot: its state, its uses, its keys, its settings, where it shows, and Turn Off. |
+| Spots     | A page for each spot: its state, its uses, its keys, its settings and where it shows.  |
 | Keys      | Every key of Openspot and of its spots. Two rows with the same key both show it red.    |
 | Look      | The themes. A click on a theme uses it.                                                 |
-| Account   | The account that signs what you publish; see [The account](TRUST.md#the-account).      |
+| Account   | The account that signs what you share; see [The account](TRUST.md#the-account).        |
 | General   | The keys that open Openspot and a fix, Open at login, and Use openspot in Terminal.     |
 | Developer | Slow motion, which plays every motion ten times slower.                                 |
 
@@ -44,8 +72,8 @@ Its sidebar holds seven sections:
 - The search field at the top of the sidebar finds a row in every section. A click on a result opens its page.
 - The panel's search finds each row too. Return on one opens Settings at the row.
 - `openspot app settings --at <where>` opens Settings at a place, such as `access/screen`, `spot/notes` or `keys`.
-- `openspot setting list` prints each row, and `openspot setting set` changes the same values: `enabled`, `menubar`,
-  `window`, `open`, `float` and `key.<action>` of a spot.
+- `openspot setting list` prints each row, and `openspot setting set` changes the same values: `menubar`, `window`,
+  `open`, `float` and `key.<action>` of a spot, and `attachment`, which [the Attachments spot](#hand-what-you-work-on-to-a-spot) sets.
 
 ## Let a spot use what it needs
 
@@ -63,20 +91,32 @@ you, with one line of what it lacks.
 
 Put any spot in the menu bar, in a float or in a window from its page in Settings.
 
-Arrange the grid in Edit Spots: hold `⌘` and move the pointer over the grid, or press `⌘K` on a card and choose
-Rearrange. A release of `⌘` ends it; Rearrange stays until Done. The grid has 7 rows and 4, 6 or 8 columns, which the
-header switches. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a
-bigger card pushes the others on. A spot with no room is found by search.
+Arrange the grid in Arrange: press `⌘K` on a card and choose Arrange, press the Spots card, or run `openspot grid edit`.
+The screen dims, and your spots that are not on the grid sit in even columns on both sides of the panel, sorted by
+name. Type in the field at the top to keep only the matches. Drag a spot onto a free slot to pin it there, drag a card
+off the grid to take it off, or drop a spot on a card to swap the two. A lifted spot takes the size of the slot it
+lands in. The 4 / 6 / 8 switch sets the columns, and ✓ or Esc ends Arrange. Open the Store, at the bottom, opens the
+Store.
+
+For a quick change, hold `⌘` and move the pointer over the grid: drag a card to move it, and its − takes it off. Each
+free slot shows a +, and the hint counts your spots that are off the grid. Click a + to pick one of them from a short
+list: type to narrow it, and Return pins the chosen spot there. A release of `⌘` ends it. The grid has 7 rows and 4, 6
+or 8 columns. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a bigger
+card pushes the others on. A spot with no room is found by search, and counts as off the grid.
+
+Type `/spots` to list all your spots, the ones off the grid first. `⌘K` Pin to grid on a row puts that spot in the first
+free slot, as `openspot grid pin <id>` does.
 
 - A float shows the spot in a small window at the pointer, which a key or a shake opens, and which stays while you work
   in other apps.
 - A window opens the sheet in a normal window, which you move, resize and close.
 - A spot with `every` or an action with a title starts off the grid, so a new spot doesn't fill the panel.
+- Each spot that comes with Openspot is on, and search finds it. Only the ones Openspot starts with sit on the grid.
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to turn it on or off.
-`⌘` Return opens the Settings of one that is on. Its last row, Access, opens Settings at Access, which shows whether
+Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to hide or show its card in the field.
+`⌘` Return opens the Settings of one. Its last row, Access, opens Settings at Access, which shows whether
 macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 
@@ -89,7 +129,7 @@ changes until you press Tab.
 
 - Typing filters the actions that take the card. Backspace edits only the text.
 - When the text starts with `/`, Tab completes the slash command instead.
-- A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
+- A card shows only when a spot takes it. Fresh Copy shows what you copied in the last 2 minutes.
 
 Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
 Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in

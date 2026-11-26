@@ -24,16 +24,14 @@ final class SpotCatalogTests: XCTestCase {
         ConfigFile(url: folder.appendingPathComponent("config.toml"))
     }
 
-    private func list(enabled: Set<String> = ["apps"], stores: [Store]? = nil) -> SpotCatalog {
-        var arrangement = config.read().arrangement
-        enabled.forEach { arrangement.set(isEnabled: true, of: $0) }
-        return SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core, enabled: [], disabled: []), arrangement: arrangement, stores: stores ?? [Store(url: store)])
+    private func list(stores: [StoreSource]? = nil) -> SpotCatalog {
+        SpotCatalog(folder: SpotsFolder(url: spots, core: core), arrangement: config.read().arrangement, stores: stores ?? [StoreSource(url: store)])
     }
 
     func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
         try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
-        let shelf = list(stores: [Store(url: friends), Store(url: folder.appendingPathComponent("gone")), Store(url: store)])
+        let shelf = list(stores: [StoreSource(url: friends), StoreSource(url: folder.appendingPathComponent("gone")), StoreSource(url: store)])
 
         XCTAssertEqual(shelf.items.map(\.id), ["apps", "clock", "mine", "shared", "timer"])
         XCTAssertEqual(shelf.items.first { $0.id == "clock" }?.origin, .store)
@@ -45,7 +43,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
         let examples = folder.appendingPathComponent("examples", isDirectory: true)
-        let builtIn = try XCTUnwrap(Store.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        let builtIn = try XCTUnwrap(StoreSource.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
 
         XCTAssertEqual(builtIn.name, "Openspot")
@@ -54,14 +52,10 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(list(stores: [builtIn]).items.first { $0.id == "year" }?.store?.url.path, examples.path)
     }
 
-    func testTheFolderThatPublishWritesIsNoStore() {
-        XCTAssertFalse(list(stores: []).items.contains { $0.id == "shared" })
-    }
-
     func testTheConfigKeepsEachStoreFolderOnce() throws {
-        let friends = Store(url: folder.appendingPathComponent("friends"))
+        let friends = StoreSource(url: folder.appendingPathComponent("friends"))
 
-        _ = try config.change { $0.add(store: friends); $0.add(store: Store(url: folder.appendingPathComponent("friends/"))) }
+        _ = try config.change { $0.add(store: friends); $0.add(store: StoreSource(url: folder.appendingPathComponent("friends/"))) }
         XCTAssertEqual(config.read().stores, [friends])
         XCTAssertEqual(friends.name, "friends")
 
@@ -75,56 +69,32 @@ final class SpotCatalogTests: XCTestCase {
 
         XCTAssertEqual(items.map(\.id), ["apps", "mine", "shared", "timer"])
         XCTAssertEqual(items.map(\.origin), [.core, .mine, .store, .core])
-        XCTAssertEqual(items.map(\.isAdded), [true, true, false, false])
+        XCTAssertEqual(items.map(\.isAdded), [true, true, false, true])
         XCTAssertEqual(items.first { $0.id == "timer" }?.spot.subtitle, "Counts down")
         XCTAssertEqual(items.first { $0.id == "shared" }?.package?.path, store.appendingPathComponent("shared.spot").path)
         XCTAssertNil(items.first { $0.id == "timer" }?.package)
-    }
-
-    func testYourOwnSpotSaysWhetherTheStoreHoldsItAsItIs() throws {
-        XCTAssertNil(list().items.first { $0.id == "mine" }?.publication)
-
-        try FileManager.default.copyItem(at: spots.appendingPathComponent("mine.spot"), to: store.appendingPathComponent("mine.spot"))
-        XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .current)
-        XCTAssertFalse(list().items.contains { $0.origin == .store && $0.id == "mine" })
-
-        try "#!/bin/sh\necho changed\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
-        XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .changed)
     }
 
     func testTheFramePrintsASpotBlockForEach() throws {
         let frame = try list().text(.frame)
 
         XCTAssertTrue(frame.contains("item=timer\ntitle=Timer\n"), frame)
-        XCTAssertTrue(frame.contains("origin=core\nadded=false\n"), frame)
+        XCTAssertTrue(frame.contains("origin=core\nadded=true\n"), frame)
         XCTAssertTrue(frame.contains("item=shared\n"), frame)
         XCTAssertTrue(frame.contains("step=get\n"), frame)
     }
 
-    func testGetTurnsOnACoreSpotByTheIDThatTheListPrints() async throws {
-        let id = try XCTUnwrap(list().items.first { $0.origin == .core && !$0.isAdded }?.id)
-
-        let item = try await list().get(id, config: config, lock: AppPlaces.test().lock)
-
-        XCTAssertEqual(item.spot.name, "Timer")
-        XCTAssertTrue(config.read().arrangement.enabled.contains(id))
-    }
-
-    func testYourOwnSpotWithAScheduleStartsOffAndAGetTurnsItOn() async throws {
+    func testACoreSpotAndYourOwnSpotWithAScheduleAreAddedAndAGetChangesNothing() throws {
         try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("daily.spot/daily.sh"), toml: "title = 'Daily'\n[on]\nschedule = ['0 9 * * *']")
-        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "get")
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "added")
 
-        _ = try await list().get("daily", config: config, lock: AppPlaces.test().lock)
-
-        XCTAssertTrue(config.read().arrangement.enabled.contains("daily"))
-        XCTAssertEqual(list().items.first { $0.id == "daily" }?.isAdded, true)
+        XCTAssertNil(try list().install("timer", in: AppPlaces.test()))
+        XCTAssertNil(try list().install("daily", in: AppPlaces.test()))
+        XCTAssertEqual(config.read().arrangement.choices, [])
     }
 
-    func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() async {
-        do {
-            _ = try await list().get("gone", config: config, lock: AppPlaces.test().lock)
-            XCTFail("a get of a missing spot passed")
-        } catch {
+    func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() {
+        XCTAssertThrowsError(try list().install("gone", in: AppPlaces.test())) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "`gone` is not a spot of the store. Run `openspot store list` to see each one.")
         }
     }

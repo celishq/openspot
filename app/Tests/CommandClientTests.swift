@@ -20,7 +20,6 @@ final class CommandClientTests: XCTestCase {
         func act(_ act: CardAct, on id: String) async -> Bool { true }
         func choose(for id: String) async -> Bool { true }
         func editGrid() async {}
-        func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
         func playground(_ file: URL?) async {}
 
@@ -103,8 +102,6 @@ final class CommandClientTests: XCTestCase {
         let copied = ["OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"]
         let refused = "Only Openspot's own spots can reach your account key.\n"
 
-        XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
-        XCTAssertEqual(try run(client, ["store", "publish", "mine"], variables: copied).errors, refused)
         for arguments in [["account", "new", "tony"], ["account", "sign-out"], ["account", "sync", "off"]] {
             XCTAssertEqual(try run(client, arguments).errors, refused, "\(arguments)")
             XCTAssertEqual(try run(client, arguments, variables: copied).errors, refused, "\(arguments)")

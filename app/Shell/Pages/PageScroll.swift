@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 @Observable
-final class SettingsScroll {
+final class PageScroll {
     var isTitleShown = false
     var isScrolled = false
     var barHeight: CGFloat = 0

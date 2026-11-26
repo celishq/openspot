@@ -28,17 +28,6 @@ extension SettingsView {
             ForEach(book.rows.groups(of: standing.id)) { rows in
                 group(rows.id) { lines(rows.rows) { settingLine($0) } }
             }
-            Section {
-                HStack {
-                    titled(standing.isOff ? "This spot is off" : "Turn off this spot", standing.isOff ? "It doesn’t show in the panel or run." : "It stops showing in the panel and stops running.")
-                    Spacer(minLength: SpotTokens.settingsTrailingGap)
-                    if standing.isOff {
-                        Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
-                    } else {
-                        Button("Turn Off", role: .destructive) { act { await $0.turn(standing.id, on: false) } }
-                    }
-                }
-            }
         }
     }
 
@@ -49,11 +38,7 @@ extension SettingsView {
                     .foregroundStyle(SpotTheme.settingsLate)
                 titled(title, line)
                 Spacer(minLength: SpotTokens.settingsTrailingGap)
-                if standing.isOff {
-                    Button("Turn On") { act { await $0.turn(standing.id, on: true) } }
-                } else {
-                    fix(standing)
-                }
+                fix(standing)
             }
         }
     }
@@ -88,8 +73,6 @@ extension SettingsView {
             if standing.lacks {
                 Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
                 Text(standing.readiness.word)
-            } else if standing.isOff {
-                Text(standing.readiness.word).foregroundStyle(.secondary)
             }
             chevron
         }

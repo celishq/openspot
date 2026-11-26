@@ -10,9 +10,14 @@ public struct SpotLock: Equatable, Sendable {
         public var canDo: [String]
         public var address: String?
         public var key: String?
+        public var version: String?
 
         public var name: String {
             SpotID(path: paths.first ?? source).name
+        }
+
+        var folders: Set<String> {
+            Set(paths.compactMap { $0.split(separator: "/").first.map(String.init) })
         }
 
         func holds(_ id: String) -> Bool {
@@ -21,7 +26,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
 
-        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil) {
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil, version: String? = nil) {
             self.source = source
             self.commit = commit
             self.paths = paths
@@ -30,6 +35,7 @@ public struct SpotLock: Equatable, Sendable {
             self.canDo = canDo
             self.address = address
             self.key = key
+            self.version = version
         }
 
         var addedLine: String {
@@ -49,6 +55,7 @@ public struct SpotLock: Equatable, Sendable {
     }
 
     private static let name = "spots.lock"
+    private static let changed = SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
     private static let lockPause: Duration = .milliseconds(20)
 
     public let url: URL
@@ -77,41 +84,48 @@ public struct SpotLock: Equatable, Sendable {
         isConfirmed: Bool = false,
         replaces: [String] = [],
         expecting: SpotPackage? = nil,
+        reviewed: String? = nil,
+        naming: String? = nil,
+        asking: String? = nil,
+        updating: String? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
-            let old = try entries().first { $0.source == source.text }
+            let old = try entries().first { $0.source == source.text && (naming == nil || $0.folders == [naming]) }
             var facts: Facts?
-            let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
-                if let expecting, try SpotPackage(paths: paths, in: work) != expecting {
-                    throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
-                }
+            let command = updating ?? "openspot spot add \(source.text) --yes"
+            let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, naming: naming, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
+                if let expecting, try SpotPackage(paths: paths, in: work) != expecting { throw Self.changed }
+                if let reviewed, try paths.first.map({ try SpotVersion.hash(of: work.appendingPathComponent($0)) }) != reviewed { throw Self.changed }
                 let new = try Self.facts(of: paths, in: work)
                 if old == nil, !isConfirmed {
-                    let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
+                    let confirm = asking ?? "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
                         review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder, core: SpotsFolder.core(environment: environment))
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
-                    if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
+                    if !review.trust.isEmpty { throw SpotError.fault("\(review.summary)\(confirm)") }
                 }
                 if let old, !isConfirmed, let key = old.key, new.release?.publicKey != key {
-                    throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
+                    throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `\(command)` to update it.")
                 }
                 if let old, !isConfirmed {
-                    try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: "openspot spot add \(source.text) --yes")
+                    try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: command)
                     let names = Set(paths.map { SpotID(path: $0).name })
                     let changes = BoundChange.lines(of: try SpotsFolder(url: work).scan().scripts.filter { names.contains(SpotID($0.id).name) }, in: folder)
                     if !changes.isEmpty {
-                        throw SpotError.fault((changes + ["Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it."]).joined(separator: "\n"))
+                        throw SpotError.fault((changes + ["Openspot kept the one you have. Run `\(command)` to update it."]).joined(separator: "\n"))
                     }
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
-            try record(entry)
+            let entry = Entry(
+                source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address,
+                key: facts?.release?.publicKey, version: try source.version()?.text
+            )
+            try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && (naming != nil || $0.source != source.text) } + [entry])
             return old == nil ? entry.addedLine : entry.updatedLine
         }
     }
@@ -142,23 +156,26 @@ public struct SpotLock: Equatable, Sendable {
         var changed: [String: Entry] = [:]
         for (index, entry) in entries.enumerated() where !FileManager.default.fileExists(atPath: folder.appendingPathComponent(entry.paths.first ?? "").path) {
             do {
-                let place = URL(fileURLWithPath: "/", isDirectory: true)
+                let origin = origin(of: entry)
                 var facts: Facts?
-                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, base: environment, check: { work, paths in
+                _ = try await origin.add(to: folder, at: entry.commit, base: environment, naming: entry.paths.first, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash {
                         try Self.refuseGrowth(from: entry.uses, entry.canDo, to: new, confirm: "openspot spot add --yes")
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
-                changed[entry.source] = entries[index]
+                entries[index] = Entry(
+                    source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [],
+                    address: facts?.release?.address, key: facts?.release?.publicKey, version: entry.version == nil ? nil : try origin.version()?.text
+                )
+                changed[entry.paths.first ?? entry.source] = entries[index]
                 added += entry.addedLine
             } catch {
                 faults += "\(entry.name): \((error as? SpotError)?.reason ?? error.localizedDescription)\n"
             }
         }
-        if !changed.isEmpty { try write(try self.entries().map { changed[$0.source] ?? $0 }) }
+        if !changed.isEmpty { try write(try self.entries().map { changed[$0.paths.first ?? $0.source] ?? $0 }) }
         if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the spots folder.\n" }
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
@@ -188,7 +205,7 @@ public struct SpotLock: Equatable, Sendable {
         let canDo: [String]
         do {
             guard let spot else { throw unread ?? SpotError.fault("This file holds no spot.") }
-            canDo = try ReviewSpot(spot: spot, folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+            canDo = try ReviewSpot(spot: spot, folder: ReviewSpot.noFolder).canDo
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
@@ -212,6 +229,28 @@ public struct SpotLock: Equatable, Sendable {
         }
         try write(entries)
         return entry
+    }
+
+    func origin(of entry: Entry) -> SpotSource {
+        SpotSource(recorded: entry.source, builtIn: StoreSource.builtIn(environment: environment))
+    }
+
+    public func meant(_ id: String, by caller: String) -> String {
+        guard let entry = (try? entries())?.first(where: { $0.holds(caller) }), let copy = entry.paths.first else { return id }
+        let former = SpotID(path: URL(fileURLWithPath: entry.source).lastPathComponent).name
+        let named = SpotID(path: copy).name
+        let target = SpotID(id)
+        guard former != named, target.name == former else { return id }
+        return target.script == former ? named : "\(named)/\(target.script)"
+    }
+
+    public func drop(_ id: String) throws {
+        let lock = try lockFile()
+        defer { close(lock) }
+        flock(lock, LOCK_EX)
+        let entries = try entries()
+        let kept = entries.filter { !$0.holds(id) }
+        if kept.count != entries.count { try write(kept) }
     }
 
     private func locked<T>(_ work: () async throws -> T) async throws -> T {

@@ -98,6 +98,14 @@ public struct Spot: Equatable, Sendable {
         chosenIcon ?? header.facts.headerIcon
     }
 
+    public var picture: String {
+        self.image ?? self.file ?? self.glyph ?? self.symbol
+    }
+
+    public func comesBefore(_ other: Spot) -> Bool {
+        self.name.localizedStandardCompare(other.name) == .orderedAscending
+    }
+
     public var symbol: String {
         icon?.symbol ?? header.facts.baseSymbol
     }
@@ -162,7 +170,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     private var settingKeys: [SpotRows.Key] {
-        let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
+        let icon = picture
         let commands = self.commands.map { SpotRows.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
         return [SpotRows.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotRows.Key(act: .float, title: "Float", icon: icon)]
     }
@@ -202,7 +210,7 @@ public struct Spot: Equatable, Sendable {
             uses: self.uses
         )
         spot.isBuiltIn = true
-        spot.editedFile = isOwn ? owner.url : nil
+        spot.editedFile = owner.url
         return spot
     }
 
@@ -216,6 +224,13 @@ public struct Spot: Equatable, Sendable {
         guard let icon = Icon(text: text) else { return self }
         var spot = self
         spot.chosenIcon = icon
+        return spot
+    }
+
+    func hidingSource(_ isHidden: Bool) -> Spot {
+        guard isHidden, self.isSource else { return self }
+        var spot = self
+        spot.isSourceHidden = true
         return spot
     }
 
@@ -276,7 +291,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
-        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment)
+        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment && !self.isSourceHidden)
     }
 
     public func takes(_ value: AttachmentValue) -> Bool {

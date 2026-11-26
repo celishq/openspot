@@ -32,29 +32,27 @@ final class AttachmentSpotTests: BuiltInCase {
         XCTAssertTrue(["attachments", "tab", "selection", "clipboard"].allSatisfy(spot.keywords.contains))
     }
 
-    func testTheSheetListsEachSourceOnOrOffWithWhatItReads() async throws {
-        try file.turn("tab", on: true)
+    func testTheSheetListsEachSourceShownOrHiddenWithWhatItReads() async throws {
+        try file.change { $0.set(setting: "attachment", of: "tab", to: "false") }
 
         let items = try await items()
 
         XCTAssertEqual(items.map(\.run), ["copy", "tab"])
-        XCTAssertEqual(items.map(\.isOn), [false, true])
-        XCTAssertEqual(items.map(\.openTitle), ["Turn on", "Turn off"])
+        XCTAssertEqual(items.map(\.isOn), [true, false])
+        XCTAssertEqual(items.map(\.openTitle), ["Hide", "Show"])
         XCTAssertEqual(items.last?.subtitle, "Hand the front tab to a spot")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [["settings"], []])
     }
 
-    func testReturnTurnsASourceOnAndOff() async throws {
+    func testReturnHidesAndShowsASourceAndKeepsItsSpotOn() async throws {
         try await press("press", on: "copy")
-        XCTAssertEqual(file.read().arrangement.enabled, ["copy"])
+        XCTAssertEqual(file.read().setting("attachment", of: "copy"), "false")
+        XCTAssertEqual(file.read().arrangement.choices, [])
 
         try await press("press", on: "copy")
-        XCTAssertEqual(file.read().arrangement.enabled, [])
+        XCTAssertNil(file.read().setting("attachment", of: "copy"))
     }
 
     func testSettingsOpensTheSettingsOfTheSource() async throws {
-        try file.turn("tab", on: true)
-
         try await press("settings", on: "tab")
 
         let opened = await app.opened

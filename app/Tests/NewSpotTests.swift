@@ -156,7 +156,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     private func editSheet(of id: String) throws -> Spot {
-        let place = SpotsFolder(url: spots, core: core, enabled: ["cups"])
+        let place = SpotsFolder(url: spots, core: core)
         let owner = try XCTUnwrap(try place.scan().scripts.first { $0.id == id })
         return try XCTUnwrap(try newSpot().editSheet(of: owner, isOwn: !place.isCore(owner)))
     }
@@ -225,32 +225,6 @@ final class NewSpotTests: BuiltInCase {
         let after = (try await words(weather), try await words(notes))
         XCTAssertEqual(after.0, "")
         XCTAssertEqual(after.1, "Sort by date")
-    }
-
-    func testACoreSpotIsCopiedIntoTheSpotsFolderFirstAndAnOwnCopyChangesInPlace() async throws {
-        try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
-        try file.turn("cups", on: true)
-        let sheet = try editSheet(of: "cups")
-        let copy = spots.appendingPathComponent("cups.spot", isDirectory: true)
-
-        let read = Frame(text: try await edit(sheet, ScriptEntry.show.name))
-        XCTAssertFalse(read.actions.contains { $0.title == "Open in editor" })
-        _ = try await edit(sheet, "copy", input: "input.describe=Count in litres\n")
-        let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("\(AgentPrompt(folder: spots, guide: guide, app: "").copying(core.appendingPathComponent("cups.spot"), to: copy))\n"), prompt)
-        XCTAssertTrue(prompt.contains(core.appendingPathComponent("cups.spot").path))
-        XCTAssertTrue(prompt.contains("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"))
-        XCTAssertTrue(prompt.contains(AgentPrompt.finishChange))
-        _ = try await edit(sheet, "copy", input: "input.describe=\n")
-        let asking = try saved("clipboard")
-        XCTAssertTrue(asking.contains(core.appendingPathComponent("cups.spot").path))
-        XCTAssertTrue(asking.contains("Ask me what to change"))
-
-        try "#!/bin/sh\necho\n".writeScript(to: copy.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
-        _ = try await edit(try editSheet(of: "cups"), "copy", input: "input.describe=Count in litres\n")
-        let own = try saved("clipboard")
-        XCTAssertTrue(own.hasPrefix("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"), own)
-        XCTAssertFalse(own.contains("comes with Openspot"))
     }
 
     func testTheActionsOpenTheGuideAndTheFolder() async throws {

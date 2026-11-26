@@ -12,6 +12,7 @@ final class SpotsPanel: NSPanel {
     private var pressStage = 0
     private var isForceDragging = false
     private var screenBackdrop: SpotScreenBackdrop?
+    private var restFrame: NSRect?
 
     override var canBecomeKey: Bool { true }
 
@@ -55,9 +56,11 @@ final class SpotsPanel: NSPanel {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : SpotFrontWindow.frame(of: app)
-        let center = NSSize(width: frame.width - place.left, height: frame.height)
-        guard let origin = ScreenPlace(screens: screens).origin(of: center, window: window, pointer: NSEvent.mouseLocation) else { return }
-        setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
+        let rest = restFrame ?? frame
+        guard let origin = ScreenPlace(screens: screens).origin(of: rest.size, window: window, pointer: NSEvent.mouseLocation) else { return }
+        guard restFrame != nil else { return setFrameOrigin(origin) }
+        restFrame = NSRect(origin: origin, size: rest.size)
+        cover()
     }
 
     func show() {
@@ -104,9 +107,41 @@ final class SpotsPanel: NSPanel {
     }
 
     func layOut() {
+        let rest = restFrame ?? frame
         let width = SpotTokens.panelWidth
-        resize(to: NSRect(x: frame.midX - width / 2, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
+        let next = NSRect(x: rest.midX - width / 2, y: rest.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight)
+        if restFrame == nil {
+            resize(to: next)
+        } else {
+            restFrame = next
+            cover()
+        }
         takeBackdrop()
+    }
+
+    func arrange(_ isOn: Bool) {
+        if isOn {
+            guard restFrame == nil else { return }
+            restFrame = frame
+            cover()
+        } else if let rest = restFrame {
+            restFrame = nil
+            place.left = 0
+            place.top = 0
+            place.screen = nil
+            resize(to: rest)
+        }
+    }
+
+    private func cover() {
+        guard let rest = restFrame else { return }
+        let middle = NSPoint(x: rest.midX, y: rest.midY)
+        guard let area = (NSScreen.screens.first { $0.frame.contains(middle) } ?? screen ?? NSScreen.main)?.visibleFrame else { return }
+        place.left = rest.minX - area.minX
+        place.top = area.maxY - rest.maxY
+        place.screen = area.size
+        model?.placeShelf(screen: area.size, panelOrigin: CGPoint(x: place.left, y: place.top))
+        resize(to: area)
     }
 
     func hide(then done: (() -> Void)? = nil) {
@@ -195,7 +230,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func panelPoint(of event: NSEvent) -> CGPoint {
-        CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y)
+        CGPoint(x: event.locationInWindow.x - place.left, y: (contentView?.bounds.height ?? 0) - event.locationInWindow.y - place.top)
     }
 
     private func takeSwipe(_ event: NSEvent) -> Bool {

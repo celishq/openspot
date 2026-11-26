@@ -89,7 +89,7 @@ Each setting, input, output and value of an event takes one of these types.
 | `default`     | its type | The value until people choose one.                   |
 | `options`     | [text]   | The values of a `choice`.                            |
 
-A setting can't take a name that Openspot keeps for people: `icon`, `enabled`, `menubar`, `open`, `float`, any
+A setting can't take a name that Openspot keeps for people: `icon`, `menubar`, `attachment`, `open`, `float`, any
 `key.<action>`, `window`, or a name of Openspot's own settings, such as `slow`.
 
 ## [actions.\<id\>]

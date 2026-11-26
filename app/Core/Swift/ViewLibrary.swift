@@ -135,22 +135,14 @@ public struct ViewLibrary: Sendable {
             let timer: (Duration) -> Void
             let values: [String: [String]]
             let sender: (String) -> Void
-            let cardMaker: (String) -> AnyView
-            let cardSizer: (String) -> CGSize
-            let sheetMaker: (String) -> AnyView
             let tipMaker: (String) -> AnyView
             let mediaMaker: (String) -> AnyView
-            let cornerMaker: (String, String, String, @escaping () -> Void) -> AnyView
 
             init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
                 self.values = values
                 self.sender = sender
-                cardMaker = card["card"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
-                cardSizer = card["cardSize"] as? (String) -> CGSize ?? { _ in .zero }
-                sheetMaker = card["sheet"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
-                cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
                 items = SpotItems(fields: card["items"] as? [[String]] ?? [])
                 isShown = card["isShown"] as? Bool ?? true
                 selection = card["selection"] as? String
@@ -187,17 +179,9 @@ public struct ViewLibrary: Sendable {
                 if Thread.isMainThread { closer() } else { DispatchQueue.main.async(execute: closer) }
             }
 
-            public func card(_ id: String) -> AnyView { cardMaker(id) }
-
-            public func cardSize(_ id: String) -> CGSize { cardSizer(id) }
-
-            public func sheet(_ id: String) -> AnyView { sheetMaker(id) }
-
             public func tip(_ text: String) -> AnyView { tipMaker(text) }
 
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
-
-            public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
 
             public func loop(period: Double, fill colors: Color..., path: @escaping (Double, CGRect) -> Path) -> some View {
                 SpotLoop(key: .init(period: period, size: size, values: values, look: .fill(colors)), isPlaying: isShown, path: path)

@@ -15,7 +15,7 @@ public struct Config: Equatable, Sendable {
     public var arrangement = SpotChoices()
     public var keys: [GlobalKey] = []
     public private(set) var settings: [KeptSetting] = []
-    public private(set) var stores: [Store] = []
+    public private(set) var stores: [StoreSource] = []
     public private(set) var theme: String?
     public private(set) var grid = GridLayout()
     private(set) var browsers = Browser.builtIn
@@ -137,11 +137,11 @@ public struct Config: Equatable, Sendable {
         }
     }
 
-    public mutating func add(store: Store) {
+    public mutating func add(store: StoreSource) {
         if !stores.contains(store) { stores.append(store) }
     }
 
-    public mutating func remove(store: Store) {
+    public mutating func remove(store: StoreSource) {
         stores.removeAll { $0 == store }
     }
 
@@ -174,11 +174,11 @@ public struct Config: Equatable, Sendable {
         return KeptSetting(spot: spot, key: key, value: value)
     }
 
-    private mutating func store(of table: ConfigDocument.Table) -> Store? {
+    private mutating func store(of table: ConfigDocument.Table) -> StoreSource? {
         guard case .string(let path)? = table["path"], path.hasPrefix("/") else {
             return unread(table, "config.toml: a store needs the full path of its folder.")
         }
-        return Store(url: URL(fileURLWithPath: path))
+        return StoreSource(url: URL(fileURLWithPath: path))
     }
 
     private mutating func shortcut(_ value: ConfigDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {
@@ -215,7 +215,7 @@ public struct Config: Equatable, Sendable {
         }
         if case .boolean(let isOnGrid)? = table["grid"] { choice.isOnGrid = isOnGrid }
         if case .boolean(let isFound)? = table["search"] { choice.isFound = isFound }
-        if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
+        if table["enabled"] == .boolean(false), choice.isOnGrid == nil { choice.isOnGrid = false }
         if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
         if case .boolean(let isInMenuBar)? = table["tray"] { choice.isInMenuBar = isInMenuBar }
         if case .boolean(let isWindow)? = table["window"] { choice.isWindow = isWindow }

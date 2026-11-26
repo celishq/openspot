@@ -12,6 +12,7 @@ public protocol SpotsHost: AnyObject {
     func paint(_ colours: Theme.Colours)
     func layOut(_ layout: Theme.Layout)
     func widen()
+    func arrange(_ isOn: Bool)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
@@ -37,6 +38,7 @@ public protocol SpotsHost: AnyObject {
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void)
     func nextFrame(_ body: @escaping @MainActor () -> Void)
     func allows(_ reason: String) async -> Bool
+    func openStore(file: URL)
 }
 
 extension SpotsHost {
@@ -47,6 +49,8 @@ extension SpotsHost {
     public func focusSettings() {}
 
     public func toast(_ note: ToastNote, of spot: String) {}
+
+    public func arrange(_ isOn: Bool) {}
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
         change(motion, body) {
@@ -66,4 +70,6 @@ extension SpotsHost {
     public func allows(_ reason: String) async -> Bool {
         true
     }
+
+    public func openStore(file: URL) {}
 }

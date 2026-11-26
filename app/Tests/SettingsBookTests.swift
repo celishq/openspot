@@ -205,18 +205,6 @@ final class SettingsBookTests: PanelCase {
         XCTAssertTrue(login.isOn)
     }
 
-    func testTurnTurnsASpotOffAndOn() async throws {
-        try TestSpot(toml: "title = 'Awake'", body: "").write(to: core.appendingPathComponent("awake.spot/awake.sh"))
-        await read()
-
-        await book.turn("awake", on: true)
-        XCTAssertTrue(config.arrangement.enabled.contains("awake"))
-        await book.turn("awake", on: false)
-
-        XCTAssertFalse(config.arrangement.enabled.contains("awake"))
-        XCTAssertEqual(book.spots.standing("awake")?.readiness, .off)
-    }
-
     func testAThemeIsUsedThroughThemeUse() async throws {
         await read()
 

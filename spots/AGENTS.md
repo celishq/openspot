@@ -37,12 +37,12 @@ edits = "spots"
 | `when`                  | an action   | In a JavaScript spot, the name of a function that gets the card's spot id and its origin, and returns whether the offered action shows. The ⌘K menu waits 2 ms for it. |
 | `shortcut`              | an action   | The standard key of an offered action, as a button's `shortcut`.                               |
 | `close`                 | an action   | `close = false` keeps the panel open after the action runs.                                    |
-| `account`               | `uses`      | It may publish with the account key; [The account](../TRUST.md#the-account) says how.          |
+| `account`               | `uses`      | It may reach the account key; [The account](../TRUST.md#the-account) says how.          |
 | `shown`                 | the root    | `shown=true` puts the spot's card on the grid, and `shown=false` takes it off.                 |
 | `OPENSPOT_CONFIG`       | a variable  | The folder of the config.                                                                      |
 | `OPENSPOT_SPOTS`        | a variable  | The spots folder, when it isn't `spots` in the config folder.                                  |
 | `OPENSPOT_EDIT`         | a variable  | In the Edit sheet: the id of the spot it changes.                                              |
-| `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot, when the person owns it.                             |
+| `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot.                                                      |
 | `OPENSPOT_EDIT_FAILURE` | a variable  | In the Edit sheet: the last failure of that spot.                                              |
 
 The spots of the app share one folder. `[scripts.<name>]` in its `spot.toml` describes the script `<name>`, with the

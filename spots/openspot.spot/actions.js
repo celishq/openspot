@@ -11,14 +11,11 @@ export default {
   async edit({ item }, env) {
     await env.spot.edit(item);
   },
-  async rearrange(_, env) {
+  async arrange(_, env) {
     await env.grid.edit();
   },
   async delete({ item }, env) {
     await env.spot.delete(item);
-  },
-  async off({ item }, env) {
-    await env.setting.set("enabled", "false", { spot: item });
   },
   async "icon.draw"({ item }, env) {
     await env.icon.draw({ spot: item });

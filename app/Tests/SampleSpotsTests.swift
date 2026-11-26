@@ -38,9 +38,9 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
-        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
+        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
-        let shown = core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }
+        let shown = core.spots.filter { starting.contains($0.id) && (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }
         let placements = GridLayout().place(shown.map { GridSpot(size: defaults.size(of: $0.id) ?? $0.size, cell: defaults.cells(of: $0.id)?[4]) })
 
         XCTAssertEqual(placements.count, shown.count)
@@ -61,7 +61,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             let shipped = Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("spots").path).map { ($0 as NSString).deletingPathExtension })
             let places = [
-                "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots"), enabled: shipped),
+                "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots")),
                 "examples": SpotsFolder(url: root.appendingPathComponent("examples"))
             ]
             let found = await withTaskGroup(of: (String, [String]).self) { group in

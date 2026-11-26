@@ -46,7 +46,7 @@ enum AccessCall: NounCall {
         let (places, mac, access, runs) = (context.places, context.mac, context.api.access, context.runs)
         return CommandAnswer.work {
             let config = places.config.read()
-            guard let spot = try places.folder(config).scan().scripts.first(where: { $0.id == id }) else {
+            guard let spot = try places.spots.scan().scripts.first(where: { $0.id == id }) else {
                 throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
             }
             let statuses = await access.read(from: mac, browsers: config.browsers).statuses
