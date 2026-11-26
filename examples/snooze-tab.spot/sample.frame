@@ -1,0 +1,36 @@
+button=remove
+title=Remove
+shortcut=cmd+backspace
+
+button=copy
+title=Copy Link
+
+item=current
+title=Snooze Current Tab
+detail=How to Make Sourdough Bread at Home
+icon=moon.zzz
+pin=top
+hides=remove
+hides=copy
+browser=com.apple.Safari
+page=How to Make Sourdough Bread at Home
+
+item=3f9a1c2e
+title=The Rust Programming Language
+detail=Fri Nov 27, 9:00
+icon=https://doc.rust-lang.org/favicon.ico
+
+item=b72d04e1
+title=Flights to Lisbon in March
+detail=Sat Nov 28, 10:00
+icon=https://www.google.com/favicon.ico
+
+item=5c18e9a0
+title=Swift Concurrency: Updating an App
+detail=Mon Nov 30, 8:00
+icon=https://developer.apple.com/favicon.ico
+
+item=e04b7d36
+title=Butterick's Practical Typography
+detail=Someday
+icon=https://practicaltypography.com/favicon.ico
