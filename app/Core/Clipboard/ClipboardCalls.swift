@@ -30,30 +30,11 @@ struct ClipboardCalls {
     func blocks(images: URL, within limit: TimeInterval? = nil, runs: SpotRuns? = nil) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
             if let limit, let runs, await !runs.isCopy(within: limit) { return "" }
-            guard let mac, mac.types().isDisjoint(with: ClipboardContents.unkeptTypes) else { return "" }
-            switch ClipboardContents(of: mac) {
-            case .none:
-                return ""
-            case .files(let urls):
-                return TextBlock(fields: AttachmentValue.Kind.file.fields(urls.map(\.path))).text
-            case .text:
-                let text = autoreleasepool { mac.text() }
-                guard text.utf8.count <= Timeline.cloneLimit, text.contains(where: { !$0.isWhitespace }) else { return "" }
-                let line = text.trimmingCharacters(in: .newlines)
-                let isLink = (line.hasPrefix("https://") || line.hasPrefix("http://")) && !line.contains(where: \.isWhitespace)
-                return TextBlock(fields: [isLink ? .init(key: "url", value: line) : .init(key: "text", value: text)]).text
-            case .image(let kind):
-                guard let data = autoreleasepool(invoking: { mac.image() }) else { return "" }
-                let folder = images.appendingPathComponent("blocks", isDirectory: true)
-                let hourAgo = Date().addingTimeInterval(-3_600)
-                for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
-                    if let made = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, made < hourAgo { try? FileManager.default.removeItem(at: old) }
-                }
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                let file = folder.appendingPathComponent("Copied image \(mac.count()) \(UUID().uuidString.prefix(8)).\(kind)")
-                try data.write(to: file, options: .atomic)
-                return TextBlock(fields: [.init(key: "file", value: file.path), .init(key: "title", value: "Copied image")]).text
-            }
+            guard let mac, let value = try? Clipboard(board: mac).value(count: mac.count(), images: images)?.whole(from: mac),
+                  value.texts.allSatisfy({ $0.utf8.count <= Timeline.cloneLimit }) else { return "" }
+            var fields = value.kind.fields(value.texts)
+            if value.kind == .file, let title = value.title { fields.append(.init(key: "title", value: title)) }
+            return TextBlock(fields: fields).text
         }
     }
 

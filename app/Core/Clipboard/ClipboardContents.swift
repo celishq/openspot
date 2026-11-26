@@ -13,7 +13,7 @@ public enum ClipboardContents: Equatable, Sendable {
     static let tiffType = "public.tiff"
 
     init(types: Set<String>, files: [URL]) {
-        if types.contains(Self.concealedType) { self = .none }
+        if types.contains(Self.concealedType) || !types.isDisjoint(with: Self.unkeptTypes) { self = .none }
         else if !files.isEmpty { self = .files(files) }
         else if types.contains(Self.textType) { self = .text }
         else if types.contains(Self.pngType) { self = .image("png") }

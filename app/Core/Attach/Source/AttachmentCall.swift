@@ -9,7 +9,7 @@ enum AttachmentCall: NounCall {
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value; blocks after the value draw its details, with text, number, series, picture and icon blocks. `clipboard` puts what the clipboard holds: its files, a link, a text or an image, and nothing for a password; with --within, only a copy that Openspot first saw within the age, as `clipboard read` takes it. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value; blocks after the value draw its details, with text, number, series, picture and icon blocks. `clipboard` puts what the clipboard holds: its files, a link, a text or an image, and nothing for a password or a one-time code; with --within, only a copy that Openspot first saw within the age, as `clipboard read` takes it. It works in a show.",
             rule: rule
         ) { words in
             guard words.rest.first == "clipboard" else { return Self.add(words.rest) }
