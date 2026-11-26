@@ -57,7 +57,7 @@ public struct ReviewSpot: Equatable, Sendable {
             ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
             ReviewLine(title: "Can also", words: canAlso),
             ReviewLine(title: "Binds", words: bindings.map(\.shown)),
-            ReviewLine(title: "Files", words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
+            ReviewLine(title: ReviewLine.filesTitle, words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
         ].filter { !$0.words.isEmpty }
         text = [
             ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",

@@ -77,18 +77,26 @@ extension StoreView {
         group("About") {
             StoreReadmeView(lines: page.shown, name: page.spot.name)
         }
-        if !page.trust.isEmpty {
+        if page.trust.contains(where: { !$0.isFiles }) {
             group("What It Can Do") {
-                ForEach(page.trust, id: \.title) { line in
+                ForEach(page.trust.filter { !$0.isFiles }, id: \.title) { line in
                     HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
                         Text(line.title)
                             .foregroundStyle(.secondary)
                             .frame(width: SpotTokens.storeTrustTitleWidth, alignment: .leading)
-                        Text(line.words.joined(separator: line.title == "Files" ? ", " : "\n"))
+                        Text(line.words.joined(separator: "\n"))
                             .fixedSize(horizontal: false, vertical: true)
                             .textSelection(.enabled)
                         Spacer(minLength: 0)
                     }
+                }
+            }
+        }
+        if let files = page.trust.first(where: \.isFiles) {
+            folding("Files", isFolded: $areFilesFolded) {
+                ForEach(files.words, id: \.self) { file in
+                    Text(file)
+                        .textSelection(.enabled)
                 }
             }
         }
