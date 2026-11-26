@@ -3,14 +3,16 @@ import SwiftUI
 
 struct SpotPeekView: View {
     let model: SpotsModel
+    let row: CGRect?
 
     var body: some View {
-        if let rect = model.peekRect, let source = model.peekSource {
+        if let rect = model.peekRect, let source = row ?? model.peekSource {
             let isOpen = model.isPeekOpen
             let shape = SpotSurfaceShape(rect: isOpen ? rect : source, radius: SpotTokens.cardRadius)
             ZStack(alignment: .topLeading) {
                 Color.clear
                     .spotGlass(in: shape)
+                    .morph(isOpen ? 1 : 0, opacity: { 1 - SheetMorph.cardOpacity(at: $0) })
                 if let peek = model.peek {
                     PeekFace(peek: peek)
                         .id(peek.run)
