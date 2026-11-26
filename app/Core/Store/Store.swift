@@ -13,10 +13,7 @@ public final class Store {
     public private(set) var summary = ""
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
-    public internal(set) var back: [StoreStop] = []
-    public internal(set) var forward: [StoreStop] = []
-    public internal(set) var visit = 0
-    @ObservationIgnored var visits = 0
+    public internal(set) var trail = PageTrail(StoreStop(place: .mine, spot: nil))
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?
@@ -47,16 +44,15 @@ public final class Store {
         if shelves[place] == nil {
             place = .mine
             page = nil
+            trail.replace(stop)
         }
-        back.removeAll { shelves[$0.place] == nil }
-        forward.removeAll { shelves[$0.place] == nil }
+        trail.keep { shelves[$0.place] != nil }
         refilter()
     }
 
     public func show(_ id: String?, search text: String?) async -> Bool {
         await read()
-        let from = stop
-        defer { leave(from) }
+        defer { arrive() }
         if let text {
             query = text
             let folded = text.trimmingCharacters(in: .whitespaces).folded
@@ -81,20 +77,18 @@ public final class Store {
             opened = source
             await read()
             guard let id = shelves[.source(source)]?.first?.id else { return false }
-            let from = stop
             query = ""
             move(to: .source(source))
             refilter()
             await load(id)
-            leave(from)
+            arrive()
             return page?.id == id
         }
     }
 
     public func choose(_ next: StorePlace) {
-        let from = stop
         move(to: next)
-        leave(from)
+        arrive()
     }
 
     func move(to next: StorePlace) {
@@ -107,18 +101,16 @@ public final class Store {
 
     public func search(_ text: String) {
         guard text != query else { return }
-        let from = stop
         query = text
         if page != nil { page = nil }
         refilter()
-        leave(from)
+        arrive()
     }
 
     public func open(_ id: String) async {
-        let from = stop
         await load(id)
         guard page?.id == id else { return }
-        leave(from)
+        arrive()
     }
 
     func load(_ id: String) async {
@@ -130,10 +122,9 @@ public final class Store {
     }
 
     public func closePage() {
-        let from = stop
         opening = nil
         if page != nil { page = nil }
-        leave(from)
+        arrive()
     }
 
     public func install(_ id: String) async {

@@ -10,7 +10,7 @@ public final class SettingsBook {
     public private(set) var looks: [ListedTheme] = []
     public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
-    public private(set) var trail = SettingsTrail()
+    public private(set) var trail = PageTrail(SettingsStop(page: .general, mark: .general))
     public private(set) var found = SettingsIndex.Found.none
     public private(set) var shownSpots: [SpotStanding] = []
     public private(set) var query = "" {
@@ -130,19 +130,19 @@ public final class SettingsBook {
         query = ""
         recording = nil
         target = nil
-        trail.go(next, remembers: remembers)
+        trail.go(trail.now.value.going(to: next), remembers: remembers)
     }
 
     public func goBack() {
         recording = nil
         target = nil
-        _ = trail.goBack()
+        trail.goBack()
     }
 
     public func goForward() {
         recording = nil
         target = nil
-        _ = trail.goForward()
+        trail.goForward()
     }
 
     public func search(_ text: String) {
@@ -156,15 +156,15 @@ public final class SettingsBook {
         target = nil
         switch place {
         case .row(let item):
-            guard let row = rows.row(item) else { return trail.land(.general) }
+            guard let row = rows.row(item) else { return trail.land(.landing(on: .general)) }
             reveal(row)
         case .search(let words):
-            trail.land(page)
+            trail.land(.landing(on: page))
             query = words
         case .page(.spotOf(let id)) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
-            trail.land(.general)
+            trail.land(.landing(on: .general))
         case .page(let page):
-            trail.land(page)
+            trail.land(.landing(on: page))
         }
     }
 
