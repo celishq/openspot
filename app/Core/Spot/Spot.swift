@@ -184,7 +184,8 @@ public struct Spot: Equatable, Sendable {
             showsInMenuBar: canShowInMenuBar,
             keys: settingKeys,
             isWindowByDefault: isWindow,
-            name: self.name
+            name: self.name,
+            isSource: self.isSource
         )
         if !self.hasSheet, !self.commands.isEmpty {
             spot.opensToKeys = true

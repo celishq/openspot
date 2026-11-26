@@ -101,8 +101,9 @@ public enum SettingCall: NounCall {
         switch key {
         case SpotRows.menuBarKey: return on("changes the menu bar") { .menuBar(spot: spot, isShown: $0) }
         case SpotRows.windowKey: return on("changes how a spot opens") { .window(spot: spot, isWindow: $0) }
-        case ReservedSetting.attachment where value != nil && value != "false":
-            return CallFault.refused("`attachment` takes only `false`, such as `openspot setting set --spot \(spot) attachment false`, or no value to show the source again.")
+        case ReservedSetting.attachment where value != nil:
+            guard let flag else { return CallFault.refused("`attachment` takes `true` or `false`, such as `openspot setting set --spot \(spot) attachment false`.") }
+            return SettingCall.set(spot: spot, key: key, value: flag ? nil : "false")
         case let key where GlobalKey.Act(setting: key) != nil:
             return changing(.key(spot: spot, act: GlobalKey.Act(setting: key) ?? .float, key: value), "sets a key of your Mac")
         default: return nil

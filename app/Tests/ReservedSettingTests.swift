@@ -10,9 +10,10 @@ final class ReservedSettingTests: XCTestCase {
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "menubar", "true")?.value as? SettingCall, .menuBar(spot: "notes", isShown: true))
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "window", "true")?.value as? SettingCall, .window(spot: "notes", isWindow: true))
         XCTAssertEqual(call("setting", "set", "--spot", "selection", "attachment", "false")?.value as? SettingCall, .set(spot: "selection", key: "attachment", value: "false"))
+        XCTAssertEqual(call("setting", "set", "--spot", "selection", "attachment", "true")?.value as? SettingCall, .set(spot: "selection", key: "attachment", value: nil))
         XCTAssertEqual(
             call("setting", "set", "--spot", "selection", "attachment", "no")?.value as? CallFault,
-            .refused("`attachment` takes only `false`, such as `openspot setting set --spot selection attachment false`, or no value to show the source again.")
+            .refused("`attachment` takes `true` or `false`, such as `openspot setting set --spot selection attachment false`.")
         )
         XCTAssertEqual(call("setting", "set", "--spot", "notes", "enabled", "false")?.value as? SettingCall, .set(spot: "notes", key: "enabled", value: "false"))
         XCTAssertEqual(call("setting", "set", "--spot", "shelf", "float", "shake")?.value as? SettingCall, .key(spot: "shelf", act: .float, key: "shake"))

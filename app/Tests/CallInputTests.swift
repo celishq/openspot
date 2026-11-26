@@ -142,7 +142,7 @@ final class CallInputTests: SpotRunsCase {
     private func settingRows(fields: [Manifest.Setting], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
-        let settings = SpotRows(spot: "script", fields: fields, showsInMenuBar: false, keys: [], isWindowByDefault: false, name: "")
+        let settings = SpotRows(spot: "script", fields: fields, showsInMenuBar: false, keys: [], isWindowByDefault: false, name: "", isSource: false)
         return try PrintForm.frame.text(of: settings.rows(in: file.read(), secrets: try secrets(["token": marker]).read()["script"] ?? [:]))
     }
 

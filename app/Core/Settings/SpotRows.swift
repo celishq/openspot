@@ -12,6 +12,7 @@ public struct SpotRows: Equatable, Sendable {
     static let menuBarIcon = "menubar.rectangle"
     static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
+    static let attachmentIcon = "paperclip"
 
     public let spot: String
     let fields: [Manifest.Setting]
@@ -19,6 +20,7 @@ public struct SpotRows: Equatable, Sendable {
     let keys: [Key]
     let isWindowByDefault: Bool
     let name: String
+    let isSource: Bool
 
     private func kept(in config: Config) -> [KeptSetting] {
         config.settings.filter { value in
@@ -40,10 +42,12 @@ public struct SpotRows: Equatable, Sendable {
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
+        let attachmentRow = row(ReservedSetting.attachment, "Show as attachment", String(config.setting(ReservedSetting.attachment, of: spot) != "false"), .toggle, Self.attachmentIcon)
+        let sourceRows = isSource ? [attachmentRow] : []
         let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
         let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
         let placeRows = showsInMenuBar ? [menuBarRow, windowRow] : []
-        return keyRows + fieldRows + keptRows + placeRows
+        return keyRows + fieldRows + keptRows + sourceRows + placeRows
     }
 
     private static func kind(of field: Manifest.Setting) -> SettingRow.Kind {

@@ -101,4 +101,16 @@ final class SpotRowsTests: XCTestCase {
         XCTAssertEqual(rows.map(\.value), [nil, nil, nil, nil, "~/Code", nil, "dark", "false", "false"])
         XCTAssertEqual(rows.map(\.icon), ["tray.full", "tray.full", "tray.full", "tray.full", "slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "menubar.rectangle", "macwindow"])
     }
+
+    func testASourceOfAttachmentsHasAShowAsAttachmentRowThatReadsItsKey() throws {
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("tab"), toml: "title = 'Browser Tab'\nuses = ['attachment']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"), toml: "title = 'Notes'")
+
+        XCTAssertEqual(try rows(of: "tab").first { $0.key == "attachment" }.map { [$0.title, $0.value, $0.kind.rawValue, $0.icon] }, ["Show as attachment", "true", "toggle", "paperclip"])
+        XCTAssertNil(try rows(of: "notes").first { $0.key == "attachment" })
+
+        try file.set(setting: "attachment", of: "tab", to: "false")
+
+        XCTAssertEqual(try rows(of: "tab").first { $0.key == "attachment" }?.value, "false")
+    }
 }
