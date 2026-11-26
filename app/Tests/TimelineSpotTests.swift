@@ -100,7 +100,7 @@ final class TimelineSpotTests: BuiltInCase {
 
         let rows = try await rows()
 
-        XCTAssertEqual(rows.map(\.swatch), ["#666666", nil, "#ff3b30"])
+        XCTAssertEqual(rows.map(\.color), ["#666666", nil, "#ff3b30"])
     }
 
     func testTheSpotIsTitledTimelineAndNotByItsNewestEntry() async throws {
@@ -261,7 +261,7 @@ final class TimelineSpotTests: BuiltInCase {
 
         let rows = try await finder.items(query: "#666", timeout: 60).items
 
-        XCTAssertEqual(rows.map(\.swatch), ["#666666"])
+        XCTAssertEqual(rows.map(\.color), ["#666666"])
     }
 
     func testTheSearchShowsACopiedImageWithItselfAsItsIcon() async throws {

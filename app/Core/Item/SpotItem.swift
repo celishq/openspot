@@ -118,7 +118,7 @@ public struct SpotItem: Equatable, Sendable {
         picture?.glyph
     }
 
-    public var swatch: String? {
+    public var color: String? {
         picture?.color
     }
 

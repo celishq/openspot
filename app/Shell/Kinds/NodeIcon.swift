@@ -11,7 +11,7 @@ struct NodeIcon: View {
         case .glyph(let text): Text(text)
         case .file(let path): SpotItemIcon(icon: FileIcon(path: path), glyph: nil, symbol: nil, size: side)
         case .image(let path): SpotItemIcon(icon: .image(path), glyph: nil, symbol: nil, size: side)
-        case .color(let hex): SpotItemIcon(icon: nil, glyph: nil, symbol: nil, size: side, swatch: hex)
+        case .color(let hex): SpotItemIcon(color: hex, size: side)
         case nil: EmptyView()
         }
     }
