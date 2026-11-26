@@ -213,6 +213,19 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(entries.map(\.value), ["abcdefgh"])
     }
 
+    func testTheTextQueryRanksATitleMatchOverANewerValueMatchAsThePanelDoes() throws {
+        let timeline = Timeline(folder: store)
+        let now = Date()
+        _ = try timeline.add(Timeline.Draft(kind: .text, values: ["agenda"], title: "Meeting Notes"), of: "notes", at: now)
+        _ = try timeline.add(Timeline.Draft(kind: .text, values: ["the meeting moved"], title: "Mail"), of: "notes", at: now.addingTimeInterval(1))
+
+        let found = timeline.list(Timeline.Query(text: "meeting"), at: now.addingTimeInterval(2))
+        let reversed = timeline.list(Timeline.Query(text: "notes meeting"), at: now.addingTimeInterval(2))
+
+        XCTAssertEqual(found.map(\.title), ["Meeting Notes", "Mail"])
+        XCTAssertEqual(reversed.map(\.title), ["Meeting Notes"])
+    }
+
     func testTheEntriesLastThroughARelaunch() throws {
         let now = Date()
         _ = try Timeline(folder: store).add(Timeline.Draft(kind: .text, values: ["kept"]), of: "notes", at: now)
