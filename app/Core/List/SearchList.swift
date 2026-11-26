@@ -21,10 +21,6 @@ public struct SearchList<Element> {
     public func matching(_ query: SearchQuery) -> [Element] {
         query.ranking(index, items: items, among: Array(items.indices), weights: PickWeights([])).map { elements[$0] }
     }
-
-    public func matching(_ text: String) -> [Element] {
-        matching(SearchQuery(text: text))
-    }
 }
 
 extension SearchList: Sendable where Element: Sendable {}
