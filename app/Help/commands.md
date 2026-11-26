@@ -50,7 +50,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 
 ## Commands
 
-[Try it from the terminal](../../docs/first-spot.md#try-it-from-the-terminal) shows how the commands that try a spot work together. In each command, an app is its bundle ID, such as `com.apple.Safari`.
+[Build and check a spot](../../docs/build-and-check-a-spot.md) shows how the commands that try a spot work together. In each command, an app is its bundle ID, such as `com.apple.Safari`.
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
