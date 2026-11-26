@@ -7,7 +7,7 @@ extension SettingsView {
         let rest = book.access.unneeded
         return Group {
             title(.header, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.Section.access.title, SettingsPage.Section.access.line) {
-                Button("About Access…") { isAboutShown = true }
+                Button("How Access Works…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
             if !book.spots.waiting.isEmpty {
@@ -80,21 +80,46 @@ extension SettingsView {
     }
 
     var about: some View {
-        VStack(alignment: .leading, spacing: SpotTokens.settingsValueGap) {
-            Text("About access")
-                .font(SpotType.settingsTitle)
-            ForEach(MacAccess.about, id: \.self) { Text($0) }
+        VStack(alignment: .leading, spacing: SpotTokens.settingsSheetGap) {
+            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                Text("How access works")
+                    .font(SpotType.settingsTitle)
+                Text("A spot uses a feature of your Mac only through Openspot, and only after you allow it once.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
+                ForEach(MacAccess.about, id: \.symbol) { fact in
+                    Label {
+                        Text(fact.text)
+                    } icon: {
+                        Image(systemName: fact.symbol).foregroundStyle(.secondary).frame(width: SpotTokens.settingsRowTile)
+                    }
+                }
+            }
+            VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
+                ForEach(SpotReadiness.allCases, id: \.self) { state in
+                    HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsRowGap) {
+                        Circle()
+                            .fill(SpotTheme.settingsState(state))
+                            .frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
+                        Text(state.word).fontWeight(.medium)
+                        Text(state.line).foregroundStyle(.secondary)
+                    }
+                }
+            }
             HStack {
                 Spacer()
                 Button("Done") { isAboutShown = false }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
+            .controlSize(.large)
             .padding(.top, SpotTokens.settingsSheetTop)
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(SpotTokens.settingsSheetPadding)
-        .frame(width: SpotTokens.settingsSheetWidth)
+        .frame(width: SpotTokens.settingsSheetWidth, alignment: .leading)
     }
 
     @ViewBuilder

@@ -75,6 +75,10 @@ extension SpotTheme {
         }
     }
 
+    static func settingsState(_ readiness: SpotReadiness) -> Color {
+        readiness == .ready ? settingsDone : settingsLate
+    }
+
     static func settingsTone(_ word: String?) -> Color {
         switch word {
         case "good": .green
