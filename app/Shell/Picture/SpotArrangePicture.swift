@@ -9,7 +9,7 @@ enum SpotArrangePicture {
     private static let panelTop: CGFloat = 40
 
     static func run(path: String, scene: PanelScene) -> Never {
-        SpotPicture.start()
+        SpotPicture.start(isLight: scene.isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()

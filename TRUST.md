@@ -24,7 +24,7 @@ it declares.
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`       | `app quit`, `app restart`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `window`, `open`, `float`, `key.<action>` or of the spot `openspot` |
-| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `setting list`, and `setting get`, `set` or `change` of another spot |
+| `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `store list`, `store get`, `store update`, `store revert`, `store add`, `store remove`, `store folders`, `setting list`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
@@ -34,7 +34,7 @@ it declares.
 | `read`      | `front app`, `browser tab`, `browser tabs`, `selection read`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | No call. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                    |
+| `account`   | `account new`, `account sign-out` and `account sync`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account). |
 
 - A call that needs a use the manifest doesn't name fails. Openspot tells you once a day for each spot and use, and the
   spot shows as Needs review in Settings until you allow the use; see [Let a spot use what it was refused](#let-a-spot-use-what-it-was-refused).
@@ -80,18 +80,17 @@ Settings opens at Access. It shows what macOS gives Openspot, and which spots ca
 - **macOS gives Openspot** lists each access that a spot needs, the spots that need it, and whether macOS allows it.
   The accesses that no spot needs fold into one row.
 
-A spot is in one of four states:
+A spot is in one of three states:
 
 | State        | Means                                                                    |
 | ------------ | ------------------------------------------------------------------------ |
 | Ready        | macOS gives Openspot each access that the spot's calls need.            |
 | Needs access | macOS doesn't give Openspot an access that the spot needs yet.          |
 | Needs review | The spot made a call of a use that its `uses` doesn't name.             |
-| Off          | You turned the spot off.                                                 |
 
 A spot that needs access or review shows a lock on its card. A press of the card opens Settings at the spot.
 
-To take an access away from one spot, turn the spot off. To take it from every spot, turn it off in System Settings.
+To take an access away from one spot of yours, remove the spot. To take it from every spot, turn it off in System Settings.
 
 ## Let a spot use what it was refused
 

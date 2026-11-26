@@ -34,7 +34,7 @@ struct SettingCalls {
         CommandAnswer.work { [places, caller, app, secrets] in
             if try secrets.read()[spot]?[key] != nil { try secrets.keep(nil, key: key, of: spot) }
             let config = try places.config.change { $0.set(setting: key, of: spot, to: nil) }
-            await app?.configChanged(.value(spot: spot, caller: caller), to: config)
+            await app?.configChanged([ReservedSetting.icon, ReservedSetting.attachment].contains(key) ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
             return ""
         }
     }
@@ -63,7 +63,7 @@ struct SettingCalls {
             var scan = scan
             scan.addSettings(in: places.config, read: config, defaults: places.readDefaultArrangement())
             let found = scan.scripts.filter { spot == nil || $0.id == spot }.compactMap(\.rows)
-            if let spot, found.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+            if let spot, found.isEmpty { throw SpotError.failed(1, "Openspot cannot find \(spot). Run `openspot spot list` to see each one.") }
             let kept = try secrets.read()
             rows += found.flatMap { $0.rows(in: config, secrets: kept[$0.spot] ?? [:]) }
         }
@@ -86,7 +86,7 @@ struct SettingCalls {
     func change(_ key: String, of spot: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("setting change \(key)") }
         return CommandAnswer.work {
-            guard await app.changeSetting(key, of: spot) else { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+            guard await app.changeSetting(key, of: spot) else { throw SpotError.failed(1, "Openspot cannot find \(spot). Run `openspot spot list` to see each one.") }
             return ""
         }
     }
