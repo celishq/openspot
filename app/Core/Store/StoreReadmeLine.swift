@@ -70,7 +70,12 @@ public enum StoreReadmeLine: Equatable, Sendable {
 
     private static func inline(_ text: String) -> AttributedString {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+        var shown = (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+        for run in shown.runs where run.inlinePresentationIntent?.contains(.code) == true {
+            let joined = String(shown[run.range].characters).replacingOccurrences(of: " ", with: "\u{00A0}").replacingOccurrences(of: "-", with: "\u{2011}")
+            shown.characters.replaceSubrange(run.range, with: joined)
+        }
+        return shown
     }
 
     private static func marker(of line: String) -> (shown: String, length: Int)? {

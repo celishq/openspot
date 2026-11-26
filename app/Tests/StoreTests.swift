@@ -195,6 +195,15 @@ final class StoreTests: XCTestCase {
         XCTAssertFalse(paste.preview.face.draws(on: .strip))
     }
 
+    func testInlineCodeOfAReadmeNeverBreaksAcrossLines() async throws {
+        try "Run `claude -p /usage` here.\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        _ = await store.show("clock", search: nil)
+
+        guard case .text(let text)? = store.page?.shown.first else { return XCTFail("No text") }
+        XCTAssertEqual(String(text.characters), "Run claude\u{00A0}\u{2011}p\u{00A0}/usage here.")
+    }
+
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
         let readme = "# Clock\n\nTells the time\nof each city.\n\n## Use\n\n- one\n  more\n- two\n1. first\n\n> A note\n> that wraps.\n\n```\nsh clock.sh\n  --zone Tokyo\n```\n"
         try readme.write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
