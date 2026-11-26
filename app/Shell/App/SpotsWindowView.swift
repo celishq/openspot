@@ -14,6 +14,9 @@ struct SpotsWindowView: View {
             }
             SpotsView(model: model)
                 .animation(nil) { $0.offset(x: origin.x, y: origin.y) }
+            SpotPreviewView(model: model)
+                .environment(\.spotIsShown, model.isShown)
+                .animation(nil) { $0.offset(x: origin.x, y: origin.y) }
             SpotCarriedCard(model: model, panelOrigin: origin)
                 .environment(\.spotIsShown, model.isShown)
             SpotTipView(model: model, panelOrigin: origin)

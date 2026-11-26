@@ -13,6 +13,7 @@ final class SpotsPanel: NSPanel {
     private var isForceDragging = false
     private var screenBackdrop: SpotScreenBackdrop?
     private var restFrame: NSRect?
+    private var reachFrame: NSRect?
 
     override var canBecomeKey: Bool { true }
 
@@ -106,11 +107,38 @@ final class SpotsPanel: NSPanel {
         CATransaction.commit()
     }
 
+    func hasRoomRight(of sheet: CGRect, for width: CGFloat) -> Bool {
+        guard let area = screen?.visibleFrame else { return true }
+        let rest = reachFrame ?? frame
+        return rest.minX + sheet.maxX + width <= area.maxX || rest.minX + sheet.minX - width < area.minX
+    }
+
+    func reach(_ rect: CGRect?) {
+        guard restFrame == nil else { return }
+        let rest = reachFrame ?? frame
+        guard let rect else {
+            guard reachFrame != nil else { return }
+            reachFrame = nil
+            place.left = 0
+            place.top = 0
+            return resize(to: rest)
+        }
+        reachFrame = rest
+        let content = NSRect(x: rest.minX + rect.minX, y: rest.maxY - rect.maxY, width: rect.width, height: rect.height)
+        let next = rest.union(content)
+        place.left = rest.minX - next.minX
+        place.top = next.maxY - rest.maxY
+        resize(to: next)
+    }
+
     func layOut() {
-        let rest = restFrame ?? frame
+        let rest = restFrame ?? reachFrame ?? frame
+        reachFrame = nil
         let width = SpotTokens.panelWidth
         let next = NSRect(x: rest.midX - width / 2, y: rest.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight)
         if restFrame == nil {
+            place.left = 0
+            place.top = 0
             resize(to: next)
         } else {
             restFrame = next
@@ -122,7 +150,8 @@ final class SpotsPanel: NSPanel {
     func arrange(_ isOn: Bool) {
         if isOn {
             guard restFrame == nil else { return }
-            restFrame = frame
+            restFrame = reachFrame ?? frame
+            reachFrame = nil
             cover()
         } else if let rest = restFrame {
             restFrame = nil

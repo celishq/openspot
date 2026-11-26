@@ -5,17 +5,23 @@ struct SpotPreviewView: View {
     let model: SpotsModel
 
     var body: some View {
-        let shape = SpotRoundShape(SurfaceEdge.sheet)
-        ZStack {
-            if let preview = model.preview {
-                PreviewFace(preview: preview)
-                    .id(preview.run)
+        if let rect = model.previewRect, let source = model.previewSource {
+            let isOpen = model.isPreviewOpen
+            let shape = SpotSurfaceShape(rect: isOpen ? rect : source, radius: SpotTokens.cardRadius)
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                    .spotGlass(in: shape)
+                if let preview = model.preview {
+                    PreviewFace(preview: preview)
+                        .id(preview.run)
+                        .frame(width: rect.width, height: rect.height)
+                        .offset(x: rect.minX, y: rect.minY)
+                        .morph(isOpen ? 1 : 0, opacity: { SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
+                        .clipShape(shape)
+                }
             }
+            .allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(shape)
-        .spotGlass(in: shape)
-        .environment(\.spotIsShown, true)
     }
 }
 

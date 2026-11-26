@@ -87,8 +87,10 @@ public final class SpotsModel {
     }
     public private(set) var heldDetails: AttachmentDetails?
     public internal(set) var preview: ItemPreview?
+    public internal(set) var previewRect: CGRect?
+    public internal(set) var isPreviewOpen = false
+    @ObservationIgnored var isPreviewGrowing = false
     var isPreviewing = false
-    @ObservationIgnored var previewPlace: CGRect?
     @ObservationIgnored var previewAsked: String?
     @ObservationIgnored var ownPreviews: [String: ItemPreview] = [:]
     @ObservationIgnored var previewAsk: Task<Void, Never>?

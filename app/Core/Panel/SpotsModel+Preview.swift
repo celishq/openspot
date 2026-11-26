@@ -65,6 +65,51 @@ extension SpotsModel {
         takePreview()
     }
 
+    public var previewSource: CGRect? {
+        guard let rect = previewRect, let sheet = openSheet?.sheetRect else { return nil }
+        let side = 2 * SpotTokens.cardRadius
+        return CGRect(x: rect.minX > sheet.minX ? sheet.maxX - side : sheet.minX, y: rect.minY, width: side, height: rect.height)
+    }
+
+    private func placePreview(beside sheet: CGRect?) {
+        guard let sheet, isShown else {
+            guard previewRect != nil else { return }
+            guard isShown else { return dropPreview() }
+            change(.sheet(isOpen: false), { isPreviewOpen = false }, completion: { [weak self] in
+                guard self?.isPreviewOpen == false else { return }
+                self?.dropPreview()
+            })
+            return
+        }
+        let width = SpotTokens.previewWidth
+        let right = host.hasRoomRight(of: sheet, for: width + SpotTokens.previewGap)
+        let rect = CGRect(x: right ? sheet.maxX + SpotTokens.previewGap : sheet.minX - SpotTokens.previewGap - width, y: sheet.minY, width: width, height: min(SpotTokens.previewHeight, sheet.height))
+        guard rect != previewRect || !isPreviewOpen && !isPreviewGrowing else { return }
+        let isNew = previewRect == nil
+        if rect != previewRect {
+            host.reach(rect)
+            previewRect = rect
+        }
+        if isNew {
+            isPreviewGrowing = true
+            host.nextFrame { [weak self] in
+                guard let self, isPreviewGrowing else { return }
+                isPreviewGrowing = false
+                guard previewRect != nil, isPreviewing else { return }
+                change(.sheet(isOpen: true)) { isPreviewOpen = true }
+            }
+        } else if !isPreviewOpen, !isPreviewGrowing {
+            change(.sheet(isOpen: true)) { isPreviewOpen = true }
+        }
+    }
+
+    private func dropPreview() {
+        isPreviewGrowing = false
+        if isPreviewOpen { isPreviewOpen = false }
+        if previewRect != nil { previewRect = nil }
+        host.reach(nil)
+    }
+
     private func previewKey(of item: SpotItem) -> String {
         ([openSheetID ?? "", item.run] + item.fields.map { "\($0.key)=\($0.value)" }).joined(separator: "\n")
     }
@@ -78,11 +123,7 @@ extension SpotsModel {
         let key = item.map(previewKey)
         let next = item.flatMap { item in key.flatMap { ownPreviews[$0] } ?? ItemPreview(item: item) }
         if next != preview { preview = next }
-        let place = next == nil ? nil : openSheet?.sheetRect
-        if place != previewPlace {
-            previewPlace = place
-            if let place { host.showPreview(beside: place) } else { host.hidePreview() }
-        }
+        placePreview(beside: next == nil ? nil : openSheet?.sheetRect)
         guard key != previewAsked else { return }
         previewAsk?.cancel()
         previewAsked = key

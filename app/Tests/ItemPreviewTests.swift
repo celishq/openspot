@@ -17,14 +17,18 @@ final class ItemPreviewTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(preview))
 
+        let sheet = try XCTUnwrap(model.openSheet?.sheetRect)
+        let rect = CGRect(x: sheet.maxX + SpotTokens.previewGap, y: sheet.minY, width: SpotTokens.previewWidth, height: min(SpotTokens.previewHeight, sheet.height))
         XCTAssertEqual(model.preview?.run, "a")
-        XCTAssertEqual(host.previews.compactMap { $0 }.count, 1)
+        XCTAssertEqual(model.previewRect, rect)
+        XCTAssertEqual(host.reaches, [rect])
         XCTAssertTrue(model.hint.contains("⌘Y Close Preview"), model.hint)
+        try await wait("the preview grown out of the sheet") { self.model.isPreviewOpen }
 
         _ = model.handleSearchKey(ActionKey(name: "down"))
 
         XCTAssertEqual(model.preview?.run, "b")
-        XCTAssertEqual(host.previews.count, 1)
+        XCTAssertEqual(host.reaches, [rect])
     }
 
     func testTheShownHintSaysClosePreviewOnceThePreviewOpens() async throws {
@@ -36,6 +40,17 @@ final class ItemPreviewTests: PanelCase {
         try await wait("the hint of the open preview") { self.model.sheetHint.groups.contains { $0.words == "Close Preview" } }
     }
 
+    func testWithNoRoomOnTheRightThePreviewGrowsOnTheLeft() async throws {
+        try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
+        host.roomRight = false
+
+        _ = model.handleKey(preview)
+
+        let sheet = try XCTUnwrap(model.openSheet?.sheetRect)
+        XCTAssertEqual(model.previewRect?.maxX, sheet.minX - SpotTokens.previewGap)
+        XCTAssertEqual(model.previewSource?.minX, sheet.minX)
+    }
+
     func testEscapeClosesThePreviewFirstAndThenTheSheet() async throws {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
         _ = model.handleKey(preview)
@@ -43,8 +58,8 @@ final class ItemPreviewTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
 
         XCTAssertNil(model.preview)
-        XCTAssertEqual(host.previews.last, .some(nil))
         XCTAssertEqual(model.openSheetID, "history")
+        try await wait("the panel back to its own size") { self.model.previewRect == nil && self.host.reaches.last == .some(nil) }
     }
 
     func testARowWithNothingToShowHasNoPreviewAndCommandYGoesOn() async throws {
@@ -76,7 +91,7 @@ final class ItemPreviewTests: PanelCase {
         model.panelWillHide()
 
         XCTAssertNil(model.preview)
-        XCTAssertEqual(host.previews.last, .some(nil))
+        try await wait("the panel back to its own size") { self.model.previewRect == nil && self.host.reaches.last == .some(nil) }
     }
 
     private func colors() throws {

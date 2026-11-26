@@ -133,14 +133,15 @@ final class FakeHost: SpotsHost {
         submenus.append(nil)
     }
 
-    var previews: [CGRect?] = []
+    var reaches: [CGRect?] = []
+    var roomRight = true
 
-    func showPreview(beside sheet: CGRect) {
-        previews.append(sheet)
+    func hasRoomRight(of sheet: CGRect, for width: CGFloat) -> Bool {
+        roomRight
     }
 
-    func hidePreview() {
-        previews.append(nil)
+    func reach(_ rect: CGRect?) {
+        reaches.append(rect)
     }
 
     var floatsFollowingDrag: [Bool] = []
