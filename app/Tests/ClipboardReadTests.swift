@@ -64,6 +64,19 @@ final class ClipboardReadTests: XCTestCase {
         XCTAssertEqual(block.value("title"), "Copied image")
     }
 
+    func testTwoReadsOfAnImageAtOneCountSaveTwoFilesAndLeaveTheOtherCopiesOfTheClipboard() async throws {
+        let chip = folder.appendingPathComponent("Clipboard/Copied image 7.png")
+        try FileManager.default.createDirectory(at: chip.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data([9]).write(to: chip)
+        board.copy(image: Data([1, 2, 3]), kind: "png")
+
+        let first = try await call(["--blocks"])
+        let second = try await call(["--blocks"])
+
+        XCTAssertNotEqual(TextBlock.blocks(in: first.output).first?.value("file"), TextBlock.blocks(in: second.output).first?.value("file"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: chip.path))
+    }
+
     func testBlocksPrintNothingForAPasswordOrAnEmptyText() async throws {
         board.copy(concealed: "hunter2")
         let password = try await call(["--blocks"])

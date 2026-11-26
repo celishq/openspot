@@ -143,6 +143,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
+    func testAnEventThatWaitsOnTheSheetOfASpotThatUsesTheTimelineRunsOnceThePanelClosesItsShow() async throws {
+        try script(toml: "uses = ['timeline']\n\n[on]\n\"clipboard.change\" = true", "[ \"$1\" = clipboard.change ] && touch '\(path("heard"))' && exit 0\nprintf 'item=a\\ntitle=A\\n---\\n'\nsleep 5")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the show") { self.runs.isShowing }
+        runs.raise(.named("clipboard.change", value: nil))
+
+        runs.panelClosed()
+
+        try await wait("the event's run") { self.exists("heard") }
+    }
+
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
         menuBar.insert("script")
         try script(toml: "[on]\nevery = 1", "printf 'text=t\\ntitle=1\\n'")
