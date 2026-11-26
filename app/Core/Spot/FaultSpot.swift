@@ -8,9 +8,9 @@ public struct FaultSpot: Equatable, Sendable {
     public let file: URL
     public let name: String
     public let faults: [String]
-    let prompt: AgentPrompt
+    let prompt: SpotPrompt
 
-    public init(file: URL, name: String, faults: [String], prompt: AgentPrompt) {
+    public init(file: URL, name: String, faults: [String], prompt: SpotPrompt) {
         self.file = file
         self.name = name
         self.faults = faults

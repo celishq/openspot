@@ -53,7 +53,7 @@ public struct SpotEvidence: Equatable, Sendable {
         """
         What Openspot counted of this spot over the last \(Self.days) days on this Mac:
         \(facts.map { "- \($0)" }.joined(separator: "\n"))
-        Run \(AgentBrief.quoted(app)) spot stats --days \(Self.days) --spot \(id) --by version for every count.
+        Run \(AgentPrompt.quoted(app)) spot stats --days \(Self.days) --spot \(id) --by version for every count.
         """
     }
 

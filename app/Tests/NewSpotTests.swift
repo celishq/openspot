@@ -78,7 +78,7 @@ final class NewSpotTests: BuiltInCase {
     func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
         try await newSpot().perform("press", input: "input.item=time in kyiv\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasSuffix("<request>\ntime in kyiv\n</request>"), prompt)
     }
@@ -88,7 +88,7 @@ final class NewSpotTests: BuiltInCase {
 
         try await spot.perform("copy", input: "input.describe=Show the weather\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value ?? "", "")
     }
@@ -112,10 +112,10 @@ final class NewSpotTests: BuiltInCase {
 
         try await spot.perform("copy", input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasSuffix("<request>\nShow the weather\nin Kyiv\n</request>"), prompt)
-        XCTAssertTrue(prompt.contains(AgentPrompt.finishNew), prompt)
+        XCTAssertTrue(prompt.contains(SpotPrompt.finishNew), prompt)
         XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
@@ -126,7 +126,7 @@ final class NewSpotTests: BuiltInCase {
             try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual((error as? SpotError)?.reason, AgentPrompt.wordsNeeded)
+            XCTAssertEqual((error as? SpotError)?.reason, SpotPrompt.wordsNeeded)
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
     }
@@ -193,7 +193,7 @@ final class NewSpotTests: BuiltInCase {
 
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.contains(spots.spotFile("weather").path), prompt)
-        XCTAssertTrue(prompt.contains(AgentPrompt.finishChange), prompt)
+        XCTAssertTrue(prompt.contains(SpotPrompt.finishChange), prompt)
         XCTAssertTrue(prompt.hasSuffix("<request>\nAdd a refresh button\n</request>"), prompt)
         XCTAssertFalse(prompt.contains("comes with Openspot"))
     }
@@ -205,7 +205,7 @@ final class NewSpotTests: BuiltInCase {
 
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.contains("The server did not answer."), prompt)
-        XCTAssertTrue(prompt.hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\n\(SpotPrompt.review)\n</request>"), prompt)
     }
 
     func testEachSpotKeepsADraftOfItsOwnApartFromNewSpot() async throws {

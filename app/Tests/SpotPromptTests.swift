@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class AgentPromptTests: XCTestCase {
+final class SpotPromptTests: XCTestCase {
     private var folder: URL!
     private var examples: URL!
 
@@ -15,8 +15,8 @@ final class AgentPromptTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func prompt(app: String = "openspot") -> AgentPrompt {
-        AgentPrompt(folder: folder, references: [examples], app: app)
+    private func prompt(app: String = "openspot") -> SpotPrompt {
+        SpotPrompt(folder: folder, references: [examples], app: app)
     }
 
     private var weather: URL {
@@ -29,13 +29,13 @@ final class AgentPromptTests: XCTestCase {
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\n".writeScript(to: client)
 
-        XCTAssertEqual(AgentPrompt.command(of: app), client.path)
+        XCTAssertEqual(SpotPrompt.command(of: app), client.path)
     }
 
     func testThePromptNamesTheAppWhenNoClientIsBesideIt() {
         let app = folder.appendingPathComponent("Contents/MacOS/Openspot").path
 
-        XCTAssertEqual(AgentPrompt.command(of: app), app)
+        XCTAssertEqual(SpotPrompt.command(of: app), app)
     }
 
     func testEachCommandGivesAPathWithASpaceInQuotes() {
@@ -81,7 +81,7 @@ final class AgentPromptTests: XCTestCase {
         ]
 
         for text in texts {
-            XCTAssertTrue(text.contains(AgentBrief.noQuestion), text)
+            XCTAssertTrue(text.contains(AgentPrompt.noQuestion), text)
             XCTAssertFalse(text.contains("Ask me"), text)
         }
     }
@@ -96,13 +96,13 @@ final class AgentPromptTests: XCTestCase {
     }
 
     func testAChangeWithNoWishAndNoCountsAsksForAReview() {
-        XCTAssertTrue(prompt().changing(weather).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
+        XCTAssertTrue(prompt().changing(weather).hasSuffix("<request>\n\(SpotPrompt.review)\n</request>"))
     }
 
     func testAFixGivesTheFaultsAndAsksToLoadTheSpotAgain() {
         let text = prompt().fixing(weather, faults: ["Weather has an unknown key."])
 
         XCTAssertTrue(text.contains("Weather has an unknown key."))
-        XCTAssertTrue(text.hasSuffix("<request>\n\(AgentPrompt.loadAgain)\n</request>"))
+        XCTAssertTrue(text.hasSuffix("<request>\n\(SpotPrompt.loadAgain)\n</request>"))
     }
 }

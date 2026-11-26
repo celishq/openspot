@@ -427,7 +427,7 @@ public final class SpotsModel {
         let hosted = reviewed.map { [$0.spot] } ?? []
         guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.allowed != allowed }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
         var scan = ((try? load.result(hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])).allowing(allowed)
-        let faults = load.faultSpots(of: scan, prompt: AgentPrompt(places: files))
+        let faults = load.faultSpots(of: scan, prompt: SpotPrompt(places: files))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         scan.addSettings(in: files.config, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))

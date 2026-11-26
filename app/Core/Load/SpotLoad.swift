@@ -83,7 +83,7 @@ public struct SpotLoad: Sendable {
         return ([toml] + (sources[spot.url.path] ?? [])).reduce(own) { $0 + (stamp[$1] ?? []) }
     }
 
-    public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {
+    public func faultSpots(of scan: ScanResult, prompt: SpotPrompt) -> [Spot] {
         let loaded = Set(scan.files.filter { !$0.spots.isEmpty }.map(\.id))
         let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
         return faults.keys.sorted().compactMap { id in

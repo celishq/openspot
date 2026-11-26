@@ -19,7 +19,7 @@ public struct ThemePrompt: Equatable, Sendable {
     static let wordsNeeded = "Say what look you want, such as `openspot prompt theme Openspot warm colours and round corners`."
 
     public func asking(_ wish: String) -> String {
-        AgentBrief(
+        AgentPrompt(
             app: app,
             task: "Change the look of Openspot, its theme \(theme), as my request says.",
             place: [
@@ -39,7 +39,7 @@ public struct ThemePrompt: Equatable, Sendable {
     }
 
     private var quoted: String {
-        AgentBrief.quoted(app)
+        AgentPrompt.quoted(app)
     }
 
     private var file: String {

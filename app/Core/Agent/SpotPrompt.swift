@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AgentPrompt: Equatable, Sendable {
+public struct SpotPrompt: Equatable, Sendable {
     public let folder: URL
     public let references: [URL]
     public let app: String
@@ -29,7 +29,7 @@ public struct AgentPrompt: Equatable, Sendable {
     static let loadAgain = "Make Openspot load this spot again, and keep what it does."
 
     public func building(_ description: String) -> String {
-        AgentBrief(
+        AgentPrompt(
             app: app,
             task: "Build a new spot that does what my request says.",
             place: place + ["Make the spot in a new folder of the spots folder."],
@@ -55,7 +55,7 @@ public struct AgentPrompt: Equatable, Sendable {
 
     private func brief(of file: URL, task: String, facts: [String], request: String) -> String {
         let id = SpotID(file: file).description
-        return AgentBrief(
+        return AgentPrompt(
             app: app,
             task: task,
             place: place + ["The spot \(id) is in \(file.deletingLastPathComponent().path), and its main file is \(file.path)."],
@@ -67,7 +67,7 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     private var quoted: String {
-        AgentBrief.quoted(app)
+        AgentPrompt.quoted(app)
     }
 
     private var place: [String] {

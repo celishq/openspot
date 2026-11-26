@@ -7,8 +7,8 @@ final class SpotEvidenceTests: XCTestCase {
     private let weather = Spot(id: "weather", name: "Weather", url: URL(fileURLWithPath: "/spots/weather.spot/weather.sh"))
     private let other = Spot(id: "other", name: "Other", url: URL(fileURLWithPath: "/other.sh"))
 
-    private var prompt: AgentPrompt {
-        AgentPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot")
+    private var prompt: SpotPrompt {
+        SpotPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot")
     }
 
     func testAFailingSpotGetsItsFailuresAndTheGoalToMakeEveryCallPassWithNoQuestion() throws {
@@ -49,7 +49,7 @@ final class SpotEvidenceTests: XCTestCase {
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
 
         XCTAssertNil(evidence.goal)
-        XCTAssertTrue(AgentPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot").changing(URL(fileURLWithPath: "/spots/weather.spot/weather.sh"), evidence: evidence).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
+        XCTAssertTrue(SpotPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot").changing(URL(fileURLWithPath: "/spots/weather.spot/weather.sh"), evidence: evidence).hasSuffix("<request>\n\(SpotPrompt.review)\n</request>"))
         XCTAssertTrue(evidence.facts.contains("CPU: 1.5 s a day, 33% of the CPU of all spots, 1.5 s for each act."), "\(evidence.facts)")
         XCTAssertTrue(evidence.facts.contains("While the panel was hidden: 500 ms CPU and 200 wakeups a day."), "\(evidence.facts)")
         XCTAssertTrue(evidence.facts.contains("Acts: 1.0 a day, 100% of the acts of all spots."), "\(evidence.facts)")
@@ -69,7 +69,7 @@ final class SpotEvidenceTests: XCTestCase {
 
     func testASpotWithNoCountsHasNoEvidenceAndThePromptAsksForAReview() {
         XCTAssertNil(SpotEvidence(of: "weather", in: StatsLog(at: day).days(14, at: day), app: "openspot"))
-        XCTAssertTrue(prompt.changing(file, failure: nil, evidence: nil).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
+        XCTAssertTrue(prompt.changing(file, failure: nil, evidence: nil).hasSuffix("<request>\n\(SpotPrompt.review)\n</request>"))
     }
 
     func testAWishKeepsItsWordsAndGetsTheFactsBelow() throws {

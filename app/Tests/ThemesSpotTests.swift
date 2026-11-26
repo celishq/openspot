@@ -74,7 +74,7 @@ final class ThemesSpotTests: BuiltInCase {
         try await themes.perform("copy", input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
 
         XCTAssertEqual(page.fields.map { $0.block.value("field") }, ["describe"])
-        XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(SpotPrompt.copied)"])
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
         XCTAssertTrue(prompt.hasSuffix("<request>\nWarm and round\n</request>"), prompt)
         XCTAssertTrue(prompt.contains(ThemePrompt.finish), prompt)
