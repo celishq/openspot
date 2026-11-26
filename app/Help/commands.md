@@ -100,7 +100,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
 | `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
-| `openspot check spots [--json] <folder>`           | Loads and runs each spot of the folder once, and prints a `fault` block for each error.         |
+| `openspot check spots [--json] <folder>`           | Loads and runs each spot of the folder once, and prints a `fault` block for each error. On stderr, it notes each spot that takes a way past a shell script.         |
 | `openspot check sheet`                             | Reports the faults of a sheet on stdin.                                                         |
 | `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |

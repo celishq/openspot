@@ -120,6 +120,19 @@ public struct SpotCheck: Sendable {
         return findings
     }
 
+    public func notes() throws -> [String] {
+        try folder.scan().scripts.filter { !$0.isBuiltIn }.sorted { $0.id < $1.id }.compactMap { script in
+            let ways = [
+                script.url.pathExtension == "js" ? "JavaScript" : nil,
+                script.url.pathExtension == "swift" ? "Swift" : nil,
+                script.views.isEmpty ? nil : "its own view",
+                script.mode.stays ? "stay = true" : nil
+            ].compactMap { $0 }
+            guard !ways.isEmpty else { return nil }
+            return "\(script.id): it takes \(ways.dropLast().joined(separator: ", "))\(ways.count > 1 ? " and " : "")\(ways.last ?? ""). Say in your answer why a shell script could not do it."
+        }
+    }
+
     private static func each<Item: Sendable, Answer: Sendable>(_ items: [Item], _ work: @escaping @Sendable (Item) async -> Answer) async -> [Answer?] {
         await withTaskGroup(of: (Int, Answer).self) { group in
             var answers = [Answer?](repeating: nil, count: items.count)
