@@ -231,7 +231,7 @@ title = "Timeline in search"
 icon = "clock.arrow.circlepath"
 detail = "The newest entries of the timeline that hold the words you type"
 answers = "last"
-uses = ["timeline", "read", "spots"]
+uses = ["spots"]
 
 [scripts.timeline-search.bindings]
 timeline = { spot = "openspot/timeline" }

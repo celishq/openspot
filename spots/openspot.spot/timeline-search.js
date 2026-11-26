@@ -29,11 +29,10 @@ function entries(text) {
 export default {
   search({ text }) {
     if (!isOn()) return []
-    const sheet = openspot.call(["spot", "run", "openspot/timeline", "sheet.text", `value=${text}`])
+    const sheet = openspot.call(["spot", "run", "openspot/timeline", "sheet.text", `value=${text}`, "limit=3"])
     if (sheet.code !== 0) return []
     return entries(sheet.stdout)
       .filter((row) => row.item && row.item !== "empty")
-      .slice(0, 3)
       .map(({ parent, ...row }) => ({ ...row, detail: `Timeline · ${row.detail}` }))
   },
   async press(input, env) {

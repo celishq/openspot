@@ -51,11 +51,24 @@ final class TimelineSpotTests: BuiltInCase {
 
         XCTAssertEqual(rows.map(\.title), ["fresh", "https://a.com", "old"])
         XCTAssertEqual(rows.prefix(2).map(\.section), ["Today", "Today"])
-        let older = try XCTUnwrap(rows.last?.section)
-        XCTAssertFalse(["Today", "Yesterday"].contains(older), older)
-        XCTAssertFalse(older.contains("  "), older)
+        let day = DateFormatter()
+        day.locale = Locale(identifier: "en_US_POSIX")
+        day.dateFormat = "EEEE, MMMM d"
+        XCTAssertEqual(rows.last?.section, day.string(from: now.addingTimeInterval(-3 * 86_400)))
         XCTAssertEqual(rows.map(\.openTitle), ["Copy", "Copy", "Copy"])
         XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
+    }
+
+    func testTheTitlesOfPastDaysStartNoProcessForEachDay() async throws {
+        let calls = root.appendingPathComponent("dates")
+        try fake("date", "echo date >> '\(calls.path)'\nexec /bin/date \"$@\"")
+        let now = Date()
+        for days in 2...5 { try add(.text, "day \(days)", at: now.addingTimeInterval(Double(-days) * 86_400)) }
+
+        let rows = try await rows()
+
+        XCTAssertEqual(Set(rows.compactMap(\.section)).count, 4)
+        XCTAssertEqual(((try? String(contentsOf: calls, encoding: .utf8)) ?? "").split(separator: "\n").count, 2)
     }
 
     func testAFileOfAPictureShowsAsAnImageWithItselfAsItsIcon() async throws {
@@ -203,6 +216,28 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows, [])
     }
 
+    func testAKeyStartsNoProcessWhileShowInSearchIsOff() async throws {
+        runs.api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs)
+        let programs = try countPrograms()
+        try add(.text, "cafe latte")
+        let message = ShowEvent.typed("cafe", inSheet: false).message()
+
+        let answer = try await runs.answer(of: finder, message.handler, input: message.text, limit: 60)
+
+        XCTAssertEqual(Frame(text: answer, kinds: try finder.kinds).items, [])
+        XCTAssertEqual(programs(), [])
+    }
+
+    func testTheSearchAsksTheTimelineForThreeEntries() async throws {
+        try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
+        let programs = try countPrograms()
+        try add(.text, "cafe latte")
+
+        _ = try await finder.items(query: "cafe", timeout: 60)
+
+        XCTAssertTrue(programs().contains("openspot timeline list --all --limit 3 --text cafe"), "\(programs())")
+    }
+
     func testTheSearchShowsTheThreeNewestEntriesThatHoldTheWords() async throws {
         try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
         let now = Date()
@@ -235,6 +270,12 @@ final class TimelineSpotTests: BuiltInCase {
 
         XCTAssertEqual(rows.map(\.picture), [.image("/tmp/cafe.png")])
         XCTAssertEqual(rows.first?.file, "/tmp/cafe.png")
+    }
+
+    func testReturnOnARowOfTheSearchCopiesItsEntry() async throws {
+        try await finder.perform("press", input: "input.item.kind=text\ninput.item.text=hello\n", timeout: 60)
+
+        XCTAssertEqual(effects, ["clipboard copy |hello", "toast Copied."])
     }
 
     func testCopyCopiesAsReturnInTheSheetDoes() async throws {

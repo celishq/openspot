@@ -2,18 +2,25 @@
 # a row for each entry, with its time and the detail its spot gave under its title, or else what it holds, such as
 # `09:57 · 3 lines` or `09:57 · github.com`, and the spot it came from when that is not Clipboard. The icon is the one
 # its spot gave, or else that of its kind; a colour such as `#ff3b30` shows as a square of itself.
-BEGIN { RS = ""; FS = "\n"; count = 0 }
+BEGIN {
+  RS = ""; FS = "\n"; count = 0
+  split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday", names, " ")
+  for (i = 1; i <= 7; i++) weekdays[i - 1] = names[i]
+  split("January February March April May June July August September October November December", months, " ")
+}
 
-function day_title(day,    line) {
+function day_title(day,    y, m, d) {
   if (day == today) return "Today"
   if (day == yesterday) return "Yesterday"
-  if (!(day in titles)) {
-    line = ""
-    ("date -j -f %F " day " '+%A, %B %e'" | getline line)
-    gsub(/  +/, " ", line)
-    titles[day] = (line == "" ? day : line)
-  }
-  return titles[day]
+  y = substr(day, 1, 4) + 0
+  m = substr(day, 6, 2) + 0
+  d = substr(day, 9, 2) + 0
+  return weekdays[weekday(y, m, d)] ", " months[m] " " d
+}
+
+function weekday(y, m, d) {
+  if (m < 3) y--
+  return (y + int(y / 4) - int(y / 100) + int(y / 400) + substr("032503514624", m, 1) + d) % 7
 }
 
 function what(kind, value, long, count,    host, lines) {

@@ -6,12 +6,12 @@
 # it, with a toast that puts it back, and Tab hands it to a spot that takes it.
 
 
-# Prints the frame of the entries that hold the words of $1.
+# Prints the frame of the newest entries that hold the words of $1: $2 of them, or 500.
 list() {
   if [ -n "$1" ]; then
-    entries=$(openspot timeline list --all --limit 500 --text "$1") || exit 1
+    entries=$(openspot timeline list --all --limit "${2:-500}" --text "$1") || exit 1
   else
-    entries=$(openspot timeline list --all --limit 500) || exit 1
+    entries=$(openspot timeline list --all --limit "${2:-500}") || exit 1
   fi
   printf 'frame=\nrecents=false\n'
   printf '%s\n' "$entries" | awk -v today="$(date +%F)" -v yesterday="$(date -v-1d +%F)" -f "${0%/*}/timeline.awk"
@@ -37,7 +37,7 @@ case "$1" in
     openspot timeline keep "${days:-30}" || exit 1
     list ""
     ;;
-  sheet.text) list "$(value value)" ;;
+  sheet.text) list "$(value value)" "$(value limit)" ;;
   command) exec openspot spot open openspot/timeline ;;
   press)
     [ "$(value item)" = empty ] && exit 0
