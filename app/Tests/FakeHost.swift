@@ -133,6 +133,16 @@ final class FakeHost: SpotsHost {
         submenus.append(nil)
     }
 
+    var previews: [CGRect?] = []
+
+    func showPreview(beside sheet: CGRect) {
+        previews.append(sheet)
+    }
+
+    func hidePreview() {
+        previews.append(nil)
+    }
+
     var floatsFollowingDrag: [Bool] = []
 
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {

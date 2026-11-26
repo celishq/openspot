@@ -13,6 +13,7 @@ Every spot answers the same keys, so you learn them once.
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
 | `⌘Y`       | Opens the History of a spot whose Return runs its action.                     |
 | `⌘K`       | Opens the menu of all actions.                                                |
+| Space      | In a sheet with an empty field, shows the selected row beside the sheet: its whole text, picture, file or link. |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
 - The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Remove.

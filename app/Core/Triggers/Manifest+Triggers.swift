@@ -147,6 +147,7 @@ extension Manifest {
         }
 
         private static let opens = [EventName.panelOpen, EventName.sheetOpen, EventName.sheetText]
+        private static let asked = [EventName.itemPreview]
 
         public var shows: Bool {
             !events.isEmpty || every != nil || lists
@@ -170,16 +171,20 @@ extension Manifest {
             events.contains(EventName.sheetOpen) || searchesSheet
         }
 
+        public var previews: Bool {
+            events.contains(EventName.itemPreview)
+        }
+
         public var searchesSheet: Bool {
             events.contains(EventName.sheetText)
         }
 
         public var waitsForEvents: Bool {
-            !events.isEmpty && every == nil && !lists && !events.contains(where: Self.opens.contains)
+            events.contains(where: { !Self.asked.contains($0) }) && every == nil && !lists && !events.contains(where: Self.opens.contains)
         }
 
         public func admits(_ name: String, value: String?) -> Bool {
-            guard events.contains(name), !Self.opens.contains(name) else { return false }
+            guard events.contains(name), !Self.opens.contains(name), !Self.asked.contains(name) else { return false }
             guard let filter = filters[name] else { return true }
             return filter.matches(value ?? "")
         }

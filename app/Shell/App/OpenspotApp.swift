@@ -45,6 +45,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var menuBar: SpotMenuBar?
     private var fileChooser: SpotFileChooser?
     private var submenu: SpotSubmenuWindow?
+    private var previewWindow: SpotPreviewWindow?
     #if OPENSPOT_TOOLS
     private var motionProbe: SpotMotionProbe?
     #endif
@@ -239,6 +240,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func hideSubmenu() {
         submenu?.hide()
+    }
+
+    func showPreview(beside sheet: CGRect) {
+        guard let panel else { return }
+        let window = previewWindow ?? SpotPreviewWindow.make(model: model)
+        previewWindow = window
+        window.show(beside: sheet, in: panel)
+    }
+
+    func hidePreview() {
+        previewWindow?.hide()
     }
 
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {

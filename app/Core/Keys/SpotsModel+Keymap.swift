@@ -238,7 +238,9 @@ extension SpotsModel {
                 leaveAttachment()
                 return true
             },
+            previewEscapeRow,
             escapeRow,
+            previewRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }
                 guard actionMenu(on: target)?.holdsMore == true else { return false }
