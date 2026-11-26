@@ -54,7 +54,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
+| `openspot guide [address \| --all \| --find <words>...]` | Prints the map of the docs, with the address and the size of each part. An address prints one part, such as this page; `--find` lists each part that holds the words, and `--all` prints the whole guide. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](../../docs/reference/commands.md#a-toast) has the options. |
 | `openspot toast --remove <id>`                     | Takes the spot's toast with the id away.                                                        |

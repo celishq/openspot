@@ -20,7 +20,7 @@ final class AgentNoteTests: XCTestCase {
         try AgentNote(command: "/Apps/Openspot.app/Contents/Helpers/openspot").write(in: folder)
 
         let note = try XCTUnwrap(saved("AGENTS.md"))
-        for word in ["spot.toml", "openspot guide build-and-check-a-spot", "openspot guide --topics", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
+        for word in ["spot.toml", "openspot guide build-and-check-a-spot", "`openspot guide`", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
             XCTAssertTrue(note.contains(word), word)
         }
         XCTAssertFalse(note.contains("check spots"))

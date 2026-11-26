@@ -35,10 +35,11 @@ final class GuideTests: XCTestCase {
     }
 
     func testEachPageOfANounIsATopicOfTheGuide() async throws {
-        let topics = try await answer(["guide", "--topics"])
+        let map = try await answer(["guide"])
         let screen = try await answer(["guide", "screen"])
 
-        XCTAssertEqual(topics.output, "show-a-list    Show a list\ncalendar       openspot calendar and openspot reminders\ncommands       The openspot commands\nscreen         openspot screen\nstats          openspot spot stats\n")
+        XCTAssertTrue(map.output.contains("\n## Commands\n\ncalendar "), map.output)
+        XCTAssertTrue(map.output.contains("\nscreen "), map.output)
         XCTAssertTrue(screen.output.hasPrefix("# openspot screen"), screen.output)
         XCTAssertTrue(screen.output.contains("(S11)"))
     }

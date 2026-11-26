@@ -41,7 +41,7 @@ final class GuideCallTests: XCTestCase {
 
         # spot.toml
 
-        The file.
+        The file. \(String(repeating: "Filler words. ", count: 500))
 
         ## Keys
 
@@ -107,6 +107,26 @@ final class GuideCallTests: XCTestCase {
         XCTAssertEqual(found.output, "spottoml/keys    | `stay`  | bool | Whether it keeps running. |\n")
         XCTAssertEqual(none.code, 1)
         XCTAssertEqual(none.errors, "No part of the guide holds weather. Run `openspot guide` for the map.\n")
+    }
+
+    func testTheMapListsEachGroupItsPagesTheirSizeAndTheSectionsOfALongPage() async throws {
+        let map = try await answer()
+        let lines = map.output.split(separator: "\n").map(String.init)
+        let place = { (prefix: String) in lines.firstIndex { $0.hasPrefix(prefix) } ?? -1 }
+
+        XCTAssertTrue(map.output.hasPrefix("# The guide\n"), map.output)
+        let order = ["## Start", "how-openspot-works ", "your-first-spot ", "## Show", "a-list ", "## Reference", "spottoml ", "  spottoml/keys ", "  spottoml/on "].map(place)
+        XCTAssertFalse(order.contains(-1), map.output)
+        XCTAssertEqual(order, order.sorted(), map.output)
+        XCTAssertNotNil(lines.first { $0.range(of: #"^spottoml  7 KB$"#, options: .regularExpression) != nil }, map.output)
+        XCTAssertEqual(lines.filter { $0.hasPrefix("  a-list/") }, [])
+    }
+
+    func testAllPrintsTheWholeGuide() async throws {
+        let all = try await answer("--all")
+
+        XCTAssertTrue(all.output.hasPrefix("# How Openspot works\n"), all.output)
+        XCTAssertTrue(all.output.contains("\n# spot.toml\n"))
     }
 
     func testAHeadingInAFenceIsNoSection() async throws {

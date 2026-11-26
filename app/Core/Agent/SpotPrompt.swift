@@ -79,7 +79,7 @@ public struct SpotPrompt: Equatable, Sendable {
         let close = references.isEmpty ? [] : ["Find a spot that does something close in \(references.map(\.path).joined(separator: " or ")), and read it."]
         return [
             "Run \(quoted) guide build-and-check-a-spot, and follow it.",
-            "Run \(quoted) guide --topics, and read each topic that the request needs."
+            "Run \(quoted) guide for the map of the guide, and read each part that the request needs."
         ] + close
     }
 

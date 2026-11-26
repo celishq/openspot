@@ -1,17 +1,17 @@
 import Foundation
 
 enum GuideCall: NounCall {
-    case text
-    case topics
+    case map
+    case all
     case topic(String)
     case find([String])
 
     static let noun = CommandNoun("guide", group: .start, verbs: [
-        CommandVerb("", "[topic | --topics | --find <words>...]", "Prints the guide to building a spot. Read it before you write one. A topic prints one part of it, --topics lists them, and --find lists each part that holds every word.") { words in
+        CommandVerb("", "[address | --all | --find <words>...]", "Prints the map of the guide to building a spot: the address and the size of each part. Read it before you write one. An address prints a page, a page/section one section, and a key, a block, a class or a command its row. --find lists each part that holds every word, and --all prints the whole guide.") { words in
             if let first = words.fit?.value("--find") { return GuideCall.find([first] + (words.fit?.rest ?? [])) }
-            return switch (words.fit?.has("--topics"), words.fit?.rest ?? []) {
-            case (false?, []): GuideCall.text
-            case (true?, []): GuideCall.topics
+            return switch (words.fit?.has("--all"), words.fit?.rest ?? []) {
+            case (false?, []): GuideCall.map
+            case (true?, []): GuideCall.all
             case (false?, let rest) where rest.count == 1 && !rest[0].hasPrefix("-"): GuideCall.topic(rest[0])
             default: nil
             }
@@ -25,9 +25,8 @@ enum GuideCall: NounCall {
                 let guide = try mac.readGuide()
                 let topics = guide.topics
                 switch self {
-                case .text: return CommandAnswer(output: guide.text)
-                case .topics:
-                    return CommandAnswer(output: Self.list(topics))
+                case .all: return CommandAnswer(output: guide.text)
+                case .map: return CommandAnswer(output: guide.map)
                 case .find(let words):
                     let found = guide.find(words)
                     guard !found.isEmpty else { return CommandAnswer(errors: "No part of the guide holds \(words.joined(separator: " ")). Run `openspot guide` for the map.\n", code: 1) }
@@ -47,7 +46,7 @@ enum GuideCall: NounCall {
                         return CommandAnswer(errors: "The page \(page.slug) has no section \(name[name.index(after: slash)...]). \(hint)\n", code: 2)
                     }
                     let close = CommandHelp.closest(to: name.lowercased(), in: guide.addresses).map { " Did you mean `openspot guide \($0)`?" } ?? ""
-                    return CommandAnswer(errors: "The guide has no topic \(name).\(close) Run `openspot guide --topics` to see each topic.\n", code: 2)
+                    return CommandAnswer(errors: "The guide has no part \(name).\(close) Run `openspot guide` for the map, or `openspot guide --find \(name)`.\n", code: 2)
                 }
             } catch {
                 return CommandAnswer(failure: error)

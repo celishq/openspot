@@ -67,7 +67,7 @@ final class SpotPromptTests: XCTestCase {
     func testThePromptReadsTheGuideByTopicAndPointsAtWorkingSpots() {
         let text = prompt().building("Show the weather")
 
-        XCTAssertTrue(text.contains("guide --topics"))
+        XCTAssertTrue(text.contains("guide for the map of the guide"))
         XCTAssertFalse(text.contains("read all of it"))
         XCTAssertTrue(text.contains(examples.path))
         XCTAssertTrue(text.contains(folder.path))

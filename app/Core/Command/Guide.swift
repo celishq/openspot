@@ -3,10 +3,12 @@ import Foundation
 struct Guide: Sendable {
     let text: String
     let topics: [GuideTopic]
+    let commands: Set<String>
 
     init(text: String, pages: [String: String]) {
         let text = text.replacingOccurrences(of: #"\[([^\]\n]+)\]\(#([^)\s]+)\)"#, with: "$1 (`openspot guide $2`)", options: .regularExpression)
         self.text = text
+        commands = Set(pages.keys)
         topics = GuideTopic.all(in: text) + pages.sorted { $0.key < $1.key }.map { name, page in
             let head = page.split(separator: "\n").first.map { String($0.drop { $0 == "#" || $0 == " " }) } ?? name
             return GuideTopic(slug: name, title: head, text: page)
@@ -17,6 +19,44 @@ struct Guide: Sendable {
         let name = name.lowercased()
         guard let slash = name.firstIndex(of: "/") else { return topics.first { $0.slug == name || $0.title.lowercased() == name } }
         return topic(String(name[..<slash]))?.sections.first { $0.slug == name }
+    }
+
+    var map: String {
+        var groups: [(name: String, pages: [GuideTopic])] = [("Start", Array(topics.prefix(1)))]
+        var listed = Set(groups[0].pages.map(\.slug))
+        for line in (topics.first?.text ?? "").split(separator: "\n") {
+            if line.hasPrefix("## ") {
+                groups.append((String(line.dropFirst(3)), []))
+                continue
+            }
+            for slug in Self.links(in: String(line)) where !listed.contains(slug) {
+                guard let page = topic(slug) else { continue }
+                listed.insert(slug)
+                groups[groups.count - 1].pages.append(page)
+            }
+        }
+        let rest = topics.filter { !listed.contains($0.slug) }
+        groups += [("More", rest.filter { !commands.contains($0.slug) }), ("Commands", rest.filter { commands.contains($0.slug) })]
+        let rows = groups.filter { !$0.pages.isEmpty }.map { group in
+            (group.name, group.pages.flatMap { page in
+                ["\(page.slug)  \(Self.size(of: page))"] + (page.text.utf8.count > Self.long ? page.sections.map { "  \($0.slug)  \(Self.size(of: $0))" } : [])
+            })
+        }
+        let body = rows.map { name, lines in "## \(name)\n\n" + lines.map { $0 + "\n" }.joined() }
+        return "# The guide\n\nRun `openspot guide <address>` for one part: a page, a page/section, or the row of a key, a block, a class or a command. `openspot guide --find <words>` lists each part that holds the words.\n\n" + body.joined(separator: "\n")
+    }
+
+    private static let long = 6 * 1024
+
+    private static func size(of part: GuideTopic) -> String {
+        "\(max(1, (part.text.utf8.count + 512) / 1024)) KB"
+    }
+
+    private static func links(in line: String) -> [String] {
+        line.components(separatedBy: "`openspot guide ").dropFirst().compactMap { rest in
+            let slug = String(rest.prefix { $0 != "`" })
+            return slug.contains("/") ? nil : slug
+        }
     }
 
     func rows(naming word: String) -> String? {

@@ -112,13 +112,14 @@ final class CommandHelpTests: XCTestCase {
     }
 
     func testTheGuidePrintsOneTopicOrTheListOfTopics() async throws {
-        let topics = try await answer(["guide", "--topics"])
+        let map = try await answer(["guide"])
         let topic = try await answer(["guide", "show-a-list"])
         let missing = try await answer(["guide", "show-list"])
 
-        XCTAssertEqual(topics.output, "show-a-list    Show a list\nadd-buttons    Add buttons\n")
+        XCTAssertTrue(map.output.contains("\n## Start\n\nshow-a-list "), map.output)
+        XCTAssertTrue(map.output.contains("\n## More\n\nadd-buttons "), map.output)
         XCTAssertEqual(topic.output, "# Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n## Rows\n\nOne per item.\n")
-        XCTAssertEqual(missing.errors, "The guide has no topic show-list. Did you mean `openspot guide show-a-list`? Run `openspot guide --topics` to see each topic.\n")
+        XCTAssertEqual(missing.errors, "The guide has no part show-list. Did you mean `openspot guide show-a-list`? Run `openspot guide` for the map, or `openspot guide --find show-list`.\n")
         XCTAssertEqual(missing.code, 2)
     }
 
