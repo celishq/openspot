@@ -56,10 +56,11 @@ extension Theme {
         public let control: Double
         public let track: Double
         public let secondary: Double
+        public let menuDim: Double
 
         static let exactKinds: [(String, ThemeKind)] = [
             "solid", "on-solid", "glyph-on-solid", "glass-tint", "corner-fill", "window", "confirm", "on-confirm", "backdrop-tint", "card-shadow"
-        ].map { ($0, ThemeKind.colour) } + ["fill", "selected", "disc", "chip", "control", "track", "secondary"].map { ($0, ThemeKind.strength) }
+        ].map { ($0, ThemeKind.colour) } + ["fill", "selected", "disc", "chip", "control", "track", "secondary", "menu-dim"].map { ($0, ThemeKind.strength) }
 
         private static let openspot = (
             dark: (background: HexColor(text: "#000000")!, ink: HexColor(text: "#FFFFFF")!,
@@ -114,6 +115,7 @@ extension Theme {
             track = strength("track")
             let surface = variant == .regular ? Self.lightestBackdrop.mixed(with: ground, by: 0.9) : ground
             secondary = values.number(section, "secondary") ?? Self.secondary(of: mark, on: surface)
+            menuDim = values.number(section, "menu-dim") ?? 0.4
         }
 
         private static func strength(_ anchor: Double, keeping reference: (HexColor, HexColor), on ground: HexColor, of mark: HexColor) -> Double {

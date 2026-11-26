@@ -260,6 +260,7 @@ press-bounce = 0
 | `confirm`, `on-confirm`                                             | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. |
 | `backdrop-tint`, `card-shadow`                                      | `[dark]`, `[light]` | The colour of the backdrop's `tint` and `veil`, and of the shadow under the glass. |
 | `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths of the `ink` from 0 to 1, such as the fill of a card. |
+| `menu-dim`                                                          | `[dark]`, `[light]` | How much of each other card shows while the ⌘K menu is open, from 0 to 1. |
 | `cell`, `glyph`, `list-row`, `menu-row`                             | `[advanced]`        | The sizes of a grid cell, a glyph, a row and a menu row, in points. |
 | `column-gap`, `row-gap`, `padding`, `list-row-gap`, `menu-padding`  | `[advanced]`        | The gaps and paddings in points.                       |
 | `window-corner`, `media-corner`, `mark-corner`                      | `[advanced]`        | The corners of a window, a picture and a corner mark.  |
