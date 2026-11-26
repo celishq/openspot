@@ -88,8 +88,10 @@ extension SettingsView {
             }
             if !book.keys.unset.isEmpty {
                 folding("Not Set", isFolded: $isKeysFolded) {
-                    lines(book.keys.unset.flatMap(\.rows)) { row in
-                        keyLine(row, title: "\(row.name) · \(row.title)")
+                    ForEach(book.keys.unset) { keys in
+                        DisclosureGroup(keys.id) {
+                            lines(keys.rows) { keyLine($0) }
+                        }
                     }
                 }
             }
