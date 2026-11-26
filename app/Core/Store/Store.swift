@@ -10,6 +10,7 @@ public final class Store {
     public private(set) var query = ""
     public private(set) var cards: [StoreCard] = []
     public private(set) var groups: [StoreGroup] = []
+    public private(set) var summary = ""
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
     public internal(set) var back: [StoreStop] = []
@@ -221,6 +222,8 @@ public final class Store {
         if next != cards { cards = next }
         let grouped = StoreGroup.of(next, at: place)
         if grouped != groups { groups = grouped }
+        let said = place == .mine ? StoreGroup.summary(of: shelves[.mine] ?? []) : ""
+        if said != summary { summary = said }
     }
 
     @concurrent

@@ -45,21 +45,15 @@ extension StoreView {
             }
         } else {
             ForEach(store.groups) { shelf in
-                if shelf.folds, let title = shelf.title {
-                    folding("\(title) (\(shelf.cards.count))", isFolded: $isBuiltInFolded) {
-                        lines(shelf.cards) { card in cardLine(card) }
-                    }
-                } else {
-                    group(shelf.title) {
-                        lines(shelf.cards) { card in cardLine(card) }
-                    }
+                group(shelf.title) {
+                    lines(shelf.cards) { card in cardLine(card) }
                 }
             }
         }
     }
 
     private func placeLine(_ source: StoreSource?) -> String {
-        guard let source else { return "Each spot you have." }
+        guard let source else { return store.summary }
         return source.isBuiltIn ? "Spots made to show what Openspot can do." : source.url.path
     }
 
@@ -68,8 +62,18 @@ extension StoreView {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.settingsRowTile)
             titled(card.spot.name, card.spot.subtitle ?? "")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
+            switch card.mark {
+            case .update:
+                Button("Update") { Task { await store.update(card.id) } }
+            case .edited:
+                Text("Edited")
+                    .foregroundStyle(.secondary)
+            case .core, .installed, nil:
+                EmptyView()
+            }
             chevron
         }
+        .contextMenu { StoreSpotMenu(store: store, model: model, id: card.id, spot: card.spot, isCore: card.mark == .core) }
     }
 
     @ViewBuilder
