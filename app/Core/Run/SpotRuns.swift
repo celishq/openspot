@@ -54,6 +54,7 @@ public final class SpotRuns {
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
+    @ObservationIgnored public let timeline: Timeline
     @ObservationIgnored let timerWatch: DueWatch
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored let scheduleWatch: DueWatch
@@ -113,10 +114,12 @@ public final class SpotRuns {
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers(),
-        cache: SpotCache? = nil
+        cache: SpotCache? = nil,
+        timeline: Timeline? = nil
     ) {
         self.environment = environment
         self.cache = cache ?? .standard(environment: environment)
+        self.timeline = timeline ?? Timeline(folder: nil)
         self.callers = callers
         self.log = log
         self.swift = swift

@@ -48,6 +48,10 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timer add <time> <action> [<name>=<value>...]` | Runs an action of your spot at an ISO 8601 time, or `someday`, and prints the timer's id. It needs `timer` in `uses`. |
 | `openspot timer list`                               | Prints an item for each timer of your spot.                              |
 | `openspot timer remove <id>`                        | Removes a timer.                                                         |
+| `openspot timeline add [<key>=<value>...]`          | Adds an entry to your spot's timeline and prints its id: `text=`, `url=`, `picture=` or `file=` once for each file, with `title=`, `app=`, `icon=`, `key=` and `at=`. With none, it takes the same lines on stdin. It needs `timeline` in `uses`, and works in a show. |
+| `openspot timeline list [--spot <id>] [--all] [--within <age>] [--text <words>] [--limit <n>]` | Prints an item for each entry of your spot's timeline, newest first. `--spot` and `--all` read other timelines and need `read`. |
+| `openspot timeline forget <id>`                     | Takes an entry out of the timeline.                                      |
+| `openspot timeline restore <id>`                    | Brings back an entry forgotten in the last 10 minutes.                   |
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot you bind, and prints its values. |
 | `openspot emit <event> [<name>=<value>...]`         | Sends one of your spot's events to each spot that listens.               |
 | `openspot cache get <name>`                         | Prints the value your spot keeps as `<name>`, and runs its filler when it is missing or old. |

@@ -1,0 +1,128 @@
+import Foundation
+
+enum TimelineCall: NounCall {
+    case add([String])
+    case list(spot: String?, all: Bool, within: TimeInterval?, text: String?, limit: Int?)
+    case forget(String)
+    case restore(String)
+
+    private static let keys = ["text", "url", "file", "picture", "title", "app", "icon", "key", "at"]
+    private static let notes: Set<String> = ["title", "app", "icon", "key", "at"]
+    private static let listForm = "[--spot id] [--all] [--within age] [--text words] [--limit n]"
+
+    static let noun = CommandNoun("timeline", group: .build, verbs: [
+        CommandVerb(
+            "add", "[input...]",
+            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=`, `picture=` or `file=` once for each file, with `title=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A picture, and a file up to 25 MB on the same disk, is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value. It works in a show.",
+            rule: CallRule(use: .timeline, used: "added to its timeline")
+        ) { Self.add($0.rest) },
+        CommandVerb(
+            "list", listForm,
+            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`. --within keeps the entries of the age, such as 1d; --text the ones that hold each word; --limit the first n.",
+            rule: CallRule(use: .timeline, used: "read its timeline")
+        ) { words in
+            guard let fit = words.fit, fit.rest.isEmpty else { return nil }
+            let within = ClipboardCall.within(in: CommandForm("[--within age]").fit(fit.value("--within").map { ["--within", $0] } ?? []))
+            guard let within, fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
+            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within, text: fit.value("--text"), limit: fit.value("--limit").flatMap { Int($0) })
+        },
+        CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
+        CommandVerb("restore", "<id>", "Brings back an entry that `openspot timeline forget` took out.", rule: CallRule(use: .timeline, used: "restored an entry")) { $0.one.map(Self.restore) },
+    ])
+
+    func rule(_ rule: CallRule, spot: String?) -> CallRule {
+        var rule = rule
+        switch self {
+        case .add(let words) where words.isEmpty: rule.flags.insert(.readsInput)
+        case .list(let other?, _, _, _, _) where other != spot: rule.use = .read
+        case .list(_, true, _, _, _): rule.use = .read
+        default: break
+        }
+        return rule
+    }
+
+    func work(in context: CallContext) -> CommandAPI.Work? {
+        guard let runs = context.runs else { return CommandAnswer.notRunning("timeline") }
+        let caller = context.caller
+        let timeline = runs.timeline
+        switch self {
+        case .add(let words):
+            guard let caller else {
+                return { CommandAnswer(errors: "`openspot timeline add` runs only from a spot, since an entry belongs to the spot that adds it.\n", code: 1) }
+            }
+            let spot = caller.id
+            if !words.isEmpty {
+                var fields: [TextBlock.Field] = []
+                for word in words {
+                    guard let split = word.firstIndex(of: "="), Self.keys.contains(String(word[..<split])) else {
+                        return { CommandAnswer(errors: "`openspot timeline add` does not take \(word). Write text=, url=, picture= or file=, and title=, app=, icon=, key= or at=.\n", code: 2) }
+                    }
+                    fields.append(TextBlock.Field(key: String(word[..<split]), value: String(word[word.index(after: split)...])))
+                }
+                return Self.add(fields, of: spot, to: runs)
+            }
+            return {
+                let fields = (TextBlock.blocks(in: await context.input()).first?.fields ?? []).filter { Self.keys.contains($0.key) }
+                guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
+                return await Self.add(fields, of: spot, to: runs)()
+            }
+        case .list(let other, let all, let within, let text, let limit):
+            let spots: Set<String>? = all ? nil : other.map { [$0] } ?? caller.map { [$0.id] }
+            let reader = caller?.id
+            return {
+                if let reader { timeline.note(reader: reader, of: spots) }
+                let now = await runs.timeNow()
+                let entries = timeline.list(Timeline.Query(spots: spots, within: within, text: text, limit: limit), at: now)
+                return CommandAnswer(output: entries.map(\.block).joined(separator: "\n"))
+            }
+        case .forget(let id), .restore(let id):
+            let isForget = if case .forget = self { true } else { false }
+            return {
+                let now = await runs.timeNow()
+                guard let found = timeline.entry(id), Self.reaches(found.spot, from: caller) else {
+                    return CommandAnswer(errors: "The timeline has no entry `\(id)` that this spot can reach. `openspot timeline list` prints its entries.\n", code: 1)
+                }
+                guard (isForget ? timeline.forget(id, at: now) : timeline.restore(id)) != nil else {
+                    return CommandAnswer(errors: isForget ? "The entry `\(id)` is already forgotten.\n" : "The entry `\(id)` is not forgotten, or was forgotten more than 10 minutes ago.\n", code: 1)
+                }
+                await runs.timelineChanged(found.spot, by: caller?.id)
+                return CommandAnswer()
+            }
+        }
+    }
+
+    private static func reaches(_ spot: String, from caller: Spot?) -> Bool {
+        guard let caller else { return true }
+        return caller.id == spot || caller.uses.contains(.read)
+    }
+
+    private static func add(_ fields: [TextBlock.Field], of spot: String, to runs: SpotRuns) -> CommandAPI.Work {
+        let kinds = Set(fields.map(\.key).filter { !notes.contains($0) })
+        let values = fields.filter { kinds.contains($0.key) }.map(\.value)
+        let note = { (key: String) in fields.last { $0.key == key }?.value }
+        guard kinds.count == 1, let kind = kinds.first.flatMap(TimelineEntry.Kind.init(rawValue:)), kind == .file || values.count == 1 else {
+            return { CommandAnswer(errors: "`openspot timeline add` takes one kind of value: text=, url=, picture= or file= once for each file.\n", code: 2) }
+        }
+        guard values.allSatisfy({ !$0.isEmpty }) else {
+            return { CommandAnswer(errors: "`openspot timeline add` takes a value that is not empty.\n", code: 2) }
+        }
+        var at: Date?
+        if let text = note("at") {
+            guard let time = SpotTimer.time(of: text) else {
+                return { CommandAnswer(errors: "`\(text)` is not a time. Write an ISO 8601 time with its offset, such as 2026-11-20T08:00:00+01:00.\n", code: 2) }
+            }
+            at = time
+        }
+        let draft = Timeline.Draft(kind: kind, values: values, title: note("title"), app: note("app"), icon: note("icon"), key: note("key"), at: at)
+        let timeline = runs.timeline
+        return {
+            do {
+                let entry = try timeline.add(draft, of: spot, at: await runs.timeNow())
+                await runs.timelineChanged(spot, by: spot)
+                return CommandAnswer(output: entry.id + "\n")
+            } catch {
+                return CommandAnswer(errors: "Openspot could not keep the entry: \(error.localizedDescription)\n", code: 1)
+            }
+        }
+    }
+}

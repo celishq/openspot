@@ -71,6 +71,10 @@ public struct AppPlaces: Sendable {
         configFolder.appendingPathComponent("Clipboard", isDirectory: true)
     }
 
+    public var timeline: URL {
+        configFolder.appendingPathComponent("timeline", isDirectory: true)
+    }
+
     public var stats: URL {
         configFolder.appendingPathComponent("stats", isDirectory: true)
     }

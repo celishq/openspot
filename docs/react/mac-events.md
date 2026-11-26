@@ -51,7 +51,7 @@ When people open your sheet, Openspot runs `show` again only if the last run was
 `"sheet.open" = true` runs it each time the sheet opens.
 
 An event's run only shows. It can't change the Mac or open anything, so a command such as `openspot clipboard copy`
-fails in it.
+fails in it. It can write to Openspot, such as `openspot timeline add`.
 
 To answer only some values, give a regular expression instead of `true`:
 
