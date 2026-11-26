@@ -8,6 +8,12 @@ final class TimelineSpotTests: BuiltInCase {
         }
     }
 
+    private var entry: Spot {
+        get throws {
+            try spot("timeline-entry")
+        }
+    }
+
     private var log: URL {
         root.appendingPathComponent("effects")
     }
@@ -28,6 +34,13 @@ final class TimelineSpotTests: BuiltInCase {
         exec '\(real.path)' "$@"
         """)
         try fake("open", "echo \"open $*\" >> '\(log.path)'")
+        try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot"))
+        runs.take(try SpotsFolder(url: root.appendingPathComponent("none"), core: repoSpots).scan())
+    }
+
+    override func tearDown() async throws {
+        runs.quit()
+        try await super.tearDown()
     }
 
     @discardableResult
@@ -190,16 +203,10 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(effects, ["spot open openspot/timeline"])
     }
 
-    private var finder: Spot {
-        get throws {
-            try spot("timeline-search")
-        }
-    }
-
     func testTheSearchShowsNoEntryWhileShowInSearchIsOff() async throws {
         try add(.text, "cafe latte")
 
-        let rows = try await finder.items(query: "cafe", timeout: 60).items
+        let rows = try await timeline.items(query: "cafe", timeout: 60).items
 
         XCTAssertEqual(rows, [])
     }
@@ -210,7 +217,7 @@ final class TimelineSpotTests: BuiltInCase {
         for index in 0..<4 { try add(.text, "cafe \(index)\nsecond line", at: now.addingTimeInterval(Double(index))) }
         try add(.url, "https://tea.com", at: now.addingTimeInterval(10))
 
-        let rows = try await finder.items(query: "cafe", timeout: 60).items
+        let rows = try await timeline.items(query: "cafe", timeout: 60).items
 
         XCTAssertEqual(rows.map(\.title), ["cafe 3", "cafe 2", "cafe 1"])
         XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Timeline · Clipboard · "), true)
@@ -222,15 +229,24 @@ final class TimelineSpotTests: BuiltInCase {
         try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
         try add(.file, "/tmp/cafe.png")
 
-        let rows = try await finder.items(query: "cafe", timeout: 60).items
+        let rows = try await timeline.items(query: "cafe", timeout: 60).items
 
         XCTAssertEqual(rows.map(\.picture), [.image("/tmp/cafe.png")])
         XCTAssertEqual(rows.first?.file, "/tmp/cafe.png")
     }
 
+    func testTheSearchShowsAColourAsASquareOfItselfAsTheSheetDoes() async throws {
+        try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
+        try add(.text, "#FF3B30")
+
+        let rows = try await timeline.items(query: "ff3b30", timeout: 60).items
+
+        XCTAssertEqual(rows.map(\.swatch), ["#ff3b30"])
+    }
+
     func testUsePastesATextAndOpensALinkAsReturnInTheSheetDoes() async throws {
-        try await timeline.perform("use", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
-        try await timeline.perform("use", input: "input.kind=url\ninput.url=https://a.com\n", timeout: 60)
+        try await entry.perform("use", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
+        try await entry.perform("use", input: "input.kind=url\ninput.url=https://a.com\n", timeout: 60)
 
         XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "open -- https://a.com"])
     }
