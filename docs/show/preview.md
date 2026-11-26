@@ -9,7 +9,23 @@ A row that carries its value shows a preview with no work from your spot. `text=
 and its host, `file=` the picture, filling the preview, or the file's thumbnail, and an `icon=#rrggbb` the colour. `whole=` names a file that holds the whole
 text of a long row. The row's `detail` shows under it.
 
-## Draw your own
+## Print it with the row
+
+Blocks whose `parent` is a row's id are that row's preview, not parts of the sheet. They take `text`, `number`,
+`series`, `picture` and `icon` blocks, and draw as soon as the row is selected:
+
+```text
+item=red
+title=Red
+text=#ff3b30
+
+text=red-name
+parent=red
+title=Red
+class=font-title
+```
+
+## Answer when asked
 
 `swatches.spot/spot.toml`:
 
@@ -41,6 +57,8 @@ Open Swatches, and press `⌘Y`. The preview shows `#ff3b30` in large type.
 
 ## How it works
 
+- Answer `item.preview` for a preview that is slow or large to print with each row. Openspot asks it for the row that
+  `⌘Y` shows and for the rows beside it, so the next arrow finds it ready.
 - With `"item.preview"` in its `[on]`, Openspot runs `item.preview` for the row that `⌘Y` shows, with the row as
   `input.item=` and each of its keys as `input.item.<key>=`, such as `input.item.text=`.
 - It takes `text`, `number`, `series`, `picture` and `icon` blocks, and a first block of the frame's own keys, such as

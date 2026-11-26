@@ -22,11 +22,15 @@ public struct ItemPreview: Equatable, Sendable {
     public let tree: ViewTree
 
     static func holds(_ item: SpotItem) -> Bool {
-        item.file != nil || item.fields.contains { ["url", "text", "whole"].contains($0.key) && !$0.value.isEmpty }
+        !item.preview.isEmpty || item.file != nil || item.fields.contains { ["url", "text", "whole"].contains($0.key) && !$0.value.isEmpty }
     }
 
     public init?(item: SpotItem) {
         guard Self.holds(item) else { return nil }
+        if !item.preview.isEmpty, let own = Self.own(item.preview, of: item) {
+            self = own
+            return
+        }
         let value = { (key: String) in item.fields.first { $0.key == key && !$0.value.isEmpty }?.value }
         let look: Look
         if let url = value("url") {
@@ -56,7 +60,10 @@ public struct ItemPreview: Equatable, Sendable {
     }
 
     static func own(_ text: String, of item: SpotItem) -> ItemPreview? {
-        let blocks = TextBlock.blocks(in: text)
+        own(TextBlock.blocks(in: text), of: item)
+    }
+
+    static func own(_ blocks: [TextBlock], of item: SpotItem) -> ItemPreview? {
         guard !blocks.isEmpty, Frame(grouped: Frame.grouping(blocks), kinds: kinds).errors.isEmpty else { return nil }
         return ItemPreview(run: item.run, look: .blocks, title: item.title, caption: item.subtitle, blocks: blocks)
     }

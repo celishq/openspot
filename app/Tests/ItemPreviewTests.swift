@@ -161,4 +161,34 @@ final class ItemPreviewTests: PanelCase {
 
         XCTAssertEqual(texts.map(ColorText.hex), ["#ff0000", "#ff3b30", "#ff3b30", "#ff3b30", "#007aff", "#008000", nil, nil])
     }
+
+    func testBlocksWhoseParentIsARowAreItsPreviewAndNoPartOfTheSheet() {
+        let frame = Frame(text: "item=a\ntitle=A\n\ntext=big\nparent=a\ntitle=Big\nclass=font-title\n\nitem=b\ntitle=B\n")
+
+        XCTAssertEqual(frame.errors, [])
+        XCTAssertEqual(frame.items.map(\.title), ["A", "B"])
+        XCTAssertEqual(frame.items.first?.preview.map { $0.value("title") }, ["Big"])
+        XCTAssertEqual(frame.items.last?.preview, [])
+    }
+
+    func testARowThatCarriesItsPreviewShowsItWithNoRunOfTheSpot() async throws {
+        try await openHistory("printf 'item=a\\ntitle=Note\\n\\ntext=big\\nparent=a\\ntitle=Big\\n'")
+
+        XCTAssertTrue(model.handleKey(preview))
+
+        XCTAssertEqual(model.preview?.isOwn, true)
+        XCTAssertEqual(model.preview?.blocks.first?.value("title"), "Big")
+    }
+
+    func testThePreviewIsAskedForTheRowsBesideTheSelectedOneAhead() async throws {
+        try colors()
+        try await openHistory("printf 'item=a\\ntitle=Red\\ntext=#ff0000\\n\\nitem=b\\ntitle=Blue\\ntext=#0000ff\\n\\nitem=c\\ntitle=Green\\ntext=#00ff00\\n'")
+
+        _ = model.handleKey(preview)
+
+        try await wait("the asks of the row and the next one") { self.colorRuns.count == 2 }
+        XCTAssertEqual(colorRuns, ["item.preview|color|#ff0000", "item.preview|color|#0000ff"])
+        _ = model.handleSearchKey(ActionKey(name: "down"))
+        try await wait("the next row's preview at once") { self.model.preview?.isOwn == true && self.model.preview?.run == "b" }
+    }
 }
