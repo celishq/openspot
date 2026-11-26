@@ -34,12 +34,14 @@ Every spot answers the same keys, so you learn them once.
 The Store is the window that shows which spots you have and where they come from. Open it with the Store card,
 with "Look in the Store" at the end of a search, or with `openspot store open`.
 
-1. Look at the sidebar. My spots holds each spot you have. A spot that comes with Openspot shows a lock. Under
-   Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source….
-2. Click a spot. Its page shows its readme, Try with sample data when it has some, and what it uses, runs by itself
-   and can also do, before you install it.
-3. Drag the spot onto My spots, press + on its row, or press Install on its page. While you drag, My spots says
-   Drop to install. The review opens, and nothing is copied until its Install.
+1. Look at the sidebar. My spots holds each spot you have, under Updates, Yours and Comes with Openspot. Under
+   Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source…. A source
+   shows each spot as its card with sample data, or as its icon when it has none.
+2. Click a spot. Its page shows its card with Try, its readme, and what it uses, runs by itself and can also do,
+   before you install it. Show Files lists its files.
+3. Press Install on its page, and it is copied at once, since the page is its review. Install on its card, or a drag
+   onto My spots, opens the review first, and nothing is copied until its Install. While you drag, My spots says
+   Drop to install.
 
 - The button of a page says Installed once the spot is yours, Update when a newer version waits for your yes, and
   Revert… when you edited it. Update names only what the new version adds. Revert asks before it moves your copy to the
