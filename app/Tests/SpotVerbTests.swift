@@ -424,6 +424,19 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.act(.edit, on: "gone"))
     }
 
+    func testAnOpenStoreDropsASpotThatIsRemovedElsewhere() async throws {
+        try script("weather", toml: "title = 'Weather'")
+        await model.reload()
+        let store = Store(places: model.files)
+        model.store = store
+        await store.read()
+        XCTAssertTrue(store.cards.contains { $0.id == "weather" })
+
+        XCTAssertTrue(model.act(.delete, on: "weather"))
+
+        try await wait("the Store drops Weather") { !store.cards.contains { $0.id == "weather" } }
+    }
+
     func testTheSecretOfARemovedSpotGoesWithIt() async throws {
         try script("weather", toml: "title = 'Weather'\n\n[settings]\ntoken = { type = 'secret' }")
         try script("clock", toml: "title = 'Clock'\n\n[settings]\ntoken = { type = 'secret' }")

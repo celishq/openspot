@@ -321,6 +321,7 @@ public final class SpotsModel {
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
     @ObservationIgnored private var scanned: [Spot] = []
+    @ObservationIgnored public weak var store: Store?
     @ObservationIgnored private var load = SpotLoad.empty
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
@@ -449,6 +450,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         if grid != config.grid { grid = config.grid }
+        if let store, Set(scan.spots.map(\.id)) != Set(scanned.map(\.id)) { Task { await store.read() } }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()
