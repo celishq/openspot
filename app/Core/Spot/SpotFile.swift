@@ -131,7 +131,7 @@ public struct SpotFile: Equatable, Sendable {
         switch icon {
         case .file(let path): .file(Self.path(path, beside: url))
         case .image(let path): .image(Self.path(path, beside: url))
-        case .symbol, .glyph: icon
+        case .symbol, .glyph, .color: icon
         }
     }
 

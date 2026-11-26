@@ -25,6 +25,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 - [Settings people choose](docs/remember/settings.md)
 - [Keep your own data](docs/remember/data.md)
 - [Keep a copy that goes old](docs/remember/cache.md)
+- [Keep a timeline](docs/remember/timeline.md)
 
 ## React
 

@@ -21,6 +21,19 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
     }
 
+    func testTimelineAddsListsForgetsAndRestores() {
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "add", "text=a"])?.value as? TimelineCall, .add(["text=a"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list"])?.value as? TimelineCall, .list(spot: nil, all: false, within: nil, text: nil, limit: nil))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["timeline", "list", "--all", "--within", "1d", "--text", "cafe", "--limit", "5"])?.value as? TimelineCall,
+            .list(spot: nil, all: true, within: 86_400, text: "cafe", limit: 5)
+        )
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, text: nil, limit: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--limit", "0"])?.value as? CallFault, .unknown(["timeline", "list", "--limit", "0"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "forget", "ab12"])?.value as? TimelineCall, .forget("ab12"))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "restore", "ab12"])?.value as? TimelineCall, .restore("ab12"))
+    }
+
     func testStoreListsItsSpotsAndGetsOne() {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list"])?.value as? StoreCall, .list(.frame))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--json"])?.value as? StoreCall, .list(.json))

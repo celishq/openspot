@@ -29,6 +29,7 @@ it declares.
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `power`     | `power lid-closed`                                                                                                                                              |
+| `timeline`  | each call of `timeline` but `keep`, `pause` and `resume`, which only you can make; `timeline list` of another spot's timeline needs `read` instead. A spot with it runs on the events of its `[on]` also while the panel is closed. |
 | `timer`     | each call of `timer`                                                                                                                                            |
 | `attachment` | `attachment add`. A spot with it runs when the panel opens, stays off the grid, and puts a value in the panel's field.                                             |
 | `read`      | `front app`, `browser tab`, `browser tabs`, `selection read`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |

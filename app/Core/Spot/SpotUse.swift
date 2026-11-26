@@ -1,7 +1,7 @@
 import Foundation
 
 public enum SpotUse: String, CaseIterable, Codable, Sendable {
-    case app, spots, screen, clipboard, calendar, power, network, files, timer, attachment, read
+    case app, spots, screen, clipboard, calendar, power, network, files, timer, attachment, read, timeline
     case account
 
     static func reachesAccountKey(_ uses: Set<SpotUse>, isBuiltIn: Bool) -> Bool {
@@ -31,6 +31,7 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
         case .timer: "Timers"
         case .attachment: "Panel Field"
         case .read: "What You’re Working On"
+        case .timeline: "Timeline"
         case .network: "Network"
         case .files: "Files"
         case .account: "Account Key"
@@ -48,6 +49,7 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
         case .timer: "Add, list and remove its timers."
         case .attachment: "Put a value in the panel’s field when the panel opens or Tab picks its chip."
         case .read: "Read what people work on: the front tab, the files selected in Finder and the selected text."
+        case .timeline: "Add to its own timeline and read it back, and run on its events also while the panel is closed. Only you can pause the timeline or change how long it keeps."
         case .network: "Reach the network, such as with env.fetch."
         case .files: "Write outside its data folder. No command needs it."
         case .account: "Sign what you publish with the account key."

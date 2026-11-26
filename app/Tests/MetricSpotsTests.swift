@@ -12,6 +12,10 @@ final class MetricSpotsTests: SpotRunsCase {
             0
         }
 
+        var idleSeconds: TimeInterval {
+            0
+        }
+
         func measureLoad() -> LoadSample {
             sample
         }

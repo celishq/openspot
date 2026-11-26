@@ -27,6 +27,13 @@ public struct ItemList: Equatable, Sendable {
     private var pinnedBelow: [SpotItem] = []
     private var holdsFiles = false
     private var narrowings: [Narrowing] = []
+    private var beforeQuery: BeforeQuery?
+    private var holdsBeforeQuery = false
+
+    private struct BeforeQuery: Equatable, Sendable {
+        let items: [SpotItem]
+        let index: SearchIndex
+    }
 
     fileprivate struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
@@ -52,6 +59,10 @@ public struct ItemList: Equatable, Sendable {
 
     public var lineCount: Int {
         shown.count + sectionStarts.count
+    }
+
+    public var sectionCount: Int {
+        perLine == 1 ? sectionStarts.count : 0
     }
 
     public func run(at index: Int) -> String? {
@@ -125,6 +136,12 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func begin(_ text: String) {
+        if search == .script, !holdsBeforeQuery, let beforeQuery, !beforeQuery.items.isEmpty {
+            all = beforeQuery.items
+            searchIndex = beforeQuery.index
+            holdsBeforeQuery = true
+            pin()
+        }
         query = text
         selected = 0
         isFinding = false
@@ -180,7 +197,7 @@ public struct ItemList: Equatable, Sendable {
 
     public func ready(_ items: [SpotItem], search: ItemSearch) -> Rows {
         guard items != all else { return Rows(items: all, base: all, search: search, index: nil) }
-        return Rows(items: items, base: all, search: search, index: search == .local ? SearchIndex(items) : SearchIndex())
+        return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items))
     }
 
     public mutating func replace(_ items: [SpotItem]) {
@@ -196,6 +213,8 @@ public struct ItemList: Equatable, Sendable {
         if let index = rows.index {
             all = rows.items
             searchIndex = index
+            holdsBeforeQuery = search == .script && query.isEmpty
+            if holdsBeforeQuery { beforeQuery = BeforeQuery(items: all, index: index) }
             pin()
             narrowings = []
             refresh()
@@ -227,18 +246,18 @@ public struct ItemList: Equatable, Sendable {
 
     public func lineItem(at y: CGFloat) -> SpotItem? {
         let step = SpotTokens.listRow + SpotTokens.listRowGap
-        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
-        let line = Int(y / step)
+        guard y >= 0 else { return nil }
         let rows = scrolling
-        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
-        var at = 0
+        if sectionStarts.isEmpty {
+            let line = Int(y / step)
+            return y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow && line < rows.count ? rows[rows.startIndex + line] : nil
+        }
+        var top: CGFloat = 0
         for item in rows {
-            if sectionStarts[item.run] != nil {
-                if at == line { return nil }
-                at += 1
-            }
-            if at == line { return item }
-            at += 1
+            if sectionStarts[item.run] != nil { top += SpotTokens.listSection + SpotTokens.listRowGap }
+            if y < top { return nil }
+            if y < top + SpotTokens.listRow { return item }
+            top += step
         }
         return nil
     }
@@ -282,7 +301,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func reindex() {
-        searchIndex = search == .local ? SearchIndex(all) : SearchIndex()
+        searchIndex = search == .off ? SearchIndex() : SearchIndex(all)
         pin()
     }
 
@@ -295,10 +314,17 @@ public struct ItemList: Equatable, Sendable {
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
-            return show(all.indices)
+            guard let found = onHand() else { return }
+            return show(found)
         }
         narrowings = narrowed()
         show(narrowings.last?.matches ?? [])
+    }
+
+    private func onHand() -> [Int]? {
+        guard search == .script, isWaiting, !query.isEmpty else { return Array(all.indices) }
+        let matches = SearchQuery(text: query).ranking(searchIndex, items: all, among: Array(all.indices), weights: weights).sorted()
+        return matches.isEmpty && !shown.isEmpty ? nil : matches
     }
 
     private func narrowed() -> [Narrowing] {

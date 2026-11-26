@@ -130,6 +130,45 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the new read") { self.log() == ["show", "show"] }
     }
 
+    func testTheSheetOfASpotThatUsesTheTimelineStopsWhenThePanelCloses() async throws {
+        try script(toml: "uses = ['timeline']\n\n[on]\n\"clipboard.change\" = true", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        runs.panelClosed()
+        try await allEnded()
+
+        XCTAssertFalse(exists("went-on"))
+    }
+
+    func testAnEventThatWaitsOnTheSheetOfASpotThatUsesTheTimelineRunsOnceThePanelClosesItsShow() async throws {
+        try script(toml: "uses = ['timeline']\n\n[on]\n\"clipboard.change\" = true", "[ \"$1\" = clipboard.change ] && touch '\(path("heard"))' && exit 0\nprintf 'item=a\\ntitle=A\\n---\\n'\nsleep 5")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the show") { self.runs.isShowing }
+        runs.raise(.named("clipboard.change", value: nil))
+
+        runs.panelClosed()
+
+        try await wait("the event's run") { self.exists("heard") }
+    }
+
+    func testTheShowOfASpotInTheMenuBarStopsWhenTheSpotIsRemoved() async throws {
+        menuBar.insert("script")
+        let url = try script(toml: "[on]\nevery = 60", "printf 'text=t\\ntitle=1\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        _ = try scanned()
+        try await wait("the show") { self.log().count == 1 && self.runs.isShowing }
+
+        try FileManager.default.removeItem(at: url.deletingLastPathComponent())
+        _ = try scanned()
+        try await allEnded()
+
+        XCTAssertFalse(exists("went-on"))
+    }
+
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
         menuBar.insert("script")
         try script(toml: "[on]\nevery = 1", "printf 'text=t\\ntitle=1\\n'")

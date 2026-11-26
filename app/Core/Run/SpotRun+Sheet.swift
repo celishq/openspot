@@ -110,7 +110,7 @@ extension SpotRun {
     }
 
     func stopShows() {
-        if let show = running(Self.showKey) { stop(show) }
+        if let show = running(Self.showKey), !keepsEventRun { stop(show) }
         if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
@@ -121,6 +121,14 @@ extension SpotRun {
 
     var isWanted: Bool {
         isInView || runs.wants(spot) || (!calls.isEmpty && script.keepsState)
+    }
+
+    var hearsEvents: Bool {
+        isWanted || spot.hearsEventsHidden
+    }
+
+    private var keepsEventRun: Bool {
+        spot.hearsEventsHidden && shownEvent?.isEvent == true
     }
 
     func settleScript() {
@@ -141,7 +149,7 @@ extension SpotRun {
 
     private func stopUnwantedShow() {
         guard !isWanted else { return }
-        if let show = running(Self.showKey), !finishesShow { stop(show) }
+        if let show = running(Self.showKey), !finishesShow, !keepsEventRun { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

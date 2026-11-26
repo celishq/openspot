@@ -262,6 +262,10 @@ public struct Spot: Equatable, Sendable {
         self.triggers.events.contains(EventName.appLaunch)
     }
 
+    var hearsEventsHidden: Bool {
+        self.uses.contains(.timeline)
+    }
+
     public var showsOfferedItems: Bool {
         self.triggers.lists && !self.triggers.showsOnPanel && self.triggers.every == nil
     }

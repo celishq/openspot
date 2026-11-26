@@ -166,7 +166,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var glyph: some View {
-        if let item = entry.item, item.icon != nil {
+        if let item = entry.item, item.icon != nil || item.color != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyph)
         } else if entry.showsHeaderPicture {
             SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)

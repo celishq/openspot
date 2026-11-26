@@ -38,6 +38,7 @@ public final class SpotRuns {
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
     @ObservationIgnored var seenCopy: SeenCopy?
+    @ObservationIgnored var isAway = false
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
     @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?
@@ -54,6 +55,9 @@ public final class SpotRuns {
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
+    @ObservationIgnored let timeline: Timeline
+    @ObservationIgnored let timelineWatch: DueWatch
+    @ObservationIgnored var timelineUse: Date?
     @ObservationIgnored let timerWatch: DueWatch
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored let scheduleWatch: DueWatch
@@ -113,10 +117,12 @@ public final class SpotRuns {
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers(),
-        cache: SpotCache? = nil
+        cache: SpotCache? = nil,
+        timeline: URL? = nil
     ) {
         self.environment = environment
         self.cache = cache ?? .standard(environment: environment)
+        self.timeline = Timeline(folder: timeline ?? FileManager.default.temporaryDirectory.appendingPathComponent("openspot-timeline-\(UUID().uuidString)", isDirectory: true))
         self.callers = callers
         self.log = log
         self.swift = swift
@@ -131,6 +137,7 @@ public final class SpotRuns {
         self.clock = clock
         now = clock.now
         clockWatch = DueWatch(clock: clock)
+        timelineWatch = DueWatch(clock: clock)
         timerWatch = DueWatch(clock: clock, leeway: .seconds(1))
         scheduleWatch = DueWatch(clock: clock, leeway: .seconds(1))
         self.stopPause = stopPause
@@ -157,6 +164,7 @@ public final class SpotRuns {
             if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
             sheet.stopShows()
+            timeline.drop(reader: id)
         }
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
         showMarks()
@@ -261,6 +269,7 @@ public final class SpotRuns {
         clockWatch.stop()
         timerWatch.stop()
         scheduleWatch.stop()
+        timelineWatch.stop()
         pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil

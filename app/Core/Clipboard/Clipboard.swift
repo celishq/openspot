@@ -69,12 +69,15 @@ struct Clipboard {
         }
     }
 
+    static func link(in text: String) -> String? {
+        let line = text.trimmingCharacters(in: .newlines)
+        return (line.hasPrefix("https://") || line.hasPrefix("http://")) && !line.contains(where: \.isWhitespace) ? line : nil
+    }
+
     private static func held(_ text: String, count: Int) -> AttachmentValue? {
         guard text.contains(where: { !$0.isWhitespace }) else { return nil }
         guard text.utf8.count > heldLength else {
-            let line = text.trimmingCharacters(in: .newlines)
-            let isLink = (line.hasPrefix("https://") || line.hasPrefix("http://")) && !line.contains(where: \.isWhitespace)
-            return isLink ? AttachmentValue(url: line) : AttachmentValue(text: text, title: "Copied text")
+            return link(in: text).map { AttachmentValue(url: $0) } ?? AttachmentValue(text: text, title: "Copied text")
         }
         return AttachmentValue(.text(String(text.prefix(heldLength))), title: "Copied text", wholeCopy: ClipboardCopy(count: count, image: nil))
     }

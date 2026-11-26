@@ -119,7 +119,7 @@ free slot, as `openspot grid pin <id>` does.
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to hide or show its card in the field.
+Search for Attachments, and press Return on Selection, Browser Tab or Clipboard to hide or show its card in the field.
 `⌘` Return opens the Settings of one. Its last row, Access, opens Settings at Access, which shows whether
 macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
@@ -133,7 +133,7 @@ changes until you press Tab.
 
 - Typing filters the actions that take the card. Backspace edits only the text.
 - When the text starts with `/`, Tab completes the slash command instead.
-- A card shows only when a spot takes it. Fresh Copy shows what you copied in the last 2 minutes.
+- A card shows only when a spot takes it. Clipboard shows what you copied in the last 2 minutes.
 
 Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
 Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in
@@ -147,6 +147,26 @@ Vivaldi and Opera. To read another browser, name its bundle ID and its family, `
 
 A browser of the Chromium family answers as Chrome does, and one of the Safari family as Safari does. A line for a
 browser that Openspot already reads changes its family.
+
+## Find what you copied
+
+Type `/timeline`, or search for Timeline, and press Return. It lists what you copied, newest first, under a heading
+for each day. It keeps each entry for as long as Keep for in its Settings says, 30 days by default. Type to find an
+entry by its words.
+
+| Key        | Does                                                                  |
+| ---------- | --------------------------------------------------------------------- |
+| Return     | Copies the entry.                                                     |
+| `⌘` Return | Pastes the entry into the app you were in.                            |
+| `⌘⌫`       | Forgets the entry. Click the message that shows to put it back.       |
+
+- The Clipboard spot keeps each copy, also while the panel is closed. It keeps a picture, and a file of up to 25 MB,
+  as a copy, so the entry still pastes after you delete the file. It keeps nothing that a password manager copied.
+- A copied colour, such as `#ff3b30`, shows as a square of itself in its row.
+- Timeline's Settings set Keep for, and Show in search, which adds the three newest entries that hold your words under
+  the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
+- Tab on an entry hands it to a spot that takes it, such as Translate for a text.
+- Turn off Keep history in the Settings of Clipboard to keep no copy.
 
 ## Rename a slash command
 

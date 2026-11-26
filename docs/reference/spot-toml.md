@@ -26,7 +26,7 @@ Each key of the top level, before the first table.
 | Key        | Type   | Is                                                                                         |
 | ---------- | ------ | ------------------------------------------------------------------------------------------ |
 | `title`    | text   | The name of the spot. The folder's name by default.                                        |
-| `icon`     | text   | An SF Symbol, an emoji, or an image file of the folder.                                    |
+| `icon`     | text   | An SF Symbol, an emoji, an image file of the folder, or a colour as `#rrggbb`, which shows as a square of it. |
 | `detail`   | text   | The line under the title.                                                                  |
 | `keywords` | [text] | More words that find the spot in the panel's search.                                       |
 | `uses`     | [text] | What it needs from the Mac; see [Uses](#uses).                                             |
@@ -50,6 +50,7 @@ is missing fails, and Openspot tells people once a day.
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
+| `timeline`  | Add to its own timeline and read it back, and run on its events also while the panel is closed. Only the person can pause the timeline or change how long it keeps; see [Keep a timeline](../remember/timeline.md). |
 | `attachment` | Put a value in the panel's field when the panel opens or Tab picks its chip; see [Attach what people work on](../connect/attachments.md). |
 | `read`      | Read what people work on: the front tab, the files selected in Finder and the selected text. |
 | `network`   | Reach the network, such as with `env.fetch`.                                         |
@@ -89,7 +90,8 @@ Each setting, input, output and value of an event takes one of these types.
 | `default`     | its type | The value until people choose one.                   |
 | `options`     | [text]   | The values of a `choice`.                            |
 
-A setting can't take a name that Openspot keeps for people: `icon`, `menubar`, `attachment`, `open`, `float`, any
+A setting can't take a name that Openspot keeps for people: `icon`, `menubar`, `attachment`, `open`, `float`, `search`,
+`grid`, `enabled`, `global`, `tray`, any
 `key.<action>`, `window`, or a name of Openspot's own settings, such as `slow`.
 
 ## [actions.\<id\>]

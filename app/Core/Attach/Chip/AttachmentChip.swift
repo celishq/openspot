@@ -5,6 +5,7 @@ public struct AttachmentChip: Equatable, Sendable {
         case file(FileIcon)
         case symbol(String)
         case glyph(String)
+        case color(String)
 
         init(_ icon: Icon) {
             switch icon {
@@ -12,6 +13,7 @@ public struct AttachmentChip: Equatable, Sendable {
             case .image(let path): self = .file(.image(path))
             case .file(let path): self = .file(FileIcon(path: path))
             case .glyph(let text): self = .glyph(text)
+            case .color(let hex): self = .color(hex)
             }
         }
 

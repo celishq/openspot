@@ -344,7 +344,8 @@ public final class SpotsModel {
             log: files.log,
             stats: files.stats,
             timers: files.timers,
-            schedule: files.schedule
+            schedule: files.schedule,
+            timeline: files.timeline
         )
         self.runs = runs
         toasts = Toasts(clock: runs.clock)

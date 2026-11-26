@@ -6,16 +6,22 @@ struct SpotItemIcon: View {
     let glyph: String?
     let symbol: String?
     let size: CGFloat
+    let color: String?
 
     init(item: SpotItem, size: CGFloat) {
-        self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, size: size)
+        self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, size: size, color: item.color)
     }
 
-    init(icon: FileIcon?, glyph: String?, symbol: String?, size: CGFloat) {
+    init(icon: FileIcon?, glyph: String?, symbol: String?, size: CGFloat, color: String? = nil) {
         self.icon = icon
         self.glyph = glyph
         self.symbol = symbol
         self.size = size
+        self.color = color
+    }
+
+    init(color: String, size: CGFloat) {
+        self.init(icon: nil, glyph: nil, symbol: nil, size: size, color: color)
     }
 
     static func prepare(_ items: ArraySlice<SpotItem>, size: CGFloat) {
@@ -31,7 +37,13 @@ struct SpotItemIcon: View {
     }
 
     var body: some View {
-        if let icon {
+        if let color {
+            let side = size * SpotTokens.colorShare
+            SpotRoundShape(radius: side * SpotTokens.colorCornerShare)
+                .fill(SpotColorBar.color(color))
+                .frame(width: side, height: side)
+                .frame(width: size, height: size)
+        } else if let icon {
             SpotFileIconView(icon: icon, size: size)
         } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * SpotType.itemGlyphShare) {
             Image(decorative: picture, scale: SpotGlyphPicture.scale)

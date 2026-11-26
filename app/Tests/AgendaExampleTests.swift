@@ -244,7 +244,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         sheet.open {}
         try await wait("the first rows") { !sheet.list.shown.isEmpty && !sheet.isShowing }
         sheet.search(text)
-        try await wait("the rows of the text") { sheet.list.shown.count < 7 }
+        try await wait("the answer to the text") { !sheet.list.isWaiting }
         return sheet.list.shown.map(\.run)
     }
 

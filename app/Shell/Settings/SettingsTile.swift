@@ -38,6 +38,7 @@ struct SettingsTile: View {
         case .timer: "timer"
         case .attachment: "paperclip"
         case .read: "doc.text.magnifyingglass"
+        case .timeline: "clock.arrow.circlepath"
         case .network: "network"
         case .files: "folder.fill"
         case .account: "key.fill"

@@ -77,7 +77,7 @@ final class SpotAddTests: XCTestCase {
         let none = try await answer(["access", "grant", "tea"])
 
         XCTAssertEqual(unknown.code, 1)
-        XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment or read\n")
+        XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment, read or timeline\n")
         XCTAssertEqual(none.code, 3)
         XCTAssertTrue(none.errors.hasPrefix("`openspot access grant tea` needs the Openspot app"), none.errors)
     }

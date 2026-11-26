@@ -12,7 +12,7 @@ final class SourceSpotTests: AttachmentCase {
         var environment = TestEnvironment.values
         environment["PATH"] = client.deletingLastPathComponent().path + ":" + (environment["PATH"] ?? "/usr/bin:/bin")
         model.quit()
-        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause))
+        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause, timeline: model.files.timeline))
         host.model = model
         model.runs.api = CommandAPI(mac: Mac(clipboard: board, reads: reads), places: model.files, app: ModelApp(model: model), runs: model.runs)
         model.runs.listen(to: board)
@@ -98,46 +98,87 @@ final class SourceSpotTests: AttachmentCase {
         XCTAssertEqual(host.notes, [])
     }
 
-    func testFreshCopyAddsACopiedLinkAsALink() async throws {
-        try copy("fresh-copy")
+    func testClipboardAddsACopiedLinkAsALink() async throws {
+        try copy("clipboard")
         board.copy("https://a.com/x\n")
 
         await open()
 
-        try await wait("the copy") { self.state(of: "fresh-copy") != nil }
-        XCTAssertEqual(state(of: "fresh-copy"), .ready(AttachmentValue(url: "https://a.com/x")))
+        try await wait("the copy") { self.state(of: "clipboard") != nil }
+        XCTAssertEqual(state(of: "clipboard"), .ready(AttachmentValue(url: "https://a.com/x")))
     }
 
-    func testFreshCopyAddsOtherWordsAsCopiedText() async throws {
-        try copy("fresh-copy")
+    func testClipboardAddsOtherWordsAsCopiedText() async throws {
+        try copy("clipboard")
         board.copy("see https://a.com/x")
 
         await open()
 
-        try await wait("the copy") { self.state(of: "fresh-copy") != nil }
-        XCTAssertEqual(state(of: "fresh-copy"), .ready(AttachmentValue(text: "see https://a.com/x", title: "Copied text")))
+        try await wait("the copy") { self.state(of: "clipboard") != nil }
+        XCTAssertEqual(state(of: "clipboard"), .ready(AttachmentValue(text: "see https://a.com/x", title: "Copied text")))
     }
 
-    func testFreshCopyAddsCopiedFilesAsFiles() async throws {
-        try copy("fresh-copy")
+    func testClipboardAddsCopiedFilesAsFiles() async throws {
+        try copy("clipboard")
         let file = path("a.txt")
         FileManager.default.createFile(atPath: file, contents: Data())
         board.copy(files: [URL(fileURLWithPath: file)])
 
         await open()
 
-        try await wait("the copy") { self.state(of: "fresh-copy") != nil }
+        try await wait("the copy") { self.state(of: "clipboard") != nil }
         XCTAssertEqual(chips.first?.value?.payload, .files(FileKinds.Disk().read([file])))
     }
 
-    func testFreshCopyAddsNothingWhenTheClipboardHoldsNoText() async throws {
-        try copy("fresh-copy")
+    func testClipboardAddsNothingWhenTheClipboardHoldsNoText() async throws {
+        try copy("clipboard")
         try witness()
         board.copy("  \n")
 
         await open()
-        try await wait("the end of the read") { self.model.sheets["fresh-copy"]?.isShowing == false && self.log("witness-log").count == 1 }
+        try await wait("the end of the read") { self.model.sheets["clipboard"]?.isShowing == false && self.log("witness-log").count == 1 }
 
         XCTAssertEqual(chips, [])
+    }
+
+    private func kept() -> [String] {
+        model.runs.timeline.list(Timeline.Query(spots: ["clipboard"]), at: Date()).map(\.value)
+    }
+
+    func testClipboardKeepsEachCopyInTheTimelineWhileThePanelIsClosed() async throws {
+        try copy("clipboard")
+        await model.reload()
+
+        board.copy("https://a.com/x\n")
+        try await wait("the kept link") { self.kept() == ["https://a.com/x"] }
+        board.copy("two\nlines")
+
+        try await wait("the kept text") { self.kept() == ["two\nlines", "https://a.com/x"] }
+        XCTAssertFalse(model.isShown)
+    }
+
+    func testClipboardKeepsNoPassword() async throws {
+        try copy("clipboard")
+        try witness()
+        await model.reload()
+
+        board.copy(concealed: "hunter2")
+        board.copy("after")
+
+        try await wait("the kept text") { self.kept() == ["after"] }
+    }
+
+    func testClipboardKeepsNothingWithKeepHistoryOff() async throws {
+        try copy("clipboard")
+        model.runs.take(settings: [KeptSetting(spot: "clipboard", key: "history", value: "false")])
+        await model.reload()
+
+        board.copy("secret")
+        try await wait("the seen copy") { self.model.runs.seenCopy?.count == self.board.count() }
+        try await wait("the end of the run") { self.model.sheets["clipboard"]?.calls.isEmpty == true }
+        model.runs.take(settings: [KeptSetting(spot: "clipboard", key: "history", value: "true")])
+        board.copy("after")
+
+        try await wait("the kept text") { self.kept() == ["after"] }
     }
 }
