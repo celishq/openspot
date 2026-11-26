@@ -2,4 +2,4 @@ Puts what you copied in the last 2 minutes in the panel's field: files as files,
 
 It reads the clipboard for the field only when the panel opens. It counts the 2 minutes from the moment Openspot first sees the copy, at the latest the next open of the panel, so a copy made while Openspot was not looking shows once more at that open.
 
-It also keeps each copy in the timeline for 30 days, in its kind, with a copy of a picture and of a file of up to 25 MB. Turn off Keep history in its Settings to keep nothing. `openspot timeline list --spot clipboard` prints what it kept.
+It also keeps each copy in the timeline, in its kind, for as long as Keep for in the Settings of Timeline says, 30 days by default, with a copy of a picture and of a file of up to 25 MB. Turn off Keep history in its Settings to keep nothing. `openspot timeline list --spot clipboard` prints what it kept.

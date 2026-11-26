@@ -62,7 +62,8 @@ five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole
 
 ## What lasts
 
-Openspot keeps each entry for 30 days, then drops it with its day. A file of up to 25 MB on the disk of
+Openspot keeps each entry for as long as Keep for in the Settings of Timeline says, 30 days by default, then drops it
+with its day. A file of up to 25 MB on the disk of
 your home folder is kept as a copy, so the entry keeps it after people delete the file. `file=` of such an entry names
 the copy. A larger file, a folder, or a file on another disk, keeps only its path.
 
@@ -85,8 +86,8 @@ clipboard.change) openspot clipboard read --blocks | openspot timeline add >/dev
 A spot reads only its own timeline. `--spot clipboard` reads the timeline of the spot `clipboard`, and `--all` reads
 every timeline. Both need `read` in `uses`, since a timeline holds what people did.
 
-When a spot that read a timeline has its sheet open, an add to that timeline runs its `show` again, so the new entry
-shows.
+When a spot that read a timeline has its sheet open, an add to that timeline by another spot runs its `show` again, so
+the new entry shows.
 
 ## Next
 

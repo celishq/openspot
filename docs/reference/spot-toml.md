@@ -50,7 +50,7 @@ is missing fails, and Openspot tells people once a day.
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
-| `timeline`  | Add to its own timeline and read it back; see [Keep a timeline](../remember/timeline.md). |
+| `timeline`  | Add to its own timeline and read it back, and run on its events also while the panel is closed. Only the person can pause the timeline or change how long it keeps; see [Keep a timeline](../remember/timeline.md). |
 | `attachment` | Put a value in the panel's field when the panel opens or Tab picks its chip; see [Attach what people work on](../connect/attachments.md). |
 | `read`      | Read what people work on: the front tab, the files selected in Finder and the selected text. |
 | `network`   | Reach the network, such as with `env.fetch`.                                         |

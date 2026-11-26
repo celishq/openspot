@@ -146,8 +146,9 @@ browser that Openspot already reads changes its family.
 
 ## Find what you copied
 
-Type `/timeline`, or search for Timeline, and press Return. It lists what you copied in the last 30 days, newest first,
-under a heading for each day. Type to find an entry by its words.
+Type `/timeline`, or search for Timeline, and press Return. It lists what you copied, newest first, under a heading
+for each day. It keeps each entry for as long as Keep for in its Settings says, 30 days by default. Type to find an
+entry by its words.
 
 | Key        | Does                                                                  |
 | ---------- | --------------------------------------------------------------------- |
