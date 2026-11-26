@@ -295,5 +295,4 @@ extension SpotTokens {
     public static let storeMarkPadding: CGFloat = 6
     public static let storeTrustTitleWidth: CGFloat = 110
     public static let storeMediaHeight: CGFloat = 240
-    public static let storeAskWidth: CGFloat = 440
 }

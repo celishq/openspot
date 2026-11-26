@@ -14,6 +14,7 @@ struct StoreTrustView: View {
                         .frame(width: SpotTokens.storeTrustTitleWidth, alignment: .leading)
                     Text(line.words.joined(separator: "\n"))
                         .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
                 }
             }
@@ -34,6 +35,5 @@ struct StoreTrustView: View {
                 }
             }
         }
-        .font(SpotType.body)
     }
 }

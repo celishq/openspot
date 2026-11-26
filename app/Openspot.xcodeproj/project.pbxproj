@@ -905,6 +905,7 @@
 		BD8F986578A1A1A5D5CFC57C /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
 		BE0150A1B2AB3C208A262335 /* SheetPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AC2DDC529FA6FABD0069A2 /* SheetPush.swift */; };
 		BE0FD3527A3E65FB897340B7 /* CardPushTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E0E5E6BFAC23C763466E93 /* CardPushTests.swift */; };
+		BE41C3A96DDF82831A7A2C7F /* StoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56C6ABD5781A2684C1344B9 /* StoreSheet.swift */; };
 		BE61D30092F9EA96A8FDAEEF /* HexColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880126AA2A6FFF90441687DD /* HexColor.swift */; };
 		BE69D46A2BB8A532920C7C3A /* SettingsBook+Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8573A19C30EA855E63249D8 /* SettingsBook+Account.swift */; };
 		BE6FBF3D3D3535F374FBDFCB /* NodeSpotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8E31BEF54F501268404188A /* NodeSpotView.swift */; };
@@ -2125,6 +2126,7 @@
 		A4FF1CDA08F2F90750760F1A /* MainSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSearch.swift; sourceTree = "<group>"; };
 		A534ED0A977015A5F5924A9C /* SpotCarry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCarry.swift; sourceTree = "<group>"; };
 		A54CCBDE1513418AE4C6C8CF /* PickWeights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickWeights.swift; sourceTree = "<group>"; };
+		A56C6ABD5781A2684C1344B9 /* StoreSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreSheet.swift; sourceTree = "<group>"; };
 		A56D434310F89086FEC10833 /* Reminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminder.swift; sourceTree = "<group>"; };
 		A578AAC06953DF21FDCF52B1 /* RecordingRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingRequest.swift; sourceTree = "<group>"; };
 		A5A16D73BDBCCBDF35898ED0 /* StayMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayMode.swift; sourceTree = "<group>"; };
@@ -3170,6 +3172,7 @@
 				CA332476E097FB2E0F730F9F /* StoreCardPreview.swift */,
 				87636AAEF05D5CE0D1A082DF /* StoreReadmeView.swift */,
 				3F9CA08B2C1638B1AC703D49 /* StoreSample.swift */,
+				A56C6ABD5781A2684C1344B9 /* StoreSheet.swift */,
 				CAFBBA50E32F55FEB1429984 /* StoreSidebar.swift */,
 				4EBC2AC7E44AC24DA77E141E /* StoreSizes.swift */,
 				AB9C63ADD6EA5906B9D80C3E /* StoreSpotMenu.swift */,
@@ -5868,6 +5871,7 @@
 				4F0CE5130A3CCA6AC580D1AE /* StoreCardPreview.swift in Sources */,
 				027B979EBA7A9F1E4183B35C /* StoreReadmeView.swift in Sources */,
 				9351E31047F8DF688B634E84 /* StoreSample.swift in Sources */,
+				BE41C3A96DDF82831A7A2C7F /* StoreSheet.swift in Sources */,
 				446C4BECF7EA60A998BFA498 /* StoreSidebar.swift in Sources */,
 				76FD7EC004B6919AECB15048 /* StoreSizes.swift in Sources */,
 				3C9705B999793C1422B1BC16 /* StoreSpotMenu.swift in Sources */,
