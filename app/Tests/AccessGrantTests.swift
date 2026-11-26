@@ -174,7 +174,7 @@ final class AccessGrantTests: XCTestCase {
 
         model.press("standup")
         XCTAssertEqual(host.settingsOpens, 1)
-        model.settingsBook.go(.keys)
+        model.settingsBook.go(.look)
         XCTAssertTrue(model.openSettings(at: .spotOf("standup")))
 
         XCTAssertTrue(isAtStandup)

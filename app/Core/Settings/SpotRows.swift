@@ -28,7 +28,7 @@ public struct SpotRows: Equatable, Sendable {
 
     func rows(in config: Config, secrets: [String: String]) -> [SettingRow] {
         func row(_ key: String, _ title: String, _ value: String?, _ kind: SettingRow.Kind, _ icon: String) -> SettingRow {
-            SettingRow(spot: spot, name: name, key: key, title: title, value: value, kind: kind, section: .spots, icon: icon)
+            SettingRow(spot: spot, name: name, key: key, title: title, value: value, kind: kind, section: nil, icon: icon)
         }
         let keyRows = self.keys.map { key in row(key.act.setting, key.title, config.keys.first { $0.spot == spot && $0.act == key.act }?.trigger.text, .key, key.icon) }
         let fieldRows = self.fields.map { field in
@@ -36,7 +36,7 @@ public struct SpotRows: Equatable, Sendable {
                 ? row(field.id, field.title, secrets[field.id].map { _ in SettingRow.secretValue }, .secret, Self.valueIcon)
                 : SettingRow(
                     spot: spot, name: name, key: field.id, title: field.title, value: config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, kind: Self.kind(of: field),
-                    section: .spots, icon: Self.valueIcon, options: field.options, default: field.defaultValue
+                    section: nil, icon: Self.valueIcon, options: field.options, default: field.defaultValue
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }

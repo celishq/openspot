@@ -20,13 +20,13 @@ extension SpotTheme {
     static let settingsAccountTile = Color.gray
     static let settingsBarFade = [Color.black, Color.clear]
     static let settingsSelection = Color(nsColor: .controlAccentColor)
-    static let settingsSelectedInk = Color.white
     static let settingsLookCell = 0.12
     static let settingsLookHint = 0.5
     static let settingsLookPanelFill = 0.92
+    static let settingsLookClearFill = 0.2
+    static let settingsLookClearRim = Color.white.opacity(0.45)
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
-    static let settingsLookWallDark = [Color(red: 0.13, green: 0.17, blue: 0.33), Color(red: 0.29, green: 0.20, blue: 0.42)]
-    static let settingsLookWallLight = [Color(red: 0.74, green: 0.84, blue: 0.97), Color(red: 0.86, green: 0.80, blue: 0.96)]
+    static let settingsLookWall = 0.35
 
     static let settingsSpotColours: [Color] = [.blue, .indigo, .purple, .pink, .red, .orange, .yellow, .green, .mint, .teal, .cyan, .brown, .gray]
 
@@ -44,10 +44,7 @@ extension SpotTheme {
     static func settings(_ section: SettingsPage.Section) -> Color {
         switch section {
         case .access: .blue
-        case .spots: .purple
-        case .keys: .gray
         case .look: Color(white: 0.15)
-        case .account: .indigo
         case .general: .gray
         case .developer: Color(white: 0.3)
         }
@@ -73,6 +70,10 @@ extension SpotTheme {
         case .unasked: .orange
         default: .secondary
         }
+    }
+
+    static func settingsState(_ readiness: SpotReadiness) -> Color {
+        readiness == .ready ? settingsDone : settingsLate
     }
 
     static func settingsTone(_ word: String?) -> Color {

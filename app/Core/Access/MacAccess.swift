@@ -50,9 +50,11 @@ public enum MacAccess: String, CaseIterable, Sendable {
     }
 
     public static let about = [
-        "A spot needs an access when one of its calls requires it. If a call needs an access only some of the time, the spot asks for it the first time, and works without it until then.",
-        "A spot is Ready when Openspot has every access the spot needs, and Needs access while one is missing. A spot Needs review when it tries to do something it didn’t declare.",
-        "To stop one spot from using an access, turn the spot off. To stop every spot, turn the access off in System Settings."
+        SettingsFact("Asked once, when you add or update a spot", "plus.app"),
+        SettingsFact("Each spot gets only what it declares", "checklist"),
+        SettingsFact("A use it didn’t declare is refused", "hand.raised"),
+        SettingsFact("Turn a spot off to stop it", "power"),
+        SettingsFact("Turn an access off in System Settings to stop every spot", "gearshape")
     ]
 
     public var purpose: String {

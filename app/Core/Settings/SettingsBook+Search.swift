@@ -26,7 +26,7 @@ extension SettingsBook {
         model?.searchRowsChanged()
     }
 
-    static func place(of item: SpotItem) -> SettingsPage? {
+    static func place(of item: SpotItem) -> SettingsPlace? {
         item.run.isEmpty ? nil : .row(item.run)
     }
 }

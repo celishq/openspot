@@ -3,7 +3,7 @@ import SwiftUI
 
 extension SettingsView {
     var results: some View {
-        let found = book.index.found(book.query)
+        let found = book.found
         return Group {
             title(.heading, EmptyView(), "Results for “\(book.query)”", found.isEmpty ? "No row matches. Check the spelling, or try other words." : "Every row of every section that matches.") {}
             if !found.accesses.isEmpty {
@@ -27,16 +27,18 @@ extension SettingsView {
             if !found.rows.isEmpty {
                 group("Settings") {
                     lines(found.rows) { row in
-                        self.row(action: { book.reveal(row) }) {
-                            Text("\(row.name) · \(row.title)")
-                                .lineLimit(1)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            if row.kind == .key {
-                                keycaps(row).allowsHitTesting(false)
-                            } else if row.kind != .secret {
-                                Text(book.value(of: row).word).foregroundStyle(.secondary).lineLimit(1)
+                        if row.kind == .key {
+                            keyLine(row, title: "\(row.name) · \(row.title)")
+                        } else {
+                            self.row(action: { book.reveal(row) }) {
+                                Text("\(row.name) · \(row.title)")
+                                    .lineLimit(1)
+                                Spacer(minLength: SpotTokens.settingsTrailingGap)
+                                if row.kind != .secret {
+                                    Text(book.value(of: row).word).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                                chevron
                             }
-                            chevron
                         }
                     }
                 }
@@ -103,7 +105,7 @@ extension SettingsView {
     }
 
     func title(of section: SettingsPage.Section) -> some View {
-        title(.heading, EmptyView(), section.title, section.line) {}
+        title(.banner, SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsBannerTile), section.title, section.line) {}
     }
 
     func row<Content: View>(open page: SettingsPage, @ViewBuilder _ content: () -> Content) -> some View {

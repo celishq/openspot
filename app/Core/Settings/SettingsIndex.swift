@@ -6,6 +6,8 @@ public struct SettingsIndex: Sendable {
         public let standings: [SpotStanding]
         public let rows: [SettingRow]
 
+        static let none = Found(accesses: [], standings: [], rows: [])
+
         public var isEmpty: Bool {
             accesses.isEmpty && standings.isEmpty && rows.isEmpty
         }
@@ -20,7 +22,7 @@ public struct SettingsIndex: Sendable {
     init(accesses: [AccessList.Entry], standings: [SpotStanding], rows: [SettingRow]) {
         self.accesses = accesses.map { ($0, Self.fold($0.id.title)) }
         self.standings = standings.map { ($0, Self.fold($0.title + " " + $0.detail)) }
-        self.rows = rows.map { ($0, Self.fold($0.title + " " + ($0.detail ?? ""))) }
+        self.rows = rows.map { ($0, Self.fold([$0.title, $0.detail ?? "", $0.kind == .key ? "shortcut key" : ""].joined(separator: " "))) }
     }
 
     public func found(_ query: String) -> Found {
