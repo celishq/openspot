@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-struct SettingsScrollBar: View {
-    let scroll: SettingsScroll
+struct PageScrollBar: View {
+    let scroll: PageScroll
 
     var body: some View {
         Rectangle()

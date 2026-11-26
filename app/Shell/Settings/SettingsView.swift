@@ -2,61 +2,33 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-struct SettingsView: View {
+struct SettingsView: PageView {
     let model: SpotsModel
     @State var isFolded = true
     @State var isAboutShown = false
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
-    @State private var scroll = SettingsScroll()
 
     var book: SettingsBook {
         model.settingsBook
     }
 
     var body: some View {
-        NavigationSplitView {
+        PageWindow(
+            title: book.title,
+            page: shown,
+            reveal: reveal,
+            target: book.target,
+            query: Binding(get: { book.query }, set: { book.search($0) }),
+            back: book.back.isEmpty ? nil : { book.goBack() },
+            forward: book.forward.isEmpty ? nil : { book.goForward() }
+        ) {
             sidebar
-                .navigationSplitViewColumnWidth(min: SpotTokens.settingsSidebarMin, ideal: SpotTokens.settingsSidebarIdeal, max: SpotTokens.settingsSidebarMax)
-                .toolbar(removing: .sidebarToggle)
-        } detail: {
-            ScrollViewReader { proxy in
-                Form {
-                    content
-                }
-                .formStyle(.grouped)
-                .frame(maxWidth: SpotTokens.settingsFormWidth)
-                .frame(maxWidth: .infinity)
-                .id(shown)
-                .onAppear { reveal(in: proxy) }
-                .onChange(of: book.target) { reveal(in: proxy) }
-            }
-            .onChange(of: shown) { scroll.reset() }
-            .scrollEdgeEffectStyle(.soft, for: .top)
-            .onScrollGeometryChange(for: Bool.self, of: { [reveal] in $0.contentOffset.y + $0.contentInsets.top > reveal }, action: { [scroll] _, isPast in scroll.show(title: isPast) })
-            .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { [scroll] _, isPast in scroll.show(bar: isPast) })
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { [scroll] _, height in scroll.take(barHeight: height) })
-            .overlay(alignment: .top) { SettingsScrollBar(scroll: scroll) }
-            .onChange(of: book.recording == nil) { _, isIdle in HotKey.pause(!isIdle) }
-            .onDisappear { HotKey.pause(false) }
+        } content: {
+            content
         }
-        .navigationSplitViewStyle(.balanced)
-        .navigationTitle(book.title)
-        .searchable(text: Binding(get: { book.query }, set: { book.search($0) }), placement: .sidebar, prompt: "Search")
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button { book.goBack() } label: { Image(systemName: "chevron.left") }
-                    .disabled(book.back.isEmpty)
-                    .help("Back")
-                Button { book.goForward() } label: { Image(systemName: "chevron.right") }
-                    .disabled(book.forward.isEmpty)
-                    .help("Forward")
-            }
-            ToolbarItem(placement: .navigation) {
-                SettingsToolbarTitle(scroll: scroll, title: book.title)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
+        .onChange(of: book.recording == nil) { _, isIdle in HotKey.pause(!isIdle) }
+        .onDisappear { HotKey.pause(false) }
         .overlay { book.grant.map { SettingsGrantSheet(book: book, grant: $0) } }
         .sheet(isPresented: $isAboutShown) { about }
         .sheet(isPresented: Binding(get: { step != nil }, set: { if !$0 { step = nil } })) { SettingsAccountSheet(book: book, step: $step) }
@@ -66,13 +38,13 @@ struct SettingsView: View {
         book.isSearching ? "search/\(book.query)" : book.page.place
     }
 
-    private func reveal(in proxy: ScrollViewProxy) {
-        guard let target = book.target else { return }
-        proxy.scrollTo(target, anchor: .center)
-    }
-
     private var reveal: CGFloat {
-        SettingsTitle(page: book.page, isSearching: book.isSearching).reveal
+        switch book.page {
+        case _ where book.isSearching: PageTitle.heading.reveal
+        case .account: PageTitle.hero.reveal
+        case .access, .accessOf, .spotOf: PageTitle.header.reveal
+        default: PageTitle.heading.reveal
+        }
     }
 
     private var sidebar: some View {

@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-struct SettingsToolbarTitle: View {
-    let scroll: SettingsScroll
+struct PageToolbarTitle: View {
+    let scroll: PageScroll
     let title: String
 
     var body: some View {
