@@ -53,7 +53,7 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
-        var search = MainSearch()
+        var search = PanelSearch()
         return search.matching(self, in: lists, unpickedLimit: unpickedLimit, limit: limit)
     }
 

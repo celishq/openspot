@@ -110,7 +110,7 @@ final class TriggerCallsTests: SpotRunsCase {
         XCTAssertEqual(calls, [])
     }
 
-    func testTheMainSearchCallsSearchWithItsText() async throws {
+    func testThePanelSearchCallsSearchWithItsText() async throws {
         let sheet = try spot("search = \"^https\"")
 
         runs.raise(.query("https://a.com"))

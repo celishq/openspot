@@ -379,7 +379,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
     }
 
-    func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
+    func testThePanelSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", toml: "[on]\n\"panel.open\" = true\nsearch = true")
         try write("c.sh", toml: "[on]\nevery = 30\nsearch = true")
 

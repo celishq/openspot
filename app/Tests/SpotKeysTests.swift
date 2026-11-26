@@ -19,7 +19,7 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertFalse(command.headerState.isOnGrid)
     }
 
-    func testASpotThatListsInTheMainSearchAndASpotWithNoTriggerStartOnTheGrid() throws {
+    func testASpotThatListsInThePanelSearchAndASpotWithNoTriggerStartOnTheGrid() throws {
         let search = try spot("[on]\n\"panel.open\" = true\nsearch = true")
         let plain = try spot("")
         let clock = try spot("[on]\nevery = 60")

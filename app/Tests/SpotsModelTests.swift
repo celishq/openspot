@@ -1877,7 +1877,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.runs.searchBuilds, builds + 1)
     }
 
-    func testASpotAnswersTheMainSearchFirstWhileItsPatternMatchesTheText() async throws {
+    func testASpotAnswersThePanelSearchFirstWhileItsPatternMatchesTheText() async throws {
         try await showAnswers()
 
         model.search("2")
