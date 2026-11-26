@@ -429,6 +429,7 @@
 		59DC583DD1E993C18C2A0389 /* CommandHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37CDE4763C41D4BDCB373DAC /* CommandHelp.swift */; };
 		5A52F578DF512FDFEB88CF1C /* SandboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8CE8EB1D4514586D34FA6D /* SandboxTests.swift */; };
 		5A86CB4450FBC1F78F2B65B2 /* SpotEffectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC9D1FAA02092B549E6CD827 /* SpotEffectTests.swift */; };
+		5A902CA9F3F2DBCC1869DCBF /* PageLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C7BFB5BD886B5504BBD14A /* PageLink.swift */; };
 		5AD5DAE79A2C0B70A25492FC /* FlowEdge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26F5ED5E33D528209A5D121 /* FlowEdge.swift */; };
 		5B08E64216E4E02188184541 /* SpotCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603CA39249DE6374699E316E /* SpotCacheTests.swift */; };
 		5B1825DF6FA1AFE01CF57995 /* SpotBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E0B4816FA459ABFDA4CCAF /* SpotBackdrop.swift */; };
@@ -1781,6 +1782,7 @@
 		6166CE78629F6275BCE69B74 /* PowerCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerCallTests.swift; sourceTree = "<group>"; };
 		61D78D44AC947ADB6300778B /* SpotSheetPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPreview.swift; sourceTree = "<group>"; };
 		62B24D36B429CBB0F07FEC1E /* SpotRuns+Timers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Timers.swift"; sourceTree = "<group>"; };
+		62C7BFB5BD886B5504BBD14A /* PageLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLink.swift; sourceTree = "<group>"; };
 		62DE1B0770D13E317B53F6BC /* SymbolsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolsCall.swift; sourceTree = "<group>"; };
 		632642921676F725094B4B0C /* ThemeCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCallTests.swift; sourceTree = "<group>"; };
 		632E063F6AA0982987BAF065 /* SettingCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingCall.swift; sourceTree = "<group>"; };
@@ -4391,6 +4393,7 @@
 		E798692D82F7AB36DB80C096 /* Pages */ = {
 			isa = PBXGroup;
 			children = (
+				62C7BFB5BD886B5504BBD14A /* PageLink.swift */,
 				3C03E3951BAB08B1DBC80A32 /* PageScroll.swift */,
 				1A8FFECD6303CA32CC21EE6F /* PageScrollBar.swift */,
 				696CE3B66D0AFF9FF8AE7BB6 /* PageTitle.swift */,
@@ -5654,6 +5657,7 @@
 				D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */,
 				2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */,
 				F6FAE0F6A4E66C24922103F0 /* OpenspotItemView.swift in Sources */,
+				5A902CA9F3F2DBCC1869DCBF /* PageLink.swift in Sources */,
 				EE1DF36CE7FA6F0859ABADB2 /* PageScroll.swift in Sources */,
 				41F0E1A42A86AF1147B253D9 /* PageScrollBar.swift in Sources */,
 				8EFB754ADE049A8A362B314D /* PageTitle.swift in Sources */,

@@ -4,7 +4,7 @@ import SwiftUI
 extension SettingsView {
     func spotPage(of standing: SpotStanding) -> some View {
         Group {
-            title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {}
+            title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsCompactTile), standing.title, standing.detail) {}
             if let banner = standing.banner {
                 self.banner(standing, banner.title, banner.line)
             }

@@ -7,10 +7,7 @@ extension SettingsView {
         let account = book.account
         return Group {
             if let account, account.signedIn {
-                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", AccountStatus.line) {
-                    Button("How It Works…") { step = .how }
-                        .buttonStyle(.link)
-                }
+                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", AccountStatus.line, link: PageLink(title: "How It Works…") { step = .how }) {}
                 group("Backup") {
                     if let sync = account.sync {
                         HStack {
@@ -37,12 +34,8 @@ extension SettingsView {
                     }
                 }
             } else {
-                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", AccountStatus.line) {
-                    HStack(spacing: SpotTokens.settingsRowGap) {
-                        Button("Use My Own Key…") { step = .signIn }
-                        Button("How It Works…") { step = .how }
-                            .buttonStyle(.link)
-                    }
+                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", AccountStatus.line, link: PageLink(title: "How It Works…") { step = .how }) {
+                    Button("Use My Own Key…") { step = .signIn }
                 }
             }
         }

@@ -105,7 +105,7 @@ extension SettingsView {
     }
 
     func title(of section: SettingsPage.Section) -> some View {
-        title(.heading, EmptyView(), section.title, section.line) {}
+        title(.banner, SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsBannerTile), section.title, section.line) {}
     }
 
     func row<Content: View>(open page: SettingsPage, @ViewBuilder _ content: () -> Content) -> some View {

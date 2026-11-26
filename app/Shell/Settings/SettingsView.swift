@@ -47,8 +47,8 @@ struct SettingsView: PageView {
         switch book.page {
         case _ where book.isSearching: PageTitle.heading.reveal
         case .account: PageTitle.hero.reveal
-        case .access, .accessOf, .spotOf: PageTitle.header.reveal
-        default: PageTitle.heading.reveal
+        case .accessOf, .spotOf: PageTitle.header.reveal
+        case .top: PageTitle.banner.reveal
         }
     }
 

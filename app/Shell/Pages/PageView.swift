@@ -5,7 +5,7 @@ protocol PageView: View {}
 
 extension PageView {
     @ViewBuilder
-    func title<Icon: View, Actions: View>(_ style: PageTitle, _ icon: Icon, _ title: String, _ line: String, @ViewBuilder actions: () -> Actions) -> some View {
+    func title<Icon: View, Actions: View>(_ style: PageTitle, _ icon: Icon, _ title: String, _ line: String, link: PageLink? = nil, @ViewBuilder actions: () -> Actions) -> some View {
         switch style {
         case .heading:
             Section {} header: {
@@ -22,23 +22,35 @@ extension PageView {
                 .padding(.bottom, SpotTokens.settingsHeadingGap)
                 .textCase(nil)
             }
+        case .banner:
+            Section {
+                VStack(spacing: SpotTokens.settingsBannerGap) {
+                    icon
+                        .padding(.bottom, SpotTokens.settingsBannerGap)
+                    Text(title)
+                        .font(SpotType.settingsBanner)
+                    lineText(line, link)
+                        .multilineTextAlignment(.center)
+                    actions()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(SpotTokens.settingsBannerPadding)
+            }
         case .header:
             Section {
-                HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
+                HStack(alignment: .top, spacing: SpotTokens.settingsCompactGap) {
                     icon
-                    VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                    VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
                         Text(title)
-                            .font(SpotType.settingsHeader)
-                        if !line.isEmpty {
-                            Text(line)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            .font(SpotType.settingsCompactTitle)
+                        if !line.isEmpty || link != nil {
+                            lineText(line, link)
                         }
                         actions()
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.vertical, SpotTokens.settingsHeaderPadding)
+                .padding(.vertical, SpotTokens.settingsCompactPadding)
             }
         case .hero:
             Section {} header: {
@@ -49,11 +61,9 @@ extension PageView {
                             .font(SpotType.settingsHero)
                             .foregroundStyle(.primary)
                     }
-                    Text(line)
+                    lineText(line, link)
                         .font(SpotType.settingsPageLine)
-                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
                     actions()
                 }
                 .frame(maxWidth: .infinity)
@@ -61,6 +71,24 @@ extension PageView {
                 .textCase(nil)
             }
         }
+    }
+
+    private func lineText(_ line: String, _ link: PageLink?) -> some View {
+        let words: Text
+        if let link {
+            var title = AttributedString(link.title.replacingOccurrences(of: " ", with: "\u{00A0}"))
+            title.link = PageTitle.linkURL
+            words = Text("\(line) \(title)")
+        } else {
+            words = Text(line)
+        }
+        return words
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .environment(\.openURL, OpenURLAction { _ in
+                link?.action()
+                return .handled
+            })
     }
 
     func group<Rows: View>(_ title: String?, @ViewBuilder _ rows: () -> Rows) -> some View {

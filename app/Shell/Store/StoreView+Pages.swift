@@ -65,7 +65,7 @@ extension StoreView {
 
     @ViewBuilder
     func spotPage(_ page: StorePage) -> some View {
-        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile), page.spot.name, pageLine(page)) {
+        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsCompactTile), page.spot.name, pageLine(page)) {
             HStack(spacing: SpotTokens.settingsValueGap) {
                 button(page)
                 if page.hasSample, model != nil {
