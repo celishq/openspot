@@ -41,7 +41,7 @@ extension SpotsModel {
 
     private func layShelf() {
         guard let room = shelfRoom else { return }
-        let panel = CGRect(x: room.panelOrigin.x + SpotTokens.halo, y: room.panelOrigin.y, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight)
+        let panel = CGRect(x: room.panelOrigin.x + SpotTokens.halo, y: room.panelOrigin.y + SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.panelHeight)
         let next = ShelfLayout(screen: room.screen, panel: panel, sizes: shelf.map(\.size))
         if next != shelfLayout { shelfLayout = next }
     }
