@@ -30,8 +30,7 @@ enum GuideCall: NounCall {
                 case .find(let words):
                     let found = guide.find(words)
                     guard !found.isEmpty else { return CommandAnswer(errors: "No part of the guide holds \(words.joined(separator: " ")). Run `openspot guide` for the map.\n", code: 1) }
-                    let width = (found.map(\.address.count).max() ?? 0) + 4
-                    return CommandAnswer(output: found.map { $0.address.padding(toLength: width, withPad: " ", startingAt: 0) + $0.line + "\n" }.joined())
+                    return CommandAnswer(output: Self.list(found))
                 case .topic(let name):
                     if let topic = guide.topic(name) { return CommandAnswer(output: topic.text) }
                     if let rows = guide.rows(naming: name) { return CommandAnswer(output: rows) }
@@ -39,6 +38,8 @@ enum GuideCall: NounCall {
                     let found = GuideTopic.found(name, in: topics)
                     if found.count == 1 { return CommandAnswer(output: found[0].text) }
                     if !found.isEmpty { return CommandAnswer(output: Self.list(found)) }
+                    let places = name.contains("/") ? [] : guide.find([name])
+                    if !places.isEmpty { return CommandAnswer(output: Self.list(places)) }
                     if let slash = name.firstIndex(of: "/"), let page = guide.topic(String(name[..<slash])) {
                         let slugs = page.sections.map(\.slug)
                         let hint = CommandHelp.closest(to: name.lowercased(), in: slugs).map { "Did you mean `openspot guide \($0)`?" }
@@ -52,6 +53,11 @@ enum GuideCall: NounCall {
                 return CommandAnswer(failure: error)
             }
         }
+    }
+
+    private static func list(_ found: [(address: String, line: String)]) -> String {
+        let width = (found.map(\.address.count).max() ?? 0) + 4
+        return found.map { $0.address.padding(toLength: width, withPad: " ", startingAt: 0) + $0.line + "\n" }.joined()
     }
 
     private static func list(_ topics: [GuideTopic]) -> String {

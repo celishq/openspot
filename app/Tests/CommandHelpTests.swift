@@ -123,12 +123,14 @@ final class CommandHelpTests: XCTestCase {
         XCTAssertEqual(missing.code, 2)
     }
 
-    func testAWordOfTheGuideFindsEachTopicThatNamesIt() async throws {
-        let one = try await answer(["guide", "buttons"])
+    func testAWordOfAPageTitlePrintsThatPageAndAWordOfTheTextListsWhereItIs() async throws {
+        let titled = try await answer(["guide", "buttons"])
+        let once = try await answer(["guide", "item"])
         let many = try await answer(["guide", "print"])
 
-        XCTAssertEqual(one.output, "# Add buttons\n\nPrint buttons.\n")
-        XCTAssertEqual(many.output, "show-a-list    Show a list\nadd-buttons    Add buttons\n")
+        XCTAssertEqual(titled.output, "# Add buttons\n\nPrint buttons.\n")
+        XCTAssertEqual(once.output, "show-a-list/rows    One per item.\n")
+        XCTAssertEqual(many.output, "show-a-list    Print rows.\nadd-buttons    Print buttons.\n")
         XCTAssertEqual(many.code, 0)
     }
 }
