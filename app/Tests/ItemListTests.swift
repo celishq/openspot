@@ -138,7 +138,21 @@ final class ItemListTests: XCTestCase {
         list.take(search: .script)
 
         XCTAssertTrue(list.isWaiting)
-        XCTAssertEqual(list.shown.count, 2)
+        XCTAssertEqual(list.shown.map(\.title), ["Notes"])
+    }
+
+    func testAScriptSearchShowsTheRowsOnHandThatHoldTheTextInTheirOrderUntilItsAnswer() {
+        var list = ItemList(items: items("Safari", "Notes", "Slack"), search: .script)
+
+        list.search("a")
+        let typed = list.shown.map(\.title)
+        list.search("az")
+        let none = list.shown.map(\.title)
+        list.answer(items("Sz old"), to: "az")
+
+        XCTAssertEqual(typed, ["Safari", "Slack"])
+        XCTAssertEqual(none, typed)
+        XCTAssertEqual(list.shown.map(\.title), ["Sz old"])
     }
 
     private func items(_ titles: String...) -> [SpotItem] {

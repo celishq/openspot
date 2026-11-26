@@ -180,7 +180,7 @@ public struct ItemList: Equatable, Sendable {
 
     public func ready(_ items: [SpotItem], search: ItemSearch) -> Rows {
         guard items != all else { return Rows(items: all, base: all, search: search, index: nil) }
-        return Rows(items: items, base: all, search: search, index: search == .local ? SearchIndex(items) : SearchIndex())
+        return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items))
     }
 
     public mutating func replace(_ items: [SpotItem]) {
@@ -282,7 +282,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func reindex() {
-        searchIndex = search == .local ? SearchIndex(all) : SearchIndex()
+        searchIndex = search == .off ? SearchIndex() : SearchIndex(all)
         pin()
     }
 
@@ -295,10 +295,17 @@ public struct ItemList: Equatable, Sendable {
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
-            return show(all.indices)
+            guard let found = onHand() else { return }
+            return show(found)
         }
         narrowings = narrowed()
         show(narrowings.last?.matches ?? [])
+    }
+
+    private func onHand() -> [Int]? {
+        guard search == .script, isWaiting, !query.isEmpty else { return Array(all.indices) }
+        let matches = SearchQuery(text: query).ranking(searchIndex, items: all, among: Array(all.indices), weights: weights).sorted()
+        return matches.isEmpty && !shown.isEmpty ? nil : matches
     }
 
     private func narrowed() -> [Narrowing] {
