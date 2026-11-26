@@ -26,7 +26,7 @@ if [ "$1" = "--run" ]; then
   fi
   start=$(date +%s)
   (cd "$place/work" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" perl -e 'alarm shift; exec @ARGV' 900 \
-    claude -p "$prompt" --model sonnet --output-format json --permission-mode acceptEdits \
+    claude -p "$prompt" --model "${MODEL:-sonnet}" --output-format json --permission-mode acceptEdits \
     --allowedTools "Bash Read Write Edit" </dev/null >"$place/report.json" 2>"$place/agent.err")
   seconds=$(($(date +%s) - start))
   touch "$place/calls.tsv"

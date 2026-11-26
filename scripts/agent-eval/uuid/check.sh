@@ -1,6 +1,7 @@
 #!/bin/sh
 . "$TASKS/checks.sh"
 lint || exit 1
+plain || exit 1
 kept=$(pbpaste)
 id=$(own_id)
 for call in open "" $(sed -n 's/^\[actions\.\([^]]*\)\]$/\1/p' "$PLACE"/spots/*/spot.toml); do

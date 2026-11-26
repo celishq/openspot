@@ -1,6 +1,7 @@
 #!/bin/sh
 . "$TASKS/checks.sh"
 lint || exit 1
+plain || exit 1
 shown=$("$OPENSPOT" --config "$OPENSPOT_CONFIG" spot run clock </dev/null)
 echo "$shown"
 for zone in Asia/Tokyo Europe/London; do
