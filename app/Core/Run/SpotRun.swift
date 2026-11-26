@@ -314,7 +314,7 @@ public final class SpotRun {
         public let rows: Int
         public let perLine: Int
         public let setsApart: Bool
-        public var sections = 0
+        public let sections: Int
 
         public init(rows: Int, perLine: Int, setsApart: Bool = false, sections: Int = 0) {
             self.rows = rows
@@ -333,7 +333,7 @@ public final class SpotRun {
     }
 
     func settle() {
-        let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart, sections: rows.perLine == 1 ? rows.sectionStarts.count : 0)
+        let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart, sections: rows.sectionCount)
         if next != shape { shape = next }
         let waits = heardRows == nil && showsSheet && answered == nil && panel?.holdsParts != true && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != isWaiting { isWaiting = waits }

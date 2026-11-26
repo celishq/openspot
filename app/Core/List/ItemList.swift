@@ -57,6 +57,10 @@ public struct ItemList: Equatable, Sendable {
         shown.count + sectionStarts.count
     }
 
+    public var sectionCount: Int {
+        perLine == 1 ? sectionStarts.count : 0
+    }
+
     public func run(at index: Int) -> String? {
         shown.indices.contains(index) ? shown[index].run : nil
     }

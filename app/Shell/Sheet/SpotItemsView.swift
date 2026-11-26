@@ -86,7 +86,7 @@ struct SpotItemsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, sections: list.perLine == 1 ? list.sectionStarts.count : 0, in: room) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, sections: list.sectionCount, in: room) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
