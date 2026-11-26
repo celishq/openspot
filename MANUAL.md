@@ -36,7 +36,7 @@ with "Look in the Store" at the end of a search, or with `openspot store open`.
 
 1. Look at the sidebar. My spots holds each spot you have, under Updates, Yours and Comes with Openspot. Under
    Stores come Openspot, the spots that ship with the app, then each folder you added with Add Store…. A store
-   shows each spot as its card, drawn from its sample data.
+   shows each spot as its card, drawn from its sample data, or as its icon when it draws no card.
 2. Click a spot. Its page shows its card, its readme, and what it uses, runs by itself and can also do, before you
    install it. Try shows its card at each size, from 1×1 to 4×2, beside its open sheet. Show Files lists its files,
    and a click on one shows it in Finder.
@@ -44,9 +44,10 @@ with "Look in the Store" at the end of a search, or with `openspot store open`.
    onto My spots, opens the review first, and nothing is copied until its Install. While you drag, My spots says
    Drop to install.
 
-- The button of a page says Installed once the spot is yours, Update when a newer version waits for your yes, and
-  Revert… when you edited it. Update names only what the new version adds. Revert asks before it moves your copy to the
-  Trash.
+- Once the spot is yours, its page says Installed, or Comes with Openspot, and offers Open, which opens its sheet, and
+  a ⋯ menu with Settings, Show in Finder and Remove. A row of My spots has the same menu. Update shows when a newer
+  version waits for your yes, and the menu offers Revert… when you edited it. Update names only what the new version
+  adds. Revert asks before it moves your copy to the Trash.
 - The search at the top of the sidebar keeps only the spots of the chosen place that match. Back and forward step
   through the places and pages you opened, as in Settings.
 - Each act of the Store is also a command, so an agent can do it: `openspot store list`, `store get`, `store update`,
