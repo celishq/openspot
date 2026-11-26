@@ -13,6 +13,7 @@ public struct Peek: Equatable, Sendable {
     static let kinds: [BlockKind] = [.text, .number, .series, .picture, .icon]
     static let words = Set((kinds + [.box]).map(\.word))
     public static let variants: Set<Style.Variant> = [.peek]
+    static let textLimit = 2000
     static let pictureKinds: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tiff", "webp", "bmp"]
 
     public let run: String
@@ -32,7 +33,7 @@ public struct Peek: Equatable, Sendable {
         } else if let file = value("text") == nil ? item.file : nil {
             look = Self.pictureKinds.contains((file as NSString).pathExtension.lowercased()) ? .picture(file) : .file(file)
         } else if let text = value("text") {
-            look = .text(text)
+            look = .text(String(text.prefix(Self.textLimit)))
         } else {
             return nil
         }
@@ -40,6 +41,13 @@ public struct Peek: Equatable, Sendable {
         self.look = look
         title = item.title
         caption = item.subtitle
+    }
+
+    var isRead: Bool {
+        switch look {
+        case .picture, .file: true
+        default: false
+        }
     }
 
     static func tree(of blocks: [TextBlock]) -> ViewTree? {

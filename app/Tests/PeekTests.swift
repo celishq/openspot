@@ -139,4 +139,25 @@ final class PeekTests: PanelCase {
 
         XCTAssertEqual(model.peek?.look, .text("words"))
     }
+
+    func testThePeekReadsAheadThePicturesOfTheSelectedRowAndTheRowsBesideIt() async throws {
+        try await openHistory("printf 'item=a\\ntitle=A\\nfile=/tmp/a.png\\n\\nitem=b\\ntitle=B\\nfile=/tmp/b.pdf\\n\\nitem=c\\ntitle=C\\nfile=/tmp/c.png\\n\\nitem=d\\ntitle=D\\ntext=words\\n'")
+        XCTAssertEqual(host.peekReads, [])
+
+        _ = model.handleKey(peekKey)
+        XCTAssertEqual(host.peekReads, [[.picture("/tmp/a.png"), .file("/tmp/b.pdf")]])
+
+        _ = model.handleSearchKey(ActionKey(name: "down"))
+        XCTAssertEqual(host.peekReads.last, [.file("/tmp/b.pdf"), .picture("/tmp/c.png"), .picture("/tmp/a.png")])
+    }
+
+    func testALongTextPeeksOnlyAsMuchAsThePaneCanShow() async throws {
+        let long = String(repeating: "word ", count: Peek.textLimit)
+        try await openHistory("printf 'item=a\\ntitle=Long\\ntext=\(long)\\n'")
+
+        _ = model.handleKey(peekKey)
+
+        guard case .text(let shown) = model.peek?.look else { return XCTFail("no text") }
+        XCTAssertEqual(shown.count, Peek.textLimit)
+    }
 }

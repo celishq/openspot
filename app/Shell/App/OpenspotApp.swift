@@ -249,6 +249,17 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel?.reach(rect)
     }
 
+    func readAhead(_ looks: [Peek.Look]) {
+        let scale = panel?.backingScaleFactor ?? 2
+        for look in looks {
+            switch look {
+            case .picture(let path): Task { _ = await SpotPictureStore.shared.image(SpotPictureStore.Key(path: path, changed: nil)) }
+            case .file(let path): Task { _ = await SpotPeekThumbnails.shared.image(path, scale: scale) }
+            default: break
+            }
+        }
+    }
+
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let back = model.isShown && !model.isWarming ? previous.app : NSWorkspace.shared.frontmostApplication

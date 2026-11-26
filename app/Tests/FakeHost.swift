@@ -144,6 +144,12 @@ final class FakeHost: SpotsHost {
         reaches.append(rect)
     }
 
+    var peekReads: [[Peek.Look]] = []
+
+    func readAhead(_ looks: [Peek.Look]) {
+        peekReads.append(looks)
+    }
+
     var floatsFollowingDrag: [Bool] = []
 
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {

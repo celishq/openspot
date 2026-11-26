@@ -15,7 +15,6 @@ struct SpotPeekView: View {
                     .morph(isOpen ? 1 : 0, opacity: { 1 - SheetMorph.cardOpacity(at: $0) })
                 if let peek = model.peek {
                     PeekFace(peek: peek)
-                        .id(peek.run)
                         .frame(width: rect.width, height: rect.height)
                         .offset(x: rect.minX, y: rect.minY)
                         .morph(isOpen ? 1 : 0, opacity: { SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
@@ -58,10 +57,11 @@ private struct PeekFace: View {
     @ViewBuilder
     private var look: some View {
         switch peek.look {
-        case .picture(let path), .file(let path):
-            Color.clear
-                .overlay { NodeFileThumbnail(path: path) }
+        case .picture(let path):
+            SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: nil))
                 .clipShape(inner)
+        case .file(let path):
+            SpotPeekThumbnail(path: path)
         case .color(let hex):
             inner.fill(SpotColorBar.color(hex))
         case .text(let text):

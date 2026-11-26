@@ -52,6 +52,21 @@ extension SpotsModel {
         let next = isPeeking ? peekedItem.flatMap(Peek.init(item:)) : nil
         if next != peek { peek = next }
         placePeek(beside: next == nil ? nil : openSheet?.sheetRect)
+        readAhead(around: next == nil ? nil : peekedItem)
+    }
+
+    private func readAhead(around item: SpotItem?) {
+        guard let item else {
+            peekRead = []
+            return
+        }
+        let rows = openSheet?.list.shown ?? []
+        let at = rows.firstIndex { $0.run == item.run }
+        let around = [item] + [at.map { $0 + 1 }, at.map { $0 - 1 }].compactMap { $0 }.filter(rows.indices.contains).map { rows[$0] }
+        let looks = around.compactMap(Peek.init(item:)).filter(\.isRead).map(\.look)
+        guard looks != peekRead else { return }
+        peekRead = looks
+        host.readAhead(looks)
     }
 
     private func placePeek(beside sheet: CGRect?) {

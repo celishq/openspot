@@ -92,6 +92,7 @@ public final class SpotsModel {
     public internal(set) var isPeekOpen = false
     @ObservationIgnored var isPeekGrowing = false
     var isPeeking = false
+    @ObservationIgnored var peekRead: [Peek.Look] = []
     public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var spotListBuilds = 0
