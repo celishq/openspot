@@ -280,6 +280,10 @@ extension SpotTokens {
     public static let storeTilePadding: CGFloat = 12
     public static let storeTileRadius: CGFloat = 14
     public static let storeTileLineGap: CGFloat = 4
+    public static let storeTileGap: CGFloat = 12
+    public static let storePreviewWidth: CGFloat = 264
+    public static let storePreviewHeight: CGFloat = 132
+    public static let storePreviewIcon: CGFloat = 56
     public static let storeMarkGap: CGFloat = 2
     public static let storeMarkPadding: CGFloat = 6
     public static let storeTrustTitleWidth: CGFloat = 110

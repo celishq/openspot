@@ -29,10 +29,22 @@ extension StoreView {
                     Button("Clear Search") { store.search("") }
                 }
             }
+        } else if source != nil {
+            Section {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
+                    ForEach(store.cards) { card in StoreTile(store: store, card: card) }
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            } footer: {
+                Text("Drag a spot to My spots to install it.")
+                    .font(SpotType.settingsLine)
+                    .foregroundStyle(.secondary)
+            }
         } else {
             ForEach(store.groups) { shelf in
                 group(shelf.title) {
-                    lines(shelf.cards) { card in cardLine(card, isFromSource: source != nil) }
+                    lines(shelf.cards) { card in cardLine(card) }
                 }
             }
         }
@@ -40,28 +52,15 @@ extension StoreView {
 
     private func placeLine(_ source: StoreSource?) -> String {
         guard let source else { return "Each spot you have." }
-        let from = source.isBuiltIn ? "The spots that come with Openspot." : source.url.path
-        return "\(from) Drag a spot to My spots, or press +, to install it."
+        return source.isBuiltIn ? "Spots made to show what Openspot can do." : source.url.path
     }
 
-    @ViewBuilder
-    private func cardLine(_ card: StoreCard, isFromSource: Bool) -> some View {
-        let line = row(action: { Task { await store.open(card.id) } }) {
+    private func cardLine(_ card: StoreCard) -> some View {
+        row(action: { Task { await store.open(card.id) } }) {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.settingsRowTile)
             titled(card.spot.name, card.spot.subtitle ?? "")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if isFromSource, let mark = card.mark { StoreMarkView(mark: mark) }
-            if isFromSource, card.mark == nil {
-                Button { Task { await store.install(card.id) } } label: { Image(systemName: "plus.circle") }
-                    .buttonStyle(.borderless)
-                    .help("Install \(card.spot.name)")
-            }
             chevron
-        }
-        if isFromSource {
-            line.draggable(card.id) { StoreTileLift(card: card) }
-        } else {
-            line
         }
     }
 

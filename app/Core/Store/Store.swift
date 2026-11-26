@@ -231,7 +231,7 @@ public final class Store {
         var cards: [StorePlace: [StoreCard]] = [.mine: mine]
         for source in sources {
             cards[.source(source)] = source.spots().compactMap { file in
-                file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil) }
+                file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil, preview: StorePreview(of: $0)) }
             }.sorted { $0.spot.comesBefore($1.spot) }
         }
         return StoreRead(sources: sources, missing: Set(sources.filter { $0.canRemove && !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)

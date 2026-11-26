@@ -176,6 +176,18 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(store.groups.map(\.title), [nil])
     }
 
+    func testASourceCardCarriesTheCardOfItsSampleData() async throws {
+        try "frame=\nclass=gap-part\n\ntext=time\nclass=hidden card:flex\ntitle=21:45\n".write(to: examples.appendingPathComponent("clock.spot/sample.frame"), atomically: true, encoding: .utf8)
+        await store.read()
+
+        store.choose(.source(.builtIn(examples)))
+
+        let clock = try XCTUnwrap(store.cards.first { $0.id == "clock" })
+        XCTAssertEqual(clock.preview?.size, .wide)
+        XCTAssertEqual(clock.preview?.face.draws(on: .wide), true)
+        XCTAssertNil(store.cards.first { $0.id == "paste" }?.preview)
+    }
+
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
         try "# Clock\n\nTells the time\nof each city.\n- one\n- two\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
 
