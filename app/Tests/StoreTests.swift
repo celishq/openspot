@@ -85,6 +85,33 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(marks, ["clock installed", "paste"])
     }
 
+    func testBackAndForwardStepThroughThePlacesAndPagesYouOpened() async throws {
+        await store.read()
+        XCTAssertEqual(store.title, "My spots")
+        XCTAssertTrue(store.back.isEmpty)
+
+        store.choose(.source(.builtIn(examples)))
+        await store.open("clock")
+        XCTAssertEqual(store.title, "Clock")
+
+        await store.goBack()
+        XCTAssertNil(store.page)
+        XCTAssertEqual(store.title, "Openspot")
+        await store.goBack()
+        XCTAssertEqual(store.place, .mine)
+        XCTAssertTrue(store.back.isEmpty)
+
+        await store.goForward()
+        XCTAssertEqual(store.place, .source(.builtIn(examples)))
+        await store.goForward()
+        XCTAssertEqual(store.page?.id, "clock")
+        XCTAssertTrue(store.forward.isEmpty)
+
+        store.choose(.mine)
+        XCTAssertTrue(store.forward.isEmpty)
+        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+    }
+
     func testTheSearchKeepsOnlyTheCardsOfThePlaceThatMatch() async throws {
         await store.read()
         store.choose(.source(.builtIn(examples)))

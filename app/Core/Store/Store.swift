@@ -11,6 +11,8 @@ public final class Store {
     public private(set) var cards: [StoreCard] = []
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
+    public internal(set) var back: [StoreStop] = []
+    public internal(set) var forward: [StoreStop] = []
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?
@@ -79,6 +81,12 @@ public final class Store {
     }
 
     public func choose(_ next: StorePlace) {
+        let from = stop
+        move(to: next)
+        leave(from)
+    }
+
+    func move(to next: StorePlace) {
         if page != nil { page = nil }
         guard next != place else { return }
         place = next
@@ -93,6 +101,12 @@ public final class Store {
     }
 
     public func open(_ id: String) async {
+        let from = stop
+        await load(id)
+        leave(from)
+    }
+
+    func load(_ id: String) async {
         opening = id
         let next = await Self.page(id, at: place, places, opened: opened, now: clock.now())
         guard opening == id else { return }
@@ -101,8 +115,10 @@ public final class Store {
     }
 
     public func closePage() {
+        let from = stop
         opening = nil
         if page != nil { page = nil }
+        leave(from)
     }
 
     public func install(_ id: String) async {
@@ -169,7 +185,7 @@ public final class Store {
         case .success(let said):
             await changed()
             await read()
-            if let id = page?.id { await open(id) }
+            if let id = page?.id { await load(id) }
             toast(ToastNote(words: said.trimmingCharacters(in: .newlines)))
         case .failure(let error):
             toast(.failure(SpotsModel.reason(error)))

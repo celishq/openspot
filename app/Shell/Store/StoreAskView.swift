@@ -6,18 +6,11 @@ struct StoreAskView: View {
     let ask: StoreAsk
 
     var body: some View {
-        ZStack {
-            SpotTheme.storeDim
-                .ignoresSafeArea()
-                .onTapGesture { store.dismissAsk() }
-            VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                content
-            }
-            .padding(SpotTokens.storeInset)
-            .frame(width: SpotTokens.storeAskWidth, alignment: .leading)
-            .background(SpotTheme.window, in: SpotRoundShape(radius: SpotTokens.storeAskRadius))
-            .shadow(color: SpotTheme.cardShadow, radius: SpotTheme.liftShadow)
+        VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+            content
         }
+        .padding(SpotTokens.storeInset)
+        .frame(width: SpotTokens.storeAskWidth, alignment: .leading)
     }
 
     @ViewBuilder

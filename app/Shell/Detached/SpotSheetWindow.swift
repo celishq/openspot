@@ -82,10 +82,15 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     }
 
     static func make(settings model: SpotsModel, content: some View) -> SpotSheetWindow {
-        let window = make(
-            remembers: false, title: "Settings", name: "settings-window", size: SpotTokens.settingsWindowSize, minSize: SpotTokens.settingsWindowMinSize, bridges: true, content: content
-        )
+        let window = make(pages: "Settings", name: "settings-window", content: content)
         window.book = model.settingsBook
+        return window
+    }
+
+    static func make(pages title: String, name: String, content: some View) -> SpotSheetWindow {
+        let window = make(
+            remembers: false, title: title, name: name, size: SpotTokens.settingsWindowSize, minSize: SpotTokens.settingsWindowMinSize, bridges: true, content: content
+        )
         window.declared = SpotTokens.settingsWindowSize
         window.sidebar = SpotTokens.settingsSidebarIdeal
         window.toolbarStyle = .unified

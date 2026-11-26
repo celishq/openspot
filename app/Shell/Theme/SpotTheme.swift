@@ -89,7 +89,6 @@ enum SpotTheme {
     static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
     static let attachmentDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
-    static let storeDim = color(dark: .black.withAlphaComponent(0.4), light: .black.withAlphaComponent(0.2))
 
     private static func color(dark: NSColor, light: NSColor) -> Color {
         Color(nsColor: NSColor(name: nil) { isDark($0) ? dark : light })

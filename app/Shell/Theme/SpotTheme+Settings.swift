@@ -30,6 +30,13 @@ extension SpotTheme {
 
     static let settingsSpotColours: [Color] = [.blue, .indigo, .purple, .pink, .red, .orange, .yellow, .green, .mint, .teal, .cyan, .brown, .gray]
 
+    static let storeMine = Color.blue
+    static let storeDropFill = 0.25
+
+    static func storeSource(_ source: StoreSource) -> Color {
+        source.isBuiltIn ? .purple : .gray
+    }
+
     static func settingsSpot(_ id: String) -> Color {
         settingsSpotColours[id.unicodeScalars.reduce(0) { $0 + Int($1.value) } % settingsSpotColours.count]
     }

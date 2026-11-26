@@ -4,8 +4,8 @@ import SwiftUI
 
 @MainActor
 enum SpotStorePicture {
-    private static let margin: CGFloat = 20
-    private static let settle = 1.0
+    private static let settle = 1.5
+    private static let far = CGPoint(x: -9000, y: -9000)
 
     static func run(path: String, place: String?, spot: String?, review: String?) -> Never {
         SpotPicture.start()
@@ -42,23 +42,19 @@ enum SpotStorePicture {
     }
 
     private static func draw(_ store: Store, to path: String) {
-        let size = SpotTokens.windowSize
-        let whole = CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin)
-        let seed = URL(fileURLWithPath: path).lastPathComponent
-        let edge = SpotRoundShape(.window)
-        let picture = ZStack {
-            if !SpotPicture.isOnScreen {
-                SpotWallpaper(seed: seed)
-                SpotWallpaper.blurred(seed: seed, size: size)
-                    .clipShape(edge)
-                    .padding(margin)
+        let content = StoreView(store: store, model: nil)
+            .environment(\.spotDrawsGlass, false)
+            .environment(\.spotMoves, false)
+        let window = SpotSheetWindow.make(pages: "Store", name: "store-picture", content: content)
+        window.setFrameOrigin(far)
+        window.orderBack(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+            MainActor.assumeIsolated {
+                let shown = window.attachedSheet ?? window
+                guard let frame = shown.contentView?.superview, let bitmap = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) else { exit(1) }
+                frame.cacheDisplay(in: frame.bounds, to: bitmap)
+                exit(FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:])) ? 0 : 1)
             }
-            StoreView(store: store, model: nil)
-                .frame(width: size.width, height: size.height)
-                .clipShape(edge)
-                .padding(margin)
         }
-        .frame(width: whole.width, height: whole.height)
-        SpotPicture(of: picture, size: whole, path: path).save(after: settle)
     }
 }
