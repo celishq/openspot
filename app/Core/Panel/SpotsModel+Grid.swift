@@ -29,7 +29,7 @@ extension SpotsModel {
             return true
         }
         confirming = nil
-        if isShown { host.dismiss() }
+        hidePanel(after: .close)
         run(key)
         return true
     }
@@ -216,7 +216,7 @@ extension SpotsModel {
             if confirming != key || !runConfirmed() { confirming = key }
             return
         }
-        if isShown, entry.spot.commands.first(where: { $0.id == command })?.closes != false { host.dismiss() }
+        hidePanel(after: entry.spot.commands.first { $0.id == command }.map(CommandAction.command)?.after ?? .close)
         run(key)
     }
 
