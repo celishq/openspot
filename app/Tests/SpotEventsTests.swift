@@ -63,6 +63,17 @@ final class SpotEventsTests: SpotRunsCase {
         try await wait("the event read") { self.log("reasons") == ["spot.want none", "clipboard.change none"] }
     }
 
+    func testAChangedSettingRunsItsSpotThatListsSettingChangeWithThePanelClosed() async throws {
+        try script(toml: "[settings]\nkeep = { type = 'text' }\n\n[on]\n\"setting.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script("other", toml: "[settings]\nkeep = { type = 'text' }", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+
+        runs.settingChanged(of: "other")
+        runs.settingChanged(of: "script")
+
+        try await wait("the run of the changed setting") { self.log("reasons") == ["setting.change none"] && !self.runs.isShowing }
+    }
+
     func testAnEventReadsASpotOnlyWhileSomethingWantsIt() async throws {
         menuBar.insert("wanted")
         try script("wanted", toml: "[on]\n\"power.change\" = true", log: "wanted", "printf 'text=t\\ntitle=T\\n'")

@@ -207,6 +207,7 @@ uses = ["timeline", "read", "clipboard"]
 "panel.open" = true
 "sheet.open" = true
 "sheet.text" = true
+"setting.change" = true
 command = ["timeline"]
 
 [scripts.timeline.actions.pause]

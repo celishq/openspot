@@ -165,8 +165,11 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(runs.timeline.list(Timeline.Query(), at: Date()).map(\.value), ["secret"])
     }
 
-    func testKeepForSetsTheDaysOfTheTimeline() async throws {
+    func testAChangeOfKeepForSetsTheDaysOfTheTimelineAndAListSetsNone() async throws {
         _ = try await rows("setting.keep=7 days\n")
+        XCTAssertEqual(runs.timeline.choices().keptDays, 30)
+
+        try await timeline.perform("setting.change", input: "setting.keep=7 days\n", timeout: 60)
 
         XCTAssertEqual(runs.timeline.choices().keptDays, 7)
     }

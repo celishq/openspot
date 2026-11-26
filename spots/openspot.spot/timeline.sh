@@ -13,8 +13,6 @@ card() {
 
 # Prints the frame of the entries that hold the words of $1.
 list() {
-  days=$(value setting.keep | tr -dc 0-9)
-  openspot timeline keep "${days:-30}" || exit 1
   if [ -n "$1" ]; then
     entries=$(openspot timeline list --all --limit 500 --text "$1") || exit 1
   else
@@ -56,6 +54,10 @@ case "$1" in
     if [ "$(value event)" = panel.open ]; then card; else list ""; fi
     ;;
   sheet.text) list "$(value value)" ;;
+  setting.change)
+    days=$(value setting.keep | tr -dc 0-9)
+    exec openspot timeline keep "${days:-30}"
+    ;;
   command) exec openspot spot open openspot/timeline ;;
   press)
     [ "$(value item)" = empty ] && exit 0

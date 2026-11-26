@@ -505,6 +505,7 @@ public final class SpotsModel {
         }
         if case .value(let spot, let caller) = change {
             if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
+            if caller != spot { runs.settingChanged(of: spot) }
         }
         runs.showOfferedItems()
     }
