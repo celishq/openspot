@@ -5,12 +5,15 @@ public enum Icon: Equatable, Sendable {
     case file(String)
     case image(String)
     case glyph(String)
+    case color(String)
 
     private static let pictures: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tif", "tiff", "webp", "bmp", "pdf", "icns", "svg"]
 
     public init?(text: String?) {
         guard let text, !text.isEmpty else { return nil }
-        if WebPictures.isWeb(text) || Self.pictures.contains((text as NSString).pathExtension.lowercased()) {
+        if BlockKind.isColor(text) {
+            self = .color(text)
+        } else if WebPictures.isWeb(text) || Self.pictures.contains((text as NSString).pathExtension.lowercased()) {
             self = .image(text)
         } else if text.contains("/") || text.hasPrefix("~") {
             self = .file(text)
@@ -35,5 +38,9 @@ public enum Icon: Equatable, Sendable {
 
     public var glyph: String? {
         if case .glyph(let text) = self { text } else { nil }
+    }
+
+    public var color: String? {
+        if case .color(let hex) = self { hex } else { nil }
     }
 }

@@ -314,9 +314,11 @@ public final class SpotRun {
         public let rows: Int
         public let perLine: Int
         public let setsApart: Bool
+        public var sections = 0
 
-        public init(rows: Int, perLine: Int, setsApart: Bool = false) {
+        public init(rows: Int, perLine: Int, setsApart: Bool = false, sections: Int = 0) {
             self.rows = rows
+            self.sections = sections
             self.perLine = perLine
             self.setsApart = setsApart
         }
@@ -331,7 +333,7 @@ public final class SpotRun {
     }
 
     func settle() {
-        let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
+        let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart, sections: rows.perLine == 1 ? rows.sectionStarts.count : 0)
         if next != shape { shape = next }
         let waits = heardRows == nil && showsSheet && answered == nil && panel?.holdsParts != true && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != isWaiting { isWaiting = waits }
@@ -349,7 +351,7 @@ public final class SpotRun {
         if rect != partsRect { partsRect = rect }
         let keys = panel?.showsRows != false
         if keys != takesKeys { takesKeys = keys }
-        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, sections: next.sections, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
     }
 

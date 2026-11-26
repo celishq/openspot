@@ -11,7 +11,7 @@ public struct AttachmentChip: Equatable, Sendable {
             case .symbol(let name): self = .symbol(name)
             case .image(let path): self = .file(.image(path))
             case .file(let path): self = .file(FileIcon(path: path))
-            case .glyph(let text): self = .glyph(text)
+            case .glyph(let text), .color(let text): self = .glyph(text)
             }
         }
 

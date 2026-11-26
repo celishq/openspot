@@ -226,7 +226,7 @@ inputs.whole = "text"
 
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }
-search = { type = "bool", title = "Show in search", icon = "magnifyingglass", default = false }
+in-search = { type = "bool", title = "Show in search", icon = "magnifyingglass", default = false }
 
 [scripts.timeline-search]
 title = "Timeline in search"

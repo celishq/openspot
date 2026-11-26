@@ -1,12 +1,12 @@
 # Show a preview of a row
 
-You'll build Swatches, a list of colours whose preview shows each colour large. Space on a row shows its preview
-beside the sheet, and Space or Esc hides it again.
+You'll build Swatches, a list of colours whose preview shows each colour large. `⌘Y` on a row shows its preview
+beside the sheet, as Quick Look does in Finder, and `⌘Y` or Esc hides it again.
 
 ## Let Openspot draw it
 
-A row that carries its value shows a preview with no work from your spot. `text=` shows the whole text, `url=` the
-link and its host, and `file=` the picture, or the file's icon and name. `whole=` names a file that holds the whole
+A row that carries its value shows a preview with no work from your spot. `text=` shows the text, `url=` the link
+and its host, `file=` the picture, filling the preview, or the file's thumbnail, and an `icon=#rrggbb` the colour. `whole=` names a file that holds the whole
 text of a long row. The row's `detail` shows under it.
 
 ## Draw your own
@@ -37,16 +37,16 @@ case "$1" in
 esac
 ```
 
-Open Swatches, and press Space. The preview shows `#ff3b30` in large type.
+Open Swatches, and press `⌘Y`. The preview shows `#ff3b30` in large type.
 
 ## How it works
 
-- With `"item.preview"` in its `[on]`, Openspot runs `item.preview` for the row that Space shows, with the row as
+- With `"item.preview"` in its `[on]`, Openspot runs `item.preview` for the row that `⌘Y` shows, with the row as
   `input.item=` and each of its keys as `input.item.<key>=`, such as `input.item.text=`.
 - It takes `text`, `number`, `series`, `picture` and `icon` blocks, and a first block of the frame's own keys, such as
   `class`. A class with the `preview:` prefix applies only there.
 - Openspot draws its own preview until yours comes, and keeps yours for the row, so a second look runs nothing.
-- A preview takes up to two fifths of the screen's width, and is as tall as the sheet.
+- A preview is 340 points wide and up to 380 tall, beside the sheet, with the row's title and `detail` under it.
 
 ## Give a type
 

@@ -6,18 +6,87 @@ struct SpotPreviewView: View {
 
     var body: some View {
         let shape = SpotRoundShape(SurfaceEdge.sheet)
-        ZStack(alignment: .topLeading) {
+        ZStack {
             if let preview = model.preview {
-                NodeTree(tree: preview.tree, pictureTimes: [:])
-                    .environment(\.spotNode, NodeContext(variants: ItemPreview.variants))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                PreviewFace(preview: preview)
                     .id(preview.run)
             }
         }
-        .padding(SpotTokens.padding * 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(shape)
         .spotGlass(in: shape)
         .environment(\.spotIsShown, true)
+    }
+}
+
+private struct PreviewFace: View {
+    let preview: ItemPreview
+
+    private var inner: SpotRoundShape {
+        SpotRoundShape(SurfaceEdge.sheet.inner())
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SpotTokens.padding) {
+            look
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(preview.title)
+                    .font(SpotType.body)
+                    .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
+                if let caption = preview.caption {
+                    Text(caption)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, SpotTokens.padding)
+        }
+        .padding(SpotTokens.padding)
+    }
+
+    @ViewBuilder
+    private var look: some View {
+        switch preview.look {
+        case .picture(let path), .file(let path):
+            Color.clear
+                .overlay { NodeFileThumbnail(path: path) }
+                .clipShape(inner)
+        case .color(let hex):
+            inner.fill(SpotColorBar.color(hex))
+        case .text(let text):
+            Text(text)
+                .font(SpotType.body)
+                .foregroundStyle(SpotTheme.ink)
+                .padding(SpotTokens.padding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
+        case .link(let url, let host):
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Image(systemName: "link")
+                    .font(SpotType.itemSymbol(side: SpotTokens.listIconSize))
+                    .foregroundStyle(SpotTheme.glassInk)
+                    .frame(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize, alignment: .leading)
+                if let host {
+                    Text(host)
+                        .font(SpotType.title)
+                        .foregroundStyle(SpotTheme.ink)
+                        .lineLimit(1)
+                }
+                Text(url)
+                    .font(SpotType.detail)
+                    .modifier(SpotSecondaryText())
+                    .lineLimit(4)
+            }
+            .padding(SpotTokens.padding)
+        case .blocks:
+            NodeTree(tree: preview.tree, pictureTimes: [:])
+                .environment(\.spotNode, NodeContext(variants: ItemPreview.variants))
+                .padding(SpotTokens.padding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
+        }
     }
 }

@@ -10,7 +10,7 @@ final class SpotPreviewWindow: NSPanel {
         let window = SpotPreviewWindow(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.hasShadow = true
+        window.hasShadow = false
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
         window.isReleasedWhenClosed = false
@@ -26,11 +26,12 @@ final class SpotPreviewWindow: NSPanel {
         let right = panel.frame.minX + sheet.maxX + SpotTokens.previewGap
         let leftEdge = panel.frame.minX + sheet.minX - SpotTokens.previewGap
         let room = max(area.maxX - right, leftEdge - area.minX)
-        let width = min(area.width * SpotTokens.previewScreenShare, room)
+        let width = min(SpotTokens.previewWidth, room)
         guard width >= SpotTokens.previewMinWidth else { return hide() }
+        let height = min(SpotTokens.previewHeight, sheet.height)
         let x = area.maxX - right >= width ? right : leftEdge - width
         let top = panel.frame.maxY - sheet.minY
-        setFrame(NSRect(x: x, y: top - sheet.height, width: width, height: sheet.height), display: false)
+        setFrame(NSRect(x: x, y: top - height, width: width, height: height), display: false)
         take(SurfaceEdge.sheet)
         level = panel.level
         if parent !== panel {

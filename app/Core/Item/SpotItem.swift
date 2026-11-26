@@ -118,6 +118,10 @@ public struct SpotItem: Equatable, Sendable {
         picture?.glyph
     }
 
+    public var swatch: String? {
+        picture?.color
+    }
+
     public func path(in spot: Spot) -> String {
         [spot.name, place].compactMap { $0 }.joined(separator: " › ")
     }

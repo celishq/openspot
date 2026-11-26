@@ -26,7 +26,7 @@ Each key of the top level, before the first table.
 | Key        | Type   | Is                                                                                         |
 | ---------- | ------ | ------------------------------------------------------------------------------------------ |
 | `title`    | text   | The name of the spot. The folder's name by default.                                        |
-| `icon`     | text   | An SF Symbol, an emoji, or an image file of the folder.                                    |
+| `icon`     | text   | An SF Symbol, an emoji, an image file of the folder, or a colour as `#rrggbb`, which shows as a square of it. |
 | `detail`   | text   | The line under the title.                                                                  |
 | `keywords` | [text] | More words that find the spot in the panel's search.                                       |
 | `uses`     | [text] | What it needs from the Mac; see [Uses](#uses).                                             |
@@ -90,7 +90,8 @@ Each setting, input, output and value of an event takes one of these types.
 | `default`     | its type | The value until people choose one.                   |
 | `options`     | [text]   | The values of a `choice`.                            |
 
-A setting can't take a name that Openspot keeps for people: `icon`, `menubar`, `attachment`, `open`, `float`, any
+A setting can't take a name that Openspot keeps for people: `icon`, `menubar`, `attachment`, `open`, `float`, `search`,
+`grid`, `enabled`, `global`, `tray`, any
 `key.<action>`, `window`, or a name of Openspot's own settings, such as `slow`.
 
 ## [actions.\<id\>]
@@ -171,7 +172,7 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |
-| `item.preview`     | itself  | none                             | When Space shows the preview of a row; see [Show a preview](../show/preview.md). |
+| `item.preview`     | itself  | none                             | When `⌘Y` shows the preview of a row; see [Show a preview](../show/preview.md). |
 | `clipboard.change` | itself  | none                             | When the clipboard changes.                               |
 | `app.front`        | itself  | its bundle ID                    | When another app comes to the front.                      |
 | `app.update`       | itself  | its version                      | When Openspot has downloaded an update.                   |

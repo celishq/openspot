@@ -2,7 +2,7 @@
 
 /** Whether the person turned on Show in search. */
 function isOn() {
-  return openspot.call(["setting", "get", "--spot", "openspot/timeline", "search"]).stdout.trim() === "true"
+  return openspot.call(["setting", "get", "--spot", "openspot/timeline", "in-search"]).stdout.trim() === "true"
 }
 
 /** The value of a line of a block, with its escapes undone. */

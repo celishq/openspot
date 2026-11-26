@@ -51,4 +51,14 @@ final class ReservedSettingTests: XCTestCase {
             XCTAssertEqual((error as? SpotError)?.reason, "Notes has [settings] menubar, a key that Openspot keeps for the person. Give the setting another name.")
         }
     }
+
+    func testASettingCannotTakeAKeyOfTheSpotsChoicesSuchAsSearch() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("reserved-\(UUID().uuidString).sh")
+        try "#!/bin/sh\n".writeScript(to: url, toml: "title = 'Notes'\n\n[settings]\nsearch = { type = 'bool' }")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        XCTAssertThrowsError(try SpotFile(file: url, id: "notes")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Notes has [settings] search, a key that Openspot keeps for the person. Give the setting another name.")
+        }
+    }
 }

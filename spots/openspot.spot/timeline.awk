@@ -1,5 +1,7 @@
 # Turns the entries that `openspot timeline list` prints into the rows of the Timeline sheet: a group for each day, and
-# a row for each entry, with its source and its time under its title. The card shows the newest entry.
+# a row for each entry, with its time and what it holds under its title, such as `09:57 · 3 lines` or
+# `09:57 · github.com`, and the spot it came from when that is not Clipboard. A colour such as #ff3b30 shows as a
+# square of itself. The card shows the newest entry.
 BEGIN { RS = ""; FS = "\n"; count = 0 }
 
 function day_title(day,    line) {
@@ -12,6 +14,20 @@ function day_title(day,    line) {
     titles[day] = (line == "" ? day : line)
   }
   return titles[day]
+}
+
+function what(kind, value, long, count,    host, lines) {
+  if (kind == "url") {
+    host = value
+    sub(/^[a-zA-Z]+:\/\//, "", host)
+    sub(/[\/?#].*/, "", host)
+    return host
+  }
+  if (kind == "picture") return "Image"
+  if (kind == "file") return (count > 1 ? count " files" : "File")
+  if (long) return "Long text"
+  lines = gsub(/\\n/, "&", value) + 1
+  return (lines > 1 ? lines " lines" : length(value) " characters")
 }
 
 function source(spot,    name) {
@@ -36,10 +52,11 @@ function source(spot,    name) {
   if ("file" in f) kind = "file"
   if ("picture" in f) kind = "picture"
   day = substr(f["at"], 1, 10)
-  detail = source(f["spot"]) " · " substr(f["at"], 12, 5)
+  detail = substr(f["at"], 12, 5) " · " what(kind, f[kind], f["text.file"] != "", files)
+  if (f["spot"] != "clipboard") detail = detail " · " source(f["spot"])
   if (count++ == 0) {
     if (card) {
-      printf "title=%s\ndetail=%s\n", f["title"], detail
+      printf "title=%s\ndetail=%s\n", f["title"], source(f["spot"]) " · " substr(f["at"], 12, 5)
       exit
     }
     printf "title=Timeline\n\n"
@@ -52,6 +69,10 @@ function source(spot,    name) {
     last = day
   }
   icon = (kind == "url" ? "link" : (kind == "file" ? "doc" : (kind == "picture" ? f["picture"] : "text.alignleft")))
+  if (kind == "text" && f["text"] ~ /^#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]$/) {
+    icon = tolower(f["text"])
+    sub(/ · [0-9]+ characters/, " · Color", detail)
+  }
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
   if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]

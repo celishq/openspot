@@ -53,7 +53,16 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertFalse(["Today", "Yesterday"].contains(older), older)
         XCTAssertFalse(older.contains("  "), older)
         XCTAssertEqual(rows.map(\.openTitle), ["Paste", "Open", "Paste"])
-        XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Clipboard · "), true)
+        XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
+    }
+
+    func testAColourShowsAsASquareOfItself() async throws {
+        try add(.text, "#FF3B30")
+
+        let rows = try await rows()
+
+        XCTAssertEqual(rows.first?.swatch, "#ff3b30")
+        XCTAssertEqual(rows.first?.subtitle?.hasSuffix(" · Color"), true)
     }
 
     func testTheCardShowsTheNewestEntry() async throws {
@@ -173,7 +182,7 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     func testTheSearchShowsTheThreeNewestEntriesThatHoldTheWords() async throws {
-        try file.change { $0.set(setting: "search", of: "openspot/timeline", to: "true") }
+        try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
         let now = Date()
         for index in 0..<4 { try add(.text, "cafe \(index)\nsecond line", at: now.addingTimeInterval(Double(index))) }
         try add(.url, "https://tea.com", at: now.addingTimeInterval(10))

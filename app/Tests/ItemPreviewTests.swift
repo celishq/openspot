@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class ItemPreviewTests: PanelCase {
-    private let space = ActionKey(name: " ")
+    private let preview = ActionKey(name: "y", isCommand: true)
 
     private func openHistory(_ rows: String, on: String = "") async throws {
         try script("history", toml: "title = 'History'\n\n[on]\n\"sheet.open\" = true\(on)", rows)
@@ -12,14 +12,14 @@ final class ItemPreviewTests: PanelCase {
         try await wait("the open list") { self.model.openSheet?.list.shown.isEmpty == false }
     }
 
-    func testSpaceOnARowShowsItsPreviewBesideTheSheetAndFollowsTheSelection() async throws {
+    func testCommandYOnARowShowsItsPreviewBesideTheSheetAndFollowsTheSelection() async throws {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=two\\\\nlines\\n\\nitem=b\\ntitle=Page\\nurl=https://a.com/x\\n'")
 
-        XCTAssertTrue(model.handleKey(space))
+        XCTAssertTrue(model.handleKey(preview))
 
         XCTAssertEqual(model.preview?.run, "a")
         XCTAssertEqual(host.previews.compactMap { $0 }.count, 1)
-        XCTAssertTrue(model.hint.contains("Space Close Preview"), model.hint)
+        XCTAssertTrue(model.hint.contains("⌘Y Close Preview"), model.hint)
 
         _ = model.handleSearchKey(ActionKey(name: "down"))
 
@@ -31,14 +31,14 @@ final class ItemPreviewTests: PanelCase {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
         model.followHint()
 
-        _ = model.handleKey(space)
+        _ = model.handleKey(preview)
 
         try await wait("the hint of the open preview") { self.model.sheetHint.groups.contains { $0.words == "Close Preview" } }
     }
 
     func testEscapeClosesThePreviewFirstAndThenTheSheet() async throws {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
-        _ = model.handleKey(space)
+        _ = model.handleKey(preview)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
 
@@ -47,10 +47,10 @@ final class ItemPreviewTests: PanelCase {
         XCTAssertEqual(model.openSheetID, "history")
     }
 
-    func testARowWithNothingToShowHasNoPreviewAndSpaceGoesOn() async throws {
+    func testARowWithNothingToShowHasNoPreviewAndCommandYGoesOn() async throws {
         try await openHistory("printf 'item=a\\ntitle=Plain\\n'")
 
-        XCTAssertFalse(model.handleKey(space))
+        XCTAssertFalse(model.handleKey(preview))
         XCTAssertNil(model.preview)
         XCTAssertFalse(model.hint.contains("Preview"), model.hint)
     }
@@ -63,7 +63,7 @@ final class ItemPreviewTests: PanelCase {
         esac
         """, on: "\n\"item.preview\" = true")
 
-        _ = model.handleKey(space)
+        _ = model.handleKey(preview)
 
         try await wait("the spot's own preview") { self.model.preview?.isOwn == true }
         XCTAssertEqual(model.preview?.blocks.first?.value("title"), "#ff0000")
@@ -71,7 +71,7 @@ final class ItemPreviewTests: PanelCase {
 
     func testHidingThePanelClosesThePreview() async throws {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
-        _ = model.handleKey(space)
+        _ = model.handleKey(preview)
 
         model.panelWillHide()
 
@@ -109,7 +109,7 @@ final class ItemPreviewTests: PanelCase {
         try colors()
         try await openHistory("printf 'item=a\\ntitle=Red\\ntext=#ff0000\\n\\nitem=b\\ntitle=Note\\ntext=words\\n'")
 
-        _ = model.handleKey(space)
+        _ = model.handleKey(preview)
 
         try await wait("the preview of the type") { self.model.preview?.isOwn == true }
         model.closeMenu()

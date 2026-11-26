@@ -27,6 +27,9 @@ public struct ItemList: Equatable, Sendable {
     private var pinnedBelow: [SpotItem] = []
     private var holdsFiles = false
     private var narrowings: [Narrowing] = []
+    private var unasked: [SpotItem] = []
+    private var unaskedIndex = SearchIndex()
+    private var holdsUnasked = false
 
     fileprivate struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
@@ -125,6 +128,12 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func begin(_ text: String) {
+        if search == .script, !holdsUnasked, !unasked.isEmpty {
+            all = unasked
+            searchIndex = unaskedIndex
+            holdsUnasked = true
+            pin()
+        }
         query = text
         selected = 0
         isFinding = false
@@ -196,6 +205,11 @@ public struct ItemList: Equatable, Sendable {
         if let index = rows.index {
             all = rows.items
             searchIndex = index
+            holdsUnasked = search == .script && query.isEmpty
+            if holdsUnasked {
+                unasked = all
+                unaskedIndex = index
+            }
             pin()
             narrowings = []
             refresh()
@@ -227,18 +241,18 @@ public struct ItemList: Equatable, Sendable {
 
     public func lineItem(at y: CGFloat) -> SpotItem? {
         let step = SpotTokens.listRow + SpotTokens.listRowGap
-        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
-        let line = Int(y / step)
+        guard y >= 0 else { return nil }
         let rows = scrolling
-        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
-        var at = 0
+        if sectionStarts.isEmpty {
+            let line = Int(y / step)
+            return y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow && line < rows.count ? rows[rows.startIndex + line] : nil
+        }
+        var top: CGFloat = 0
         for item in rows {
-            if sectionStarts[item.run] != nil {
-                if at == line { return nil }
-                at += 1
-            }
-            if at == line { return item }
-            at += 1
+            if sectionStarts[item.run] != nil { top += SpotTokens.listSection + SpotTokens.listRowGap }
+            if y < top { return nil }
+            if y < top + SpotTokens.listRow { return item }
+            top += step
         }
         return nil
     }

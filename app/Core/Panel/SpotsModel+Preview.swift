@@ -5,8 +5,8 @@ extension SpotsModel {
     static let previewLimit: TimeInterval = 3
 
     var previewRow: KeyRow {
-        KeyRow(" ", glyph: "Space", words: previewWords) { [self] _ in
-            guard searchText.isEmpty, isPreviewing || previewedItem != nil else { return nil }
+        KeyRow("y", command: true, words: previewWords) { [self] _ in
+            guard isPreviewing || previewedItem != nil else { return nil }
             isPreviewing.toggle()
             takePreview()
             return true
@@ -90,7 +90,7 @@ extension SpotsModel {
         let input = TextBlock(fields: [.init(key: "input.item", value: item.run)] + item.carried.map { .init(key: "input.\($0.key)", value: $0.value) } + typed).text
         previewAsk = Task { [weak self, runs] in
             guard let text = try? await runs.answer(of: spot, EventName.itemPreview, input: input, limit: Self.previewLimit), !Task.isCancelled, let self else { return }
-            guard let own = ItemPreview.own(text, of: item.run) else { return }
+            guard let own = ItemPreview.own(text, of: item) else { return }
             if ownPreviews.count >= Self.ownPreviewLimit { ownPreviews.removeAll() }
             ownPreviews[key] = own
             asOnePress { takePreview() }

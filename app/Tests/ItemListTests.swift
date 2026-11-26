@@ -9,13 +9,14 @@ final class ItemListTests: XCTestCase {
             SpotItem(title: "Three", run: "3", section: "Later")
         ])
         let step = SpotTokens.listRow + SpotTokens.listRowGap
+        let title = SpotTokens.listSection + SpotTokens.listRowGap
 
-        XCTAssertNil(list.lineItem(at: step / 2))
-        XCTAssertEqual(list.lineItem(at: step + 1)?.run, "1")
-        XCTAssertEqual(list.lineItem(at: 2 * step + 1)?.run, "2")
-        XCTAssertNil(list.lineItem(at: 3 * step + 1))
-        XCTAssertEqual(list.lineItem(at: 4 * step + 1)?.run, "3")
-        XCTAssertNil(list.lineItem(at: 2 * step - SpotTokens.listRowGap / 2))
+        XCTAssertNil(list.lineItem(at: title / 2))
+        XCTAssertEqual(list.lineItem(at: title + 1)?.run, "1")
+        XCTAssertEqual(list.lineItem(at: title + step + 1)?.run, "2")
+        XCTAssertNil(list.lineItem(at: title + 2 * step + 1))
+        XCTAssertEqual(list.lineItem(at: 2 * title + 2 * step + 1)?.run, "3")
+        XCTAssertNil(list.lineItem(at: title + step - SpotTokens.listRowGap / 2))
         XCTAssertNil(list.lineItem(at: 9 * step))
     }
 
@@ -153,6 +154,20 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(typed, ["Safari", "Slack"])
         XCTAssertEqual(none, typed)
         XCTAssertEqual(list.shown.map(\.title), ["Sz old"])
+    }
+
+    func testAClearOfAScriptSearchShowsEveryRowOfTheEmptyTextAtOnce() {
+        var list = ItemList(search: .script)
+        list.replace(items("Safari", "Notes", "Slack"))
+        list.search("note")
+        list.answer(items("Notes", "Notes old"), to: "note")
+
+        list.search("")
+        let cleared = list.shown.map(\.title)
+        list.search("sa")
+
+        XCTAssertEqual(cleared, ["Safari", "Notes", "Slack"])
+        XCTAssertEqual(list.shown.map(\.title), ["Safari"])
     }
 
     private func items(_ titles: String...) -> [SpotItem] {
