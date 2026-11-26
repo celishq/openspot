@@ -120,7 +120,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in
             Task { await self?.model.spotsChanged() }
         }
-        try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: spots)
+        try? AgentNote(command: AgentPrompt.command()).write(in: spots)
         showListener = SpotShowLink.listen { [weak self] id in await self?.model.reveal(id) ?? false }
         let isFirstLaunch = await Self.isFirstLaunch(model.folder, config: model.files.config)
         model.runs.launched()

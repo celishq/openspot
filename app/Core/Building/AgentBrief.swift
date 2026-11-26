@@ -3,6 +3,7 @@ import Foundation
 struct AgentBrief: Equatable, Sendable {
     static let openspot = "Openspot is a launcher for the Mac. Its panel shows a card for each spot: a folder with a spot.toml and a script, a JavaScript file or a Swift file. Openspot calls the spot and shows what it prints."
 
+    let app: String
     let task: String
     let place: [String]
     let reading: [String]
@@ -15,7 +16,7 @@ struct AgentBrief: Equatable, Sendable {
         \(task)
 
         Where:
-        \(Self.list(place))
+        \(Self.list(["The openspot command is \(Self.quoted(app)). Type it in quotes, since its path can hold a space."] + place))
 
         Read first:
         \(Self.list(reading))
@@ -28,6 +29,10 @@ struct AgentBrief: Equatable, Sendable {
         \(request)
         </request>
         """
+    }
+
+    static func quoted(_ app: String) -> String {
+        "\"\(app)\""
     }
 
     private static func list(_ lines: [String]) -> String {

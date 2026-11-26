@@ -30,8 +30,7 @@ struct PromptCalls {
             guard !words.isEmpty else { throw SpotError.failed(1, ThemePrompt.wordsNeeded) }
             let themes = ThemeFolder(config: places.config, builtIn: mac.theme)
             let found = try themes.find(name)
-            let app = AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")
-            return ThemePrompt(theme: found.name, folder: themes.url, isBuiltIn: found.isBuiltIn, base: mac.theme, app: app).asking(words)
+            return ThemePrompt(theme: found.name, folder: themes.url, isBuiltIn: found.isBuiltIn, base: mac.theme, app: AgentPrompt.command()).asking(words)
         }
     }
 }

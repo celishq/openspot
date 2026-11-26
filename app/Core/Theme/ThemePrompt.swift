@@ -20,9 +20,9 @@ public struct ThemePrompt: Equatable, Sendable {
 
     public func asking(_ wish: String) -> String {
         AgentBrief(
+            app: app,
             task: "Change the look of Openspot, its theme \(theme), as my request says.",
             place: [
-                "The openspot command is \(quoted). Type it in quotes, since its path can hold a space.",
                 file,
                 "A key that the file leaves out keeps its value from the theme \(ThemeFolder.builtInName)\(base.map { ", in \($0.path)" } ?? "")."
             ],
@@ -39,7 +39,7 @@ public struct ThemePrompt: Equatable, Sendable {
     }
 
     private var quoted: String {
-        "\"\(app)\""
+        AgentBrief.quoted(app)
     }
 
     private var file: String {

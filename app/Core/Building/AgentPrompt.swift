@@ -12,10 +12,10 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     public init(places: AppPlaces) {
-        self.init(folder: places.spots.url, references: [places.spots.core, places.examples?.url].compactMap { $0 }, app: Self.command(of: Bundle.main.executablePath ?? "openspot"))
+        self.init(folder: places.spots.url, references: [places.spots.core, places.examples?.url].compactMap { $0 }, app: Self.command())
     }
 
-    public static func command(of app: String) -> String {
+    public static func command(of app: String = Bundle.main.executablePath ?? "openspot") -> String {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let client = contents.appendingPathComponent("Helpers/openspot").path
         return FileManager.default.isExecutableFile(atPath: client) ? client : app
@@ -30,6 +30,7 @@ public struct AgentPrompt: Equatable, Sendable {
 
     public func building(_ description: String) -> String {
         AgentBrief(
+            app: app,
             task: "Build a new spot that does what my request says.",
             place: place + ["Make the spot in a new folder of the spots folder."],
             reading: reading,
@@ -50,6 +51,7 @@ public struct AgentPrompt: Equatable, Sendable {
     private func brief(of file: URL, task: String, facts: [String], request: String) -> String {
         let id = SpotID(file: file).description
         return AgentBrief(
+            app: app,
             task: task,
             place: place + ["The spot \(id) is in \(file.deletingLastPathComponent().path), and its main file is \(file.path)."],
             reading: ["Read each file of the spot.", "Run \(quoted) spot log \(id). It prints the last calls that Openspot made to it."] + facts + reading,
@@ -59,14 +61,11 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     private var quoted: String {
-        "\"\(app)\""
+        AgentBrief.quoted(app)
     }
 
     private var place: [String] {
-        [
-            "The openspot command is \(quoted). Type it in quotes, since its path can hold a space.",
-            "The spots folder is \(folder.path)."
-        ]
+        ["The spots folder is \(folder.path)."]
     }
 
     private var reading: [String] {
