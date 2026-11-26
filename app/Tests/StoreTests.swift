@@ -207,10 +207,8 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(clock.preview.face.draws(on: .wide))
         let paste = try XCTUnwrap(store.cards.first { $0.id == "paste" })
         XCTAssertEqual(paste.preview.size, .strip)
-        XCTAssertEqual(paste.preview.sizes, [.strip])
         XCTAssertFalse(paste.preview.drawsCard)
         XCTAssertTrue(clock.preview.drawsCard)
-        XCTAssertEqual(clock.preview.sizes, SpotSize.all)
         XCTAssertFalse(paste.preview.face.draws(on: .strip))
     }
 
