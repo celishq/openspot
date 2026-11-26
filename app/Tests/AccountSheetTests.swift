@@ -73,7 +73,7 @@ final class AccountSheetTests: BuiltInCase {
     func testWithNoAccountItOffersANewKeyOrYourOwn() async throws {
         let read = try await frame(["show"])
 
-        XCTAssertEqual(block("head", in: read)["title"], "You need a key to publish")
+        XCTAssertEqual(block("head", in: read)["title"], "You need a key to share")
         XCTAssertEqual(block("new", in: read)["title"], "Create a new key")
         XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
@@ -348,7 +348,7 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(block("head", in: leave)["title"], "Sign out of your account?")
         XCTAssertNil(try store.key())
-        XCTAssertEqual(block("head", in: out.frame)["title"], "You need a key to publish")
+        XCTAssertEqual(block("head", in: out.frame)["title"], "You need a key to share")
         XCTAssertEqual(out.effects, [.route(.pop(all: true)), .toast("Signed out")])
         let asked = await app.asked
         XCTAssertEqual(asked, ["sign out of your account"])

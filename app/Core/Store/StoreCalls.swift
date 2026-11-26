@@ -45,6 +45,7 @@ struct StoreCalls {
 
     func list(_ form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places, app] in
+            _ = try places.lock.entries()
             if await SpotUpdate(places: places).takeEachWithNoNewPower() { await app?.spotsChanged() }
             return try Self.catalog(in: places).text(form)
         }

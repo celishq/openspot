@@ -44,7 +44,10 @@ enum SpotArrangePicture {
     private static func lift(_ id: String, in model: SpotsModel) {
         guard let card = model.placements.last else { return }
         let grid = SpotTokens.gridOrigin()
-        guard let start = model.shelfOrigin(of: id) else { return }
+        guard let start = model.shelfOrigin(of: id) else {
+            FileHandle.standardError.write(Data("\(id) is not on the shelf, so --swap cannot lift it.\n".utf8))
+            exit(1)
+        }
         let target = CGPoint(x: grid.x + card.rect.minX + SpotTokens.cell / 3, y: grid.y + card.rect.minY + SpotTokens.cell / 3)
         model.dragShelfSpot(id, by: CGSize(width: target.x - start.x, height: target.y - start.y))
     }

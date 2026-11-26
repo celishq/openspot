@@ -94,7 +94,7 @@ public final class Store {
 
     public func open(_ id: String) async {
         opening = id
-        let next = await Self.page(id, at: place, places, now: clock.now())
+        let next = await Self.page(id, at: place, places, opened: opened, now: clock.now())
         guard opening == id else { return }
         opening = nil
         page = next
@@ -208,7 +208,7 @@ public final class Store {
     }
 
     @concurrent
-    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, now: Date) async -> StorePage? {
+    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, opened: StoreSource?, now: Date) async -> StorePage? {
         let config = places.config.read()
         let folder = places.spots
         let own = SpotCatalog(places: places, config: config, stores: []).items.first { $0.id == id && $0.isAdded }
@@ -224,8 +224,9 @@ public final class Store {
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
                 trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
             )
-        case .source(let source):
-            guard let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
+        case .source(let chosen):
+            guard let source = sources(in: places, config: config, opened: opened).first(where: { $0 == chosen }),
+                  let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
             let spotFolder = spot.url.deletingLastPathComponent()
             let review = try? ReviewSpot(
                 spot: SpotPackage(paths: [spotFolder.lastPathComponent], in: spotFolder.deletingLastPathComponent()), folder: folder.url, core: folder.core
@@ -255,7 +256,7 @@ public final class Store {
         Result {
             let config = places.config.read()
             let sources = sources(in: places, config: config, opened: opened)
-            let chosen = place.source
+            let chosen = place.source.flatMap { place in sources.first { $0 == place } }
             guard let install = try SpotCatalog(places: places, config: config, stores: sources).install(id, in: places, from: chosen) else { return nil }
             let source = chosen ?? sources.first { $0.fetch(id) != nil }
             return StoreReview(

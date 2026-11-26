@@ -8,12 +8,8 @@ extension SpotsModel {
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
-    var catalog: SpotCatalog {
-        SpotCatalog(folder: folder, arrangement: arrangement, stores: StoreSource.all(builtIn: files.examples, config: config))
-    }
-
-    func ownSpot(_ id: String) -> Spot? {
-        (try? SpotsFolder(url: folder.url).scan())?.files.first { $0.id == id }?.spots.first
+    public func isOwnSpot(_ id: String) -> Bool {
+        entries.contains { $0.id == id && $0.item == nil && origin(of: $0.spot) == .mine }
     }
 
     func accountKey() async throws -> AccountKey? {

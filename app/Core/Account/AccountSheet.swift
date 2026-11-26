@@ -64,7 +64,7 @@ public actor AccountSheet {
     public nonisolated var spot: Spot {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
-            subtitle: "Signs what you publish", triggers: Manifest.Triggers(events: [EventName.sheetOpen], lists: true), host: .account(self), dataName: "account",
+            subtitle: "Signs what you share", triggers: Manifest.Triggers(events: [EventName.sheetOpen], lists: true), host: .account(self), dataName: "account",
             isOnGrid: false, views: ["card": Self.card], pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }
@@ -201,7 +201,7 @@ public actor AccountSheet {
 
     private func choose(_ frame: inout AccountFrame) {
         frame.rows("head", "new", "own how")
-        frame.line("head", "You need a key to publish", icon: "signature", detail: "Openspot signs your spots with it, so people know an update is from you.")
+        frame.line("head", "You need a key to share", icon: "signature", detail: "Openspot signs your spots with it, so people know an update is from you.")
         frame.button("new", "Create a new key", .main)
         frame.button("own", "Use my own key")
         frame.button("how", "How it works")
@@ -213,7 +213,7 @@ public actor AccountSheet {
         frame.rows("head", "label", "handle")
         if problem != nil { frame.rows("status") }
         frame.rows("create")
-        frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
+        frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you share, and in their links.")
         frame.block(["text": "label", "class": "font-section", "title": "Handle"], order: ["text", "class", "title"])
         frame.block(["field": "handle", "grow": "false", "placeholder": "yourname", "value": value], order: ["field", "grow", "placeholder", "value"])
         if let problem { frame.line("status", problem, icon: "exclamationmark.triangle", tone: "bad") }
@@ -223,7 +223,7 @@ public actor AccountSheet {
 
     private func how(_ frame: inout AccountFrame) {
         frame.rows("head", "people", "icloud", "words", "private", "reset", "done")
-        frame.line("head", "How your key works", icon: "key", detail: "Openspot signs each spot you publish with your key. There is no email, password or server.")
+        frame.line("head", "How your key works", icon: "key", detail: "Openspot signs each spot you share with your key. There is no email, password or server.")
         frame.line("people", "Shows an update is yours", icon: "checkmark.seal")
         frame.line("icloud", "Kept in iCloud Keychain", icon: "icloud")
         frame.line("words", "12 words bring it back", icon: "list.number")

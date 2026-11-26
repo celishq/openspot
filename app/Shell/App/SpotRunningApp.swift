@@ -77,6 +77,7 @@ struct SpotRunningApp: RunningApp {
 
     func review(_ id: String) async -> Bool {
         if await model.review(spot: id) { return true }
+        if await model.isOwnSpot(id) { return false }
         return await openStore(id, search: nil)
     }
 

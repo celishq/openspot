@@ -42,10 +42,6 @@ public struct SpotCatalog: Sendable {
         self.init(folder: places.spots, arrangement: config.arrangement, stores: stores, lock: places.lock)
     }
 
-    public static func id(of spot: Spot, in folder: SpotsFolder) -> String {
-        folder.fileID(of: spot)
-    }
-
     public var items: [Item] {
         let own = (try? folder.scanOwn()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
