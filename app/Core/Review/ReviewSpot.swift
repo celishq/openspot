@@ -53,7 +53,7 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
         lines = [
-            ReviewLine(title: "Uses", words: [uses.isEmpty ? "Nothing" : uses.map(\.rawValue).joined(separator: ", ")]),
+            ReviewLine(title: "Uses", words: [uses.isEmpty ? "No Mac features" : uses.map(\.rawValue).joined(separator: ", ")]),
             ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
             ReviewLine(title: "Can also", words: canAlso),
             ReviewLine(title: "Binds", words: bindings.map(\.shown)),

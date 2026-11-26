@@ -113,8 +113,16 @@ extension StoreView {
             .textCase(nil)
             .padding(.bottom, SpotTokens.settingsHeadingGap)
         }
-        group("About") {
-            StoreReadmeView(lines: page.shown, name: page.spot.name)
+        Section {} header: {
+            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                Text("About")
+                    .font(SpotType.settingsGroup)
+                StoreReadmeView(lines: page.shown, name: page.spot.name)
+                    .frame(maxWidth: SpotTokens.storeReadWidth, alignment: .leading)
+            }
+            .foregroundStyle(.primary)
+            .textCase(nil)
+            .padding(.bottom, SpotTokens.settingsHeadingGap)
         }
         if page.trust.contains(where: { !$0.isFiles }) {
             group("What It Can Do") {

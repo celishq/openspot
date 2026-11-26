@@ -150,6 +150,7 @@ final class ReviewSpotTests: XCTestCase {
         let review = try review("title = 'Weather'")
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
+        XCTAssertEqual(review.lines.first?.words, ["No Mac features"])
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns only when you use it\n\n"), text)
         XCTAssertFalse(text.contains("Runs by itself"))
