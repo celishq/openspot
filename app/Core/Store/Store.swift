@@ -213,8 +213,7 @@ public final class Store {
     }
 
     private func refilter() {
-        let search = SearchQuery(text: query)
-        let next = search.text.isEmpty ? shelves[place] ?? [] : searches[place]?.matching(search) ?? []
+        let next = searches[place]?.matching(SearchQuery(text: query)) ?? []
         if next != cards { cards = next }
         let grouped = StoreGroup.of(next, at: place)
         if grouped != groups { groups = grouped }

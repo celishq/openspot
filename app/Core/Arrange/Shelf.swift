@@ -85,8 +85,7 @@ public final class Shelf {
     }
 
     private func filter() {
-        let search = SearchQuery(text: query)
-        let next = search.text.isEmpty ? offGrid : found.matching(search)
+        let next = found.matching(SearchQuery(text: query))
         if next != spots { spots = next }
         lay()
     }
