@@ -54,7 +54,7 @@ struct StoreTile: View {
     }
 
     private func grab(at start: CGPoint) -> CGPoint {
-        guard previewRect.width > 0, previewRect.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
+        guard previewRect.width > 0, previewRect.height > 0 else { return StoreCarry.centre }
         return CGPoint(x: (start.x - previewRect.minX) / previewRect.width, y: (start.y - previewRect.minY) / previewRect.height)
     }
 

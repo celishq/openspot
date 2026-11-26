@@ -4,10 +4,12 @@ import Foundation
 public struct StoreCarry: Equatable, Sendable {
     public let id: String
     public let size: SpotSize
+    public static let centre = CGPoint(x: 0.5, y: 0.5)
+
     public let grab: CGPoint
     public private(set) var point: CGPoint
 
-    public init(id: String, size: SpotSize, point: CGPoint, grab: CGPoint = CGPoint(x: 0.5, y: 0.5)) {
+    public init(id: String, size: SpotSize, point: CGPoint, grab: CGPoint = centre) {
         self.id = id
         self.size = size
         self.point = point
