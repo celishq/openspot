@@ -5,7 +5,7 @@ extension SpotsModel {
     static let grantPause: Duration = .seconds(1)
     static let grantTolerance: Duration = .milliseconds(250)
 
-    public func grant(_ spot: String, needs: [MacAccess]) -> Bool {
+    public func grant(_ spot: String?, needs: [MacAccess]) -> Bool {
         !needs.isEmpty && start(AccessGrant(spot: spot, steps: needs))
     }
 
@@ -33,7 +33,7 @@ extension SpotsModel {
         grant = next.step == nil ? nil : next
         settingsBook.grant = grant
         keepGrant()
-        openSettings(at: .spotOf(next.spot))
+        openSettings(at: next.spot.map(SettingsPlace.spotOf) ?? .accessOf(next.steps[0]))
         guard grant != nil else { return true }
         askStep()
         watchGrant()

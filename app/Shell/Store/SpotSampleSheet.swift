@@ -16,11 +16,12 @@ struct SpotSampleSheet: View {
                 SpotSheetTitle(title: entry.spot.name, subtitle: entry.spot.subtitle)
             }
             if let sample {
-                SpotSheetBody(panel: sample.panel, list: sample.list, search: entry.spot.name, onPick: pick(in: sample.list), onPoint: pick(in: sample.list), selection: { selected })
+                SpotSheetBody(panel: sample.panel, list: sample.list, search: entry.spot.name, onPick: pick(in: sample.list), onPoint: pick(in: sample.list), selection: { [selected] in selected })
             }
         }
         .padding(SpotTokens.padding)
         .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(radius: SpotTokens.cardRadius))
         .modifier(SpotGlass())
         .environment(\.spotIsShown, true)
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sample))

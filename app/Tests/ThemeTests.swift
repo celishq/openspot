@@ -98,7 +98,7 @@ final class ThemeTests: XCTestCase {
 
     func testOpenspotLiquidIsOpenspotWithClearTintedGlassOverAStrongerBlur() throws {
         let liquid = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Liquid.theme/theme.toml")
-        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") && !$0.hasPrefix("backdrop-blur") && $0 != "[advanced]" } }
+        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") && !$0.hasPrefix("menu-dim") && !$0.hasPrefix("backdrop-blur") && $0 != "[advanced]" } }
         let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
         let clear = try String(contentsOf: liquid, encoding: .utf8)
 
@@ -108,6 +108,13 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
         XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
         XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [2, 6])
+    }
+
+    func testTheMenuDimFadesTheOtherCardsByTheThemesStrength() {
+        let liquid = Theme(text: "[dark]\nmenu-dim = 0.1\n[light]\nmenu-dim = 0.15").colours
+
+        XCTAssertEqual([Theme().colours.dark.menuDim, Theme().colours.light.menuDim], [0.4, 0.4])
+        XCTAssertEqual([liquid.dark.menuDim, liquid.light.menuDim], [0.1, 0.15])
     }
 
     func testAPartOnASolidFillTakesTheOnSolidInk() {
@@ -192,6 +199,22 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.type.title, layout.type.body, layout.type.detail, layout.type.input], [15, 15, 13, 16])
         XCTAssertEqual([layout.motion.grow, layout.motion.shrink, layout.motion.move], [0.075, 0.1, 0.125])
         XCTAssertEqual(layout.motion.pressBounce, 0.2)
+    }
+
+    func testAThemesOwnLayoutGivesTheSizesAndCornersTheAppDrawsWithIt() {
+        let layout = Theme(text: dracula).layout
+        let used = SpotTokens.layout
+        defer { SpotTokens.take(used) }
+
+        SpotTokens.take(layout)
+
+        for size in SpotSize.all {
+            XCTAssertEqual(layout.corner(for: size), SpotTokens.corner(for: size), "\(size)")
+            XCTAssertEqual(layout.width(columns: size.columns), SpotTokens.width(columns: size.columns))
+            XCTAssertEqual(layout.height(rows: size.rows), SpotTokens.height(rows: size.rows))
+        }
+        XCTAssertNotEqual(layout.corner(for: .strip), Theme.Layout().corner(for: .strip))
+        XCTAssertEqual(layout.fieldHeight, SpotTokens.fieldRect(room: 0).height)
     }
 
     func testAnExactValueTakesThePlaceOfItsRuleAndFeedsTheRulesAfterIt() {

@@ -14,13 +14,13 @@ public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
     public let title: String
     public let value: String?
     public let kind: Kind
-    public let section: SettingsPage.Section
+    public let section: SettingsPage.Section?
     public let icon: String
     public let detail: String?
     public let options: String?
     public let `default`: String?
 
-    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: SettingsPage.Section, icon: String, detail: String? = nil, options: [String] = [], default: String? = nil) {
+    init(spot: String, name: String, key: String, title: String, value: String?, kind: Kind, section: SettingsPage.Section?, icon: String, detail: String? = nil, options: [String] = [], default: String? = nil) {
         item = "\(spot)/\(key)"
         self.spot = spot
         self.name = name
@@ -44,6 +44,6 @@ public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
     }
 
     var blocks: [[(String, String?)]] {
-        [[("item", item), ("spot", spot), ("name", name), ("key", key), ("title", title), ("value", value), ("kind", kind.rawValue), ("section", section.rawValue), ("icon", icon), ("detail", detail), ("options", options), ("default", `default`)]]
+        [[("item", item), ("spot", spot), ("name", name), ("key", key), ("title", title), ("value", value), ("kind", kind.rawValue), ("section", section?.rawValue ?? "spot"), ("icon", icon), ("detail", detail), ("options", options), ("default", `default`)]]
     }
 }

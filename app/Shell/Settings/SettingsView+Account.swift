@@ -5,29 +5,9 @@ import SwiftUI
 extension SettingsView {
     var accountPage: some View {
         let account = book.account
-        let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.signedIn {
-                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), account.handle.map { "@\($0)" } ?? SettingsPage.Section.account.title, SettingsPage.Section.account.line) {
-                    Button("How It Works…") { step = .how }
-                        .buttonStyle(.link)
-                }
-                group(nil) {
-                    lines(account.lines) { fact in
-                        HStack {
-                            Text(fact.title)
-                            Spacer(minLength: SpotTokens.settingsValueGap)
-                            Text(fact.value)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .textSelection(.enabled)
-                            if fact.id == "npub" {
-                                Button("Copy") { copy(fact.value) }
-                            }
-                        }
-                    }
-                }
+                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", AccountStatus.line, link: PageLink(title: "How It Works…") { step = .how }) {}
                 group("Backup") {
                     if let sync = account.sync {
                         HStack {
@@ -46,9 +26,6 @@ extension SettingsView {
                         Button("Show My Words…") { step = .words }
                     }
                 }
-                if !rows.isEmpty {
-                    group(nil) { lines(rows) { settingLine($0) } }
-                }
                 Section {
                     HStack {
                         titled("Sign out", "Removes your key from this Mac.")
@@ -57,15 +34,8 @@ extension SettingsView {
                     }
                 }
             } else {
-                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), "Sign In to Publish", SettingsPage.Section.account.line) {
-                    HStack(spacing: SpotTokens.settingsRowGap) {
-                        Button("Use My Own Key…") { step = .signIn }
-                        Button("Create a New Key…") { step = .handle }
-                            .buttonStyle(.borderedProminent)
-                    }
-                    .padding(.top, SpotTokens.settingsSheetTop)
-                    Button("How It Works…") { step = .how }
-                        .buttonStyle(.link)
+                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", AccountStatus.line, link: PageLink(title: "How It Works…") { step = .how }) {
+                    Button("Use My Own Key…") { step = .signIn }
                 }
             }
         }

@@ -184,4 +184,11 @@ final class AccessListTests: XCTestCase {
         XCTAssertNil(allowed["plain"]?["refused"])
         XCTAssertEqual(allowed["plain"]?["uses"], "clipboard")
     }
+
+    func testAboutAccessSaysEachFactWithASymbolAndEachStateInAWordAndALine() {
+        XCTAssertEqual(MacAccess.about.map(\.symbol), ["plus.app", "checklist", "hand.raised", "power", "gearshape"])
+        XCTAssertFalse(MacAccess.about.contains { $0.text.isEmpty })
+        XCTAssertEqual(SpotReadiness.allCases.map(\.word), ["Ready", "Needs access", "Needs review"])
+        XCTAssertFalse(SpotReadiness.allCases.contains { $0.line.isEmpty })
+    }
 }

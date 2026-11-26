@@ -72,13 +72,13 @@ final class SettingsEntryTests: PanelCase {
         XCTAssertEqual(host.opened, [URL(string: "https://openspot.app/help")])
     }
 
-    func testAFixOfAKeyOpensSettingsAtKeys() async throws {
+    func testAFixOfAKeyOpensSettingsAtGeneral() async throws {
         await model.reload()
 
         model.toast(.failure("Openspot cannot use `ctrl+space` to open, because another app uses it. Choose another key.", fix: .settings))
         model.toasts.press(try XCTUnwrap(model.toasts.queue.last).id)
 
-        try await wait("Settings at Keys") { self.book.page == .keys }
+        try await wait("Settings at General") { self.book.page == .general }
     }
 
     func testCommandCommaOverAnOpenSheetOpensSettings() async throws {
@@ -99,7 +99,7 @@ final class SettingsEntryTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
 
         XCTAssertEqual(host.settingsOpens, 1)
-        XCTAssertEqual(book.page, .access)
+        XCTAssertEqual(book.page, .general)
     }
 
     func testAPublishWithNoAccountOpensSettingsAtTheAccount() async throws {
@@ -158,6 +158,6 @@ final class SettingsEntryTests: PanelCase {
         model.selected = found
         model.runSelected()
         XCTAssertEqual(host.settingsOpens, 1)
-        XCTAssertEqual(book.page, .access)
+        XCTAssertEqual(book.page, .general)
     }
 }

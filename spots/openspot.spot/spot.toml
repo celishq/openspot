@@ -110,6 +110,7 @@ keywords = ["arrange", "edit spots"]
 
 [scripts.spots.actions.edit]
 title = "Arrange"
+close = false
 
 [scripts.spots.on]
 command = ["spots"]

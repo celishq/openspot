@@ -31,8 +31,8 @@ struct ModelApp: RunningApp {
     func playground(_ file: URL?) async {}
     func changeSetting(_ key: String, of spot: String) async -> Bool { false }
     func allows(_ reason: String) async -> Bool { false }
-    func grant(_ id: String, needs: [MacAccess]) async -> Bool { await model.grant(id, needs: needs) }
+    func grant(_ id: String?, needs: [MacAccess]) async -> Bool { await model.grant(id, needs: needs) }
     func grant() async -> AccessGrant? { await model.grant }
     func endGrant() async { await model.endGrant() }
-    func openSettings(at place: SettingsPage?) async { await model.openSettings(at: place) }
+    func openSettings(at place: SettingsPlace?) async { await model.openSettings(at: place) }
 }

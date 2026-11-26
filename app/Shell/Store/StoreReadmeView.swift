@@ -13,12 +13,35 @@ struct StoreReadmeView: View {
             }
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 switch line {
-                case .heading(let text):
+                case .heading(let level, let text):
                     Text(text)
                         .font(SpotType.strong)
+                        .foregroundStyle(level > 2 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                         .padding(.top, SpotTokens.storeHeadingGap)
                 case .text(let text):
                     Text(text)
+                case .item(let marker, let text):
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        Text(marker)
+                            .foregroundStyle(.secondary)
+                            .frame(width: SpotTokens.storeMarkerWidth, alignment: .leading)
+                        Text(text)
+                    }
+                case .quote(let text):
+                    Text(text)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, SpotTokens.storeCodePadding)
+                        .overlay(alignment: .leading) {
+                            Rectangle()
+                                .fill(SpotTheme.ink.opacity(SpotTheme.hover))
+                                .frame(width: SpotTokens.storeQuoteBar)
+                        }
+                case .code(let text):
+                    Text(text)
+                        .font(SpotType.code)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(SpotTokens.storeCodePadding)
+                        .background(SpotTheme.ink.opacity(SpotTheme.hover), in: SpotRoundShape(radius: SpotTokens.mediaRadius))
                 case .media(let path, let caption):
                     VStack(alignment: .leading, spacing: SpotTokens.storeTileLineGap) {
                         AsyncImage(url: URL(string: path).flatMap { $0.scheme == nil ? nil : $0 } ?? URL(fileURLWithPath: path)) { image in

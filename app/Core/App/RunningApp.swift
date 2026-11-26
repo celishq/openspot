@@ -25,11 +25,11 @@ public protocol RunningApp: Sendable {
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
     func slowMotion(_ isOn: Bool?) async -> Bool?
-    func grant(_ id: String, needs: [MacAccess]) async -> Bool
+    func grant(_ id: String?, needs: [MacAccess]) async -> Bool
     func grant() async -> AccessGrant?
     func endGrant() async
     func restart() async -> Bool
-    func openSettings(at place: SettingsPage?) async
+    func openSettings(at place: SettingsPlace?) async
 }
 
 extension RunningApp {
@@ -56,7 +56,7 @@ extension RunningApp {
     public func pin(_ id: String) async -> GridPin {
         .unknown
     }
-    public func grant(_ id: String, needs: [MacAccess]) async -> Bool {
+    public func grant(_ id: String?, needs: [MacAccess]) async -> Bool {
         false
     }
 
@@ -70,5 +70,5 @@ extension RunningApp {
         false
     }
 
-    public func openSettings(at place: SettingsPage?) async {}
+    public func openSettings(at place: SettingsPlace?) async {}
 }

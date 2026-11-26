@@ -17,13 +17,16 @@ struct SpotArrangeView: View {
             }
             SpotTheme.arrangeCover
                 .contentShape(Rectangle())
-            if let layout = model.shelfLayout {
+            if let layout = model.shelf.layout {
                 SpotShelf(model: model, layout: layout)
                     .frame(width: size.width, height: layout.band.upperBound - layout.band.lowerBound)
                     .offset(y: layout.band.lowerBound)
             }
-            SpotArrangeBar(model: model)
-                .frame(width: size.width, height: SpotTokens.arrangeBar)
+            if let panel = model.shelf.layout?.panel {
+                SpotArrangeBar(model: model)
+                    .frame(width: panel.width, height: SpotTokens.arrangeBar)
+                    .offset(x: panel.minX)
+            }
             SpotStoreButton(model: model)
                 .frame(width: size.width, height: SpotTokens.arrangeFoot)
                 .offset(y: size.height - SpotTokens.arrangeFoot)

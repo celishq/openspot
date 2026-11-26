@@ -99,8 +99,8 @@ extension SpotsModel {
     }
 
     @discardableResult
-    public func openSettings(at place: SettingsPage? = nil) -> Bool {
-        if case .spotOf(let id) = place, let entry = cards.first(where: { $0.id == id && $0.item == nil }), !hasSettings(entry) {
+    public func openSettings(at place: SettingsPlace? = nil) -> Bool {
+        if case .page(.spotOf(let id)) = place, let entry = cards.first(where: { $0.id == id && $0.item == nil }), !hasSettings(entry) {
             toast(.failure("\(entry.state.title) has nothing to set."))
             return false
         }

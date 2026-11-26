@@ -10,8 +10,4 @@ public struct ListedTheme: Identifiable, Equatable, Sendable {
     public var id: String {
         name
     }
-
-    public var word: String {
-        isUsed ? "In use" : isBuiltIn ? "Built in" : "Yours"
-    }
 }

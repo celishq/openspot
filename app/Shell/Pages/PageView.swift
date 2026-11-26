@@ -5,7 +5,7 @@ protocol PageView: View {}
 
 extension PageView {
     @ViewBuilder
-    func title<Icon: View, Actions: View>(_ style: PageTitle, _ icon: Icon, _ title: String, _ line: String, @ViewBuilder actions: () -> Actions) -> some View {
+    func title<Icon: View, Actions: View>(_ style: PageTitle, _ icon: Icon, _ title: String, _ line: String, link: PageLink? = nil, @ViewBuilder actions: () -> Actions) -> some View {
         switch style {
         case .heading:
             Section {} header: {
@@ -22,36 +22,54 @@ extension PageView {
                 .padding(.bottom, SpotTokens.settingsHeadingGap)
                 .textCase(nil)
             }
-        case .header:
+        case .banner:
             Section {
-                HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
+                VStack(spacing: SpotTokens.settingsBannerGap) {
+                    icon
+                        .padding(.bottom, SpotTokens.settingsBannerGap)
+                    Text(title)
+                        .font(SpotType.settingsBanner)
+                    lineText(line, link)
+                        .multilineTextAlignment(.center)
+                    actions()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(SpotTokens.settingsBannerPadding)
+            }
+        case .header:
+            Section {} header: {
+                HStack(alignment: .center, spacing: SpotTokens.settingsCompactGap) {
                     icon
                     VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                         Text(title)
                             .font(SpotType.settingsHeader)
-                        if !line.isEmpty {
-                            Text(line)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        if !line.isEmpty || link != nil {
+                            lineText(line, link)
+                                .font(SpotType.settingsPageLine)
                         }
-                        actions()
                     }
-                    Spacer(minLength: 0)
+                    Spacer(minLength: SpotTokens.settingsTrailingGap)
+                    HStack(spacing: SpotTokens.settingsValueGap) { actions() }
+                        .controlSize(.large)
+                        .fixedSize()
                 }
-                .padding(.vertical, SpotTokens.settingsHeaderPadding)
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .textCase(nil)
             }
         case .hero:
             Section {} header: {
                 VStack(spacing: SpotTokens.settingsHeroGap) {
                     icon
-                    Text(title)
-                        .font(SpotType.settingsHero)
-                        .foregroundStyle(.primary)
-                    Text(line)
+                    if !title.isEmpty {
+                        Text(title)
+                            .font(SpotType.settingsHero)
+                            .foregroundStyle(.primary)
+                    }
+                    lineText(line, link)
                         .font(SpotType.settingsPageLine)
-                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
                     actions()
                 }
                 .frame(maxWidth: .infinity)
@@ -59,6 +77,24 @@ extension PageView {
                 .textCase(nil)
             }
         }
+    }
+
+    private func lineText(_ line: String, _ link: PageLink?) -> some View {
+        let words: Text
+        if let link {
+            var title = AttributedString(link.title.replacingOccurrences(of: " ", with: "\u{00A0}"))
+            title.link = PageTitle.linkURL
+            words = Text("\(line) \(title)")
+        } else {
+            words = Text(line)
+        }
+        return words
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .environment(\.openURL, OpenURLAction { _ in
+                link?.action()
+                return .handled
+            })
     }
 
     func group<Rows: View>(_ title: String?, @ViewBuilder _ rows: () -> Rows) -> some View {
@@ -89,6 +125,24 @@ extension PageView {
                 }
                 .buttonStyle(.link)
             }
+        }
+    }
+
+    func tiles<Tiles: View>(note: String? = nil, @ViewBuilder _ tiles: () -> Tiles) -> some View {
+        Section {} header: {
+            VStack(alignment: .leading, spacing: SpotTokens.pageTileGap) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.pageTileGap), count: SpotTokens.pageTileColumns), spacing: SpotTokens.pageTileGap) {
+                    tiles()
+                }
+                .padding(.horizontal, -SpotTokens.pageTileBleed)
+                if let note {
+                    Text(note)
+                        .font(SpotType.settingsLine)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .textCase(nil)
+            .foregroundStyle(.primary)
         }
     }
 

@@ -1,3 +1,4 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
@@ -8,7 +9,7 @@ extension StoreView {
         title(.heading, EmptyView(), store.title, placeLine(source)) {}
         if let source, store.missing.contains(source.url.path) {
             group(nil) {
-                plain("Openspot cannot find \(source.url.path). Locate the folder, or remove the source. The spots you got from it stay.")
+                plain("Openspot cannot find \(source.url.path). Locate the folder, or remove the store. The spots you got from it stay.")
                 HStack {
                     Spacer(minLength: 0)
                     Button("Remove") { Task { await store.removeSource(source.url) } }
@@ -29,66 +30,103 @@ extension StoreView {
                     Button("Clear Search") { store.search("") }
                 }
             }
+        } else if source != nil {
+            tiles(note: "Drag a spot to My spots to install it.") {
+                ForEach(store.cards) { card in StoreTile(store: store, card: card, drag: drag) }
+            }
         } else {
-            group(nil) {
-                lines(store.cards) { card in cardLine(card, isFromSource: source != nil) }
+            ForEach(store.groups) { shelf in
+                group(shelf.title) {
+                    lines(shelf.cards) { card in cardLine(card) }
+                }
             }
         }
     }
 
     private func placeLine(_ source: StoreSource?) -> String {
-        guard let source else { return "Each spot you have. Drop a spot from a source here to install it." }
-        let from = source.isBuiltIn ? "The spots that come with Openspot." : source.url.path
-        return "\(from) Drag a spot to My spots, or press +, to install it."
+        guard let source else { return store.summary }
+        return source.isBuiltIn ? "Spots made to show what Openspot can do." : source.url.path
     }
 
-    @ViewBuilder
-    private func cardLine(_ card: StoreCard, isFromSource: Bool) -> some View {
-        let line = row(action: { Task { await store.open(card.id) } }) {
+    private func cardLine(_ card: StoreCard) -> some View {
+        row(action: { Task { await store.open(card.id) } }) {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.settingsRowTile)
-            titled(card.spot.name, card.spot.subtitle ?? "")
+            titled(card.spot.name, card.spot.subtitle ?? " ")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if let mark = card.mark { StoreMarkView(mark: mark) }
-            if isFromSource, card.mark == nil {
-                Button { Task { await store.install(card.id) } } label: { Image(systemName: "plus.circle") }
-                    .buttonStyle(.borderless)
-                    .help("Install \(card.spot.name)")
+            switch card.mark {
+            case .update:
+                Button("Update") { Task { await store.update(card.id) } }
+            case .edited:
+                Text("Edited")
+                    .foregroundStyle(.secondary)
+            case .core, .installed, nil:
+                EmptyView()
             }
             chevron
         }
-        if isFromSource {
-            line.draggable(card.id) { StoreTileLift(card: card) }
-        } else {
-            line
-        }
+        .contextMenu { StoreSpotMenu(store: store, model: model, id: card.id, spot: card.spot, isCore: card.mark == .core, opens: true) }
     }
 
     @ViewBuilder
     func spotPage(_ page: StorePage) -> some View {
-        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile), page.spot.name, pageLine(page)) {
-            HStack(spacing: SpotTokens.settingsValueGap) {
-                button(page)
-                if page.hasSample, model != nil {
-                    Button("Try") { isTrying = true }
-                }
+        let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
+        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsCompactTile), page.spot.name, pageLine(page)) {
+            if page.button != .install {
+                Text(badge(page.button))
+                    .foregroundStyle(.secondary)
             }
-            .padding(.top, SpotTokens.settingsTitleGap)
+            if sample?.id == page.id, model != nil {
+                Button("Try") { isTrying = true }
+                    .buttonStyle(.bordered)
+            }
+            button(page)
+        }
+        Section {} header: {
+            StoreSizes(spot: page.spot, face: preview.face, sizes: [preview.size], width: SpotTokens.storeRowWidth)
+                .offset(x: -SpotTokens.pageTileBleed)
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .foregroundStyle(.primary)
+                .textCase(nil)
         }
         group("About") {
             StoreReadmeView(lines: page.shown, name: page.spot.name)
+                .frame(maxWidth: SpotTokens.storeReadWidth, alignment: .leading)
         }
-        if !page.trust.isEmpty {
+        if page.trust.contains(where: { !$0.isFiles }) {
             group("What It Can Do") {
-                ForEach(page.trust, id: \.title) { line in
-                    HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
+                ForEach(page.trust.filter { !$0.isFiles }, id: \.title) { line in
+                    HStack(alignment: line.isUses ? .center : .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
                         Text(line.title)
                             .foregroundStyle(.secondary)
                             .frame(width: SpotTokens.storeTrustTitleWidth, alignment: .leading)
-                        Text(line.words.joined(separator: line.title == "Files" ? ", " : "\n"))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
+                        if line.isUses, !page.uses.isEmpty {
+                            WrapRow(spacing: SpotTokens.settingsChipGap) {
+                                ForEach(page.uses) { UseChip(use: $0) }
+                            }
+                        } else {
+                            KeyFill.text(line.words.joined(separator: "\n"))
+                                .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .textSelection(.enabled)
+                        }
                         Spacer(minLength: 0)
                     }
+                }
+            }
+        }
+        if !page.files.isEmpty {
+            folding("Files", isFolded: $areFilesFolded) {
+                ForEach(page.files) { file in
+                    row(action: { NSWorkspace.shared.activateFileViewerSelecting([file.url]) }) {
+                        Image(systemName: file.symbol)
+                            .foregroundStyle(.secondary)
+                            .frame(width: SpotTokens.storeMarkerWidth)
+                        Text(file.name)
+                        Spacer(minLength: SpotTokens.settingsTrailingGap)
+                        Text(file.size)
+                            .foregroundStyle(.secondary)
+                    }
+                    .help("Show in Finder")
                 }
             }
         }
@@ -103,40 +141,59 @@ extension StoreView {
     private func button(_ page: StorePage) -> some View {
         switch page.button {
         case .install:
-            Button("Install") { Task { await store.install(page.id) } }
+            Button { Task { await store.installPage() } } label: { action("Install") }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
-        case .update:
-            Button("Update") { Task { await store.update(page.id) } }
-                .buttonStyle(.borderedProminent)
-        case .edited:
-            Button("Revert…") { Task { await store.revert(page.id) } }
-        case .installed:
-            Label("Installed", systemImage: "checkmark")
-                .foregroundStyle(.secondary)
-        case .locked:
-            Label("Comes with Openspot", systemImage: "lock.fill")
-                .foregroundStyle(.secondary)
+        case .update, .edited, .installed, .locked:
+            if page.button == .update {
+                Button { Task { await store.update(page.id) } } label: { action("Update") }
+                    .buttonStyle(.borderedProminent)
+            } else if let model {
+                Button { model.openSpot(page.id) } label: { action("Open") }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            Menu {
+                StoreSpotMenu(store: store, model: model, id: page.id, spot: page.spot, isCore: page.button == .locked, opens: page.button == .update)
+                if page.button == .edited {
+                    Button("Revert…") { Task { await store.revert(page.id) } }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .frame(width: SpotTokens.storeActionHeight, height: SpotTokens.storeActionHeight)
+            .background(SpotTheme.ink.opacity(SpotTheme.hover), in: Capsule())
+            .contentShape(Capsule())
+            .help("More")
+        }
+    }
+
+    private func action(_ title: String) -> some View {
+        Text(title)
+            .frame(minWidth: SpotTokens.storePrimaryWidth)
+    }
+
+    private func badge(_ button: StoreButton) -> String {
+        switch button {
+        case .locked: "Comes with Openspot"
+        case .edited: "Edited"
+        case .install, .installed, .update: "Installed"
         }
     }
 
     @ViewBuilder
     var trySheet: some View {
-        if let model, let page = store.page {
-            VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: page.spot, run: nil)) {
-                    await SpotSample.output(of: page.spot, runsScript: page.runsSample, runs: model.runs)
-                }
-                HStack {
-                    Text("Sample data. Clicks here run nothing and change nothing on your Mac.")
-                        .font(SpotType.settingsLine)
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: SpotTokens.settingsTrailingGap)
-                    Button("Done") { isTrying = false }
-                        .keyboardShortcut(.cancelAction)
-                }
-            }
-            .padding(SpotTokens.storeInset)
+        if let model, let page = store.page, let sample, sample.id == page.id {
+            StoreTry(model: model, spot: page.spot, output: sample.output, hasSheet: sample.hasSheet) { isTrying = false }
         }
+    }
+
+    func loadSample() async {
+        guard let model, let page = store.page, page.hasSample else { return }
+        guard let output = await SpotSample.output(of: page.spot, runsScript: page.runsSample, runs: model.runs), store.page?.id == page.id else { return }
+        sample = StoreSample(id: page.id, output: output)
     }
 }

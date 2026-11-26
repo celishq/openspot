@@ -110,8 +110,10 @@ A spot that Needs review shows Review… in Needs you. Review… allows the use 
 ## The review before an add
 
 Before an add, the review shows the title, the `uses`, each spot that it binds under **Binds**, and a line **Can also**
-with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns,
-and never blocks the add. A bound spot that isn't installed and doesn't come with Openspot shows as not installed.
+with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`, the
+microphone or camera, another program it starts, another app it drives with `osascript`, and files in your home folder.
+It reads the code, not the readme. A spot that names no use and does none of these shows Uses as No Mac features, and
+one that does shows None declared. It warns, and never blocks the add. A bound spot that isn't installed and doesn't come with Openspot shows as not installed.
 
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
   view, and says that it can do all that you can. For a built file, it says that the source beside it may not match.
@@ -122,7 +124,9 @@ and never blocks the add. A bound spot that isn't installed and doesn't come wit
   tools, a spot that you added runs only what Openspot built there from the source you can read. A share never passes a
   carried program on: it builds a new one from the sources it ships.
 - An install from a store, a drop on My spots, Install on a spot's page or `openspot store get`, shows the same review before it copies the spot's
-  folder. In the app, the review comes first, and only its Install copies. `openspot store get` prints the title, the
+  folder. In the app, a spot's page shows the review, so its Install copies at once. When the spot changed since the
+  page showed it, or its id clashes with one of yours, the review opens again first. A drop or Install on a card opens
+  the review, and only its Install copies. `openspot store get` prints the title, the
   uses, Binds, Can also, Runs by itself and each file. When the review names any of them but the files, it copies
   nothing until `--yes`.
 - A spot that `store get` installed updates from its own store. While its files are as they came, a newer version

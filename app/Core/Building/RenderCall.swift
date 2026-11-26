@@ -5,7 +5,7 @@ public enum RenderCall: NounCall {
     case card(SpotSize, String)
     case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
     case panel(String, scene: PanelScene = PanelScene())
-    case store(String, place: String?, spot: String?, review: String?)
+    case store(String, place: String?, spot: String?, review: String?, isTrying: Bool = false)
     case settings(at: String?, path: String, isLight: Bool)
 
     private static let rule = CallRule(flags: .ownProcess)
@@ -32,9 +32,9 @@ public enum RenderCall: NounCall {
             guard !(scene.isArranging && scene.isHeld) else { return nil }
             return Self.panel(fit.rest[0], scene: scene)
         },
-        CommandVerb("store", "[--place <name>] [--spot <id>] [--review <id>] <file.png>", "Draws the window of the Store at My spots, or at the place --place names, such as Openspot, with the page of --spot open, or the review of an install of --review over it.", rule: rule) { words in
-            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            return Self.store(fit.rest[0], place: fit.value("--place"), spot: fit.value("--spot"), review: fit.value("--review"))
+        CommandVerb("store", "[--place <name>] [--spot <id>] [--try] [--review <id>] <file.png>", "Draws the window of the Store at My spots, or at the place --place names, such as Openspot, with the page of --spot open, its Try with --try, or the review of an install of --review over it.", rule: rule) { words in
+            guard let fit = words.fit, fit.rest.count == 1, fit.value("--spot") != nil || !fit.has("--try") else { return nil }
+            return Self.store(fit.rest[0], place: fit.value("--place"), spot: fit.value("--spot"), review: fit.value("--review"), isTrying: fit.has("--try"))
         },
         CommandVerb("settings", "[--at <where>] [--light] <file.png>", "Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
