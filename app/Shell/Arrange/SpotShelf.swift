@@ -12,8 +12,7 @@ struct SpotShelf: View {
             LazyVStack(spacing: 0) {
                 ForEach(layout.chunks.indices, id: \.self) { chunk in
                     ZStack(alignment: .topLeading) {
-                        ForEach(layout.chunks[chunk].filter(spots.indices.contains), id: \.self) { index in
-                            let id = spots[index].id
+                        ForEach(cards(in: chunk, of: spots), id: \.id) { index, id in
                             let rect = layout.rects[index]
                             SpotCardView(entry: spots[index], size: layout.sizes[index], index: -1, isPressed: false, takesDrag: false, isDropTarget: false, model: model, onTap: {})
                                 .equatable()
@@ -33,6 +32,10 @@ struct SpotShelf: View {
         .mask(ShelfFade(height: layout.band.upperBound - layout.band.lowerBound))
     }
 
+    private func cards(in chunk: Int, of spots: [SpotsModel.Entry]) -> [(index: Int, id: String)] {
+        layout.chunks[chunk].filter(spots.indices.contains).map { ($0, spots[$0].id) }
+    }
+
     private func drag(of id: String) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotArrangeView.space))
             .onChanged { value in
@@ -49,7 +52,7 @@ private struct ShelfCarry: ViewModifier {
     let id: String
 
     func body(content: Content) -> some View {
-        content.opacity(model.pin?.id == id ? MotionTokens.hiddenOpacity : 1)
+        content.opacity(model.pin?.id == id || model.landing == id ? MotionTokens.hiddenOpacity : 1)
     }
 }
 

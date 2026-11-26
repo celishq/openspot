@@ -179,12 +179,12 @@ extension SpotsModel {
         stopDragWait()
         pointerMove = nil
         shelfDrop = (id, slot)
-        change(.edit) {
+        change(.edit, {
             gesture = nil
-            carry = nil
             layShelf()
+            carryToShelf()
             updateVisible()
-        }
+        }, completion: { self.endLanding(of: id) })
     }
 
     func cancelPin() {

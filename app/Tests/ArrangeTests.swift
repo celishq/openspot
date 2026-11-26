@@ -191,7 +191,7 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, ["a"])
     }
 
-    func testACardDroppedOutsideThePanelLandsNowhereOnTheGridOnItsWayToTheShelf() async throws {
+    func testACardDroppedOutsideThePanelFliesIntoItsShelfSlotNotBackToTheGrid() async throws {
         try await arrangeWithOff([], on: ["a", "b"])
         let away = CGSize(width: -900, height: 40)
         model.dragSpot("a", by: away)
@@ -199,9 +199,36 @@ final class ArrangeTests: PanelCase {
 
         model.dropSpot(by: away)
 
+        XCTAssertEqual(order, ["b"])
+        XCTAssertEqual(model.landing, "a")
+        XCTAssertEqual(model.carry?.isLanding, true)
+        XCTAssertEqual(model.lift.origin, model.shelfOrigin(of: "a"))
+
+        host.heldEnds?.forEach { $0() }
+
         XCTAssertNil(model.landing)
         XCTAssertNil(model.carry)
-        XCTAssertEqual(order, ["b"])
+    }
+
+    func testAShelfSpotDroppedOnTheShelfFliesIntoItsNewSlot() async throws {
+        try await arrangeWithOff(["alpha", "zeta"], on: ["a"])
+        let alpha = try XCTUnwrap(model.shelfOrigin(of: "alpha"))
+        let zeta = try XCTUnwrap(model.shelfOrigin(of: "zeta"))
+        let move = CGSize(width: alpha.x - zeta.x, height: alpha.y - zeta.y)
+        model.dragShelfSpot("zeta", by: move)
+        host.heldEnds = []
+
+        model.dropShelfSpot(by: move)
+
+        XCTAssertNil(model.pin)
+        XCTAssertEqual(model.landing, "zeta")
+        XCTAssertEqual(model.carry?.isLanding, true)
+        XCTAssertEqual(model.lift.origin, alpha)
+
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertNil(model.landing)
+        XCTAssertNil(model.carry)
     }
 
     func testAnAppSpotDraggedOutsideThePanelInArrangeGoesToTheShelf() async throws {

@@ -70,9 +70,13 @@ extension SpotsModel {
             do {
                 next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: id) }
             } catch {
+                if carry != nil { change(.edit) { carry = nil } }
                 return toast(.failure("\(entry.spot.name) stays on the grid. \(Self.reason(error))"))
             }
-            change(.edit) { reload(patching: nil, to: next) }
+            change(.edit, {
+                reload(patching: nil, to: next)
+                carryToShelf()
+            }, completion: { self.endLanding(of: id) })
         }
     }
 
