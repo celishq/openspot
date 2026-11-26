@@ -23,8 +23,8 @@ public struct AgentPrompt: Equatable, Sendable {
 
     public static let copied = "Prompt copied. Paste it into your agent."
     static let wordsNeeded = "Say what the spot should do, such as `openspot prompt new show the weather in Kyiv`."
-    static let finishAlone = "Don't ask me anything. Choose a short name and sensible defaults yourself, and build it to the end."
-    static let finishChange = "Don't ask me anything. Make the change to the end, and keep what already works."
+    static let finishNew = "Choose a short name and sensible defaults yourself, and build it to the end."
+    static let finishChange = "Make the change to the end, and keep what already works."
     static let review = "Find what works poorly in this spot, such as a call that fails, a slow answer or a card that looks wrong, and fix it. If nothing does, change nothing and tell me why."
     static let loadAgain = "Make Openspot load this spot again, and keep what it does."
 
@@ -34,7 +34,8 @@ public struct AgentPrompt: Equatable, Sendable {
             task: "Build a new spot that does what my request says.",
             place: place + ["Make the spot in a new folder of the spots folder."],
             reading: reading,
-            rules: [Self.finishAlone] + rules(for: "<id>"),
+            finish: Self.finishNew,
+            rules: rules(for: "<id>"),
             request: description
         ).text
     }
@@ -55,7 +56,8 @@ public struct AgentPrompt: Equatable, Sendable {
             task: task,
             place: place + ["The spot \(id) is in \(file.deletingLastPathComponent().path), and its main file is \(file.path)."],
             reading: ["Read each file of the spot.", "Run \(quoted) spot log \(id). It prints the last calls that Openspot made to it."] + facts + reading,
-            rules: [Self.finishChange] + rules(for: id),
+            finish: Self.finishChange,
+            rules: rules(for: id),
             request: request
         ).text
     }

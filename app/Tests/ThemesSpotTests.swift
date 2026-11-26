@@ -77,7 +77,7 @@ final class ThemesSpotTests: BuiltInCase {
         XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(AgentPrompt.copied)"])
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
         XCTAssertTrue(prompt.hasSuffix("<request>\nWarm and round\n</request>"), prompt)
-        XCTAssertTrue(prompt.contains(ThemePrompt.finishAlone), prompt)
+        XCTAssertTrue(prompt.contains(ThemePrompt.finish), prompt)
         XCTAssertFalse(prompt.contains("Ask me"), prompt)
         XCTAssertTrue(prompt.contains("theme duplicate 'Openspot'"), prompt)
         XCTAssertTrue(prompt.contains(root.appendingPathComponent("themes").path), prompt)

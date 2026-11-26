@@ -15,7 +15,7 @@ public struct ThemePrompt: Equatable, Sendable {
         self.app = app
     }
 
-    static let finishAlone = "Don't ask me anything. Make the change to the end, and leave Openspot drawn with the theme."
+    static let finish = "Make the change to the end, and leave Openspot drawn with the theme."
     static let wordsNeeded = "Say what look you want, such as `openspot prompt theme Openspot warm colours and round corners`."
 
     public func asking(_ wish: String) -> String {
@@ -30,8 +30,8 @@ public struct ThemePrompt: Equatable, Sendable {
                 "Run \(quoted) guide use-openspot, and read its section Change the look of Openspot. It says what each key does, and which values to set only when the rule gives the wrong one.",
                 "The file holds these sections and keys, and every other value of the look follows from them:\n\(keys)"
             ],
+            finish: Self.finish,
             rules: [
-                Self.finishAlone,
                 "After each change, run \(quoted) theme reload. It draws Openspot with the file and prints each value it can't read. It's done when it prints nothing."
             ],
             request: wish

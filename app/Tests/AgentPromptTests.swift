@@ -81,7 +81,7 @@ final class AgentPromptTests: XCTestCase {
         ]
 
         for text in texts {
-            XCTAssertTrue(text.contains("Don't ask me anything."), text)
+            XCTAssertTrue(text.contains(AgentBrief.noQuestion), text)
             XCTAssertFalse(text.contains("Ask me"), text)
         }
     }

@@ -323,7 +323,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertTrue(answer.output.hasSuffix("<request>\nShow the weather\n</request>"))
         XCTAssertTrue(answer.output.contains(spots.path))
-        XCTAssertTrue(answer.output.contains(AgentPrompt.finishAlone))
+        XCTAssertTrue(answer.output.contains(AgentPrompt.finishNew))
     }
 
     func testThePromptChangeCallTakesTheSpotTheFailureAndTheWords() {

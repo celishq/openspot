@@ -1,12 +1,14 @@
 import Foundation
 
 struct AgentBrief: Equatable, Sendable {
+    static let noQuestion = "Don't ask me anything."
     static let openspot = "Openspot is a launcher for the Mac. Its panel shows a card for each spot: a folder with a spot.toml and a script, a JavaScript file or a Swift file. Openspot calls the spot and shows what it prints."
 
     let app: String
     let task: String
     let place: [String]
     let reading: [String]
+    let finish: String
     let rules: [String]
     let request: String
 
@@ -22,7 +24,7 @@ struct AgentBrief: Equatable, Sendable {
         \(Self.list(reading))
 
         Rules:
-        \(Self.list(rules))
+        \(Self.list([Self.noQuestion + " " + finish] + rules))
 
         My request:
         <request>

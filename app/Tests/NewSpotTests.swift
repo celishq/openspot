@@ -115,7 +115,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasSuffix("<request>\nShow the weather\nin Kyiv\n</request>"), prompt)
-        XCTAssertTrue(prompt.contains(AgentPrompt.finishAlone), prompt)
+        XCTAssertTrue(prompt.contains(AgentPrompt.finishNew), prompt)
         XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
