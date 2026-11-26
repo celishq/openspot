@@ -49,6 +49,10 @@ public struct AgentPrompt: Equatable, Sendable {
         return brief(of: file, task: "Change this spot as my request says.", facts: facts, request: wish ?? evidence?.goal ?? Self.review)
     }
 
+    func readChange(of file: URL, id: String, wish: String?, failure: String?, runs: SpotRuns?, stats: URL) async -> String {
+        changing(file, wish: wish, failure: failure, evidence: await SpotEvidence.read(of: id, runs: runs, stats: stats, app: app))
+    }
+
     private func brief(of file: URL, task: String, facts: [String], request: String) -> String {
         let id = SpotID(file: file).description
         return AgentBrief(

@@ -19,9 +19,7 @@ struct PromptCalls {
             guard let spot = try folder.scan().scripts.first(where: { $0.id == id }), !spot.isBuiltIn else {
                 throw SpotError.failed(1, "Openspot cannot find \(id). Check its ID with `openspot spot list`.")
             }
-            let prompt = AgentPrompt(places: places)
-            let evidence = await SpotEvidence.read(of: id, runs: runs, stats: places.stats, app: prompt.app)
-            return prompt.changing(spot.url, wish: words.isEmpty ? nil : words, failure: failure, evidence: evidence)
+            return await AgentPrompt(places: places).readChange(of: spot.url, id: id, wish: words.isEmpty ? nil : words, failure: failure, runs: runs, stats: places.stats)
         }
     }
 
