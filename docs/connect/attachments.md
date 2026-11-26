@@ -173,6 +173,20 @@ esac
   on. `openspot setting set --spot <id> attachment false` hides it, and `openspot setting set --spot <id> attachment`
   shows it again.
 
+## Hand on a row
+
+A row of a list can stand for a value, as a chip does. Give it `url=`, `text=` or `file=`:
+
+```ini
+item=a
+title=A page
+url=https://example.com/a
+```
+
+People select the row and press Tab. The sheet closes, the value shows as your spot's chip in the field, and the list
+shows each action and spot that takes it. Return hands it on with the row's title, as it does for a chip. Tab does
+nothing on a row that no spot on the grid takes.
+
 ## Next
 
 - [Use another spot](other-spots.md)

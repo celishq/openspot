@@ -166,10 +166,22 @@ extension SpotsModel {
     }
 
     func takeTab(back: Bool) -> Bool? {
+        if let handed = handRow() { return handed }
         guard openSheetID == nil, !isEditing else { return nil }
         if slash != nil { return completeSlash() }
         guard !attachments.chips.isEmpty else { return nil }
         turnAttachment(by: back ? -1 : 1)
+        return true
+    }
+
+    private func handRow() -> Bool? {
+        guard let id = openSheetID, !isEditing, let value = openItems?.selectedItem?.handedValue(), cards.contains(where: { $0.spot.offers(value) }) else { return nil }
+        closeSheet(moving: true)
+        var next = attachments
+        next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) })
+        next.select(id)
+        next.spread()
+        settle(next, motion: .edit)
         return true
     }
 

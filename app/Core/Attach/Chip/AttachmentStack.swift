@@ -69,6 +69,11 @@ public struct AttachmentStack: Equatable, Sendable {
         self.selected = order[(index + step % order.count + order.count) % order.count]
     }
 
+    mutating func select(_ source: String) {
+        guard chips.contains(where: { $0.source == source }) else { return }
+        selected = source
+    }
+
     mutating func leave() {
         selected = nil
         spreads = false

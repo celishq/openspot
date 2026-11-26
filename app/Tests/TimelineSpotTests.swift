@@ -85,25 +85,25 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     func testReturnOnATextCopiesAndPastesIt() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=text\ninput.item.body=two\\nlines\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=text\ninput.item.text=two\\nlines\n", timeout: 60)
 
         XCTAssertEqual(effects, ["clipboard copy |two", "lines", "clipboard paste"])
     }
 
     func testReturnOnAFileCopiesTheFileAndPastesIt() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=file\ninput.item.path=/tmp/kept.txt\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=file\ninput.item.file=/tmp/kept.txt\n", timeout: 60)
 
         XCTAssertEqual(effects, ["clipboard copy /tmp/kept.txt|", "clipboard paste"])
     }
 
     func testReturnOnALinkOpensIt() async throws {
-        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.body=https://a.com\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=a\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
 
         XCTAssertEqual(effects, ["open https://a.com"])
     }
 
     func testCopyCopiesWithNoPaste() async throws {
-        try await timeline.perform("copy", input: "input.item=a\ninput.item.kind=url\ninput.item.body=https://a.com\n", timeout: 60)
+        try await timeline.perform("copy", input: "input.item=a\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
 
         XCTAssertEqual(effects, ["clipboard copy |https://a.com", "toast Copied."])
     }

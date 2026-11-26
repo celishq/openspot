@@ -3,7 +3,7 @@
 
 # The timeline of every spot, newest first, under a heading for each day: the newest 500 entries, or the 500 newest
 # that hold each word typed in the sheet. Return pastes a text, a picture or a file into the front app and opens a link,
-# ⌘C copies, and ⌘⌫ forgets the entry, with a toast that puts it back.
+# ⌘C copies, ⌘⌫ forgets the entry, with a toast that puts it back, and Tab hands it to a spot that takes it.
 
 # Prints the newest entry for the card when the panel opens.
 card() {
@@ -28,10 +28,10 @@ copy() {
   case $(value item.kind) in
     text)
       whole=$(value item.whole)
-      if [ -n "$whole" ]; then openspot clipboard copy < "$whole"; else printf '%s' "$(value item.body)" | openspot clipboard copy; fi
+      if [ -n "$whole" ]; then openspot clipboard copy < "$whole"; else printf '%s' "$(value item.text)" | openspot clipboard copy; fi
       ;;
-    url) printf '%s' "$(value item.body)" | openspot clipboard copy ;;
-    *) openspot clipboard copy "$(value item.path)" ;;
+    url) printf '%s' "$(value item.url)" | openspot clipboard copy ;;
+    *) openspot clipboard copy "$(value item.file)" ;;
   esac
 }
 
@@ -45,7 +45,7 @@ case "$1" in
   press)
     [ "$(value item)" = empty ] && exit 0
     if [ "$(value item.kind)" = url ]; then
-      open "$(value item.body)"
+      open "$(value item.url)"
       exit 0
     fi
     copy || exit 1
