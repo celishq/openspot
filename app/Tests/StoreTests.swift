@@ -167,6 +167,15 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(page.trust.map(\.title), ["Uses", "Runs by itself", "Files"])
     }
 
+    func testMySpotsGroupYoursApartFromTheOnesThatComeWithOpenspot() async throws {
+        await store.read()
+
+        XCTAssertEqual(store.groups.map(\.title), ["Yours", "Comes with Openspot"])
+        XCTAssertEqual(store.groups.map { $0.cards.map(\.id) }, [["mine"], ["timer"]])
+        store.choose(.source(.builtIn(examples)))
+        XCTAssertEqual(store.groups.map(\.title), [nil])
+    }
+
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
         try "# Clock\n\nTells the time\nof each city.\n- one\n- two\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
 

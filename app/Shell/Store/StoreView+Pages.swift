@@ -30,14 +30,16 @@ extension StoreView {
                 }
             }
         } else {
-            group(nil) {
-                lines(store.cards) { card in cardLine(card, isFromSource: source != nil) }
+            ForEach(store.groups) { shelf in
+                group(shelf.title) {
+                    lines(shelf.cards) { card in cardLine(card, isFromSource: source != nil) }
+                }
             }
         }
     }
 
     private func placeLine(_ source: StoreSource?) -> String {
-        guard let source else { return "Each spot you have. Drop a spot from a source here to install it." }
+        guard let source else { return "Each spot you have." }
         let from = source.isBuiltIn ? "The spots that come with Openspot." : source.url.path
         return "\(from) Drag a spot to My spots, or press +, to install it."
     }
@@ -48,7 +50,7 @@ extension StoreView {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.settingsRowTile)
             titled(card.spot.name, card.spot.subtitle ?? "")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if let mark = card.mark { StoreMarkView(mark: mark) }
+            if isFromSource, let mark = card.mark { StoreMarkView(mark: mark) }
             if isFromSource, card.mark == nil {
                 Button { Task { await store.install(card.id) } } label: { Image(systemName: "plus.circle") }
                     .buttonStyle(.borderless)

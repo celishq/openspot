@@ -9,6 +9,7 @@ public final class Store {
     public private(set) var place = StorePlace.mine
     public private(set) var query = ""
     public private(set) var cards: [StoreCard] = []
+    public private(set) var groups: [StoreGroup] = []
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
     public internal(set) var back: [StoreStop] = []
@@ -207,6 +208,8 @@ public final class Store {
         let folded = query.trimmingCharacters(in: .whitespaces).folded
         let next = (shelves[place] ?? []).filter { folded.isEmpty || $0.words.contains(folded) }
         if next != cards { cards = next }
+        let grouped = StoreGroup.of(next, at: place)
+        if grouped != groups { groups = grouped }
     }
 
     @concurrent
