@@ -19,14 +19,14 @@ struct StoreSizes: View {
 
     private static func width(of row: [SpotSize]) -> CGFloat {
         let cards: CGFloat = row.map { SpotTokens.width(columns: $0.columns) }.reduce(0, +)
-        return cards + CGFloat(row.count - 1) * SpotTokens.storeTileGap
+        return cards + CGFloat(row.count - 1) * SpotTokens.pageTileGap
     }
 
     var body: some View {
         let scale = scale
-        VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
+        VStack(alignment: .leading, spacing: SpotTokens.pageTileGap) {
             ForEach(rows, id: \.self) { row in
-                HStack(alignment: .top, spacing: SpotTokens.storeTileGap * scale) {
+                HStack(alignment: .top, spacing: SpotTokens.pageTileGap * scale) {
                     ForEach(row, id: \.self) { size in
                         StorePreviewUnit(label: "\(size.columns)×\(size.rows)") {
                             StoreCardPreview(spot: spot, face: face, size: size, scale: scale)

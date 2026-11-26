@@ -9,6 +9,7 @@ extension SpotTheme {
     static let settingsCapRim = 0.3
     static let settingsStepFill = 0.12
     static let settingsTarget = 0.15
+    static let settingsChipFill = 0.16
     static let settingsDim = Color.black.opacity(0.18)
     static let settingsSheetShadow = Color.black.opacity(0.25)
     static let settingsBadge = Color.red
@@ -20,13 +21,8 @@ extension SpotTheme {
     static let settingsAccountTile = Color.gray
     static let settingsBarFade = [Color.black, Color.clear]
     static let settingsSelection = Color(nsColor: .controlAccentColor)
-    static let settingsLookCell = 0.12
-    static let settingsLookHint = 0.5
-    static let settingsLookPanelFill = 0.92
-    static let settingsLookClearFill = 0.2
-    static let settingsLookClearRim = Color.white.opacity(0.45)
+    static let settingsLookWall = 0.5
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
-    static let settingsLookWall = 0.35
 
     static let settingsSpotColours: [Color] = [.blue, .indigo, .purple, .pink, .red, .orange, .yellow, .green, .mint, .teal, .cyan, .brown, .gray]
 

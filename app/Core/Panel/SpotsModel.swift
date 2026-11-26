@@ -288,13 +288,7 @@ public final class SpotsModel {
     }
     public var isEditing: Bool { editing != nil }
     public var isArranging: Bool { editing == .arrange }
-    public internal(set) var shelfQuery = ""
-    @ObservationIgnored public internal(set) var shelfScroll: CGFloat = 0
-    public internal(set) var shelfLayout: ShelfLayout?
-    @ObservationIgnored var shelfRoom: (screen: CGSize, panelOrigin: CGPoint)?
-    public internal(set) var offGrid: [Entry] = []
-    @ObservationIgnored var offGridWords: [String] = []
-    public internal(set) var shelf: [Entry] = []
+    public let shelf = Shelf()
     @ObservationIgnored var command = CommandHold.up
     @ObservationIgnored var leftOut: Set<String> = []
     public internal(set) var freeCells: [GridCell] = []
@@ -321,6 +315,7 @@ public final class SpotsModel {
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
     @ObservationIgnored private var scanned: [Spot] = []
+    @ObservationIgnored public weak var store: Store?
     @ObservationIgnored private var load = SpotLoad.empty
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
@@ -449,6 +444,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         if grid != config.grid { grid = config.grid }
+        if let store, Set(scan.spots.map(\.url)) != Set(scanned.map(\.url)) { Task { await store.read() } }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()

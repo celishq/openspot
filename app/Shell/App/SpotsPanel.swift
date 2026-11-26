@@ -140,7 +140,7 @@ final class SpotsPanel: NSPanel {
         place.left = rest.minX - area.minX
         place.top = area.maxY - rest.maxY
         place.screen = area.size
-        model?.placeShelf(screen: area.size, panelOrigin: CGPoint(x: place.left, y: place.top))
+        model?.shelf.place(screen: area.size, panelOrigin: CGPoint(x: place.left, y: place.top))
         resize(to: area)
     }
 

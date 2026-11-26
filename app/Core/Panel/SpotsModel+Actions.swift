@@ -113,7 +113,7 @@ extension SpotsModel {
         } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
             show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
         } else if case .command(let command) = action.kind {
-            if isShown { host.dismiss() }
+            hidePanel(after: action.after)
             sheets[target.entry.id]?.pressKey(command)
         } else if action.after == .stay {
             perform(action, on: target)
@@ -122,9 +122,13 @@ extension SpotsModel {
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
-            if isShown { host.dismiss() }
+            hidePanel(after: action.after)
             perform(action, on: target)
         }
+    }
+
+    func hidePanel(after: CommandAction.After) {
+        if after == .close, isShown { host.dismiss() }
     }
 
     func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
@@ -166,7 +170,7 @@ extension SpotsModel {
         case .shown where target.entry.spot.kind.opensSheet:
             if openSheetID != id { pushFirst(id, moving: isShown) }
         case .shown, .done:
-            if action.after == .close, isShown { host.dismiss() }
+            hidePanel(after: action.after)
         case .stopped:
             break
         }
@@ -282,7 +286,7 @@ extension SpotsModel {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
                     self.form = nil
-                    if form.action.after == .close, isShown { host.dismiss() }
+                    hidePanel(after: form.action.after)
                 case .form(let next)? where self.form?.id == form.id:
                     let kept = FormDraft(form: next, after: self.form?.draft ?? draft)
                     self.form?.draft = kept

@@ -3,6 +3,48 @@ import XCTest
 
 @MainActor
 final class ActionFormTests: PanelCase {
+    func testACommandThatSaysCloseFalseLeavesThePanelShownAndOneThatClosesHidesIt() async throws {
+        try "exit 0\n".writeScript(to: core.appendingPathComponent("openspot.spot/tidy.sh"), toml: """
+        title = "Tidy"
+
+        [actions.stay]
+        title = "Stay"
+        close = false
+
+        [actions.go]
+        title = "Go"
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let entry = try XCTUnwrap(model.entries.first { $0.spot.name == "Tidy" })
+        let command = { (id: String) in try XCTUnwrap(entry.spot.commands.first { $0.id == id }) }
+
+        model.run(CommandAction.command(try command("stay")), on: (entry, nil))
+        XCTAssertEqual(host.dismissals, 0)
+
+        model.run(CommandAction.command(try command("go")), on: (entry, nil))
+        XCTAssertEqual(host.dismissals, 1)
+    }
+
+    func testAPressOnACardWhoseSoleCommandSaysCloseFalseLeavesThePanelShown() async throws {
+        try "exit 0\n".writeScript(to: core.appendingPathComponent("openspot.spot/tidy.sh"), toml: """
+        title = "Tidy"
+
+        [actions.stay]
+        title = "Stay"
+        close = false
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let entry = try XCTUnwrap(model.entries.first { $0.spot.name == "Tidy" })
+
+        model.run(entry)
+
+        XCTAssertEqual(host.dismissals, 0)
+    }
+
     func testAPressOfAnActionWithAnEmptyRequiredInputAsksForItWithAFormDrawnFromItsTypes() async throws {
         let given = folder.appendingPathComponent("given").path
         try script("snooze", toml: """

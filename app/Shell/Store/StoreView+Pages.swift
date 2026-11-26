@@ -31,18 +31,8 @@ extension StoreView {
                 }
             }
         } else if source != nil {
-            Section {} header: {
-                VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
-                        ForEach(store.cards) { card in StoreTile(store: store, card: card) }
-                    }
-                    .padding(.horizontal, -SpotTokens.storeColumnBleed)
-                    Text("Drag a spot to My spots to install it.")
-                        .font(SpotType.settingsLine)
-                        .foregroundStyle(.secondary)
-                }
-                .textCase(nil)
-                .foregroundStyle(.primary)
+            tiles(note: "Drag a spot to My spots to install it.") {
+                ForEach(store.cards) { card in StoreTile(store: store, card: card, drag: drag) }
             }
         } else {
             ForEach(store.groups) { shelf in
@@ -80,70 +70,45 @@ extension StoreView {
     @ViewBuilder
     func spotPage(_ page: StorePage) -> some View {
         let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
-        Section {} header: {
-            VStack(alignment: .leading, spacing: SpotTokens.settingsHeadingGap) {
-                HStack(alignment: .center, spacing: SpotTokens.settingsCompactGap) {
-                    SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsCompactTile)
-                    VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                        Text(page.spot.name)
-                            .font(SpotType.settingsHeader)
-                            .lineLimit(1)
-                        Text(pageLine(page))
-                            .font(SpotType.settingsPageLine)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: SpotTokens.settingsTrailingGap)
-                    HStack(spacing: SpotTokens.settingsValueGap) {
-                        if page.button != .install {
-                            Text(badge(page.button))
-                                .foregroundStyle(.secondary)
-                        }
-                        if sample?.id == page.id, model != nil {
-                            Button("Try") { isTrying = true }
-                                .buttonStyle(.bordered)
-                        }
-                        button(page)
-                    }
-                    .controlSize(.large)
-                    .fixedSize()
-                }
-                VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
-                    StoreSizes(spot: page.spot, face: preview.face, sizes: preview.sizes, width: SpotTokens.storeRowWidth)
-                    if !preview.drawsCard, let model, let sample, sample.id == page.id, sample.hasSheet {
-                        StoreSheetPreview(model: model, spot: page.spot, output: sample.output, selects: false)
-                            .allowsHitTesting(false)
-                            .frame(maxHeight: SpotTokens.storeSheetPreviewHeight, alignment: .top)
-                            .clipped()
-                    }
-                }
-                .offset(x: -SpotTokens.storeColumnBleed)
+        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsCompactTile), page.spot.name, pageLine(page)) {
+            if page.button != .install {
+                Text(badge(page.button))
+                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.primary)
-            .textCase(nil)
-            .padding(.bottom, SpotTokens.settingsHeadingGap)
+            if sample?.id == page.id, model != nil {
+                Button("Try") { isTrying = true }
+                    .buttonStyle(.bordered)
+            }
+            button(page)
         }
         Section {} header: {
-            VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                Text("About")
-                    .font(SpotType.settingsGroup)
-                StoreReadmeView(lines: page.shown, name: page.spot.name)
-                    .frame(maxWidth: SpotTokens.storeReadWidth, alignment: .leading)
-            }
-            .foregroundStyle(.primary)
-            .textCase(nil)
-            .padding(.bottom, SpotTokens.settingsHeadingGap)
+            StoreSizes(spot: page.spot, face: preview.face, sizes: [preview.size], width: SpotTokens.storeRowWidth)
+                .offset(x: -SpotTokens.pageTileBleed)
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .foregroundStyle(.primary)
+                .textCase(nil)
+        }
+        group("About") {
+            StoreReadmeView(lines: page.shown, name: page.spot.name)
+                .frame(maxWidth: SpotTokens.storeReadWidth, alignment: .leading)
         }
         if page.trust.contains(where: { !$0.isFiles }) {
             group("What It Can Do") {
                 ForEach(page.trust.filter { !$0.isFiles }, id: \.title) { line in
-                    HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
+                    HStack(alignment: line.isUses ? .center : .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
                         Text(line.title)
                             .foregroundStyle(.secondary)
                             .frame(width: SpotTokens.storeTrustTitleWidth, alignment: .leading)
-                        Text(line.words.joined(separator: "\n"))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
+                        if line.isUses, !page.uses.isEmpty {
+                            WrapRow(spacing: SpotTokens.settingsChipGap) {
+                                ForEach(page.uses) { UseChip(use: $0) }
+                            }
+                        } else {
+                            KeyFill.text(line.words.joined(separator: "\n"))
+                                .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .textSelection(.enabled)
+                        }
                         Spacer(minLength: 0)
                     }
                 }

@@ -25,6 +25,7 @@ enum StoreWindow {
 
     private static func make(model: SpotsModel) -> (Store, SpotSheetWindow) {
         let store = Store(places: model.files, changed: { await model.spotsChanged() }, toast: { model.toast($0) })
+        model.store = store
         let window = SpotSheetWindow.make(pages: "Store", name: "store-window", content: StoreView(store: store, model: model))
         window.takesEscape = {
             if store.page != nil {

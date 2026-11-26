@@ -13,8 +13,7 @@ public final class Store {
     public private(set) var summary = ""
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
-    public internal(set) var back: [StoreStop] = []
-    public internal(set) var forward: [StoreStop] = []
+    public internal(set) var trail = PageTrail(StoreStop(place: .mine, spot: nil))
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?
@@ -45,16 +44,15 @@ public final class Store {
         if shelves[place] == nil {
             place = .mine
             page = nil
+            trail.replace(stop)
         }
-        back.removeAll { shelves[$0.place] == nil }
-        forward.removeAll { shelves[$0.place] == nil }
+        trail.keep { shelves[$0.place] != nil }
         refilter()
     }
 
     public func show(_ id: String?, search text: String?) async -> Bool {
         await read()
-        let from = stop
-        defer { leave(from) }
+        defer { arrive() }
         if let text {
             query = text
             let folded = text.trimmingCharacters(in: .whitespaces).folded
@@ -79,20 +77,18 @@ public final class Store {
             opened = source
             await read()
             guard let id = shelves[.source(source)]?.first?.id else { return false }
-            let from = stop
             query = ""
             move(to: .source(source))
             refilter()
             await load(id)
-            leave(from)
+            arrive()
             return page?.id == id
         }
     }
 
     public func choose(_ next: StorePlace) {
-        let from = stop
         move(to: next)
-        leave(from)
+        arrive()
     }
 
     func move(to next: StorePlace) {
@@ -105,18 +101,16 @@ public final class Store {
 
     public func search(_ text: String) {
         guard text != query else { return }
-        let from = stop
         query = text
         if page != nil { page = nil }
         refilter()
-        leave(from)
+        arrive()
     }
 
     public func open(_ id: String) async {
-        let from = stop
         await load(id)
         guard page?.id == id else { return }
-        leave(from)
+        arrive()
     }
 
     func load(_ id: String) async {
@@ -128,10 +122,9 @@ public final class Store {
     }
 
     public func closePage() {
-        let from = stop
         opening = nil
         if page != nil { page = nil }
-        leave(from)
+        arrive()
     }
 
     public func install(_ id: String) async {
@@ -266,7 +259,7 @@ public final class Store {
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
-                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
+                trust: review?.lines ?? [], uses: uses(of: own.spot), button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
                 preview: StorePreview(of: own.spot), files: files(review?.lines, beside: own.spot)
             )
         case .source(let chosen):
@@ -279,11 +272,15 @@ public final class Store {
             let text = readme(beside: spot)
             return StorePage(
                 id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
-                readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
+                readme: text.lines, shown: text.shown, trust: review?.lines ?? [], uses: uses(of: spot), button: button == .locked ? .installed : button,
                 hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot),
                 files: files(review?.lines, beside: spot)
             )
         }
+    }
+
+    private nonisolated static func uses(of spot: Spot) -> [SpotStanding.UseNeeds] {
+        SpotStanding(spot, written: KeptCalls.shared.read(spot), statuses: [:], last: [:], refused: [:]).uses
     }
 
     private nonisolated static func files(_ lines: [ReviewLine]?, beside spot: Spot) -> [StoreFile] {

@@ -10,7 +10,7 @@ public final class SettingsBook {
     public private(set) var looks: [ListedTheme] = []
     public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
-    public private(set) var trail = SettingsTrail()
+    public private(set) var trail = PageTrail(SettingsStop(page: .general, mark: .general))
     public private(set) var found = SettingsIndex.Found.none
     public private(set) var shownSpots: [SpotStanding] = []
     public private(set) var query = "" {
@@ -130,19 +130,19 @@ public final class SettingsBook {
         query = ""
         recording = nil
         target = nil
-        trail.go(next, remembers: remembers)
+        trail.go(trail.now.value.going(to: next), remembers: remembers)
     }
 
     public func goBack() {
         recording = nil
         target = nil
-        _ = trail.goBack()
+        trail.goBack()
     }
 
     public func goForward() {
         recording = nil
         target = nil
-        _ = trail.goForward()
+        trail.goForward()
     }
 
     public func search(_ text: String) {
@@ -156,15 +156,15 @@ public final class SettingsBook {
         target = nil
         switch place {
         case .row(let item):
-            guard let row = rows.row(item) else { return trail.land(.general) }
+            guard let row = rows.row(item) else { return trail.land(.landing(on: .general)) }
             reveal(row)
         case .search(let words):
-            trail.land(page)
+            trail.land(.landing(on: page))
             query = words
         case .page(.spotOf(let id)) where spots.standing(id) == nil && !rows.rows(of: id).isEmpty:
-            trail.land(.general)
+            trail.land(.landing(on: .general))
         case .page(let page):
-            trail.land(page)
+            trail.land(.landing(on: page))
         }
     }
 
@@ -214,6 +214,14 @@ public final class SettingsBook {
         await run(ThemeCall.use(name), as: "theme use")
     }
 
+    public func duplicate(theme name: String) async {
+        await run(ThemeCall.duplicate(name), as: "theme duplicate")
+    }
+
+    public func delete(theme name: String) async {
+        await run(ThemeCall.delete(name), as: "theme delete", says: true)
+    }
+
     public func themePrompt(words: String) async -> String? {
         guard let api = model?.runs.api, let used = looks.first(where: \.isUsed) else { return nil }
         let answer = await api.answer(PromptCall.theme(used.name, words: words), as: "prompt theme")
@@ -232,9 +240,8 @@ public final class SettingsBook {
         await run(SpotCall.allow(spot, use: use.rawValue), as: "spot allow")
     }
 
-    public func ask(_ access: MacAccess) async {
-        guard access == .accessibility else { return openPane(of: access) }
-        await run(AccessCall.ask(access.rawValue), as: "access ask")
+    public func allow(access: MacAccess) async {
+        await run(AccessCall.grant(access.rawValue, end: false), as: "access grant")
     }
 
     public func openPane(of access: MacAccess) {
@@ -254,10 +261,11 @@ public final class SettingsBook {
         model?.toast(ToastNote(words: words))
     }
 
-    func run(_ call: any NounCall, as name: String) async {
+    func run(_ call: any NounCall, as name: String, says: Bool = false) async {
         guard let api = model?.runs.api else { return }
         let answer = await api.answer(call, as: name)
         if answer.code != 0, let line = answer.errors.split(separator: "\n").last { model?.toast(.failure(String(line))) }
+        if answer.code == 0, says, let line = answer.output.split(separator: "\n").last { say(String(line)) }
         await read()
     }
 }

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct StoreSidebar: View {
     let store: Store
-    @State private var isOverMine = false
+    let drag: StoreDrag
     @State private var isAdding = false
 
     var body: some View {
@@ -37,30 +37,23 @@ struct StoreSidebar: View {
     }
 
     private var mine: some View {
-        HStack(spacing: SpotTokens.settingsGroupGap) {
+        PageSidebarRow(title: "My spots") {
             SettingsTile(symbol: "house.fill", color: SpotTheme.storeMine, side: SpotTokens.settingsSectionTile)
-            Text("My spots")
-            Spacer(minLength: 0)
-            if isOverMine {
+        } trailing: {
+            if drag.isOverTarget {
                 Text("Drop to install")
                     .font(SpotType.settingsLine)
             }
         }
-        .listRowBackground(isOverMine ? SpotTheme.settingsSelection.opacity(SpotTheme.storeDropFill) : nil)
-        .dropDestination(for: String.self) { ids, _ in
-            guard let id = ids.first else { return false }
-            Task { await store.install(id) }
-            return true
-        } isTargeted: { isOverMine = $0 }
+        .listRowBackground(drag.isOverTarget ? SpotTheme.settingsSelection.opacity(SpotTheme.storeDropFill) : nil)
+        .background(StoreTarget { drag.take(target: $0) })
     }
 
     private func sourceRow(_ source: StoreSource) -> some View {
         let isMissing = store.missing.contains(source.url.path)
-        return HStack(spacing: SpotTokens.settingsGroupGap) {
+        return PageSidebarRow(title: source.name) {
             SettingsTile(symbol: isMissing ? "questionmark.folder.fill" : source.symbol, color: SpotTheme.storeSource(source), side: SpotTokens.settingsSectionTile)
-            Text(source.name)
-                .lineLimit(1)
-            Spacer(minLength: 0)
+        } trailing: {
             if isMissing {
                 Text("Not Found")
                     .font(SpotType.settingsLine)

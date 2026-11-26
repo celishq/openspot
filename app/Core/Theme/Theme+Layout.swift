@@ -52,6 +52,26 @@ extension Theme {
             gridWidth + 2 * Double(SpotTokens.halo)
         }
 
+        public var wordsGap: Double {
+            space.padding - 5
+        }
+
+        public var fieldHeight: Double {
+            space.cell
+        }
+
+        public func width(columns: Int) -> Double {
+            Double(columns) * space.cell + Double(columns - 1) * space.columnGap
+        }
+
+        public func height(rows: Int) -> Double {
+            Double(rows) * space.cell + Double(rows - 1) * space.rowGap
+        }
+
+        public func corner(for size: SpotSize) -> Double {
+            size.rows == 1 && size.columns < columns ? min(space.cell / 2 * radius.card / SpotTokens.builtIn.radius.card, space.cell / 2) : radius.card
+        }
+
         public var partsWidth: Double {
             gridWidth - 2 * space.padding
         }

@@ -13,6 +13,14 @@ final class ActionsSpotTests: BuiltInCase {
         XCTAssertFalse(actions.isFound)
     }
 
+    func testArrangeKeepsThePanelOpenFromTheCardMenuAndFromTheSpotsSpot() throws {
+        let actions = try spot("actions")
+        let spots = try spot("spots")
+
+        XCTAssertEqual(actions.offeredActions.first { $0.action.title == "Arrange" }?.action.after, .stay)
+        XCTAssertEqual(spots.commands.first { $0.title == "Arrange" }?.closes, false)
+    }
+
     func testEachCommandAsksTheAPI() async throws {
         let actions = try spot("actions")
 

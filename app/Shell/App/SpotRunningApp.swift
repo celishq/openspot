@@ -113,7 +113,7 @@ struct SpotRunningApp: RunningApp {
         await model.allows(reason)
     }
 
-    func grant(_ id: String, needs: [MacAccess]) async -> Bool {
+    func grant(_ id: String?, needs: [MacAccess]) async -> Bool {
         await model.grant(id, needs: needs)
     }
 

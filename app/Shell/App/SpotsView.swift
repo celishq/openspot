@@ -77,6 +77,7 @@ struct SpotsView: View {
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
+        .contentShape(Rectangle().inset(by: model.isArranging ? SpotTokens.halo - SpotTokens.cornerMark : 0))
         .coordinateSpace(name: Self.panelSpace)
         .allowsHitTesting(!model.transition.isMoving)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)

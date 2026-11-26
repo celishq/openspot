@@ -90,7 +90,7 @@ extension SpotTokens {
     }
 
     public static func fieldRect(room: CGFloat) -> CGRect {
-        CGRect(x: halo, y: halo, width: gridWidth, height: cell + room)
+        CGRect(x: halo, y: halo, width: gridWidth, height: layout.fieldHeight + room)
     }
 
     public static func attachmentStack(count: Int) -> CGFloat {
@@ -215,6 +215,10 @@ extension SpotTokens {
     public static let settingsBarFade: CGFloat = 14
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 22
+    public static let settingsChipTile: CGFloat = 18
+    public static let settingsChipGap: CGFloat = 6
+    public static let settingsChipInset: CGFloat = 3
+    public static let settingsChipPadding: CGFloat = 10
     public static let settingsHeaderTile: CGFloat = 52
     public static let settingsHeroGap: CGFloat = 8
     public static let settingsFoundTile: CGFloat = 24
@@ -237,13 +241,14 @@ extension SpotTokens {
     public static let settingsKeyName: CGFloat = 150
     public static let settingsFieldWidth: CGFloat = 220
     public static let settingsUseGap: CGFloat = 6
-    public static let settingsLookColumn: CGFloat = 170
-    public static let settingsLookGap: CGFloat = 18
-    public static let settingsLookHeight: CGFloat = 104
+    public static let settingsLookHeight: CGFloat = 150
+    public static let settingsLookSpots = 6
+    public static let settingsLookHalo: CGFloat = 3
+    public static let settingsLookFade: CGFloat = 0.75
+    public static let settingsLookPictureScale: CGFloat = 2
+    public static let settingsLookFill: CGFloat = 0.92
     public static let settingsLookWords: CGFloat = 6
-    public static let settingsLookTopInset: CGFloat = 14
     public static let settingsLookRing: CGFloat = 3
-    public static let settingsLookCardRing: CGFloat = 4
     public static let settingsLookDash: [CGFloat] = [5, 4]
     public static let settingsWishLines = 3
     public static let settingsSheetWidth: CGFloat = 460
@@ -293,23 +298,22 @@ extension SpotTokens {
     public static let publisherRim: CGFloat = 1
     public static var settingsCardReveal: CGFloat { settingsPagePadding + publisherWidth / publisherRatio + 2 * publisherTiltReach.height + settingsHeroGap }
 
-    public static let storeInset: CGFloat = 16
     public static let storeHeadingGap: CGFloat = 10
     public static let storeMarkerWidth: CGFloat = 18
     public static let storeQuoteBar: CGFloat = 3
     public static let storeCodePadding: CGFloat = 8
     public static let storeTilePadding: CGFloat = 12
-    public static let storeTileRadius: CGFloat = 14
+    public static let pageTileRadius: CGFloat = 14
     public static let storeTileLineGap: CGFloat = 4
-    public static let storeTileGap: CGFloat = 12
+    public static let pageTileGap: CGFloat = 12
+    public static let pageTileColumns = 2
     public static let storePreviewWidth: CGFloat = 240
     public static let storePreviewHeight: CGFloat = 84
     public static let storeRowWidth: CGFloat = 580
     public static let storeTryWidth: CGFloat = 460
-    public static let storeSheetPreviewHeight: CGFloat = 320
     public static let storePreviewIcon: CGFloat = 56
     public static let storeActionWidth: CGFloat = 84
-    public static let storeColumnBleed: CGFloat = 10
+    public static let pageTileBleed: CGFloat = 10
     public static let storeActionHeight: CGFloat = 28
     public static let storePrimaryWidth: CGFloat = 52
     public static let storeReadWidth: CGFloat = 520

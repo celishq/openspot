@@ -60,19 +60,24 @@ extension SpotsModel {
     }
 
     public func takesOffGrid(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.spot.host == nil && !entry.spot.isBuiltIn && entry.spot.fault == nil
+        entry.item == nil && entry.spot.host == nil && entry.spot.fault == nil
     }
 
-    public func takeOffGrid(_ id: String) {
+    public func takeOffGrid(_ id: String, to slot: ShelfSlot? = nil) {
         asOnePress {
             guard let entry = visible.first(where: { $0.id == id }), takesOffGrid(entry) else { return }
             let next: KeptConfig
             do {
                 next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: id) }
             } catch {
+                if carry != nil { change(.edit) { carry = nil } }
                 return toast(.failure("\(entry.spot.name) stays on the grid. \(Self.reason(error))"))
             }
-            change(.edit) { reload(patching: nil, to: next) }
+            change(.edit, {
+                reload(patching: nil, to: next)
+                if let slot { shelf.lay(placing: (id, slot)) }
+                carryToShelf()
+            }, completion: { self.endLanding(of: id) })
         }
     }
 

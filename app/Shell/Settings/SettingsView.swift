@@ -21,6 +21,7 @@ struct SettingsView: PageView {
         PageWindow(
             title: book.title,
             page: shown,
+            visit: book.trail.now.visit,
             reveal: reveal,
             target: book.target,
             query: Binding(get: { book.query }, set: { book.search($0) }),
@@ -58,10 +59,9 @@ struct SettingsView: PageView {
                 .tag(SettingsPage.account)
             ForEach(SettingsPage.Section.allCases) { section in
                 let count = section == .general ? book.spots.waiting.count : 0
-                HStack(spacing: SpotTokens.settingsGroupGap) {
+                PageSidebarRow(title: section.title) {
                     SettingsTile(symbol: section.symbol, color: SpotTheme.settings(section), side: SpotTokens.settingsSectionTile)
-                    Text(section.title)
-                    Spacer(minLength: 0)
+                } trailing: {
                     if count > 0 {
                         Text("\(count)")
                             .font(SpotType.settingsBadge)
@@ -75,11 +75,9 @@ struct SettingsView: PageView {
             if !book.shownSpots.isEmpty {
                 Section("Spots") {
                     ForEach(book.shownSpots) { standing in
-                        HStack(spacing: SpotTokens.settingsGroupGap) {
+                        PageSidebarRow(title: standing.title) {
                             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsSectionTile)
-                            Text(standing.title)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
+                        } trailing: {
                             if standing.lacks {
                                 Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
                             }

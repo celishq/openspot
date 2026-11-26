@@ -176,6 +176,21 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.trail.back.map(\.page), [.access, .developer])
     }
 
+    func testBackReturnsToTheVisitThatWasLeftAndAFreshGoIsANewVisit() async throws {
+        await read()
+        book.land(.access)
+        let first = book.trail.now.visit
+
+        book.go(.developer)
+        XCTAssertNotEqual(book.trail.now.visit, first)
+        book.goBack()
+        XCTAssertEqual(book.trail.now.visit, first)
+        book.go(.developer)
+
+        XCTAssertNotEqual(book.trail.now.visit, first)
+        XCTAssertEqual(Set([first, book.trail.back.last?.visit]).count, 1)
+    }
+
     func testASetWritesThroughSettingSetAndARemovalOfItsValueTakesItAway() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
@@ -272,6 +287,19 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.looks.first { $0.isUsed }?.id, "Dracula")
     }
 
+    func testADuplicateOfAThemeIsYoursAndInUseAndAMoveToTheTrashTakesItAway() async throws {
+        await read()
+
+        await book.duplicate(theme: "Dracula")
+        let copy = try XCTUnwrap(book.looks.first { $0.isUsed })
+        XCTAssertFalse(copy.isBuiltIn)
+        XCTAssertEqual(copy.colours, book.looks.first { $0.id == "Dracula" }?.colours)
+        await book.delete(theme: copy.id)
+
+        XCTAssertFalse(book.looks.contains { $0.id == copy.id })
+        XCTAssertEqual(model.toasts.queue.last?.words, "Moved the theme \(copy.id) to the Trash, and switched to the theme Openspot.")
+    }
+
     func testAThemePromptAsksForTheWordsOverTheThemeInUse() async throws {
         await read()
         await book.use(theme: "Dracula")
@@ -305,13 +333,19 @@ final class SettingsBookTests: PanelCase {
         XCTAssertNil(book.grant)
     }
 
-    func testAskOpensThePaneOfAnAccessAndAsksForAccessibility() async throws {
+    func testAllowOfAnAccessStartsTheSameGuidedGrantAtItsPage() async throws {
+        accesses.set(.screen, to: .denied)
         await read()
+        book.land(.access)
 
-        await book.ask(.screen)
-        await book.ask(.helper)
+        await book.allow(access: .screen)
 
-        XCTAssertEqual(host.opened, [MacAccess.screen.pane, MacAccess.helper.pane].compactMap { $0 })
+        XCTAssertNil(book.grant?.spot)
+        XCTAssertEqual(book.grant?.steps, [.screen])
+        XCTAssertEqual(book.grant?.title(of: nil), "Allow Screen Recording")
+        XCTAssertEqual(book.page, .accessOf(.screen))
+        await book.endGrant()
+        XCTAssertNil(book.grant)
     }
 
     func testNewMakesTheAccountAndTheFactsShowIt() async throws {
@@ -376,7 +410,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.access.needed.map(\.id), [.screen])
         XCTAssertFalse(book.access.unneeded.contains { $0.id == .screen })
         XCTAssertEqual(book.spots.waiting.map(\.id), ["cups"])
-        XCTAssertEqual(Set(book.looks.map(\.group)), [.builtIn])
+        XCTAssertTrue(book.looks.allSatisfy(\.isBuiltIn))
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }

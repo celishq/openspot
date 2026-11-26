@@ -50,8 +50,13 @@ extension SpotsModel {
             guard let drag else { return }
             let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
             if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
-                cancelDrag()
-                return takeOffGrid(entry.id)
+                let corner = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+                let slot = shelf.slot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size)
+                stopDragWait()
+                pointerMove = nil
+                gesture = nil
+                if landing != nil { landing = nil }
+                return takeOffGrid(entry.id, to: slot)
             }
             let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home
             guard let landed = drag.moved(to: target), target != drag.home else { return cancelDrag() }
@@ -81,6 +86,14 @@ extension SpotsModel {
         guard let id = carry?.entry.id, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else { return }
         lift.origin = inPanel(placements[index].rect.origin)
         carry?.isLanding = true
+    }
+
+    func carryToShelf() {
+        guard let id = carry?.entry.id, let origin = shelf.origin(of: id) else { return }
+        lift.origin = origin
+        if let size = shelf.size(of: id), carry?.size != size { carry?.size = size }
+        carry?.isLanding = true
+        landing = id
     }
 
     func endLanding(of id: String) {

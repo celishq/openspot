@@ -7,6 +7,9 @@ final class PageScroll {
     var isTitleShown = false
     var isScrolled = false
     var barHeight: CGFloat = 0
+    @ObservationIgnored private var kept: [String: CGFloat] = [:]
+    @ObservationIgnored private var order: [String] = []
+    private static let limit = 64
 
     func show(title isShown: Bool) {
         guard isShown != isTitleShown else { return }
@@ -21,6 +24,15 @@ final class PageScroll {
     func reset() {
         if isTitleShown { isTitleShown = false }
         if isScrolled { isScrolled = false }
+    }
+
+    func keep(_ offset: CGFloat, of page: String) {
+        if kept.updateValue(offset, forKey: page) == nil { order.append(page) }
+        if order.count > Self.limit { kept[order.removeFirst()] = nil }
+    }
+
+    func offset(of page: String) -> CGFloat {
+        kept[page] ?? 0
     }
 
     func take(barHeight height: CGFloat) {

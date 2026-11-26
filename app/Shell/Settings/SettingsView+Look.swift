@@ -4,37 +4,49 @@ import SwiftUI
 
 extension SettingsView {
     var lookPage: some View {
-        Group {
+        let spots = model.visible.filter { NSImage(systemSymbolName: $0.spot.symbol, accessibilityDescription: nil) != nil }
+            .prefix(SpotTokens.settingsLookSpots).map { LookSpot(symbol: $0.spot.symbol, name: $0.spot.name) }
+        let shown = spots.isEmpty ? SpotTheme.settingsLookCards.map { LookSpot(symbol: $0, name: "") } : Array(spots)
+        return Group {
             title(of: .look)
-            ForEach(ListedTheme.Group.allCases) { kind in
-                let looks = book.looks.filter { $0.group == kind }
-                if !looks.isEmpty || kind == .yours {
-                    group(kind.rawValue) {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
-                            ForEach(looks) { tile($0) }
-                            if kind == .yours { makeTile }
-                        }
-                    }
-                }
+            tiles {
+                ForEach(book.looks) { tile($0, spots: shown) }
+                makeTile
             }
         }
     }
 
-    private func tile(_ look: ListedTheme) -> some View {
+    private func tile(_ look: ListedTheme, spots: [LookSpot]) -> some View {
         VStack(spacing: SpotTokens.settingsLookWords) {
-            preview(look)
-            Text(look.id)
-                .fontWeight(look.isUsed ? .semibold : .regular)
-                .lineLimit(1)
+            preview(look, spots: spots)
+            HStack(spacing: SpotTokens.settingsLookWords) {
+                if !look.isBuiltIn {
+                    Image(systemName: "person.crop.circle")
+                        .foregroundStyle(.secondary)
+                        .help("Yours")
+                }
+                Text(look.id)
+                    .fontWeight(look.isUsed ? .semibold : .regular)
+                    .lineLimit(1)
+            }
         }
         .contentShape(Rectangle())
         .onTapGesture { if !look.isUsed { act { await $0.use(theme: look.id) } } }
+        .contextMenu {
+            Button("Use") { act { await $0.use(theme: look.id) } }
+                .disabled(look.isUsed)
+            Button("Duplicate") { act { await $0.duplicate(theme: look.id) } }
+            if !look.isBuiltIn {
+                Divider()
+                Button("Move to Trash") { act { await $0.delete(theme: look.id) } }
+            }
+        }
         .accessibilityAddTraits(look.isUsed ? [.isButton, .isSelected] : .isButton)
         .help(look.isUsed ? "\(look.id) is in use" : "Use \(look.id)")
     }
 
     private var makeTile: some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
+        let shape = SpotRoundShape(radius: SpotTokens.pageTileRadius)
         return VStack(spacing: SpotTokens.settingsLookWords) {
             Image(systemName: "plus")
                 .font(SpotType.settingsTitle)
@@ -89,55 +101,21 @@ extension SettingsView {
         }
     }
 
-    private func preview(_ look: ListedTheme) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        let swatch = colorScheme == .dark ? look.colours.dark : look.colours.light
-        let layout = look.layout
-        let columns = CGFloat(SpotTheme.settingsLookCards.count)
-        let width = columns * CGFloat(layout.space.cell) + (columns - 1) * CGFloat(layout.space.columnGap) + 2 * CGFloat(layout.space.padding)
-        let height = 2 * (CGFloat(layout.space.padding) + CGFloat(layout.space.cell)) + CGFloat(layout.space.rowGap)
-        let scale = (SpotTokens.settingsLookHeight - 2 * SpotTokens.settingsLookTopInset) / height
+    private func preview(_ look: ListedTheme, spots: [LookSpot]) -> some View {
+        let shape = SpotRoundShape(radius: SpotTokens.pageTileRadius)
+        let isDark = colorScheme == .dark
+        let swatch = isDark ? look.colours.dark : look.colours.light
         return ZStack {
             swatch.background.color
             LinearGradient(colors: [swatch.accent.color.opacity(SpotTheme.settingsLookWall), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
-            panelTop(swatch, layout, isClear: look.colours.glass == .clear, width: width, height: height)
-                .scaleEffect(scale)
-                .frame(width: width * scale, height: height * scale)
+            LookPictures.shared.picture(of: look, isDark: isDark, spots: spots)?
+                .resizable()
+                .scaledToFit()
+                .frame(height: SpotTokens.settingsLookHeight * SpotTokens.settingsLookFill)
         }
         .frame(height: SpotTokens.settingsLookHeight)
         .clipShape(shape)
         .overlay(shape.strokeBorder(look.isUsed ? Color.accentColor : Color.primary.opacity(SpotTheme.settingsStepFill), lineWidth: look.isUsed ? SpotTokens.settingsLookRing : SpotTokens.settingsRim))
-    }
-
-    private func panelTop(_ swatch: Theme.Appearance, _ layout: Theme.Layout, isClear: Bool, width: CGFloat, height: CGFloat) -> some View {
-        let card = SpotRoundShape(radius: CGFloat(layout.radius.card))
-        let plate = SpotRoundShape(radius: CGFloat(layout.radius.card) + CGFloat(layout.space.padding))
-        return VStack(alignment: .leading, spacing: CGFloat(layout.space.rowGap)) {
-            HStack(spacing: SpotTokens.fieldTextGap) {
-                Image(systemName: "magnifyingglass")
-                Text("Search")
-            }
-            .font(SpotType.input)
-            .foregroundStyle(swatch.ink.color.opacity(SpotTheme.settingsLookHint))
-            .padding(.horizontal, CGFloat(layout.space.padding))
-            .frame(maxWidth: .infinity, minHeight: CGFloat(layout.space.cell), maxHeight: CGFloat(layout.space.cell), alignment: .leading)
-            .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: card)
-            HStack(spacing: CGFloat(layout.space.columnGap)) {
-                ForEach(Array(SpotTheme.settingsLookCards.enumerated()), id: \.offset) { index, symbol in
-                    let isChosen = index == 0
-                    Image(systemName: symbol)
-                        .font(.system(size: CGFloat(layout.space.glyph), weight: .semibold))
-                        .foregroundStyle(isChosen ? swatch.accent.color : swatch.ink.color)
-                        .padding(SpotTokens.glyphInset)
-                        .frame(maxWidth: .infinity, minHeight: CGFloat(layout.space.cell), maxHeight: CGFloat(layout.space.cell), alignment: .topLeading)
-                        .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: card)
-                        .overlay(card.strokeBorder(isChosen ? swatch.accent.color : .clear, lineWidth: SpotTokens.settingsLookCardRing))
-                }
-            }
-        }
-        .padding(CGFloat(layout.space.padding))
-        .frame(width: width, height: height, alignment: .top)
-        .background(swatch.background.color.opacity(isClear ? SpotTheme.settingsLookClearFill : SpotTheme.settingsLookPanelFill), in: plate)
-        .overlay(plate.strokeBorder(isClear ? SpotTheme.settingsLookClearRim : swatch.ink.color.opacity(SpotTheme.settingsLookCell), lineWidth: SpotTokens.settingsLookCardRing / 2))
+        .task(id: LookPictures.Key(colours: look.colours, layout: look.layout, isDark: isDark, spots: spots)) { LookPictures.shared.draw(look, isDark: isDark, spots: spots) }
     }
 }

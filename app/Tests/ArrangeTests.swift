@@ -8,7 +8,7 @@ final class ArrangeTests: PanelCase {
     }
 
     private var shelf: [String] {
-        model.shelf.map(\.id)
+        model.shelf.spots.map(\.id)
     }
 
     private func place(of id: String) -> SpotPlacement? {
@@ -23,7 +23,7 @@ final class ArrangeTests: PanelCase {
 
 
     private func toward(_ cell: GridCell, of id: String = "zeta") -> CGSize {
-        let start = model.shelfOrigin(of: id) ?? .zero
+        let start = model.shelf.origin(of: id) ?? .zero
         let target = point(of: cell)
         return CGSize(width: target.x - start.x, height: target.y - start.y)
     }
@@ -37,7 +37,7 @@ final class ArrangeTests: PanelCase {
         model.dragRest = .zero
         try await spots(off + on)
         for id in off { model.takeOffGrid(id) }
-        model.placeShelf(screen: CGSize(width: 1440, height: 900), panelOrigin: CGPoint(x: 520, y: 40))
+        model.shelf.place(screen: CGSize(width: 1440, height: 900), panelOrigin: CGPoint(x: 520, y: 40))
         model.beginEditing()
     }
 
@@ -46,7 +46,7 @@ final class ArrangeTests: PanelCase {
 
         XCTAssertTrue(model.isArranging)
         XCTAssertEqual(Set(order), ["a", "b"])
-        XCTAssertEqual(model.offGrid.map(\.id), ["alpha", "mango", "zeta"])
+        XCTAssertEqual(model.shelf.offGrid.map(\.id), ["alpha", "mango", "zeta"])
         XCTAssertEqual(shelf, ["alpha", "mango", "zeta"])
     }
 
@@ -55,7 +55,7 @@ final class ArrangeTests: PanelCase {
 
         model.searchShelf("sn")
 
-        XCTAssertEqual(model.shelfQuery, "sn")
+        XCTAssertEqual(model.shelf.query, "sn")
         XCTAssertEqual(shelf, ["snooze", "snoozetab"])
         model.searchShelf("")
         XCTAssertEqual(shelf, ["notes", "snooze", "snoozetab", "tabs"])
@@ -72,7 +72,7 @@ final class ArrangeTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertFalse(model.isEditing)
-        XCTAssertEqual(model.shelfQuery, "")
+        XCTAssertEqual(model.shelf.query, "")
         XCTAssertEqual(host.arranged, [true, false])
     }
 
@@ -191,6 +191,136 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, ["a"])
     }
 
+    func testACardDroppedOutsideThePanelFliesIntoItsShelfSlotNotBackToTheGrid() async throws {
+        try await arrangeWithOff([], on: ["a", "b"])
+        let away = CGSize(width: -900, height: 40)
+        model.dragSpot("a", by: away)
+        host.heldEnds = []
+
+        model.dropSpot(by: away)
+
+        XCTAssertEqual(order, ["b"])
+        XCTAssertEqual(model.landing, "a")
+        XCTAssertEqual(model.carry?.isLanding, true)
+        XCTAssertEqual(model.lift.origin, model.shelf.origin(of: "a"))
+
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertNil(model.landing)
+        XCTAssertNil(model.carry)
+    }
+
+    func testAShelfSpotDroppedOnTheShelfFliesIntoItsNewSlot() async throws {
+        try await arrangeWithOff(["alpha", "zeta"], on: ["a"])
+        let alpha = try XCTUnwrap(model.shelf.origin(of: "alpha"))
+        let zeta = try XCTUnwrap(model.shelf.origin(of: "zeta"))
+        let move = CGSize(width: alpha.x - zeta.x, height: alpha.y - zeta.y)
+        model.dragShelfSpot("zeta", by: move)
+        host.heldEnds = []
+
+        model.dropShelfSpot(by: move)
+
+        XCTAssertNil(model.pin)
+        XCTAssertEqual(model.landing, "zeta")
+        XCTAssertEqual(model.carry?.isLanding, true)
+        XCTAssertEqual(model.lift.origin, alpha)
+
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertNil(model.landing)
+        XCTAssertNil(model.carry)
+    }
+
+    func testAnAppSpotDraggedOutsideThePanelInArrangeGoesToTheShelf() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("openspot.spot/new.sh"), toml: "title = 'New spot'")
+        try await arrangeWithOff([], on: ["a"])
+        let id = try XCTUnwrap(model.visible.first { $0.spot.name == "New spot" }?.id)
+        let away = CGSize(width: -900, height: 40)
+
+        model.dragSpot(id, by: away)
+        model.dropSpot(by: away)
+
+        XCTAssertFalse(order.contains(id))
+        XCTAssertEqual(shelf, [id])
+    }
+
+    private func away(_ id: String, to target: CGPoint) throws -> CGSize {
+        let index = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
+        let rect = model.placements[index].rect
+        let origin = SpotTokens.gridOrigin()
+        return CGSize(width: target.x - origin.x - rect.minX, height: target.y - origin.y - rect.minY)
+    }
+
+    func testAPinnedShelfSpotLeavesItsSlotAndTheOthersHoldStill() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = model.shelf.origin(of: "alpha")
+        let zeta = model.shelf.origin(of: "zeta")
+
+        model.pin("mango")
+
+        XCTAssertEqual(shelf, ["alpha", "zeta"])
+        XCTAssertEqual(model.shelf.origin(of: "alpha"), alpha)
+        XCTAssertEqual(model.shelf.origin(of: "zeta"), zeta)
+    }
+
+    func testACardDroppedOnTheShelfTakesTheSlotUnderItAndShiftsOnlyWhatIsInItsWay() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a", "b"])
+        let alpha = try XCTUnwrap(model.shelf.origin(of: "alpha"))
+        let mango = model.shelf.origin(of: "mango")
+        let move = try away("b", to: alpha)
+
+        model.dragSpot("b", by: move)
+        model.dropSpot(by: move)
+
+        XCTAssertEqual(order, ["a"])
+        XCTAssertEqual(model.shelf.origin(of: "b"), alpha)
+        XCTAssertNotEqual(model.shelf.origin(of: "alpha"), alpha)
+        XCTAssertEqual(model.shelf.origin(of: "mango"), mango)
+    }
+
+    func testACardDroppedPastTheEndOfASideFallsToItsEnd() async throws {
+        try await arrangeWithOff(["alpha"], on: ["a", "b"])
+        let alpha = try XCTUnwrap(model.shelf.origin(of: "alpha"))
+        let move = try away("b", to: CGPoint(x: alpha.x, y: alpha.y + 600))
+
+        model.dragSpot("b", by: move)
+        model.dropSpot(by: move)
+
+        let b = try XCTUnwrap(model.shelf.origin(of: "b"))
+        XCTAssertEqual(model.shelf.origin(of: "alpha"), alpha)
+        XCTAssertLessThan(b.y, alpha.y + 600)
+        XCTAssertGreaterThan(b.y, alpha.y)
+    }
+
+    func testAShelfSpotDroppedOnTheShelfMovesToTheSlotUnderIt() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = try XCTUnwrap(model.shelf.origin(of: "alpha"))
+        let zeta = try XCTUnwrap(model.shelf.origin(of: "zeta"))
+        let move = CGSize(width: alpha.x - zeta.x, height: alpha.y - zeta.y)
+
+        model.dragShelfSpot("zeta", by: move)
+        model.dropShelfSpot(by: move)
+
+        XCTAssertNil(model.pin)
+        XCTAssertEqual(model.shelf.origin(of: "zeta"), alpha)
+        XCTAssertNotEqual(model.shelf.origin(of: "alpha"), alpha)
+    }
+
+    func testReopeningArrangePacksTheShelfByNameAgain() async throws {
+        try await arrangeWithOff(["alpha", "mango", "zeta"], on: ["a"])
+        let alpha = model.shelf.origin(of: "alpha")
+        let mango = model.shelf.origin(of: "mango")
+        model.pin("alpha")
+        XCTAssertNotEqual(model.shelf.origin(of: "mango"), alpha)
+
+        model.endEditing()
+        model.beginEditing()
+
+        XCTAssertEqual(shelf, ["mango", "zeta"])
+        XCTAssertEqual(model.shelf.origin(of: "mango"), alpha)
+        XCTAssertNotEqual(model.shelf.origin(of: "mango"), mango)
+    }
+
     func testASpotTakenOffByItsMinusComesBackByAPin() async throws {
         try await spots(["a", "b"])
         model.takeOffGrid("a")
@@ -199,7 +329,7 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(model.pin("a"), .pinned(GridCell(row: 0, column: 2)))
 
         XCTAssertEqual(Set(order), ["a", "b"])
-        XCTAssertEqual(model.offGrid.map(\.id), [])
+        XCTAssertEqual(model.shelf.offGrid.map(\.id), [])
         XCTAssertEqual(model.pin("a"), .onGrid)
         XCTAssertEqual(model.pin("nope"), .unknown)
     }
@@ -208,9 +338,9 @@ final class ArrangeTests: PanelCase {
         let names = (1...15).map { String(format: "s%02d", $0) }
         try await spots(names)
         XCTAssertEqual(order.count, 14)
-        let left = try XCTUnwrap(model.offGrid.first?.id)
+        let left = try XCTUnwrap(model.shelf.offGrid.first?.id)
 
-        XCTAssertEqual(model.offGrid.count, 1)
+        XCTAssertEqual(model.shelf.offGrid.count, 1)
         XCTAssertEqual(model.pin(left), .full)
     }
 

@@ -28,11 +28,11 @@ extension SpotTokens {
     public static var sheetFieldDrop: CGFloat { layout.sheetFieldDrop }
 
     public static func width(columns: Int) -> CGFloat {
-        CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap
+        layout.width(columns: columns)
     }
 
     public static func height(rows: Int) -> CGFloat {
-        CGFloat(rows) * cell + CGFloat(rows - 1) * rowGap
+        layout.height(rows: rows)
     }
 
     public static func cardPadding(for size: SpotSize, isDrawn: Bool) -> CGFloat {
@@ -125,7 +125,7 @@ extension SpotTokens {
     }
 
     static func corner(for size: SpotSize) -> CGFloat {
-        size.rows == 1 && size.columns < columns ? min(cell / 2 * cardRadius / builtIn.radius.card, cell / 2) : cardRadius
+        layout.corner(for: size)
     }
 
     public static var gridTop: CGFloat { layout.gridTop }
@@ -135,7 +135,7 @@ extension SpotTokens {
     }
 
     public static var menuTextInset: CGFloat { padding - menuPadding + 4 }
-    public static var wordsGap: CGFloat { padding - 5 }
+    public static var wordsGap: CGFloat { layout.wordsGap }
     public static var formInset: CGFloat { padding - 5 }
     public static var arrowRowInset: CGFloat { padding - 6 }
 

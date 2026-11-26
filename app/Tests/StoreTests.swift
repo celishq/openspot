@@ -85,6 +85,25 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(marks, ["clock installed", "paste"])
     }
 
+    func testBackReturnsToTheVisitThatWasLeftAndAFreshOpenIsANewVisit() async throws {
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        let shelf = store.visit
+
+        await store.open("clock")
+        XCTAssertNotEqual(store.visit, shelf)
+        await store.goBack()
+        XCTAssertEqual(store.visit, shelf)
+        await store.goForward()
+        let page = store.visit
+        await store.goBack()
+        await store.open("clock")
+
+        XCTAssertEqual(store.page?.id, "clock")
+        XCTAssertNotEqual(store.visit, page)
+        XCTAssertNotEqual(store.visit, shelf)
+    }
+
     func testBackAndForwardStepThroughThePlacesAndPagesYouOpened() async throws {
         await store.read()
         XCTAssertEqual(store.title, "My spots")
@@ -109,7 +128,7 @@ final class StoreTests: XCTestCase {
 
         store.choose(.mine)
         XCTAssertTrue(store.forward.isEmpty)
-        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+        XCTAssertEqual(store.back.last.map { [$0.place, $0.spot] as [AnyHashable?] }, [StorePlace.source(.builtIn(examples)), "clock"])
     }
 
     func testShowingThePageThatShowsAddsNoStopAndASearchFromAPageCanGoBackToIt() async throws {
@@ -122,7 +141,7 @@ final class StoreTests: XCTestCase {
 
         store.search("tells")
         XCTAssertNil(store.page)
-        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+        XCTAssertEqual(store.back.last.map { [$0.place, $0.spot] as [AnyHashable?] }, [StorePlace.source(.builtIn(examples)), "clock"])
     }
 
     func testARemovedSourceLeavesTheHistory() async throws {
@@ -188,10 +207,8 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(clock.preview.face.draws(on: .wide))
         let paste = try XCTUnwrap(store.cards.first { $0.id == "paste" })
         XCTAssertEqual(paste.preview.size, .strip)
-        XCTAssertEqual(paste.preview.sizes, [.strip])
         XCTAssertFalse(paste.preview.drawsCard)
         XCTAssertTrue(clock.preview.drawsCard)
-        XCTAssertEqual(clock.preview.sizes, SpotSize.all)
         XCTAssertFalse(paste.preview.face.draws(on: .strip))
     }
 
@@ -251,7 +268,7 @@ final class StoreTests: XCTestCase {
 
         let trust = try XCTUnwrap(store.page?.trust)
         XCTAssertEqual(trust.first { $0.title == "Uses" }?.words, ["clipboard"])
-        XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
+        XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with `pbcopy` in place of `openspot clipboard`"])
         XCTAssertEqual(trust.first { $0.title == "Files" }?.words, ["paste.spot/paste.sh", "paste.spot/spot.toml"])
         let files = try XCTUnwrap(store.page?.files)
         XCTAssertEqual(files.map(\.name), ["paste.sh", "spot.toml"])
@@ -405,7 +422,18 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(page.from, "From Cups.spot")
         XCTAssertEqual(page.button, .install)
         XCTAssertEqual(page.trust.first, ReviewLine(title: "Uses", words: ["clipboard"]))
-        XCTAssertEqual(page.trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
+        XCTAssertEqual(page.trust.first { $0.title == "Can also" }?.words, ["Copy with `pbcopy` in place of `openspot clipboard`"])
+    }
+
+    func testASpotPageNamesEachUseWithTheMacAccessItNeeds() async throws {
+        let file = try spotFile("shots", "#!/bin/sh\nopenspot screen shot\n", toml: "title = 'Shots'\nuses = ['screen', 'clipboard']")
+
+        _ = await store.show(file: file)
+
+        let page = try XCTUnwrap(store.page)
+        XCTAssertEqual(page.uses.map(\.id), [.clipboard, .screen])
+        XCTAssertEqual(page.uses.first { $0.id == .screen }?.needs, [.screen])
+        XCTAssertEqual(page.uses.first { $0.id == .clipboard }?.needs, [])
     }
 
     func testInstallOfAnOpenedFileAddsTheFileItRead() async throws {
