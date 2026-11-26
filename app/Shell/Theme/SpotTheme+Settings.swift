@@ -9,6 +9,7 @@ extension SpotTheme {
     static let settingsCapRim = 0.3
     static let settingsStepFill = 0.12
     static let settingsTarget = 0.15
+    static let settingsChipFill = 0.16
     static let settingsDim = Color.black.opacity(0.18)
     static let settingsSheetShadow = Color.black.opacity(0.25)
     static let settingsBadge = Color.red

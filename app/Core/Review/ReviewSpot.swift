@@ -41,7 +41,8 @@ public struct ReviewSpot: Equatable, Sendable {
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
         let installed = Set(present.flatMap { (try? SpotUse.set(Manifest(beside: folder.appendingPathComponent($0)).script($0).uses, of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
-        let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
+        let marked = Self.canAlso(spot, uses: Set(uses), id: primary.id)
+        let canAlso = marked.map { $0.replacingOccurrences(of: "`", with: "") }
         let bindings = Self.bindings(in: scan, folder: folder, core: core)
         let readme = spot.readme
         let rows = spot.sampleText.map { Frame(text: $0, kinds: primary.kinds).items.map(\.title) } ?? []
@@ -53,9 +54,9 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
         lines = [
-            ReviewLine(title: "Uses", words: [uses.isEmpty ? (canAlso.isEmpty ? "No Mac features" : "None declared") : uses.map(\.rawValue).joined(separator: ", ")]),
+            ReviewLine(title: ReviewLine.usesTitle, words: [uses.isEmpty ? (canAlso.isEmpty ? "No Mac features" : "None declared") : uses.map(\.rawValue).joined(separator: ", ")]),
             ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
-            ReviewLine(title: "Can also", words: canAlso),
+            ReviewLine(title: "Can also", words: marked),
             ReviewLine(title: "Binds", words: bindings.map(\.shown)),
             ReviewLine(title: ReviewLine.filesTitle, words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
         ].filter { !$0.words.isEmpty }
@@ -169,18 +170,18 @@ public struct ReviewSpot: Equatable, Sendable {
         }
         var lines: [String] = []
         let network = found(["curl", "wget", "nc"])
-        if !network.isEmpty, !uses.contains(.network) { lines.append("Reach the network with \(listed(network))") }
-        if !found(["rm"]).isEmpty { lines.append("Delete files with rm") }
-        if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with screencapture in place of openspot screen") }
-        if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
-        if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
+        if !network.isEmpty, !uses.contains(.network) { lines.append("Reach the network with \(listed(network.map { "`\($0)`" }))") }
+        if !found(["rm"]).isEmpty { lines.append("Delete files with `rm`") }
+        if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with `screencapture` in place of `openspot screen`") }
+        if !found(["pbcopy"]).isEmpty { lines.append("Copy with `pbcopy` in place of `openspot clipboard`") }
+        if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with `pbpaste` in place of `openspot clipboard`") }
         if has(#"\bAV(AudioEngine|AudioRecorder|CaptureDevice|CaptureSession)\b"#) { lines.append("Record from the microphone or camera") }
         if has(#"\bProcess\(\)|\bNSTask\b|\bposix_spawn\b"#) { lines.append("Start other programs") }
-        if !found(["osascript"]).isEmpty { lines.append("Control other apps with osascript") }
+        if !found(["osascript"]).isEmpty { lines.append("Control other apps with `osascript`") }
         if has(#"\$HOME\b|\$\{HOME\}|\bhomeDirectoryForCurrentUser\b|\bNSHomeDirectory\b|"HOME"|(^|[\s"'=(])~/"#) { lines.append("Read files in your home folder") }
         for arguments in texts.flatMap(WrittenCalls.calls) {
             guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
-            let line = "Call openspot \(arguments[0]) \(arguments[1]) without \(needed.use.rawValue) in the uses of its spot.toml"
+            let line = "Call `openspot \(arguments[0]) \(arguments[1])` without `\(needed.use.rawValue)` in the uses of its `spot.toml`"
             if !lines.contains(line) { lines.append(line) }
         }
         return lines

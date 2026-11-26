@@ -135,13 +135,20 @@ extension StoreView {
         if page.trust.contains(where: { !$0.isFiles }) {
             group("What It Can Do") {
                 ForEach(page.trust.filter { !$0.isFiles }, id: \.title) { line in
-                    HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
+                    HStack(alignment: line.isUses ? .center : .firstTextBaseline, spacing: SpotTokens.settingsValueGap) {
                         Text(line.title)
                             .foregroundStyle(.secondary)
                             .frame(width: SpotTokens.storeTrustTitleWidth, alignment: .leading)
-                        Text(line.words.joined(separator: "\n"))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
+                        if line.isUses, !page.uses.isEmpty {
+                            WrapRow(spacing: SpotTokens.settingsChipGap) {
+                                ForEach(page.uses) { UseChip(use: $0) }
+                            }
+                        } else {
+                            KeyFill.text(line.words.joined(separator: "\n"))
+                                .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .textSelection(.enabled)
+                        }
                         Spacer(minLength: 0)
                     }
                 }

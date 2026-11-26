@@ -8,6 +8,7 @@ public struct StorePage: Equatable, Sendable {
     public let readme: [String]
     public let shown: [StoreReadmeLine]
     public let trust: [ReviewLine]
+    public let uses: [SpotStanding.UseNeeds]
     public let button: StoreButton
     public let hasSample: Bool
     public let runsSample: Bool

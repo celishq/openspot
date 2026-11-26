@@ -268,7 +268,7 @@ public final class Store {
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
-                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
+                trust: review?.lines ?? [], uses: uses(of: own.spot), button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
                 preview: StorePreview(of: own.spot), files: files(review?.lines, beside: own.spot)
             )
         case .source(let chosen):
@@ -281,11 +281,15 @@ public final class Store {
             let text = readme(beside: spot)
             return StorePage(
                 id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
-                readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
+                readme: text.lines, shown: text.shown, trust: review?.lines ?? [], uses: uses(of: spot), button: button == .locked ? .installed : button,
                 hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot),
                 files: files(review?.lines, beside: spot)
             )
         }
+    }
+
+    private nonisolated static func uses(of spot: Spot) -> [SpotStanding.UseNeeds] {
+        SpotStanding(spot, written: KeptCalls.shared.read(spot), statuses: [:], last: [:], refused: [:]).uses
     }
 
     private nonisolated static func files(_ lines: [ReviewLine]?, beside spot: Spot) -> [StoreFile] {

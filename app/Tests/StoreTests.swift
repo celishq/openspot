@@ -270,7 +270,7 @@ final class StoreTests: XCTestCase {
 
         let trust = try XCTUnwrap(store.page?.trust)
         XCTAssertEqual(trust.first { $0.title == "Uses" }?.words, ["clipboard"])
-        XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
+        XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with `pbcopy` in place of `openspot clipboard`"])
         XCTAssertEqual(trust.first { $0.title == "Files" }?.words, ["paste.spot/paste.sh", "paste.spot/spot.toml"])
         let files = try XCTUnwrap(store.page?.files)
         XCTAssertEqual(files.map(\.name), ["paste.sh", "spot.toml"])
@@ -424,7 +424,18 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(page.from, "From Cups.spot")
         XCTAssertEqual(page.button, .install)
         XCTAssertEqual(page.trust.first, ReviewLine(title: "Uses", words: ["clipboard"]))
-        XCTAssertEqual(page.trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
+        XCTAssertEqual(page.trust.first { $0.title == "Can also" }?.words, ["Copy with `pbcopy` in place of `openspot clipboard`"])
+    }
+
+    func testASpotPageNamesEachUseWithTheMacAccessItNeeds() async throws {
+        let file = try spotFile("shots", "#!/bin/sh\nopenspot screen shot\n", toml: "title = 'Shots'\nuses = ['screen', 'clipboard']")
+
+        _ = await store.show(file: file)
+
+        let page = try XCTUnwrap(store.page)
+        XCTAssertEqual(page.uses.map(\.id), [.clipboard, .screen])
+        XCTAssertEqual(page.uses.first { $0.id == .screen }?.needs, [.screen])
+        XCTAssertEqual(page.uses.first { $0.id == .clipboard }?.needs, [])
     }
 
     func testInstallOfAnOpenedFileAddsTheFileItRead() async throws {

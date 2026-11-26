@@ -215,6 +215,10 @@ extension SpotTokens {
     public static let settingsBarFade: CGFloat = 14
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 22
+    public static let settingsChipTile: CGFloat = 18
+    public static let settingsChipGap: CGFloat = 6
+    public static let settingsChipInset: CGFloat = 3
+    public static let settingsChipPadding: CGFloat = 10
     public static let settingsHeaderTile: CGFloat = 52
     public static let settingsHeroGap: CGFloat = 8
     public static let settingsFoundTile: CGFloat = 24

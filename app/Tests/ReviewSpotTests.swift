@@ -183,7 +183,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.lines.first { $0.title == "Uses" }?.words, ["None declared"])
         XCTAssertEqual(
             review.lines.first { $0.title == "Can also" }?.words,
-            ["Record from the microphone or camera", "Start other programs", "Control other apps with osascript", "Read files in your home folder"]
+            ["Record from the microphone or camera", "Start other programs", "Control other apps with `osascript`", "Read files in your home folder"]
         )
     }
 
