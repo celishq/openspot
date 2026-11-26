@@ -9,7 +9,7 @@ public final class Shelf {
     public private(set) var query = ""
     public private(set) var layout: ShelfLayout?
     @ObservationIgnored public private(set) var scroll: CGFloat = 0
-    @ObservationIgnored private var words: [String] = []
+    @ObservationIgnored private var found = SearchList<SpotsModel.Entry>()
     @ObservationIgnored private var room: (screen: CGSize, panelOrigin: CGPoint)?
     @ObservationIgnored private var slots: [String: ShelfSlot] = [:]
 
@@ -18,7 +18,7 @@ public final class Shelf {
     func take(offGrid next: [SpotsModel.Entry]) {
         guard next != offGrid else { return }
         offGrid = next
-        words = next.map { ([$0.spot.name] + $0.spot.keywords).joined(separator: " ").folded }
+        found = SearchList(next) { ($0.spot.name, nil, $0.spot.keywords) }
         filter()
     }
 
@@ -85,8 +85,8 @@ public final class Shelf {
     }
 
     private func filter() {
-        let words = query.trimmingCharacters(in: .whitespaces).folded
-        let next = words.isEmpty ? offGrid : zip(offGrid, self.words).filter { $0.1.contains(words) }.map(\.0)
+        let search = SearchQuery(text: query)
+        let next = search.text.isEmpty ? offGrid : found.matching(search)
         if next != spots { spots = next }
         lay()
     }
