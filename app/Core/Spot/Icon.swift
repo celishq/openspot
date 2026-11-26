@@ -11,8 +11,8 @@ public enum Icon: Equatable, Sendable {
 
     public init?(text: String?) {
         guard let text, !text.isEmpty else { return nil }
-        if BlockKind.isColor(text) {
-            self = .color(text)
+        if let hex = Self.hex(of: text) {
+            self = .color(hex)
         } else if WebPictures.isWeb(text) || Self.pictures.contains((text as NSString).pathExtension.lowercased()) {
             self = .image(text)
         } else if text.contains("/") || text.hasPrefix("~") {
@@ -38,6 +38,15 @@ public enum Icon: Equatable, Sendable {
 
     public var glyph: String? {
         if case .glyph(let text) = self { text } else { nil }
+    }
+
+    private static func hex(of text: String) -> String? {
+        guard text.first == "#", text.dropFirst().allSatisfy(\.isHexDigit) else { return nil }
+        switch text.count {
+        case 7: return text
+        case 4: return "#" + text.dropFirst().map { "\($0)\($0)" }.joined()
+        default: return nil
+        }
     }
 
     public var color: String? {

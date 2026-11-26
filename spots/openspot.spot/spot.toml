@@ -201,17 +201,12 @@ title = "Timeline"
 icon = "clock.arrow.circlepath"
 detail = "What you copied, newest first"
 keywords = ["timeline", "history", "clipboard history"]
-answers = "last"
-uses = ["timeline", "read", "spots"]
-
-[scripts.timeline.bindings]
-entry = { spot = "openspot/timeline-entry" }
+uses = ["timeline", "read", "clipboard"]
 
 [scripts.timeline.on]
 "panel.open" = true
 "sheet.open" = true
 "sheet.text" = true
-search = "\\S"
 command = ["timeline"]
 
 [scripts.timeline.actions.pause]
@@ -222,24 +217,25 @@ title = "Resume Timeline"
 
 [scripts.timeline.actions.restore]
 
+[scripts.timeline.actions.use]
+inputs.kind = { type = "text", required = true, description = "text, url or file" }
+inputs.text = "text"
+inputs.url = "text"
+inputs.file = "text"
+
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }
 in-search = { type = "bool", title = "Show in search", icon = "magnifyingglass", default = false }
 
-[scripts.timeline-entry]
-title = "Timeline entry"
+[scripts.timeline-search]
+title = "Timeline in search"
 icon = "clock.arrow.circlepath"
-detail = "Pastes, opens or copies an entry of the timeline"
-uses = ["read", "clipboard"]
+detail = "The newest entries of the timeline that hold the words you type"
+answers = "last"
+uses = ["timeline", "read", "spots"]
 
-[scripts.timeline-entry.actions.use]
-inputs.kind = { type = "text", required = true, description = "text, url or file" }
-inputs.text = "text"
-inputs.url = "text"
-inputs.file = "text"
+[scripts.timeline-search.bindings]
+timeline = { spot = "openspot/timeline" }
 
-[scripts.timeline-entry.actions.copy]
-inputs.kind = { type = "text", required = true, description = "text, url or file" }
-inputs.text = "text"
-inputs.url = "text"
-inputs.file = "text"
+[scripts.timeline-search.on]
+search = "\\S"
