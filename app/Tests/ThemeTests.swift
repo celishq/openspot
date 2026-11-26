@@ -351,7 +351,7 @@ final class ThemeTests: XCTestCase {
     }
 
     func testThePromptNamesTheShortKeys() {
-        let prompt = ThemePrompt(theme: "Dusk", folder: URL(fileURLWithPath: "/themes"), isBuiltIn: false, base: nil, app: "/bin/openspot").asking("")
+        let prompt = ThemePrompt(theme: "Dusk", folder: URL(fileURLWithPath: "/themes"), isBuiltIn: false, base: nil, app: "/bin/openspot").asking("Darker")
 
         XCTAssertTrue(prompt.contains("[dark] background, ink, accent, highlight, good, warn, bad"), prompt)
         XCTAssertTrue(prompt.contains("[look] glass, backdrop, reach, corner, density, type, speed"), prompt)
@@ -360,8 +360,8 @@ final class ThemeTests: XCTestCase {
 
     func testThePromptQuotesTheNameOfTheThemeForTheShell() {
         let name = "Say \"hi\" $HOME `date` it's"
-        let own = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: false, base: nil, app: "/bin/openspot").asking("")
-        let builtIn = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: true, base: nil, app: "/bin/openspot").asking("")
+        let own = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: false, base: nil, app: "/bin/openspot").asking("Darker")
+        let builtIn = ThemePrompt(theme: name, folder: URL(fileURLWithPath: "/themes"), isBuiltIn: true, base: nil, app: "/bin/openspot").asking("Darker")
         let quoted = "'Say \"hi\" $HOME `date` it'\\''s'"
 
         XCTAssertTrue(own.contains("theme use \(quoted). "), own)

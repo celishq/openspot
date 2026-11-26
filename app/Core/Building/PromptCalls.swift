@@ -27,6 +27,7 @@ struct PromptCalls {
 
     func theme(_ name: String, words: String) -> CommandAPI.Work {
         CommandAnswer.work { [mac, places] in
+            guard !words.isEmpty else { throw SpotError.failed(1, ThemePrompt.wordsNeeded) }
             let themes = ThemeFolder(config: places.config, builtIn: mac.theme)
             let found = try themes.find(name)
             let app = AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot")

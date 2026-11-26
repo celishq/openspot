@@ -13,7 +13,7 @@ enum PromptCall: NounCall {
             guard let fit = words.fit, let id = fit.rest.first else { return nil }
             return Self.change(id: id, words: fit.rest.dropFirst().joined(separator: " "), failure: fit.value("--failure"))
         },
-        CommandVerb("theme", "<name> [words]...", "Prints a prompt that asks a coding agent to change a theme as the words say. With no words, the agent asks you first.") { words in
+        CommandVerb("theme", "<name> <words>...", "Prints a prompt that asks a coding agent to change a theme as the words say, to the end, with no question.") { words in
             words.rest.first.map { Self.theme($0, words: words.rest.dropFirst().joined(separator: " ")) }
         }
     ])

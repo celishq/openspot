@@ -16,30 +16,37 @@ public struct ThemePrompt: Equatable, Sendable {
     }
 
     static let finishAlone = "Don't ask me anything. Make the change to the end, and leave Openspot drawn with the theme."
+    static let wordsNeeded = "Say what look you want, such as `openspot prompt theme Openspot warm colours and round corners`."
 
     public func asking(_ wish: String) -> String {
-        let opening = wish.isEmpty
-            ? "Change the look of Openspot, its theme \(theme). Ask me what look I want before you change it."
-            : "Change the look of Openspot, its theme \(theme): \(wish)\n\(Self.finishAlone)"
-        return """
-        \(opening)
+        AgentBrief(
+            task: "Change the look of Openspot, its theme \(theme), as my request says.",
+            place: [
+                "The openspot command is \(quoted). Type it in quotes, since its path can hold a space.",
+                file,
+                "A key that the file leaves out keeps its value from the theme \(ThemeFolder.builtInName)\(base.map { ", in \($0.path)" } ?? "")."
+            ],
+            reading: [
+                "Run \(quoted) guide use-openspot, and read its section Change the look of Openspot. It says what each key does, and which values to set only when the rule gives the wrong one.",
+                "The file holds these sections and keys, and every other value of the look follows from them:\n\(keys)"
+            ],
+            rules: [
+                Self.finishAlone,
+                "After each change, run \(quoted) theme reload. It draws Openspot with the file and prints each value it can't read. It's done when it prints nothing."
+            ],
+            request: wish
+        ).text
+    }
 
-        \(file)
-        A key that the file leaves out keeps its value from the theme \(ThemeFolder.builtInName)\(base.map { ", in \($0.path)" } ?? "").
-        Run "\(app)" guide, and read its section Change the look of Openspot, which says what each section holds.
-        The file holds these sections and keys:
-        \(keys)
-        Every other value of the look follows from these keys. Set one exactly only when the rule gives the wrong value; the guide lists those keys.
-        After each change, run "\(app)" theme reload. It draws Openspot with the file and prints each value it can't read. Fix each one until it prints nothing.
-
-        """
+    private var quoted: String {
+        "\"\(app)\""
     }
 
     private var file: String {
         guard isBuiltIn else {
-            return "Run \"\(app)\" theme use \(quotedTheme). Then change the file \(folder.appendingPathComponent("\(theme).theme/theme.toml").path)."
+            return "Run \(quoted) theme use \(quotedTheme). Then change the file \(folder.appendingPathComponent("\(theme).theme/theme.toml").path)."
         }
-        return "The theme \(theme) comes with Openspot, so it can't change. First run \"\(app)\" theme duplicate \(quotedTheme). It makes a copy you can change, uses it, and prints its name, such as \(theme) copy. Then change the file theme.toml in the folder \(folder.path)/<name of the copy>.theme."
+        return "The theme \(theme) comes with Openspot, so it can't change. First run \(quoted) theme duplicate \(quotedTheme). It makes a copy you can change, uses it, and prints its name, such as \(theme) copy. Then change the file theme.toml in the folder \(folder.path)/<name of the copy>.theme."
     }
 
     private var quotedTheme: String {

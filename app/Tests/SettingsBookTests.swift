@@ -307,7 +307,16 @@ final class SettingsBookTests: PanelCase {
         let asked = await book.themePrompt(words: "warm sunset colours")
         let prompt = try XCTUnwrap(asked)
 
-        XCTAssertTrue(prompt.contains("its theme Dracula: warm sunset colours"))
+        XCTAssertTrue(prompt.contains("its theme Dracula"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nwarm sunset colours\n</request>"), prompt)
+    }
+
+    func testAThemePromptWithNoWordsAsksForThemAndCopiesNothing() async throws {
+        await read()
+
+        let asked = await book.themePrompt(words: "")
+
+        XCTAssertNil(asked)
     }
 
     func testAFailedActSaysWhyInAToast() async throws {

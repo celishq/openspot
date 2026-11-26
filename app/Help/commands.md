@@ -110,7 +110,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot render store [--place <name>] [--spot <id>] [--try] [--review <id>] <file.png>` | Draws the window of the Store at My spots, or at the place that `--place` names, such as `Openspot`, with the page of `--spot` open, its Try with `--try`, or the review of an install of `--review` over it. |
 | `openspot prompt new <words>...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts, or else a review of the spot. |
-| `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot prompt theme <name> <words>...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot browser tab <app>` | Prints the `url=`, `title=` and `app=` of the front tab of the browser `<app>`, or nothing when it is not running. |
 | `openspot browser tabs <app>` | Prints a record for each tab of each window of the browser `<app>`: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
