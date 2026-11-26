@@ -13,6 +13,12 @@ struct Guide: Sendable {
     }
 
     func topic(_ name: String) -> GuideTopic? {
-        topics.first { $0.slug == name.lowercased() || $0.title.lowercased() == name.lowercased() }
+        let name = name.lowercased()
+        guard let slash = name.firstIndex(of: "/") else { return topics.first { $0.slug == name || $0.title.lowercased() == name } }
+        return topic(String(name[..<slash]))?.sections.first { $0.slug == name }
+    }
+
+    var addresses: [String] {
+        topics.flatMap { [$0.slug] + $0.sections.map(\.slug) }
     }
 }

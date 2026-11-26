@@ -5,20 +5,24 @@ struct GuideTopic: Equatable, Sendable {
     let title: String
     let text: String
 
-    static func all(in guide: String) -> [GuideTopic] {
+    var sections: [GuideTopic] {
+        Self.all(in: text, level: "## ").map { GuideTopic(slug: slug + "/" + $0.slug, title: $0.title, text: $0.text) }
+    }
+
+    static func all(in guide: String, level: String = "# ") -> [GuideTopic] {
         var topics: [GuideTopic] = []
         var lines: [Substring] = []
         var isFenced = false
         func close() {
             guard let head = lines.first else { return }
-            let title = String(head.dropFirst(2))
+            let title = String(head.dropFirst(level.count))
             let text = lines.joined(separator: "\n").trimmingCharacters(in: .newlines) + "\n"
             topics.append(GuideTopic(slug: slug(of: title), title: title, text: text))
             lines = []
         }
         for line in guide.split(separator: "\n", omittingEmptySubsequences: false) {
             if line.hasPrefix("```") { isFenced.toggle() }
-            if !isFenced, line.hasPrefix("# ") {
+            if !isFenced, line.hasPrefix(level) {
                 close()
                 lines = [line]
                 continue

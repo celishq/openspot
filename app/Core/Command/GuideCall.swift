@@ -31,7 +31,13 @@ enum GuideCall: NounCall {
                     let found = GuideTopic.found(name, in: topics)
                     if found.count == 1 { return CommandAnswer(output: found[0].text) }
                     if !found.isEmpty { return CommandAnswer(output: Self.list(found)) }
-                    let close = CommandHelp.closest(to: name.lowercased(), in: topics.map(\.slug)).map { " Did you mean `openspot guide \($0)`?" } ?? ""
+                    if let slash = name.firstIndex(of: "/"), let page = guide.topic(String(name[..<slash])) {
+                        let slugs = page.sections.map(\.slug)
+                        let hint = CommandHelp.closest(to: name.lowercased(), in: slugs).map { "Did you mean `openspot guide \($0)`?" }
+                            ?? "Its sections are " + slugs.map { "`openspot guide \($0)`" }.joined(separator: ", ") + "."
+                        return CommandAnswer(errors: "The page \(page.slug) has no section \(name[name.index(after: slash)...]). \(hint)\n", code: 2)
+                    }
+                    let close = CommandHelp.closest(to: name.lowercased(), in: guide.addresses).map { " Did you mean `openspot guide \($0)`?" } ?? ""
                     return CommandAnswer(errors: "The guide has no topic \(name).\(close) Run `openspot guide --topics` to see each topic.\n", code: 2)
                 }
             } catch {
