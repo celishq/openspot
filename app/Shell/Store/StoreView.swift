@@ -29,7 +29,6 @@ struct StoreView: PageView {
             }
         }
         .overlay { StoreCarriedCard(drag: drag, cards: store.cards) }
-        .coordinateSpace(name: StoreDrag.space)
         .sheet(isPresented: Binding(get: { store.ask != nil }, set: { if !$0 { store.dismissAsk() } })) {
             if let ask = store.ask ?? shownAsk { StoreAskView(store: store, ask: ask) }
         }

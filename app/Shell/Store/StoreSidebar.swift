@@ -46,7 +46,7 @@ struct StoreSidebar: View {
             }
         }
         .listRowBackground(drag.isOverTarget ? SpotTheme.settingsSelection.opacity(SpotTheme.storeDropFill) : nil)
-        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(StoreDrag.space)) }, action: { drag.take(target: $0) })
+        .background(StoreTarget { drag.take(target: $0) })
     }
 
     private func sourceRow(_ source: StoreSource) -> some View {

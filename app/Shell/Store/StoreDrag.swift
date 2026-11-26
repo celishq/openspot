@@ -1,3 +1,4 @@
+import AppKit
 import Observation
 import OpenspotCore
 import SwiftUI
@@ -5,11 +6,14 @@ import SwiftUI
 @MainActor
 @Observable
 final class StoreDrag {
-    static let space = "store"
-
     private(set) var carry: StoreCarry?
     private(set) var isOverTarget = false
     @ObservationIgnored private var target: CGRect?
+
+    static var pointer: CGPoint? {
+        guard let event = NSApp.currentEvent, let view = event.window?.contentView else { return nil }
+        return CGPoint(x: event.locationInWindow.x, y: view.bounds.height - event.locationInWindow.y)
+    }
 
     func take(target next: CGRect) {
         target = next

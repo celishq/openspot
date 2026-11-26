@@ -44,8 +44,8 @@ struct StoreTile: View {
         .contentShape(Rectangle())
         .onTapGesture { Task { await store.open(card.id) } }
         .accessibilityAddTraits(.isButton)
-        .gesture(DragGesture(coordinateSpace: .named(StoreDrag.space))
-            .onChanged { drag.move(card, to: $0.location) }
+        .gesture(DragGesture()
+            .onChanged { _ in if let point = StoreDrag.pointer { drag.move(card, to: point) } }
             .onEnded { _ in drag.drop(store) })
     }
 

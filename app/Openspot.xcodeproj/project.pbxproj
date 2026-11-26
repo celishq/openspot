@@ -180,6 +180,7 @@
 		222FB7C2ABC322430DAA0EF3 /* StoreTrustView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22BAC4F4488F2D94B927FE9 /* StoreTrustView.swift */; };
 		223B02B90F9E7E46D912815C /* PowerSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA7A85A3ED8FF4AE2003682 /* PowerSample.swift */; };
 		22780D92B533C99BA3245236 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB56CAAADCC15D5DC54C5776 /* SpotsView.swift */; };
+		2293DA499A9DD048EE811F68 /* StoreTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 047BE2FE58DA0DD8BE08AB4D /* StoreTarget.swift */; };
 		22A53FB08F8785F11EC5B9E5 /* SpotsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31F1F762437F85CC9E26EAD7 /* SpotsModelTests.swift */; };
 		22DBDD7FF8A9B148293AC52A /* String+Script.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA416C39A61925BF1FA7029B /* String+Script.swift */; };
 		22F2F14518754249968C66CF /* LanguageCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C462005019A07CDCB802C03 /* LanguageCodes.swift */; };
@@ -1368,6 +1369,7 @@
 		0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneWords.swift; sourceTree = "<group>"; };
 		0351605D1BDE815F126BF3DC /* SheetOpening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetOpening.swift; sourceTree = "<group>"; };
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		047BE2FE58DA0DD8BE08AB4D /* StoreTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreTarget.swift; sourceTree = "<group>"; };
 		04EAD151E5E058F2D0C0B967 /* SpotFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFormView.swift; sourceTree = "<group>"; };
 		051E8F0CB88EE146E534A7F6 /* SpotTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTip.swift; sourceTree = "<group>"; };
 		0530BB39AA58DEA1D1038A53 /* SpotsModel+Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Theme.swift"; sourceTree = "<group>"; };
@@ -3236,6 +3238,7 @@
 				CAFBBA50E32F55FEB1429984 /* StoreSidebar.swift */,
 				4EBC2AC7E44AC24DA77E141E /* StoreSizes.swift */,
 				AB9C63ADD6EA5906B9D80C3E /* StoreSpotMenu.swift */,
+				047BE2FE58DA0DD8BE08AB4D /* StoreTarget.swift */,
 				1F2A40EEFD1337FD70E751A9 /* StoreTile.swift */,
 				B22BAC4F4488F2D94B927FE9 /* StoreTrustView.swift */,
 				E9BE2D55147857316589077F /* StoreTry.swift */,
@@ -5964,6 +5967,7 @@
 				446C4BECF7EA60A998BFA498 /* StoreSidebar.swift in Sources */,
 				76FD7EC004B6919AECB15048 /* StoreSizes.swift in Sources */,
 				3C9705B999793C1422B1BC16 /* StoreSpotMenu.swift in Sources */,
+				2293DA499A9DD048EE811F68 /* StoreTarget.swift in Sources */,
 				F18B1F36AE81553A8565299C /* StoreTile.swift in Sources */,
 				222FB7C2ABC322430DAA0EF3 /* StoreTrustView.swift in Sources */,
 				5ACA233EEDF2539C702B19EC /* StoreTry.swift in Sources */,
