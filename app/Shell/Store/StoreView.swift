@@ -5,6 +5,7 @@ struct StoreView: PageView {
     let store: Store
     let model: SpotsModel?
     @State var isTrying = false
+    @State private var shownAsk: StoreAsk?
 
     var body: some View {
         PageWindow(
@@ -24,8 +25,9 @@ struct StoreView: PageView {
             }
         }
         .sheet(isPresented: Binding(get: { store.ask != nil }, set: { if !$0 { store.dismissAsk() } })) {
-            if let ask = store.ask { StoreAskView(store: store, ask: ask) }
+            if let ask = store.ask ?? shownAsk { StoreAskView(store: store, ask: ask) }
         }
+        .onChange(of: store.ask) { _, ask in if let ask { shownAsk = ask } }
         .sheet(isPresented: $isTrying) { trySheet }
         .onChange(of: store.page?.id) { isTrying = false }
     }

@@ -112,6 +112,32 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
     }
 
+    func testShowingThePageThatShowsAddsNoStopAndASearchFromAPageCanGoBackToIt() async throws {
+        await store.read()
+        _ = await store.show("clock", search: nil)
+        let stops = store.back
+
+        _ = await store.show("clock", search: nil)
+        XCTAssertEqual(store.back, stops)
+
+        store.search("tells")
+        XCTAssertNil(store.page)
+        XCTAssertEqual(store.back.last, StoreStop(place: .source(.builtIn(examples)), spot: "clock"))
+    }
+
+    func testARemovedSourceLeavesTheHistory() async throws {
+        let friends = try friends()
+        await store.read()
+        await store.addSource(friends)
+        store.choose(.mine)
+        XCTAssertTrue(store.back.contains { $0.place.source?.url.path == friends.path })
+
+        await store.removeSource(friends)
+
+        XCTAssertFalse(store.back.contains { $0.place.source?.url.path == friends.path })
+        XCTAssertFalse(store.forward.contains { $0.place.source?.url.path == friends.path })
+    }
+
     func testTheSearchKeepsOnlyTheCardsOfThePlaceThatMatch() async throws {
         await store.read()
         store.choose(.source(.builtIn(examples)))

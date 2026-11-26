@@ -7,7 +7,7 @@ struct StoreSidebar: View {
     @State private var isOverMine = false
 
     var body: some View {
-        List(selection: Binding(get: { store.place }, set: { if let place = $0 { store.choose(place) } })) {
+        List(selection: Binding(get: { store.page == nil ? store.place : nil }, set: { if let place = $0 { store.choose(place) } })) {
             mine
                 .tag(StorePlace.mine)
             Section("Sources") {

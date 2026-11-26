@@ -44,9 +44,11 @@ struct PageWindow<Sidebar: View, Content: View>: View {
             ToolbarItemGroup(placement: .navigation) {
                 Button { back?() } label: { Image(systemName: "chevron.left") }
                     .disabled(back == nil)
+                    .keyboardShortcut("[", modifiers: .command)
                     .help("Back")
                 Button { forward?() } label: { Image(systemName: "chevron.right") }
                     .disabled(forward == nil)
+                    .keyboardShortcut("]", modifiers: .command)
                     .help("Forward")
             }
             ToolbarItem(placement: .navigation) {

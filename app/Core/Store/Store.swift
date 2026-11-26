@@ -44,22 +44,27 @@ public final class Store {
             place = .mine
             page = nil
         }
+        back.removeAll { shelves[$0.place] == nil }
+        forward.removeAll { shelves[$0.place] == nil }
         refilter()
     }
 
     public func show(_ id: String?, search text: String?) async -> Bool {
         await read()
+        let from = stop
+        defer { leave(from) }
         if let text {
             query = text
             let folded = text.trimmingCharacters(in: .whitespaces).folded
             let matched = (placesInOrder.dropFirst() + [.mine]).first { place in shelves[place]?.contains { $0.words.contains(folded) } == true }
-            choose(matched ?? .mine)
+            move(to: matched ?? .mine)
             refilter()
         }
         guard let id else { return true }
         guard let found = placesInOrder.first(where: { place in shelves[place]?.contains { $0.id == id } == true }) else { return false }
-        choose(found)
-        await open(id)
+        if page?.id == id, place == found { return true }
+        move(to: found)
+        await load(id)
         return page?.id == id
     }
 
@@ -72,10 +77,12 @@ public final class Store {
             opened = source
             await read()
             guard let id = shelves[.source(source)]?.first?.id else { return false }
+            let from = stop
             query = ""
-            choose(.source(source))
+            move(to: .source(source))
             refilter()
-            await open(id)
+            await load(id)
+            leave(from)
             return page?.id == id
         }
     }
@@ -87,6 +94,7 @@ public final class Store {
     }
 
     func move(to next: StorePlace) {
+        opening = nil
         if page != nil { page = nil }
         guard next != place else { return }
         place = next
@@ -95,14 +103,17 @@ public final class Store {
 
     public func search(_ text: String) {
         guard text != query else { return }
+        let from = stop
         query = text
         if page != nil { page = nil }
         refilter()
+        leave(from)
     }
 
     public func open(_ id: String) async {
         let from = stop
         await load(id)
+        guard page?.id == id else { return }
         leave(from)
     }
 

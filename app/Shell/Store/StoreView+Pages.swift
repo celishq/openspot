@@ -25,6 +25,9 @@ extension StoreView {
         } else if store.cards.isEmpty {
             group(nil) {
                 plain(store.query.isEmpty ? "No spots here yet." : "No spot here matches “\(store.query)”.")
+                if !store.query.isEmpty {
+                    Button("Clear Search") { store.search("") }
+                }
             }
         } else {
             group(nil) {
@@ -130,7 +133,7 @@ extension StoreView {
                         .foregroundStyle(.secondary)
                     Spacer(minLength: SpotTokens.settingsTrailingGap)
                     Button("Done") { isTrying = false }
-                        .keyboardShortcut(.defaultAction)
+                        .keyboardShortcut(.cancelAction)
                 }
             }
             .padding(SpotTokens.storeInset)
