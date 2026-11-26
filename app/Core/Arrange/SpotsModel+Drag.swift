@@ -51,7 +51,7 @@ extension SpotsModel {
             let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
             if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
                 let corner = SpotTokens.gridOrigin(scrollOffset: gridScroll)
-                let slot = shelfSlot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size)
+                let slot = shelf.slot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size)
                 stopDragWait()
                 pointerMove = nil
                 gesture = nil
@@ -89,9 +89,9 @@ extension SpotsModel {
     }
 
     func carryToShelf() {
-        guard let id = carry?.entry.id, let origin = shelfOrigin(of: id), let index = shelf.firstIndex(where: { $0.id == id }) else { return }
+        guard let id = carry?.entry.id, let origin = shelf.origin(of: id) else { return }
         lift.origin = origin
-        if let size = shelfLayout?.sizes[index], carry?.size != size { carry?.size = size }
+        if let size = shelf.size(of: id), carry?.size != size { carry?.size = size }
         carry?.isLanding = true
         landing = id
     }

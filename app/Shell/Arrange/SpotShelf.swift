@@ -6,7 +6,7 @@ struct SpotShelf: View {
     let layout: ShelfLayout
 
     var body: some View {
-        let spots = model.shelf
+        let spots = model.shelf.spots
         let pitch = ShelfLayout.chunkPitch
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 0) {
@@ -27,7 +27,7 @@ struct SpotShelf: View {
             .padding(.vertical, SpotTokens.scrollFadeLength)
         }
         .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
-            model.shelfScrolled(to: offset)
+            model.shelf.scrolled(to: offset)
         })
         .mask(ShelfFade(height: layout.band.upperBound - layout.band.lowerBound))
     }

@@ -27,14 +27,14 @@ extension SpotsModel {
     }
 
     var arrangeHint: String {
-        if offGrid.isEmpty { return "All your spots are on the grid." }
+        if shelf.offGrid.isEmpty { return "All your spots are on the grid." }
         if freeCells.isEmpty { return "The grid is full. Drop a spot on a card to swap them." }
-        return offGrid.count == 1 ? "1 spot is off the grid. Drag it in to pin it." : "\(offGrid.count) spots are off the grid. Drag one in to pin it."
+        return shelf.offGrid.count == 1 ? "1 spot is off the grid. Drag it in to pin it." : "\(shelf.offGrid.count) spots are off the grid. Drag one in to pin it."
     }
 
     private var offGridCount: String? {
-        guard !offGrid.isEmpty else { return nil }
-        return offGrid.count == 1 ? "1 of your spots is off the grid" : "\(offGrid.count) of your spots are off the grid"
+        guard !shelf.offGrid.isEmpty else { return nil }
+        return shelf.offGrid.count == 1 ? "1 of your spots is off the grid" : "\(shelf.offGrid.count) of your spots are off the grid"
     }
 
     public func followHint() {

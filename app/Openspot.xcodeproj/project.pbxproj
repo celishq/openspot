@@ -146,6 +146,7 @@
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
 		1B33567B423FCA85EE7D10A4 /* SpotSheetSearchRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBC02F36A192E1059CC70DD /* SpotSheetSearchRow.swift */; };
 		1B64B138AC661AED8EE34F0D /* BatchCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD78FB3457AD468DB372707 /* BatchCall.swift */; };
+		1B828D4FD165FD64028F4C37 /* Shelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A37FF3FA284C0352311A9E2 /* Shelf.swift */; };
 		1BEF20466E7E380450720CF6 /* SpotsFolder+Choices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307EFBBC97C3589084AD2775 /* SpotsFolder+Choices.swift */; };
 		1C245C981B1F21101D73A1D3 /* CommandSocketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F137243F0C532167F81B5DE /* CommandSocketTests.swift */; };
 		1C91F2D31EBC75AF1A7196C9 /* TextFinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C95CB6A03D85A8860FEE906 /* TextFinds.swift */; };
@@ -1460,6 +1461,7 @@
 		19C4913213CC1385F421AA7B /* SpotCarriedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCarriedCard.swift; sourceTree = "<group>"; };
 		19CA7CA151D0E971C8120FB7 /* MainAct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAct.swift; sourceTree = "<group>"; };
 		1A24E5DCD2962EE9052D8FD5 /* HintWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintWords.swift; sourceTree = "<group>"; };
+		1A37FF3FA284C0352311A9E2 /* Shelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shelf.swift; sourceTree = "<group>"; };
 		1A70BFBE84119FD64BFFD21C /* Spot+Answers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Spot+Answers.swift"; sourceTree = "<group>"; };
 		1A7B9BD93ED61437DAF52A78 /* Openspot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Openspot.entitlements; sourceTree = "<group>"; };
 		1A8FFECD6303CA32CC21EE6F /* PageScrollBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageScrollBar.swift; sourceTree = "<group>"; };
@@ -2864,6 +2866,7 @@
 				709A569EA8D729029D25E9B4 /* EditSession.swift */,
 				B2413E444660F83A81D7A6E4 /* GridPin.swift */,
 				75CF3427600E17CB9525AB80 /* PanelScene.swift */,
+				1A37FF3FA284C0352311A9E2 /* Shelf.swift */,
 				B24BB3333F7E603FFC264B05 /* ShelfLayout.swift */,
 				429DC2FBA59B96EEF54C4EE8 /* ShelfSlot.swift */,
 				A534ED0A977015A5F5924A9C /* SpotCarry.swift */,
@@ -5434,6 +5437,7 @@
 				BE0150A1B2AB3C208A262335 /* SheetPush.swift in Sources */,
 				7C30733C8351C8F86FE07768 /* SheetTop.swift in Sources */,
 				50EBAA8B5F6D21C53CF99377 /* SheetTransition.swift in Sources */,
+				1B828D4FD165FD64028F4C37 /* Shelf.swift in Sources */,
 				2CD1E07A53CE8F8193739AE8 /* ShelfLayout.swift in Sources */,
 				737A3A7387E8EDCDF4E2B3D2 /* ShelfSlot.swift in Sources */,
 				23300936ECF3113984E0CE27 /* Shortcut.swift in Sources */,

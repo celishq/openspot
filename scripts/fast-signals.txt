@@ -3,4 +3,3 @@ SpotsModel.dragSpot
 SpotsModel.gridScrolled
 SpotsModel.resizeSpot
 SpotsModel.setLevel
-SpotsModel.shelfScrolled

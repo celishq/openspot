@@ -75,7 +75,7 @@ extension SpotsModel {
             }
             change(.edit, {
                 reload(patching: nil, to: next)
-                if let slot { layShelf(placing: (id, slot)) }
+                if let slot { shelf.lay(placing: (id, slot)) }
                 carryToShelf()
             }, completion: { self.endLanding(of: id) })
         }
