@@ -69,11 +69,23 @@ extension StoreView {
         title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile), page.spot.name, pageLine(page)) {
             HStack(spacing: SpotTokens.settingsValueGap) {
                 button(page)
-                if page.hasSample, model != nil {
+                if page.preview == nil, page.hasSample, model != nil {
                     Button("Try") { isTrying = true }
                 }
             }
             .padding(.top, SpotTokens.settingsTitleGap)
+        }
+        if let preview = page.preview {
+            Section {
+                VStack(spacing: SpotTokens.storeTilePadding) {
+                    StoreCardPreview(spot: page.spot, preview: preview)
+                    if page.hasSample, model != nil {
+                        Button("Try") { isTrying = true }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, SpotTokens.storeTilePadding)
+            }
         }
         group("About") {
             StoreReadmeView(lines: page.shown, name: page.spot.name)
@@ -112,7 +124,7 @@ extension StoreView {
     private func button(_ page: StorePage) -> some View {
         switch page.button {
         case .install:
-            Button("Install") { Task { await store.install(page.id) } }
+            Button("Install") { Task { await store.installPage() } }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
         case .update:

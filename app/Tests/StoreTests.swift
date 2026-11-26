@@ -240,6 +240,32 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(store.page?.from, "Comes with Openspot")
     }
 
+    func testInstallFromTheOpenPageCopiesAtOnceWithItsSampleCard() async throws {
+        try "frame=\n\ntext=one\nclass=hidden card:flex\ntitle=1\n".write(to: examples.appendingPathComponent("paste.spot/sample.frame"), atomically: true, encoding: .utf8)
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        await store.open("paste")
+        XCTAssertEqual(store.page?.preview?.size, .wide)
+
+        await store.installPage()
+
+        XCTAssertNil(store.ask)
+        XCTAssertTrue(exists("paste.spot/paste.sh"))
+        XCTAssertEqual(store.page?.button, .installed)
+    }
+
+    func testInstallFromAPageWhoseSourceChangedSinceShowsTheReview() async throws {
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        await store.open("clock")
+        try "title = 'Clock'\nuses = ['network']".write(to: examples.appendingPathComponent("clock.spot/spot.toml"), atomically: true, encoding: .utf8)
+
+        await store.installPage()
+
+        guard case .install? = store.ask else { return XCTFail("No review: \(String(describing: store.ask))") }
+        XCTAssertFalse(exists("clock.spot"))
+    }
+
     func testInstallOpensTheReviewAndCopiesNothingUntilItsYes() async throws {
         await store.read()
         store.choose(.source(.builtIn(examples)))

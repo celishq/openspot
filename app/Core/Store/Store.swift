@@ -134,7 +134,18 @@ public final class Store {
     }
 
     public func install(_ id: String) async {
+        await install(id, shown: nil)
+    }
+
+    public func installPage() async {
+        guard let page else { return }
+        await install(page.id, shown: page.trust)
+    }
+
+    private func install(_ id: String, shown: [ReviewLine]?) async {
         switch await Self.review(id, at: place, places, opened: opened, now: clock.now()) {
+        case .success(let review?) where !review.clashes && review.lines == shown:
+            await act { try await review.install.run(nil, isConfirmed: true) }
         case .success(let review?): ask = review.clashes ? .clash(review) : .install(review)
         case .success(nil): toast("\(id) is one of your spots already.")
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
@@ -252,7 +263,8 @@ public final class Store {
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
-                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
+                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
+                preview: StorePreview(of: own.spot)
             )
         case .source(let chosen):
             guard let source = sources(in: places, config: config, opened: opened).first(where: { $0 == chosen }),
@@ -265,7 +277,7 @@ public final class Store {
             return StorePage(
                 id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
                 readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
-                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false
+                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot)
             )
         }
     }

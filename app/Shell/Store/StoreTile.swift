@@ -36,24 +36,12 @@ struct StoreTile: View {
         .onTapGesture { Task { await store.open(card.id) } }
         .accessibilityAddTraits(.isButton)
         .draggable(card.id) { StoreTileLift(card: card) }
-        .task(id: card.id) {
-            for view in card.spot.views.values { await SpotViews.shared.load(view) }
-        }
     }
 
     @ViewBuilder
     private var preview: some View {
         if let preview = card.preview {
-            let size = CGSize(width: SpotTokens.width(columns: preview.size.columns), height: SpotTokens.height(rows: preview.size.rows))
-            let shape = SpotRoundShape(radius: SurfaceEdge(card: preview.size).radius)
-            CardTreeView(face: preview.face, size: preview.size, spot: card.id)
-                .padding(SpotTokens.cardPadding(for: preview.size, isDrawn: true))
-                .frame(width: size.width, height: size.height)
-                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
-                .spotGlass(in: shape)
-                .environment(\.spotIsShown, true)
-                .scaleEffect(min(1, SpotTokens.storePreviewWidth / size.width, SpotTokens.storePreviewHeight / size.height))
-                .allowsHitTesting(false)
+            StoreCardPreview(spot: card.spot, preview: preview)
         } else {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.storePreviewIcon)
         }
