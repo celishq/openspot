@@ -38,13 +38,14 @@ with "Look in the Store" at the end of a search, or with `openspot store open`.
    Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source….
 2. Click a spot. Its page shows its readme, Try with sample data when it has some, and what it uses, runs by itself
    and can also do, before you install it.
-3. Drag the spot onto My spots, or press Install on its page. While you drag, My spots says Install, and a source
-   says Read only. The review opens, and nothing is copied until its Install.
+3. Drag the spot onto My spots, press + on its row, or press Install on its page. While you drag, My spots says
+   Drop to install. The review opens, and nothing is copied until its Install.
 
 - The button of a page says Installed once the spot is yours, Update when a newer version waits for your yes, and
   Revert… when you edited it. Update names only what the new version adds. Revert asks before it moves your copy to the
   Trash.
-- The search at the top keeps only the spots of the chosen place that match.
+- The search at the top of the sidebar keeps only the spots of the chosen place that match. Back and forward step
+  through the places and pages you opened, as in Settings.
 - Each act of the Store is also a command, so an agent can do it: `openspot store list`, `store get`, `store update`,
   `store revert`, `store add`, `store remove` and `store open`.
 
