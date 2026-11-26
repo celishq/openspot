@@ -90,22 +90,15 @@ extension SettingsView {
             }
             VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
                 ForEach(MacAccess.about, id: \.symbol) { fact in
-                    Label {
-                        Text(fact.text)
-                    } icon: {
-                        Image(systemName: fact.symbol).foregroundStyle(.secondary).frame(width: SpotTokens.settingsRowTile)
-                    }
+                    aboutLine(Image(systemName: fact.symbol).foregroundStyle(.secondary), Text(fact.text))
                 }
             }
             VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
                 ForEach(SpotReadiness.allCases, id: \.self) { state in
-                    HStack(alignment: .firstTextBaseline, spacing: SpotTokens.settingsRowGap) {
-                        Circle()
-                            .fill(SpotTheme.settingsState(state))
-                            .frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
-                        Text(state.word).fontWeight(.medium)
-                        Text(state.line).foregroundStyle(.secondary)
-                    }
+                    aboutLine(
+                        Circle().fill(SpotTheme.settingsState(state)).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot),
+                        Text("\(Text(state.word).fontWeight(.medium))  \(Text(state.line).foregroundStyle(.secondary))")
+                    )
                 }
             }
             HStack {
@@ -120,6 +113,13 @@ extension SettingsView {
         .fixedSize(horizontal: false, vertical: true)
         .padding(SpotTokens.settingsSheetPadding)
         .frame(width: SpotTokens.settingsSheetWidth, alignment: .leading)
+    }
+
+    private func aboutLine(_ mark: some View, _ words: Text) -> some View {
+        HStack(spacing: SpotTokens.settingsRowGap) {
+            mark.frame(width: SpotTokens.settingsRowTile)
+            words
+        }
     }
 
     @ViewBuilder
