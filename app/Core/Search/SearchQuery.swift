@@ -33,17 +33,14 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
+        let weights = PickWeights(recent)
+        return ranking(SearchIndex(items.map(\.searchText)), among: Array(items.indices)) { weights.weight(of: items[$0].run) }.map { items[$0] }
     }
 
-    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], weights: PickWeights) -> [Int] {
-        index.withItems { folded in
-            indices.compactMap { index in
-                match(folded[index]).map { (rank: $0, weight: weights.weight(of: items[index].run), index: index) }
-            }
-        }
-        .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
-        .map(\.index)
+    func ranking(_ index: SearchIndex, among offsets: [Int], weight: (Int) -> Double) -> [Int] {
+        ranked(index, among: offsets, weight: weight)
+            .sorted { ($0.rank, -$0.weight, $0.offset) < ($1.rank, -$1.weight, $1.offset) }
+            .map(\.offset)
     }
 
     func narrows(to next: SearchQuery) -> Bool {
@@ -56,16 +53,16 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
-        var search = MainSearch()
+        var search = PanelSearch()
         return search.matching(self, in: lists, unpickedLimit: unpickedLimit, limit: limit)
     }
 
     typealias Ranked = (rank: Int, weight: Double, offset: Int)
 
-    func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Ranked] {
+    func ranked(_ index: SearchIndex, among offsets: [Int], weight: (Int) -> Double) -> [Ranked] {
         index.withItems { folded in
             offsets.compactMap { offset in
-                match(folded[offset]).map { (rank: $0, weight: weights.weight(of: items[offset].run), offset: offset) }
+                match(folded[offset]).map { (rank: $0, weight: weight(offset), offset: offset) }
             }
         }
     }

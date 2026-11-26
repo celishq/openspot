@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class SystemSettingsSpotTests: SampleSpotsCase {
-    func testSystemSettingsJoinsTheMainSearch() throws {
+    func testSystemSettingsJoinsThePanelSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 
         XCTAssertTrue(settings.triggers.lists)

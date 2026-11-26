@@ -425,7 +425,7 @@ final class ItemListTests: XCTestCase {
 
     func testTypingMakesNoPickWeightsAndAPickMakesThemOnce() {
         var list = ItemList(items: items("Safari", "Slack", "Notes"), recent: ["Slack"])
-        var search = MainSearch()
+        var search = PanelSearch()
         let ranks = SearchRanks()
 
         SearchRanks.$meter.withValue(ranks) {

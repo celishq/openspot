@@ -168,6 +168,18 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(marks, [])
     }
 
+    func testTheSearchRanksCardsByWordsInAnyOrderAsThePanelDoes() async throws {
+        try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("zones.spot/zones.sh"), toml: "title = 'Time Zones'")
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+
+        store.search("time")
+        XCTAssertEqual(marks, ["zones", "clock"])
+
+        store.search("the tells")
+        XCTAssertEqual(marks, ["clock"])
+    }
+
     func testOpenWithAnIDShowsThePageOfThatSpotInItsPlace() async throws {
         try "# Clock\n\nTells the time.\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
         let day = try XCTUnwrap(ISO8601DateFormatter().date(from: "2031-11-03T12:00:00Z"))

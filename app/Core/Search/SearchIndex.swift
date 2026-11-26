@@ -18,9 +18,9 @@ struct SearchIndex: Equatable, Sendable {
     private var spans: [Span] = []
     private var records: [Record] = []
 
-    init(_ items: [SpotItem] = []) {
-        records.reserveCapacity(items.count)
-        for item in items {
+    init(_ texts: [SearchText] = []) {
+        records.reserveCapacity(texts.count)
+        for item in texts {
             let first = UInt32(spans.count)
             var bits = append(item.title)
             if let subtitle = item.subtitle { bits |= append(subtitle) }

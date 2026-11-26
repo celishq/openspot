@@ -10,13 +10,13 @@ extension SpotsModel {
     struct SearchAsk {
         let query: SearchQuery
         let lists: [ItemList]
-        let search: MainSearch
+        let search: PanelSearch
         let limit: Int
         let answers: [Entry]
         let sources: [Spot]
         let isWhole: Bool
 
-        func found() -> (matches: [(list: Int, item: SpotItem)], search: MainSearch) {
+        func found() -> (matches: [(list: Int, item: SpotItem)], search: PanelSearch) {
             SearchRanks.meter?.add()
             var search = search
             return (search.matching(query, in: lists, unpickedLimit: SpotsModel.unpickedRows, limit: limit), search)
@@ -65,7 +65,7 @@ extension SpotsModel {
         let ask = SearchAsk(
             query: runs.search(of: text),
             lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() } + [settingsBook.searchRows],
-            search: mainSearch,
+            search: panelSearch,
             limit: Self.searchLimit - answers.count,
             answers: Array(answers),
             sources: sources.map(\.spot) + [SettingsBook.searchSpot],
@@ -88,7 +88,7 @@ extension SpotsModel {
 
     private func takeFound(_ ask: SearchAsk) {
         let found = ask.found()
-        mainSearch = found.search
+        panelSearch = found.search
         let ids = Set(ask.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         foundSpots = found.matches.compactMap { match in

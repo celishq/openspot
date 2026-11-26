@@ -143,7 +143,7 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown")), .init(key: "kinds", value: "function undefined")], text)
     }
 
-    func testTheMainSearchAndAPressCallTheHandlersOfAnInlineSpot() async throws {
+    func testThePanelSearchAndAPressCallTheHandlersOfAnInlineSpot() async throws {
         try inline("finder", toml: "[on]\nsearch = \".\"\n\"sheet.open\" = true", """
         export default {
           search({ text }) { return `item=${text}\\ntitle=Found ${text}\\n` },

@@ -143,7 +143,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(spot.triggers.search?.isCard, true)
     }
 
-    func testSearchTrueListsTheItemsOfTheSpotInTheMainSearch() throws {
+    func testSearchTrueListsTheItemsOfTheSpotInThePanelSearch() throws {
         let loaded = try load("[on]\nsearch = true")
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())

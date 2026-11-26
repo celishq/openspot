@@ -36,6 +36,7 @@ public struct ActionMenu: Equatable, Sendable {
         public fileprivate(set) var selected = 0
     }
     public private(set) var shown: [Row]
+    private let found: SearchList<Row>
     public private(set) var query = ""
     public private(set) var selected = 0
     public private(set) var confirming: String?
@@ -55,6 +56,7 @@ public struct ActionMenu: Equatable, Sendable {
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
+        found = SearchList(rows.flatMap { row in [row] + row.children.map { Row(title: "\(row.title) › \($0.title)", keyLabel: $0.keyLabel, action: $0.action, isQuiet: $0.isQuiet, owner: $0.owner, group: $0.group) } }) { SearchText(title: $0.title) }
     }
 
     private static func nested(_ rows: [Row]) -> [Row] {
@@ -141,9 +143,7 @@ public struct ActionMenu: Equatable, Sendable {
     public mutating func search(_ text: String) {
         guard text != query else { return }
         query = text
-        let all = rows.flatMap { row in [row] + row.children.map { Row(title: "\(row.title) › \($0.title)", keyLabel: $0.keyLabel, action: $0.action, isQuiet: $0.isQuiet, owner: $0.owner, group: $0.group) } }
-        let items = all.indices.map { SpotItem(title: all[$0].title, run: String($0)) }
-        shown = text.isEmpty ? rows : SearchQuery(text: text).matching(items).compactMap { Int($0.run).map { all[$0] } }.filter { $0.children.isEmpty }
+        shown = text.isEmpty ? rows : found.matching(SearchQuery(text: text)).filter { $0.children.isEmpty }
         submenu = nil
         selected = 0
         confirming = nil

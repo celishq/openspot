@@ -4,12 +4,11 @@ import Observation
 @MainActor
 @Observable
 public final class Shelf {
-    public private(set) var offGrid: [SpotsModel.Entry] = []
+    private var found = SearchList<SpotsModel.Entry>()
     public private(set) var spots: [SpotsModel.Entry] = []
     public private(set) var query = ""
     public private(set) var layout: ShelfLayout?
     @ObservationIgnored public private(set) var scroll: CGFloat = 0
-    @ObservationIgnored private var words: [String] = []
     @ObservationIgnored private var room: (screen: CGSize, panelOrigin: CGPoint)?
     @ObservationIgnored private var slots: [String: ShelfSlot] = [:]
 
@@ -17,15 +16,18 @@ public final class Shelf {
 
     func take(offGrid next: [SpotsModel.Entry]) {
         guard next != offGrid else { return }
-        offGrid = next
-        words = next.map { ([$0.spot.name] + $0.spot.keywords).joined(separator: " ").folded }
-        filter()
+        found = SearchList(next) { SearchText(title: $0.spot.name, keywords: $0.spot.keywords) }
+        match()
+    }
+
+    public var offGrid: [SpotsModel.Entry] {
+        found.all
     }
 
     func search(_ text: String) -> Bool {
         guard text != query else { return false }
         query = text
-        filter()
+        match()
         return true
     }
 
@@ -44,7 +46,7 @@ public final class Shelf {
         if !query.isEmpty { query = "" }
         scroll = 0
         slots = [:]
-        filter()
+        match()
     }
 
     func lay(placing drop: (id: String, slot: ShelfSlot)? = nil) {
@@ -84,9 +86,8 @@ public final class Shelf {
         return layout.sizes[index]
     }
 
-    private func filter() {
-        let words = query.trimmingCharacters(in: .whitespaces).folded
-        let next = words.isEmpty ? offGrid : zip(offGrid, self.words).filter { $0.1.contains(words) }.map(\.0)
+    private func match() {
+        let next = found.matching(SearchQuery(text: query))
         if next != spots { spots = next }
         lay()
     }

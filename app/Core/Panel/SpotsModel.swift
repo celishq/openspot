@@ -94,7 +94,7 @@ public final class SpotsModel {
     var answerMatches: AnswerMatches {
         runs.answerMatches
     }
-    @ObservationIgnored var mainSearch = MainSearch()
+    @ObservationIgnored var panelSearch = PanelSearch()
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
         didSet { takePlacements() }
