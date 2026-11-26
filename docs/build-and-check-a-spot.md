@@ -3,6 +3,20 @@
 You can build a whole spot from the terminal, without the panel: start it, run it, look at it, check it, then hand it
 over. A coding agent works the same way. Each step is one `openspot` command.
 
+## Choose how to build it
+
+Build each spot the simplest way that does what it must. Take the next way only when the one before it can't do it.
+
+| Way | Take it when | It costs |
+| --- | --- | --- |
+| A shell script that prints [blocks](reference/blocks.md) | Always first. Blocks and [classes](reference/classes.md) draw lists, cards, sheets and forms. | Nothing more. |
+| [JavaScript](further/javascript.md) | It must answer as people type, in the same keystroke. | It runs inside Openspot. |
+| [Swift](further/swift.md) | It needs a Mac API that no command reaches. | Apple's Command Line Tools, and a build before its first run. |
+| [Your own view](further/views.md) | Classes can't draw it, such as a chart, a motion or a game. | A SwiftUI file, built before it first shows. |
+| [`stay = true`](further/staying.md) | It must keep state in memory between calls, or start slowly. | A process that keeps running. |
+
+When you take a way past the shell script, say why in your answer.
+
 ## Start from a spot that works
 
 ```text
