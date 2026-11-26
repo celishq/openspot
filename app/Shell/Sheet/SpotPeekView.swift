@@ -87,6 +87,12 @@ private struct PeekFace: View {
                     .lineLimit(4)
             }
             .padding(SpotTokens.padding)
+        case .blocks(let tree):
+            NodeTree(tree: tree, pictureTimes: [:])
+                .environment(\.spotNode, NodeContext(variants: Peek.variants))
+                .padding(SpotTokens.padding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
         }
     }
 }

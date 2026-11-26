@@ -108,7 +108,7 @@ final class ClassStyleTests: XCTestCase {
         XCTAssertEqual(style.variants[[.dark]]?.ink, .accent)
         XCTAssertEqual(style.variants[[.wide]]?.arrangement, .row)
         XCTAssertEqual(Set(Style.Variant.allCases.map(\.rawValue)), [
-            "sheet", "card", "bar", "float", "window", "toast", "details", "small", "wide", "square", "strip", "large",
+            "sheet", "card", "bar", "float", "window", "toast", "details", "peek", "small", "wide", "square", "strip", "large",
             "hover", "pressed", "selected", "focus", "dark", "light"
         ])
         XCTAssertTrue(style.unknown.isEmpty)

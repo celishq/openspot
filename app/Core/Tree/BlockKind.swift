@@ -62,7 +62,7 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let all = [text, item, number, series, picture, icon, toggle, slider, hotkey, field, choice, button]
 
-    static let lists = [items, option, box]
+    static let lists = [items, option, box, peek]
 
     static let wordsKinds = [text, item]
 
@@ -221,6 +221,8 @@ public struct BlockKind: Sendable, Equatable {
     public static let option = BlockKind(name: "option")
 
     public static let box = BlockKind(name: "box")
+
+    public static let peek = BlockKind(name: "peek")
 
     private static func range(of block: TextBlock) -> (low: Double, high: Double) {
         (block.number("min") ?? 0, block.number("max") ?? 100)
