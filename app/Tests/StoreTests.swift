@@ -250,7 +250,7 @@ final class StoreTests: XCTestCase {
         await store.open("timer")
 
         XCTAssertEqual(store.page?.button, .locked)
-        XCTAssertEqual(store.page?.from, "Comes with Openspot")
+        XCTAssertEqual(store.page?.from, "From Openspot")
     }
 
     func testInstallFromTheOpenPageCopiesAtOnceWithItsSampleCard() async throws {

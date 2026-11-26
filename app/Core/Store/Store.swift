@@ -259,7 +259,7 @@ public final class Store {
             guard let own else { return nil }
             let review = (try? folder.scan()).flatMap { try? ReviewSpot(spot: SpotPackage(sharing: own.spot, from: $0), folder: folder.url, core: folder.core) }
             let entry = own.origin == .core ? nil : (try? places.lock.entries())?.first { $0.holds(id) }
-            let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
+            let from = own.origin == .core ? "From Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
