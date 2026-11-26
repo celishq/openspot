@@ -17,7 +17,7 @@ public final class Shelf {
     func take(offGrid next: [SpotsModel.Entry]) {
         guard next != offGrid else { return }
         found = SearchList(next) { SearchText(title: $0.spot.name, keywords: $0.spot.keywords) }
-        filter()
+        match()
     }
 
     public var offGrid: [SpotsModel.Entry] {
@@ -27,7 +27,7 @@ public final class Shelf {
     func search(_ text: String) -> Bool {
         guard text != query else { return false }
         query = text
-        filter()
+        match()
         return true
     }
 
@@ -46,7 +46,7 @@ public final class Shelf {
         if !query.isEmpty { query = "" }
         scroll = 0
         slots = [:]
-        filter()
+        match()
     }
 
     func lay(placing drop: (id: String, slot: ShelfSlot)? = nil) {
@@ -86,7 +86,7 @@ public final class Shelf {
         return layout.sizes[index]
     }
 
-    private func filter() {
+    private func match() {
         let next = found.matching(SearchQuery(text: query))
         if next != spots { spots = next }
         lay()

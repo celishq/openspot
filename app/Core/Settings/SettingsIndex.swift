@@ -25,7 +25,7 @@ public struct SettingsIndex: Sendable {
         self.rows = SearchList(rows) { SearchText(title: $0.title, subtitle: $0.detail, keywords: $0.kind == .key ? ["shortcut", "key"] : []) }
     }
 
-    public func found(_ query: String) -> Found {
+    public func matching(_ query: String) -> Found {
         let query = SearchQuery(text: query)
         return Found(accesses: accesses.matching(query), standings: standings.matching(query), rows: rows.matching(query))
     }

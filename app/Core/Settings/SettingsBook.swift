@@ -14,7 +14,7 @@ public final class SettingsBook {
     public private(set) var found = SettingsIndex.Found.none
     public private(set) var shownSpots: [SpotStanding] = []
     public private(set) var query = "" {
-        didSet { if query != oldValue { find() } }
+        didSet { if query != oldValue { match() } }
     }
     public private(set) var target: String?
     public private(set) var recording: String?
@@ -57,8 +57,8 @@ public final class SettingsBook {
         }
     }
 
-    private func find() {
-        let next = isSearching ? index.found(query) : .none
+    private func match() {
+        let next = isSearching ? index.matching(query) : .none
         if next != found { found = next }
         let ids = Set(next.standings.map(\.id) + next.rows.map(\.spot))
         let shown = isSearching ? spots.all.filter { ids.contains($0.id) } : spots.all
@@ -119,7 +119,7 @@ public final class SettingsBook {
         if next.account != account { account = next.account }
         if !isIndexed {
             index = SettingsIndex(accesses: access.all, standings: spots.all, rows: rows.all)
-            find()
+            match()
         }
         take(rows: rows.all)
     }

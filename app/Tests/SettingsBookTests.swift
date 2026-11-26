@@ -66,20 +66,20 @@ final class SettingsBookTests: PanelCase {
         try script("cups", toml: "title = 'Café Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
 
-        let found = book.index.found("CAFE")
-        let screen = book.index.found("screen rec")
+        let found = book.index.matching("CAFE")
+        let screen = book.index.matching("screen rec")
 
         XCTAssertEqual(found.standings.map(\.id), ["cups"])
         XCTAssertEqual(screen.accesses.map(\.id), [.screen])
-        XCTAssertTrue(book.index.found("zzz-none").isEmpty)
+        XCTAssertTrue(book.index.matching("zzz-none").isEmpty)
     }
 
     func testTheSearchRanksRowsByWordsInAnyOrderAsThePanelDoes() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill Cups'\n[actions.later]\ntitle = 'Cups Fill Later'", "")
         await read()
 
-        let found = book.index.found("cups fill").rows.map(\.item)
-        let initials = book.index.found("fc").rows.map(\.item)
+        let found = book.index.matching("cups fill").rows.map(\.item)
+        let initials = book.index.matching("fc").rows.map(\.item)
 
         XCTAssertEqual(found.filter { $0.hasPrefix("cups/key.") }, ["cups/key.later", "cups/key.fill"])
         XCTAssertEqual(initials.filter { $0.hasPrefix("cups/key.") }, ["cups/key.fill"])
@@ -89,8 +89,8 @@ final class SettingsBookTests: PanelCase {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
 
-        let shortcuts = book.index.found("shortcut").rows
-        let keys = book.index.found("key").rows.filter { $0.kind == .key }
+        let shortcuts = book.index.matching("shortcut").rows
+        let keys = book.index.matching("key").rows.filter { $0.kind == .key }
 
         XCTAssertEqual(Set(shortcuts.map(\.item)), Set(book.rows.all.filter { $0.kind == .key }.map(\.item)))
         XCTAssertTrue(shortcuts.contains { $0.item == "cups/key.fill" })

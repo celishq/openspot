@@ -47,7 +47,7 @@ public final class Store {
             trail.replace(stop)
         }
         trail.keep { shelves[$0.place] != nil }
-        refilter()
+        match()
     }
 
     public func show(_ id: String?, search text: String?) async -> Bool {
@@ -58,7 +58,7 @@ public final class Store {
             let query = SearchQuery(text: text)
             let matched = (placesInOrder.dropFirst() + [.mine]).first { shelves[$0]?.matching(query).isEmpty == false }
             move(to: matched ?? .mine)
-            refilter()
+            match()
         }
         guard let id else { return true }
         guard let found = placesInOrder.first(where: { place in shelves[place]?.all.contains { $0.id == id } == true }) else { return false }
@@ -79,7 +79,7 @@ public final class Store {
             guard let id = shelves[.source(source)]?.all.first?.id else { return false }
             query = ""
             move(to: .source(source))
-            refilter()
+            match()
             await load(id)
             arrive()
             return page?.id == id
@@ -96,14 +96,14 @@ public final class Store {
         if page != nil { page = nil }
         guard next != place else { return }
         place = next
-        refilter()
+        match()
     }
 
     public func search(_ text: String) {
         guard text != query else { return }
         query = text
         if page != nil { page = nil }
-        refilter()
+        match()
         arrive()
     }
 
@@ -209,7 +209,7 @@ public final class Store {
         }
     }
 
-    private func refilter() {
+    private func match() {
         let next = shelves[place]?.matching(SearchQuery(text: query)) ?? []
         if next != cards { cards = next }
         let grouped = StoreGroup.of(next, at: place)
