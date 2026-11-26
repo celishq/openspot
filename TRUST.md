@@ -109,8 +109,10 @@ A spot that Needs review shows Review… in Needs you. Review… allows the use 
 ## The review before an add
 
 Before an add, the review shows the title, the `uses`, each spot that it binds under **Binds**, and a line **Can also**
-with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns,
-and never blocks the add. A bound spot that isn't installed and doesn't come with Openspot shows as not installed.
+with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`, the
+microphone or camera, another program it starts, another app it drives with `osascript`, and files in your home folder.
+It reads the code, not the readme. A spot that names no use and does none of these shows Uses as No Mac features, and
+one that does shows None declared. It warns, and never blocks the add. A bound spot that isn't installed and doesn't come with Openspot shows as not installed.
 
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
   view, and says that it can do all that you can. For a built file, it says that the source beside it may not match.

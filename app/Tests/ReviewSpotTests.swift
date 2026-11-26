@@ -170,6 +170,33 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.lines.first { $0.title == "Runs by itself" }?.words, ["When Openspot starts, when you copy"])
     }
 
+    func testItNamesTheMicrophoneOtherProgramsOtherAppsAndTheHomeFolderThatItsCodeReaches() throws {
+        let review = try ReviewSpot(
+            spot: spot([
+                ("talk.spot/talk.sh", "#!/bin/sh\nosascript -e 'tell app \"Terminal\" to activate'\ncat \"$HOME/.claude/x\"\n", true),
+                ("talk.spot/spot.toml", "title = 'Talk'", false),
+                ("talk.spot/talk.swift", "let engine = AVAudioEngine()\nlet process = Process()\n", false)
+            ]),
+            folder: folder
+        )
+
+        XCTAssertEqual(review.lines.first { $0.title == "Uses" }?.words, ["None declared"])
+        XCTAssertEqual(
+            review.lines.first { $0.title == "Can also" }?.words,
+            ["Record from the microphone or camera", "Start other programs", "Control other apps with osascript", "Read files in your home folder"]
+        )
+    }
+
+    func testAReadmeThatNamesCodeAddsNothingToCanAlso() throws {
+        let review = try ReviewSpot(
+            spot: spot([("talk.spot/talk.sh", "#!/bin/sh\n", true), ("talk.spot/spot.toml", "title = 'Talk'", false), ("talk.spot/readme.md", "It runs Process() and AVAudioEngine with $HOME and osascript.\n", false)]),
+            folder: folder
+        )
+
+        XCTAssertNil(review.lines.first { $0.title == "Can also" })
+        XCTAssertEqual(review.lines.first { $0.title == "Uses" }?.words, ["No Mac features"])
+    }
+
     func testItShowsTheUsesThatTheHeaderNames() throws {
         let text = try shown(review("title = 'Coffee'\nuses = ['network', 'app']"))
 
