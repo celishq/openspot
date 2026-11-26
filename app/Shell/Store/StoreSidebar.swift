@@ -7,13 +7,15 @@ struct StoreSidebar: View {
     @State private var isOverMine = false
 
     var body: some View {
-        List(selection: Binding(get: { store.page == nil ? store.place : nil }, set: { if let place = $0 { store.choose(place) } })) {
+        List(selection: Binding(get: { store.place }, set: { if let place = $0 { store.choose(place) } })) {
             mine
                 .tag(StorePlace.mine)
+                .simultaneousGesture(TapGesture().onEnded { leavePage(at: .mine) })
             Section("Sources") {
                 ForEach(store.sources, id: \.self) { source in
                     sourceRow(source)
                         .tag(StorePlace.source(source))
+                        .simultaneousGesture(TapGesture().onEnded { leavePage(at: .source(source)) })
                         .contextMenu {
                             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([source.url]) }
                             if source.canRemove {
@@ -26,6 +28,11 @@ struct StoreSidebar: View {
         .listStyle(.sidebar)
         .tint(SpotTheme.settingsSelection)
         .safeAreaInset(edge: .bottom) { addSource }
+    }
+
+    private func leavePage(at place: StorePlace) {
+        guard store.page != nil, store.place == place else { return }
+        store.choose(place)
     }
 
     private var mine: some View {
