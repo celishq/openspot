@@ -78,6 +78,28 @@ public final class Timeline: Sendable {
         change(at: now) { $0.pausedUntil = time }
     }
 
+    public func cut(at now: Date) -> Date? {
+        kept.withLock { kept in
+            read(&kept)
+            cut(&kept, at: now)
+            let forgotten = kept.entries.compactMap(\.forgotten).min().map { $0.addingTimeInterval(Self.forgottenAge + 1) }
+            let oldest = kept.entries.filter { $0.forgotten == nil }.map(\.at).min().map { Self.dayStart(of: $0).addingTimeInterval(Double(kept.choices.keptDays) * 86_400) }
+            return [forgotten, oldest].compactMap { $0 }.min()
+        }
+    }
+
+    public func unload() {
+        kept.withLock { kept in
+            kept.entries = []
+            kept.folded = [:]
+            kept.isRead = false
+        }
+    }
+
+    var holdsEntries: Bool {
+        kept.withLock { $0.isRead }
+    }
+
     public func choices() -> Choices {
         kept.withLock { kept in
             read(&kept)
@@ -301,6 +323,12 @@ public final class Timeline: Sendable {
     private func day(of date: Date) -> String {
         let parts = Calendar(identifier: .gregorian).dateComponents(in: .gmt, from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private static func dayStart(of date: Date) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        return calendar.startOfDay(for: date)
     }
 
     private static func newID() -> String {

@@ -12,7 +12,7 @@ public enum ClipboardCall: NounCall {
         },
         CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", inShow: .changes("types in the front app"), needs: [.accessibility])) { $0.none ? Self.paste : nil },
         CommandVerb(
-            "read", "[--within age] [--blocks]", "Prints the text on the clipboard, or nothing when it holds none. --within prints it only when Openspot first saw that copy within the age, such as 2m: seconds, or a number with s, m, h or d. --blocks prints the copy in its kind, as `openspot timeline add` takes it: `text=`, `url=`, `file=` once for each file, or `picture=` with the image saved to a file, and nothing for a password.",
+            "read", "[--within age] [--blocks]", "Prints the text on the clipboard, or nothing when it holds none. --within prints it only when Openspot first saw that copy within the age, such as 2m: seconds, or a number with s, m, h or d. --blocks prints the copy in its kind, as `openspot timeline add` takes it: `text=`, `url=`, `file=` once for each file, or `picture=` with the image saved to a file, and nothing for a password or a text over 25 MB.",
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
             let isBlocks = words.fit?.has("--blocks") == true

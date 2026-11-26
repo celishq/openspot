@@ -117,6 +117,27 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(restored.code, 1)
     }
 
+    func testAForgottenEntryLeavesTheDiskTenMinutesLaterWithNoCall() async throws {
+        let id = try await add(["text=secret"])
+        _ = try await call(["forget", id])
+        let day = try XCTUnwrap(FileManager.default.contentsOfDirectory(at: store.appendingPathComponent("notes"), includingPropertiesForKeys: nil).first { $0.pathExtension == "jsonl" })
+
+        clock.advance(by: 11 * 60)
+
+        try await wait("the forgotten entry leaves the disk", until: { !FileManager.default.fileExists(atPath: day.path) })
+    }
+
+    func testTheTimelineLetsGoOfItsEntriesAMinuteAfterItsLastCallAndReadsThemAgain() async throws {
+        _ = try await add(["text=kept"])
+        XCTAssertTrue(model.runs.timeline.holdsEntries)
+
+        clock.advance(by: SpotRuns.timelineHold + 1)
+
+        try await wait("the timeline lets go of its entries", until: { !self.model.runs.timeline.holdsEntries })
+        let blocks = try await listed()
+        XCTAssertEqual(blocks.map { $0.value("text") }, ["kept"])
+    }
+
     func testAKeptFileOutlivesItsOriginal() async throws {
         let original = folder.appendingPathComponent("report.txt")
         try "the report".write(to: original, atomically: true, encoding: .utf8)

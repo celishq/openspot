@@ -55,6 +55,8 @@ public final class SpotRuns {
     @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
     @ObservationIgnored public let timeline: Timeline
+    @ObservationIgnored let timelineWatch: DueWatch
+    @ObservationIgnored var timelineUse: Date?
     @ObservationIgnored let timerWatch: DueWatch
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored let scheduleWatch: DueWatch
@@ -134,6 +136,7 @@ public final class SpotRuns {
         self.clock = clock
         now = clock.now
         clockWatch = DueWatch(clock: clock)
+        timelineWatch = DueWatch(clock: clock)
         timerWatch = DueWatch(clock: clock, leeway: .seconds(1))
         scheduleWatch = DueWatch(clock: clock, leeway: .seconds(1))
         self.stopPause = stopPause
@@ -264,6 +267,7 @@ public final class SpotRuns {
         clockWatch.stop()
         timerWatch.stop()
         scheduleWatch.stop()
+        timelineWatch.stop()
         pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil

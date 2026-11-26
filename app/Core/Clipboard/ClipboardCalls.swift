@@ -38,7 +38,7 @@ struct ClipboardCalls {
                 return TextBlock(fields: urls.map { .init(key: "file", value: $0.path) }).text
             case .text:
                 let text = autoreleasepool { mac.text() }
-                guard text.contains(where: { !$0.isWhitespace }) else { return "" }
+                guard text.utf8.count <= Timeline.cloneLimit, text.contains(where: { !$0.isWhitespace }) else { return "" }
                 let line = text.trimmingCharacters(in: .newlines)
                 let isLink = (line.hasPrefix("https://") || line.hasPrefix("http://")) && !line.contains(where: \.isWhitespace)
                 return TextBlock(fields: [isLink ? .init(key: "url", value: line) : .init(key: "text", value: text)]).text

@@ -52,6 +52,15 @@ enum TimelineCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         guard let runs = context.runs else { return CommandAnswer.notRunning("timeline") }
+        guard let work = job(in: context, runs: runs) else { return nil }
+        return {
+            let answer = await work()
+            await runs.timelineUsed()
+            return answer
+        }
+    }
+
+    private func job(in context: CallContext, runs: SpotRuns) -> CommandAPI.Work? {
         let caller = context.caller
         let timeline = runs.timeline
         switch self {
