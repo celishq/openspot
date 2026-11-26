@@ -264,7 +264,7 @@ public final class Store {
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
                 trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
-                preview: StorePreview(of: own.spot)
+                preview: StorePreview(of: own.spot), files: files(review?.lines, beside: own.spot)
             )
         case .source(let chosen):
             guard let source = sources(in: places, config: config, opened: opened).first(where: { $0 == chosen }),
@@ -277,9 +277,14 @@ public final class Store {
             return StorePage(
                 id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
                 readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
-                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot)
+                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot),
+                files: files(review?.lines, beside: spot)
             )
         }
+    }
+
+    private nonisolated static func files(_ lines: [ReviewLine]?, beside spot: Spot) -> [StoreFile] {
+        StoreFile.read(lines?.first(where: \.isFiles)?.words ?? [], in: spot.url.deletingLastPathComponent().deletingLastPathComponent())
     }
 
     private nonisolated static func readme(beside spot: Spot) -> (lines: [String], shown: [StoreReadmeLine]) {

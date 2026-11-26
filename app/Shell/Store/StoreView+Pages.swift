@@ -1,3 +1,4 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
@@ -105,11 +106,19 @@ extension StoreView {
                 }
             }
         }
-        if let files = page.trust.first(where: \.isFiles) {
+        if !page.files.isEmpty {
             folding("Files", isFolded: $areFilesFolded) {
-                ForEach(files.words, id: \.self) { file in
-                    Text(file)
-                        .textSelection(.enabled)
+                ForEach(page.files) { file in
+                    row(action: { NSWorkspace.shared.activateFileViewerSelecting([file.url]) }) {
+                        Image(systemName: file.symbol)
+                            .foregroundStyle(.secondary)
+                            .frame(width: SpotTokens.storeMarkerWidth)
+                        Text(file.name)
+                        Spacer(minLength: SpotTokens.settingsTrailingGap)
+                        Text(file.size)
+                            .foregroundStyle(.secondary)
+                    }
+                    .help("Show in Finder")
                 }
             }
         }

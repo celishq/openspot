@@ -235,6 +235,11 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(trust.first { $0.title == "Uses" }?.words, ["clipboard"])
         XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
         XCTAssertEqual(trust.first { $0.title == "Files" }?.words, ["paste.spot/paste.sh", "paste.spot/spot.toml"])
+        let files = try XCTUnwrap(store.page?.files)
+        XCTAssertEqual(files.map(\.name), ["paste.sh", "spot.toml"])
+        XCTAssertEqual(files.map(\.symbol), ["terminal", "gearshape"])
+        XCTAssertEqual(files.first?.url, examples.appendingPathComponent("paste.spot/paste.sh"))
+        XCTAssertEqual(files.first?.size, "17 bytes")
     }
 
     func testACoreSpotIsLockedInMySpots() async throws {
