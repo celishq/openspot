@@ -5,12 +5,14 @@ struct SpotSampleSheet: View {
     let model: SpotsModel
     let entry: SpotsModel.Entry
     var selects = true
+    var fit: CGFloat = .infinity
     let output: @MainActor () async -> Frame?
     @State private var sample: (panel: SheetParts?, list: ItemList)?
     @State private var selected = 0
 
     var body: some View {
         let size = SpotSheetBody.size(of: sample?.panel, list: sample?.list ?? ItemList())
+        let scale = min(1, fit / size.height)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.wordsGap) {
                 SpotGlyph(entry: entry)
@@ -22,7 +24,10 @@ struct SpotSampleSheet: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(radius: SpotTokens.cardRadius))
         .modifier(SpotGlass())
+        .scaleEffect(scale)
+        .frame(width: size.width * scale, height: size.height * scale)
         .environment(\.spotIsShown, true)
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sample))
         .environment(\.spotViewDates, entry.spot.viewDates)

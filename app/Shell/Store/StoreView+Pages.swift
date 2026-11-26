@@ -111,10 +111,8 @@ extension StoreView {
                 VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
                     StoreSizes(spot: page.spot, face: preview.face, sizes: preview.sizes, width: SpotTokens.storeRowWidth)
                     if !preview.drawsCard, let model, let sample, sample.id == page.id, sample.hasSheet {
-                        StoreSheetPreview(model: model, spot: page.spot, output: sample.output, selects: false)
+                        StoreSheetPreview(model: model, spot: page.spot, output: sample.output, selects: false, fit: SpotTokens.storeSheetPreviewHeight)
                             .allowsHitTesting(false)
-                            .frame(maxHeight: SpotTokens.storeSheetPreviewHeight, alignment: .top)
-                            .clipped()
                     }
                 }
                 .offset(x: -SpotTokens.storeColumnBleed)
