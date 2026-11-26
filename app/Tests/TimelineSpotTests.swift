@@ -60,9 +60,18 @@ final class TimelineSpotTests: BuiltInCase {
         try add(.text, "older", at: Date().addingTimeInterval(-60))
         try add(.text, "newest")
 
-        let state = try await timeline.state(timeout: 60)
+        let card = try await timeline.items(input: "input.event=panel.open\n", timeout: 60)
 
-        XCTAssertEqual(state.title, "newest")
+        XCTAssertEqual(card.root?.value("title"), "newest")
+    }
+
+    func testTheSheetKeepsTheTitleOfTheSpotAndNotOfTheNewestEntry() async throws {
+        try add(.text, "Screenshot 2026-11-25 at 23.32.04.png")
+
+        let frame = try await timeline.items(timeout: 60)
+
+        XCTAssertEqual(frame.root?.value("title"), "Timeline")
+        XCTAssertEqual(frame.items.first?.title, "Screenshot 2026-11-25 at 23.32.04.png")
     }
 
     func testAnEmptyTimelineSaysHowToFillIt() async throws {

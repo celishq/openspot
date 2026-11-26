@@ -164,7 +164,7 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let left = fieldTextLeft
         return promptWords
-            .frame(height: SpotTokens.cell)
+            .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })

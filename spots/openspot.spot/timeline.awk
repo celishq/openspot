@@ -38,9 +38,11 @@ function source(spot,    name) {
   day = substr(f["at"], 1, 10)
   detail = source(f["spot"]) " · " substr(f["at"], 12, 5)
   if (count++ == 0) {
-    printf "title=%s\ndetail=%s\n", f["title"], detail
-    if (card) exit
-    printf "\n"
+    if (card) {
+      printf "title=%s\ndetail=%s\n", f["title"], detail
+      exit
+    }
+    printf "title=Timeline\n\n"
     printf "button=copy\ntitle=Copy\nshortcut=cmd+c\nscope=item\n\n"
     printf "button=forget\ntitle=Forget\nshortcut=cmd+backspace\nscope=item\nclose=false\n\n"
     printf "items=list\n"

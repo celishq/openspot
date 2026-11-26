@@ -24,6 +24,7 @@ struct SpotFieldLook: View {
     private var words: some View {
         if query.isEmpty {
             SpotFieldPrompt(word: SearchPrompt.word(for: title))
+                .frame(width: SpotFieldView.fieldTextWidth, alignment: .leading)
         } else {
             Text(query)
                 .font(SpotType.input)

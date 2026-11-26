@@ -9,6 +9,7 @@ struct SpotFieldPrompt: View {
     var body: some View {
         HStack(spacing: 0) {
             Text("\(SearchPrompt.verb) ")
+                .fixedSize()
             ZStack(alignment: .leading) {
                 ZStack(alignment: .leading) {
                     Text(SearchPrompt.grid)

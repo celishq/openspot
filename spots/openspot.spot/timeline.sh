@@ -7,6 +7,7 @@
 
 # Prints the newest entry for the card when the panel opens.
 card() {
+  printf 'frame=\n'
   openspot timeline list --all --limit 1 | awk -v today="$(date +%F)" -v yesterday="$(date -v-1d +%F)" -v card=1 -f "${0%/*}/timeline.awk"
 }
 
