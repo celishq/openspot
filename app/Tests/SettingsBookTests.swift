@@ -333,13 +333,19 @@ final class SettingsBookTests: PanelCase {
         XCTAssertNil(book.grant)
     }
 
-    func testAskOpensThePaneOfAnAccessAndAsksForAccessibility() async throws {
+    func testAllowOfAnAccessStartsTheSameGuidedGrantAtItsPage() async throws {
+        accesses.set(.screen, to: .denied)
         await read()
+        book.land(.access)
 
-        await book.ask(.screen)
-        await book.ask(.helper)
+        await book.allow(access: .screen)
 
-        XCTAssertEqual(host.opened, [MacAccess.screen.pane, MacAccess.helper.pane].compactMap { $0 })
+        XCTAssertNil(book.grant?.spot)
+        XCTAssertEqual(book.grant?.steps, [.screen])
+        XCTAssertEqual(book.grant?.title(of: nil), "Allow Screen Recording")
+        XCTAssertEqual(book.page, .accessOf(.screen))
+        await book.endGrant()
+        XCTAssertNil(book.grant)
     }
 
     func testNewMakesTheAccountAndTheFactsShowIt() async throws {

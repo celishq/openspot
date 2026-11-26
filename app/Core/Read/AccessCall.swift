@@ -15,7 +15,7 @@ enum AccessCall: NounCall {
             rule: CallRule(use: .read, used: "asked for access to read", inShow: .waits, flags: .needsApp)
         ) { $0.one.map(Self.ask) },
         CommandVerb(
-            "grant", "[id] [--end]", "With a spot, opens Settings at it and walks you through each macOS access that it lacks, one at a time, beside System Settings. With none, it prints the guided grant that runs as one block: item=grant, the spot=, its steps=, the step= it waits on with the place= of its switch in System Settings, the steps it is done= with, and restart=true when the step needs Openspot to start again. It prints nothing when none runs. --end ends it.",
+            "grant", "[id] [--end]", "With a spot, opens Settings at it and walks you through each macOS access that it lacks. With an access, such as screen, it walks you through that one, at its page, one at a time, beside System Settings. With none, it prints the guided grant that runs as one block: item=grant, the spot=, its steps=, the step= it waits on with the place= of its switch in System Settings, the steps it is done= with, and restart=true when the step needs Openspot to start again. It prints nothing when none runs. --end ends it.",
             rule: CallRule(use: .spots, used: "used the guided grant", flags: .needsApp)
         ) { words in
             guard let fit = words.fit, fit.rest.count <= 1, fit.rest.isEmpty || !fit.has("--end") else { return nil }
@@ -46,10 +46,16 @@ enum AccessCall: NounCall {
         let (places, mac, access, runs) = (context.places, context.mac, context.api.access, context.runs)
         return CommandAnswer.work {
             let config = places.config.read()
-            guard let spot = try places.spots.scan().scripts.first(where: { $0.id == id }) else {
-                throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
-            }
+            let found = try places.spots.scan().scripts.first(where: { $0.id == id })
             let statuses = await access.read(from: mac, browsers: config.browsers).statuses
+            guard let spot = found else {
+                guard let asked = MacAccess(rawValue: id) else {
+                    throw SpotError.failed(1, "Openspot has no spot or access `\(id)`. Run `openspot spot list` or `openspot access list` to see each one.")
+                }
+                guard statuses[asked] != .allowed else { return "Openspot has \(asked.title).\n" }
+                guard await app.grant(nil, needs: [asked]) else { throw SpotError.failed(1, "Openspot has no Settings to walk you through. Open Settings, then run this again.") }
+                return "Settings walks you through \(asked.title).\n"
+            }
             let last = (runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]
             let needs = SpotStanding(spot, written: KeptCalls.shared.read(spot), statuses: statuses, last: last, refused: [:]).missing
             guard !needs.isEmpty else { return "\(spot.name) has each macOS access it needs.\n" }

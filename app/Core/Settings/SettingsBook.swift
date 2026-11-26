@@ -240,9 +240,8 @@ public final class SettingsBook {
         await run(SpotCall.allow(spot, use: use.rawValue), as: "spot allow")
     }
 
-    public func ask(_ access: MacAccess) async {
-        guard access == .accessibility else { return openPane(of: access) }
-        await run(AccessCall.ask(access.rawValue), as: "access ask")
+    public func allow(access: MacAccess) async {
+        await run(AccessCall.grant(access.rawValue, end: false), as: "access grant")
     }
 
     public func openPane(of access: MacAccess) {
