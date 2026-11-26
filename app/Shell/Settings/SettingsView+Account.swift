@@ -8,25 +8,9 @@ extension SettingsView {
         let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.signedIn {
-                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), account.handle.map { "@\($0)" } ?? SettingsPage.Section.account.title, SettingsPage.Section.account.line) {
+                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "Your Publisher Card", SettingsPage.Section.account.line) {
                     Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
-                }
-                group(nil) {
-                    lines(account.lines) { fact in
-                        HStack {
-                            Text(fact.title)
-                            Spacer(minLength: SpotTokens.settingsValueGap)
-                            Text(fact.value)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .textSelection(.enabled)
-                            if fact.id == "npub" {
-                                Button("Copy") { copy(fact.value) }
-                            }
-                        }
-                    }
                 }
                 group("Backup") {
                     if let sync = account.sync {

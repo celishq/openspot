@@ -275,6 +275,22 @@ extension SpotTokens {
     public static let windowFooterPadding: CGFloat = builtIn.space.padding
     public static let windowRowPadding: CGFloat = 10
 
+    public static let emblemSide: CGFloat = 26
+    public static let publisherWidth: CGFloat = 340
+    public static let publisherTiltReach = CGSize(width: 10, height: 7)
+    public static let publisherRatio = 263.0 / 166.0
+    public static let publisherRadius: CGFloat = 14
+    public static let publisherInset: CGFloat = 16
+    public static let publisherLineGap: CGFloat = 8
+    public static let publisherCatchShift: CGFloat = 0.8
+    public static let publisherPillBlur: CGFloat = 6
+    public static let publisherPillGap: CGFloat = 5
+    public static let publisherPillHeight: CGFloat = 22
+    public static let publisherPillCharWidth = 6.3
+    public static let publisherPillRoom = 33.0
+    public static let publisherRim: CGFloat = 1
+    public static var settingsCardReveal: CGFloat { settingsPagePadding + publisherWidth / publisherRatio + 2 * publisherTiltReach.height + settingsHeroGap }
+
     public static let storeInset: CGFloat = 16
     public static let storeHeadingGap: CGFloat = 10
     public static let storeTilePadding: CGFloat = 12
