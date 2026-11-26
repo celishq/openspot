@@ -8,7 +8,7 @@ struct StoreTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.storeTilePadding) {
             preview
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(height: SpotTokens.storePreviewHeight)
             HStack(spacing: SpotTokens.wordsGap) {
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {

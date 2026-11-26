@@ -17,12 +17,16 @@ struct StoreCardPreview: View {
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .spotGlass(in: shape)
             .environment(\.spotIsShown, true)
-            .scaleEffect(fits ? min(1, SpotTokens.storePreviewWidth / frame.width, SpotTokens.storePreviewHeight / frame.height) : 1)
-            .frame(height: fits ? SpotTokens.storePreviewHeight : frame.height)
+            .scaleEffect(scale(of: frame))
+            .frame(width: frame.width * scale(of: frame), height: frame.height * scale(of: frame))
             .allowsHitTesting(false)
             .task(id: spot.id) {
                 for view in spot.views.values { await SpotViews.shared.load(view) }
             }
+    }
+
+    private func scale(of frame: CGSize) -> CGFloat {
+        fits ? min(1, SpotTokens.storePreviewWidth / frame.width, SpotTokens.storePreviewHeight / frame.height) : 1
     }
 
     @ViewBuilder

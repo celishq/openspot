@@ -186,8 +186,8 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(clock.preview.size, .wide)
         XCTAssertTrue(clock.preview.face.draws(on: .wide))
         let paste = try XCTUnwrap(store.cards.first { $0.id == "paste" })
-        XCTAssertEqual(paste.preview.size, .wide)
-        XCTAssertFalse(paste.preview.face.draws(on: .wide))
+        XCTAssertEqual(paste.preview.size, .strip)
+        XCTAssertFalse(paste.preview.face.draws(on: .strip))
     }
 
     func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {

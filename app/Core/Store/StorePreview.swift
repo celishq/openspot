@@ -6,7 +6,7 @@ public struct StorePreview: Equatable, Sendable {
 
     public init(face: ViewTree, spot: Spot) {
         self.face = face
-        size = ([spot.size] + SpotSize.all).first(where: face.draws) ?? spot.size
+        size = ([spot.size] + SpotSize.all).first(where: face.draws) ?? .strip
     }
 
     init(of spot: Spot) {

@@ -31,16 +31,17 @@ extension StoreView {
                 }
             }
         } else if source != nil {
-            Section {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
-                    ForEach(store.cards) { card in StoreTile(store: store, card: card) }
+            Section {} header: {
+                VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
+                        ForEach(store.cards) { card in StoreTile(store: store, card: card) }
+                    }
+                    Text("Drag a spot to My spots to install it.")
+                        .font(SpotType.settingsLine)
+                        .foregroundStyle(.secondary)
                 }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-            } footer: {
-                Text("Drag a spot to My spots to install it.")
-                    .font(SpotType.settingsLine)
-                    .foregroundStyle(.secondary)
+                .textCase(nil)
+                .foregroundStyle(.primary)
             }
         } else {
             ForEach(store.groups) { shelf in
