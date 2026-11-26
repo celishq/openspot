@@ -64,15 +64,19 @@ public final class Shelf {
     }
 
     func slot(at corner: CGPoint, size: SpotSize) -> ShelfSlot? {
-        guard let layout, let room else { return nil }
-        let point = CGPoint(x: room.panelOrigin.x + corner.x, y: corner.y + room.panelOrigin.y - layout.band.lowerBound - SpotTokens.scrollFadeLength + scroll)
-        return layout.slot(near: point, size: size)
+        guard let layout, let offset = inPanel else { return nil }
+        return layout.slot(near: CGPoint(x: corner.x - offset.width, y: corner.y - offset.height), size: size)
     }
 
     public func origin(of id: String) -> CGPoint? {
-        guard let layout, let room, let index = spots.firstIndex(where: { $0.id == id }), layout.rects.indices.contains(index) else { return nil }
+        guard let layout, let offset = inPanel, let index = spots.firstIndex(where: { $0.id == id }), layout.rects.indices.contains(index) else { return nil }
         let rect = layout.rects[index]
-        return CGPoint(x: rect.minX - room.panelOrigin.x, y: layout.band.lowerBound + SpotTokens.scrollFadeLength + rect.minY - scroll - room.panelOrigin.y)
+        return CGPoint(x: rect.minX + offset.width, y: rect.minY + offset.height)
+    }
+
+    private var inPanel: CGSize? {
+        guard let layout, let room else { return nil }
+        return CGSize(width: -room.panelOrigin.x, height: layout.band.lowerBound + SpotTokens.scrollFadeLength - scroll - room.panelOrigin.y)
     }
 
     func size(of id: String) -> SpotSize? {
