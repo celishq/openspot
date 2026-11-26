@@ -45,8 +45,14 @@ extension StoreView {
             }
         } else {
             ForEach(store.groups) { shelf in
-                group(shelf.title) {
-                    lines(shelf.cards) { card in cardLine(card) }
+                if shelf.folds, let title = shelf.title {
+                    folding("\(title) (\(shelf.cards.count))", isFolded: $isBuiltInFolded) {
+                        lines(shelf.cards) { card in cardLine(card) }
+                    }
+                } else {
+                    group(shelf.title) {
+                        lines(shelf.cards) { card in cardLine(card) }
+                    }
                 }
             }
         }

@@ -6,6 +6,7 @@ struct StoreView: PageView {
     let model: SpotsModel?
     @State var isTrying = false
     @State var areFilesFolded = true
+    @State var isBuiltInFolded = true
     @State var sample: StoreSample?
     @State private var shownAsk: StoreAsk?
 

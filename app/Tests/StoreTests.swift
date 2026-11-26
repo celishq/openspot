@@ -172,6 +172,7 @@ final class StoreTests: XCTestCase {
 
         XCTAssertEqual(store.groups.map(\.title), ["Yours", "Comes with Openspot"])
         XCTAssertEqual(store.groups.map { $0.cards.map(\.id) }, [["mine"], ["timer"]])
+        XCTAssertEqual(store.groups.map(\.folds), [false, true])
         store.choose(.source(.builtIn(examples)))
         XCTAssertEqual(store.groups.map(\.title), [nil])
     }

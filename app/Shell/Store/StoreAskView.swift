@@ -17,11 +17,11 @@ struct StoreAskView: View {
     private var content: some View {
         switch ask {
         case .clash(let review):
-            title("“\(review.name)” is already in My spots.", "Replace it with the one you’re installing? Replace moves yours to the Trash, and Keep Both installs this one under a new name. Its data stays either way.")
+            title("“\(review.name)” is already in My spots.", "Replace moves yours to the Trash. Keep Both installs this one under a new name. Its data stays either way.")
             buttons {
                 Button("Keep Both") { Task { await store.confirm(.keepBoth) } }
                 Spacer(minLength: 0)
-                Button("Stop") { store.dismissAsk() }
+                Button("Cancel") { store.dismissAsk() }
                     .keyboardShortcut(.cancelAction)
                 Button("Replace") { Task { await store.confirm(.replace) } }
                     .keyboardShortcut(.defaultAction)
@@ -51,7 +51,7 @@ struct StoreAskView: View {
             powers(change)
             buttons {
                 Spacer(minLength: 0)
-                Button("Stop") { store.dismissAsk() }
+                Button("Cancel") { store.dismissAsk() }
                     .keyboardShortcut(.cancelAction)
                 Button("Replace") { Task { await store.confirm(.replace) } }
                     .keyboardShortcut(.defaultAction)
