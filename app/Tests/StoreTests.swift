@@ -167,6 +167,21 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(page.trust.map(\.title), ["Uses", "Runs by itself", "Files"])
     }
 
+    func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
+        try "# Clock\n\nTells the time\nof each city.\n- one\n- two\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        _ = await store.show("clock", search: nil)
+
+        let shown = try XCTUnwrap(store.page?.shown).map { line -> String in
+            switch line {
+            case .heading(let text): "# \(text)"
+            case .text(let text): String(text.characters)
+            case .media(let path, _): path
+            }
+        }
+        XCTAssertEqual(shown, ["# Clock", "Tells the time of each city.", "- one", "- two"])
+    }
+
     func testOpenWithTextSearchesTheFirstSourceThatHasAMatch() async throws {
         let found = await store.show(nil, search: "paste")
 

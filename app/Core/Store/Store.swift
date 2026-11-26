@@ -269,7 +269,7 @@ public final class Store {
 
     private nonisolated static func readme(beside spot: Spot) -> (lines: [String], shown: [StoreReadmeLine]) {
         let lines = SpotReadme.lines(at: SpotReadme.url(beside: spot.url))
-        return (lines, lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.map(StoreReadmeLine.init))
+        return (lines, StoreReadmeLine.paragraphs(lines))
     }
 
     private nonisolated static func name(ofSource entry: SpotLock.Entry, in places: AppPlaces, config: Config) -> String {
