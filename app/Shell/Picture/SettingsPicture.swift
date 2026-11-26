@@ -10,13 +10,15 @@ enum SettingsPicture {
     static func run(path: String, at place: String?, isLight: Bool) -> Never {
         SpotPicture.start(isLight: isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
-        model.runs.api = CommandAPI(mac: SpotMac().mac, places: model.files, runs: model.runs)
+        var mac = SpotMac().mac
+        mac.reads = SpotReads(frontApp: { nil })
+        model.runs.api = CommandAPI(mac: mac, places: model.files, runs: model.runs)
         Task { @MainActor in
             await model.reload()
             model.panelWillShow()
             await model.waitForShows()
             await model.settingsBook.read()
-            if let place { model.settingsBook.land(SettingsPage(place: place) ?? .access) }
+            if let place { model.settingsBook.land(SettingsPlace(place: place) ?? .general) }
             draw(model: model, isLight: isLight, to: path)
         }
         NSApplication.shared.run()

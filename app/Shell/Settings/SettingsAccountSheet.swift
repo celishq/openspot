@@ -81,24 +81,7 @@ struct SettingsAccountSheet: View {
     }
 
     private var how: some View {
-        Group {
-            title("How your key works", "Openspot signs each spot you publish with your key. There is no email, password or server.")
-            VStack(alignment: .leading, spacing: SpotTokens.settingsRowGap) {
-                fact("Shows an update is yours", "checkmark.seal")
-                fact("Kept in iCloud Keychain", "icloud")
-                fact("12 words bring it back", "list.number")
-                fact("Anyone with the words is you", "eye.slash")
-                fact("Nobody can reset them", "exclamationmark.triangle", SpotTheme.settingsLate)
-            }
-            HStack {
-                Spacer()
-                Button("Done") { step = nil }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-            }
-            .controlSize(.large)
-            .padding(.top, SpotTokens.settingsSheetTop)
-        }
+        SettingsExplainer(title: "How your key works", line: "Openspot signs each spot you publish with your key. There is no email, password or server.", facts: AccountStatus.about) { step = nil }
     }
 
     private var handleStep: some View {

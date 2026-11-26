@@ -2,31 +2,19 @@ import OpenspotCore
 import SwiftUI
 
 extension SettingsView {
-    var spotsPage: some View {
-        Group {
-            title(of: .spots)
-            ForEach(book.spots.groups) { spots in
-                group(spots.id) {
-                    lines(spots.standings) { spotLine($0) }
-                }
-            }
-        }
-    }
-
     func spotPage(of standing: SpotStanding) -> some View {
         Group {
-            title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsHeaderTile), standing.title, standing.detail) {}
+            title(.header, SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsCompactTile), standing.title, standing.detail) {}
             if let banner = standing.banner {
                 self.banner(standing, banner.title, banner.line)
             }
-            group("Permissions") {
-                if standing.uses.isEmpty {
-                    plain("This spot doesn’t need any permissions.")
-                }
-                lines(standing.uses) { useLine($0) }
-            }
             ForEach(book.rows.groups(of: standing.id)) { rows in
                 group(rows.id) { lines(rows.rows) { settingLine($0) } }
+            }
+            if !standing.uses.isEmpty {
+                group("Access") {
+                    lines(standing.uses) { useLine($0) }
+                }
             }
         }
     }
@@ -34,8 +22,10 @@ extension SettingsView {
     private func banner(_ standing: SpotStanding, _ title: String, _ line: String) -> some View {
         Section {
             HStack(spacing: SpotTokens.settingsRowGap) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(SpotTheme.settingsLate)
+                Circle()
+                    .fill(SpotTheme.settingsState(standing.readiness))
+                    .frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
+                    .frame(width: SpotTokens.settingsRowTile)
                 titled(title, line)
                 Spacer(minLength: SpotTokens.settingsTrailingGap)
                 fix(standing)
@@ -78,65 +68,19 @@ extension SettingsView {
         }
     }
 
-    var keysPage: some View {
-        Group {
-            title(of: .keys)
-            if !book.keys.clashes.isEmpty {
-                Section {
-                    ForEach(Array(book.keys.clashes.enumerated()), id: \.offset) { _, clash in
-                        HStack(spacing: SpotTokens.settingsRowGap) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(SpotTheme.settingsClash)
-                            titled(clash.title, clash.line)
-                        }
-                    }
-                }
-            }
-            ForEach(book.keys.set) { keys in
-                group(keys.id) {
-                    lines(keys.rows) { row in
-                        HStack(spacing: SpotTokens.settingsValueGap) {
-                            Text(row.title)
-                                .lineLimit(1)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            keycaps(row)
-                        }
-                        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
-                        .id(row.item)
-                    }
-                }
-            }
-            Section {
-                if let adding = book.recording.flatMap(book.rows.row), (adding.value ?? "").isEmpty {
-                    HStack(spacing: SpotTokens.settingsValueGap) {
-                        Text("\(adding.name) · \(adding.title)")
-                            .lineLimit(1)
-                        Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        keycaps(adding)
-                    }
-                }
-            } footer: {
-                HStack {
-                    Spacer(minLength: 0)
-                    Menu("Add Shortcut…") {
-                        ForEach(book.keys.unset) { keys in
-                            Menu(keys.id) {
-                                ForEach(keys.rows) { row in
-                                    Button(row.title) { book.startRecording(row) }
-                                }
-                            }
-                        }
-                    }
-                    .fixedSize()
-                    .disabled(book.keys.unset.isEmpty)
-                }
-            }
+    func keyLine(_ row: SettingRow, title: String? = nil) -> some View {
+        HStack(spacing: SpotTokens.settingsValueGap) {
+            titled(title ?? row.title, book.rows.clash(of: row.item) ?? "")
+            Spacer(minLength: SpotTokens.settingsTrailingGap)
+            keycaps(row)
         }
+        .listRowBackground(book.target == row.item ? Color.accentColor.opacity(SpotTheme.settingsTarget) : nil)
+        .id(row.item)
     }
 
     func keycaps(_ row: SettingRow) -> some View {
         let caps = book.value(of: row).caps
-        let clash = book.keys.clashing.contains(row.item)
+        let clash = book.rows.clashing.contains(row.item)
         let isRecording = book.recording == row.item
         let field = SpotRoundShape(radius: SpotTokens.settingsRecordCorner)
         let ink: Color = isRecording ? .accentColor : clash ? SpotTheme.settingsClash : caps.isEmpty ? .secondary : .primary

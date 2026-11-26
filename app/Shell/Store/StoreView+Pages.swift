@@ -82,8 +82,8 @@ extension StoreView {
         let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
         Section {} header: {
             VStack(alignment: .leading, spacing: SpotTokens.settingsHeadingGap) {
-                HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
-                    SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile)
+                HStack(alignment: .center, spacing: SpotTokens.settingsCompactGap) {
+                    SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsCompactTile)
                     VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                         Text(page.spot.name)
                             .font(SpotType.settingsHeader)

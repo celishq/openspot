@@ -197,21 +197,25 @@ extension SpotTokens {
     public static let settingsSidebarIdeal: CGFloat = 240
     public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
-    public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
-    public static var settingsHeroReveal: CGFloat { settingsPagePadding + settingsHeroAvatar + settingsHeroGap }
+    public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsCompactPadding + settingsCompactTile }
+    public static var settingsBannerReveal: CGFloat { settingsPagePadding + settingsBannerPadding + settingsBannerTile + 2 * settingsBannerGap + settingsTitleLine }
+    public static let settingsBannerTile: CGFloat = 56
+    public static let settingsBannerGap: CGFloat = 6
+    public static let settingsBannerPadding: CGFloat = 18
+    public static let settingsCompactTile: CGFloat = 32
+    public static let settingsCompactGap: CGFloat = 12
+    public static let settingsCompactPadding: CGFloat = 4
     public static var settingsHeadingReveal: CGFloat { settingsPagePadding + settingsTitleLine }
     public static let settingsTitleLine: CGFloat = 32
     public static let settingsHeadingGap: CGFloat = 20
     public static let settingsAccountTile: CGFloat = 28
     public static let settingsAccountPadding: CGFloat = 8
-    public static let settingsAccountCorner: CGFloat = 8
     public static let settingsAccountInset: CGFloat = 10
     public static let settingsFormWidth: CGFloat = 640
     public static let settingsBarFade: CGFloat = 14
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 22
     public static let settingsHeaderTile: CGFloat = 52
-    public static let settingsHeroAvatar: CGFloat = 72
     public static let settingsHeroGap: CGFloat = 8
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44
@@ -221,8 +225,6 @@ extension SpotTokens {
     public static let settingsCorner: CGFloat = 10
     public static let settingsRim: CGFloat = 0.5
     public static let settingsGroupGap: CGFloat = 8
-    public static let settingsHeaderGap: CGFloat = 14
-    public static let settingsHeaderPadding: CGFloat = 16
     public static let settingsTitleGap: CGFloat = 4
     public static let settingsLineGap: CGFloat = 1
     public static let settingsTrailingGap: CGFloat = 8
@@ -242,7 +244,8 @@ extension SpotTokens {
     public static let settingsLookTopInset: CGFloat = 14
     public static let settingsLookRing: CGFloat = 3
     public static let settingsLookCardRing: CGFloat = 4
-    public static let settingsLookCheckInset: CGFloat = 6
+    public static let settingsLookDash: [CGFloat] = [5, 4]
+    public static let settingsWishLines = 3
     public static let settingsSheetWidth: CGFloat = 460
     public static let settingsSheetPadding: CGFloat = 24
     public static let settingsSheetGap: CGFloat = 14
@@ -273,6 +276,22 @@ extension SpotTokens {
     public static let windowFooterGap: CGFloat = builtIn.space.columnGap
     public static let windowFooterPadding: CGFloat = builtIn.space.padding
     public static let windowRowPadding: CGFloat = 10
+
+    public static let emblemSide: CGFloat = 26
+    public static let publisherWidth: CGFloat = 340
+    public static let publisherTiltReach = CGSize(width: 10, height: 7)
+    public static let publisherRatio = 263.0 / 166.0
+    public static let publisherRadius: CGFloat = 14
+    public static let publisherInset: CGFloat = 16
+    public static let publisherLineGap: CGFloat = 8
+    public static let publisherCatchShift: CGFloat = 0.8
+    public static let publisherPillBlur: CGFloat = 6
+    public static let publisherPillGap: CGFloat = 5
+    public static let publisherPillHeight: CGFloat = 22
+    public static let publisherPillCharWidth = 6.3
+    public static let publisherPillRoom = 33.0
+    public static let publisherRim: CGFloat = 1
+    public static var settingsCardReveal: CGFloat { settingsPagePadding + publisherWidth / publisherRatio + 2 * publisherTiltReach.height + settingsHeroGap }
 
     public static let storeInset: CGFloat = 16
     public static let storeHeadingGap: CGFloat = 10

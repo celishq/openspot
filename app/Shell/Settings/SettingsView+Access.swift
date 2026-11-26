@@ -6,22 +6,7 @@ extension SettingsView {
         let needed = book.access.needed
         let rest = book.access.unneeded
         return Group {
-            title(.header, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.Section.access.title, SettingsPage.Section.access.line) {
-                Button("About Access…") { isAboutShown = true }
-                    .buttonStyle(.link)
-            }
-            if !book.spots.waiting.isEmpty {
-                group("Needs Attention") {
-                    lines(book.spots.waiting) { standing in
-                        row(open: .spotOf(standing.id)) {
-                            SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
-                            titled(standing.title, standing.lack)
-                            Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            fix(standing)
-                        }
-                    }
-                }
-            }
+            title(.banner, SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsBannerTile), SettingsPage.Section.access.title, SettingsPage.Section.access.line, link: PageLink(title: "How Access Works…") { isAboutShown = true }) {}
             if !needed.isEmpty {
                 group("Privacy & Security") {
                     lines(needed) { access in
@@ -58,7 +43,7 @@ extension SettingsView {
         let needers = access.spots.compactMap(book.spots.standing)
         let maybes = access.maybe.compactMap(book.spots.standing)
         return Group {
-            title(.header, SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
+            title(.header, SettingsTile(access: access.id, side: SpotTokens.settingsCompactTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
                 if !access.isAllowed {
                     Button("Allow…") { act { await $0.ask(access.id) } }
                         .controlSize(.large)
@@ -80,21 +65,10 @@ extension SettingsView {
     }
 
     var about: some View {
-        VStack(alignment: .leading, spacing: SpotTokens.settingsValueGap) {
-            Text("About access")
-                .font(SpotType.settingsTitle)
-            ForEach(MacAccess.about, id: \.self) { Text($0) }
-            HStack {
-                Spacer()
-                Button("Done") { isAboutShown = false }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding(.top, SpotTokens.settingsSheetTop)
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(SpotTokens.settingsSheetPadding)
-        .frame(width: SpotTokens.settingsSheetWidth)
+        SettingsExplainer(title: "How access works", line: "A spot uses a feature of your Mac only through Openspot, and only after you allow it once.", facts: MacAccess.about, states: SpotReadiness.allCases) { isAboutShown = false }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(SpotTokens.settingsSheetPadding)
+            .frame(width: SpotTokens.settingsSheetWidth, alignment: .leading)
     }
 
     @ViewBuilder

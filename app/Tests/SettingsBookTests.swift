@@ -33,7 +33,7 @@ final class SettingsBookTests: PanelCase {
     }
 
     private func land(_ place: String) throws {
-        book.land(try XCTUnwrap(SettingsPage(place: place), "no place \(place)"))
+        book.land(try XCTUnwrap(SettingsPlace(place: place), "no place \(place)"))
     }
 
     private func row(_ item: String) throws -> SettingRow {
@@ -74,6 +74,18 @@ final class SettingsBookTests: PanelCase {
         XCTAssertTrue(book.index.found("zzz-none").isEmpty)
     }
 
+    func testASearchForShortcutOrKeyListsEveryShortcut() async throws {
+        try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
+        await read()
+
+        let shortcuts = book.index.found("shortcut").rows
+        let keys = book.index.found("key").rows.filter { $0.kind == .key }
+
+        XCTAssertEqual(Set(shortcuts.map(\.item)), Set(book.rows.all.filter { $0.kind == .key }.map(\.item)))
+        XCTAssertTrue(shortcuts.contains { $0.item == "cups/key.fill" })
+        XCTAssertEqual(Set(keys.map(\.item)), Set(shortcuts.map(\.item)))
+    }
+
     func testItLandsWhereTheWayInAsks() async throws {
         try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await read()
@@ -89,33 +101,79 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.page, .general)
         XCTAssertEqual(book.target, "openspot/panel-key")
         try land("keys")
-        XCTAssertEqual(book.page, .keys)
+        XCTAssertEqual(book.page, .general)
+        try land("spot")
+        XCTAssertEqual(book.page, .general)
         try land("account")
         XCTAssertEqual(book.page, .account)
         try land("search/screen")
         XCTAssertEqual(book.query, "screen")
     }
 
-    func testEachPlaceReadsBackFromItsWords() {
-        let places: [SettingsPage] = [.access, .accessOf(.screen), .spots, .spotOf("tools/a"), .keys, .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
+    func testSettingsOpensOnGeneralWithTheSectionsInTheirOrder() {
+        XCTAssertEqual(SettingsBook().page, .general)
+        XCTAssertEqual(SettingsPage.Section.allCases, [.general, .look, .access, .developer])
+        XCTAssertEqual(SettingsPage.Section.access.title, "Privacy")
+        XCTAssertEqual(SettingsPlace(place: "privacy"), .access)
+        XCTAssertEqual(SettingsPlace(place: "access"), .access)
+    }
 
-        XCTAssertEqual(places.map { SettingsPage(place: $0.place) }, places)
-        XCTAssertNil(SettingsPage(place: "access/nothing"))
-        XCTAssertNil(SettingsPage(place: "nowhere"))
+    func testASpotPageMarksItsRowAndAnAccessPageKeepsTheMarkItCameFrom() async throws {
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']", "openspot screen shot")
+        await read()
+        book.land(.general)
+
+        book.go(.spotOf("cups"))
+        XCTAssertEqual(book.mark, .spotOf("cups"))
+        XCTAssertEqual(book.title, "Cups")
+        book.go(.accessOf(.screen))
+        XCTAssertEqual(book.mark, .spotOf("cups"))
+        XCTAssertEqual(book.title, "Cups › \(MacAccess.screen.title)")
+        book.go(.access)
+        book.go(.accessOf(.screen))
+
+        XCTAssertEqual(book.mark, .access)
+        XCTAssertEqual(book.title, "Privacy › \(MacAccess.screen.title)")
+        book.goBack()
+        book.goBack()
+        XCTAssertEqual(book.mark, .spotOf("cups"))
+    }
+
+    func testTheSidebarListsEachSpotOnceByNameAndASearchNarrowsIt() async throws {
+        try script("mugs", toml: "title = 'Mugs'\n[actions.pour]\ntitle = 'Pour'", "")
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'", "openspot screen shot")
+        accesses.set(.screen, to: .denied)
+        await read()
+
+        XCTAssertEqual(book.shownSpots.filter { ["cups", "mugs"].contains($0.id) }.map(\.id), ["cups", "mugs"])
+        XCTAssertTrue(try XCTUnwrap(book.shownSpots.first { $0.id == "cups" }).lacks)
+        book.search("pour")
+
+        XCTAssertEqual(book.shownSpots.map(\.id), ["mugs"])
+        book.search("")
+        XCTAssertGreaterThan(book.shownSpots.count, 1)
+    }
+
+    func testEachPlaceReadsBackFromItsWords() {
+        let places: [SettingsPlace] = [.access, .accessOf(.screen), .spotOf("tools/a"), .look, .account, .general, .developer, .row("openspot/panel-key"), .search("screen rec")]
+
+        XCTAssertEqual(places.map { SettingsPlace(place: $0.place) }, places)
+        XCTAssertNil(SettingsPlace(place: "access/nothing"))
+        XCTAssertNil(SettingsPlace(place: "nowhere"))
     }
 
     func testBackAndForwardWalkThePagesSeen() async throws {
         await read()
         book.land(.access)
 
-        book.go(.keys)
+        book.go(.developer)
         book.go(.look)
         book.goBack()
-        XCTAssertEqual(book.page, .keys)
+        XCTAssertEqual(book.page, .developer)
         book.goForward()
 
         XCTAssertEqual(book.page, .look)
-        XCTAssertEqual(book.back, [.access, .keys])
+        XCTAssertEqual(book.trail.back.map(\.page), [.access, .developer])
     }
 
     func testASetWritesThroughSettingSetAndARemovalOfItsValueTakesItAway() async throws {
@@ -182,15 +240,15 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testAChoiceWithNoValueShowsItsDefault() {
-        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: .spots, icon: "", options: ["name", "date"], default: "date")
+        let row = SettingRow(spot: "notes", name: "Notes", key: "sort", title: "Sort", value: nil, kind: .choice, section: nil, icon: "", options: ["name", "date"], default: "date")
 
         XCTAssertEqual(book.value(of: row), .text("date"))
     }
 
     func testAValueReadsAsItsKind() {
-        let toggle = SettingRow(spot: "notes", name: "Notes", key: "menubar", title: "Menu bar", value: "true", kind: .toggle, section: .spots, icon: "")
-        let key = SettingRow(spot: "notes", name: "Notes", key: "open", title: "Open", value: "ctrl+option+k", kind: .key, section: .spots, icon: "")
-        let secret = SettingRow(spot: "notes", name: "Notes", key: "token", title: "Token", value: SettingRow.secretValue, kind: .secret, section: .spots, icon: "")
+        let toggle = SettingRow(spot: "notes", name: "Notes", key: "menubar", title: "Menu bar", value: "true", kind: .toggle, section: nil, icon: "")
+        let key = SettingRow(spot: "notes", name: "Notes", key: "open", title: "Open", value: "ctrl+option+k", kind: .key, section: nil, icon: "")
+        let secret = SettingRow(spot: "notes", name: "Notes", key: "token", title: "Token", value: SettingRow.secretValue, kind: .secret, section: nil, icon: "")
 
         XCTAssertTrue(book.value(of: toggle).isOn)
         XCTAssertEqual(book.value(of: key).caps, ["⌃", "⌥", "K"])
@@ -212,6 +270,16 @@ final class SettingsBookTests: PanelCase {
 
         XCTAssertEqual(config.theme, "Dracula")
         XCTAssertEqual(book.looks.first { $0.isUsed }?.id, "Dracula")
+    }
+
+    func testAThemePromptAsksForTheWordsOverTheThemeInUse() async throws {
+        await read()
+        await book.use(theme: "Dracula")
+
+        let asked = await book.themePrompt(words: "warm sunset colours")
+        let prompt = try XCTUnwrap(asked)
+
+        XCTAssertTrue(prompt.contains("its theme Dracula: warm sunset colours"))
     }
 
     func testAFailedActSaysWhyInAToast() async throws {
@@ -284,9 +352,9 @@ final class SettingsBookTests: PanelCase {
         await book.set(try row("cups/open"), to: "ctrl+option+k")
         await book.set(try row("mugs/open"), to: "option+ctrl+k")
 
-        XCTAssertEqual(book.keys.clashing, ["cups/open", "mugs/open"])
-        XCTAssertEqual(book.keys.clashes.map(\.title), ["⌃⌥K does two things"])
-        XCTAssertEqual(book.keys.clashes.map(\.line), ["Cups · Open and Mugs · Open. Change one of them."])
+        XCTAssertEqual(book.rows.clashing, ["cups/open", "mugs/open"])
+        XCTAssertEqual(book.rows.clash(of: "cups/open"), "Also Mugs · Open")
+        XCTAssertNil(book.rows.clash(of: "cups/key.fill"))
     }
 
     func testAUseSaysTheAccessItNeedsAndMayAskFor() {
@@ -300,19 +368,15 @@ final class SettingsBookTests: PanelCase {
         await read()
         let cups = try XCTUnwrap(book.spots.standing("cups"))
 
-        XCTAssertEqual(book.rows.groups(of: "cups").map(\.id), ["Keyboard Shortcuts", "Settings", "Where It Shows"])
+        XCTAssertEqual(book.rows.groups(of: "cups").map(\.id), ["Shortcuts", "Settings", "Where It Shows"])
         XCTAssertEqual(book.rows.groups(of: "cups")[1].rows.map(\.key), ["city"])
         XCTAssertEqual(cups.banner?.title, "Cups can’t run yet")
         XCTAssertEqual(cups.banner?.line, "It needs Screen Recording from macOS.")
         XCTAssertEqual(cups.lack, "Needs Screen Recording")
         XCTAssertEqual(book.access.needed.map(\.id), [.screen])
         XCTAssertFalse(book.access.unneeded.contains { $0.id == .screen })
-        XCTAssertTrue(book.keys.set.allSatisfy { $0.rows.allSatisfy { $0.kind == .key && $0.value != nil } })
-        XCTAssertFalse(book.keys.set.contains { $0.id == "Cups" })
-        XCTAssertEqual(book.keys.unset.last?.id, "Cups")
-        XCTAssertEqual(book.keys.unset.last?.rows.map(\.key), ["open", "key.fill", "float"])
-        XCTAssertEqual(book.spots.groups.map(\.id), ["Needs Attention"])
-        XCTAssertEqual(book.looks.first { $0.isUsed }?.word, "In use")
+        XCTAssertEqual(book.spots.waiting.map(\.id), ["cups"])
+        XCTAssertEqual(Set(book.looks.map(\.group)), [.builtIn])
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }

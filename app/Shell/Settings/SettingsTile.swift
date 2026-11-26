@@ -17,7 +17,7 @@ struct SettingsTile: View {
     }
 
     init(use: SpotUse, access: MacAccess?, side: CGFloat) {
-        self.init(symbol: Self.symbol(of: use), color: access.map(SpotTheme.settings) ?? SpotTheme.settings(.keys), side: side)
+        self.init(symbol: Self.symbol(of: use), color: access.map(SpotTheme.settings) ?? SpotTheme.settings(.general), side: side)
     }
 
     var body: some View {

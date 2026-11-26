@@ -1,6 +1,14 @@
 import Foundation
 
 public struct ListedTheme: Identifiable, Equatable, Sendable {
+    public enum Group: String, CaseIterable, Identifiable, Sendable {
+        case builtIn = "Built In", yours = "Yours"
+
+        public var id: Self {
+            self
+        }
+    }
+
     public let name: String
     public let isBuiltIn: Bool
     public let isUsed: Bool
@@ -11,7 +19,7 @@ public struct ListedTheme: Identifiable, Equatable, Sendable {
         name
     }
 
-    public var word: String {
-        isUsed ? "In use" : isBuiltIn ? "Built in" : "Yours"
+    public var group: Group {
+        isBuiltIn ? .builtIn : .yours
     }
 }
