@@ -35,10 +35,11 @@ The Store is the window that shows which spots you have and where they come from
 with "Look in the Store" at the end of a search, or with `openspot store open`.
 
 1. Look at the sidebar. My spots holds each spot you have, under Updates, Yours and Comes with Openspot. Under
-   Sources come Openspot, the spots that ship with the app, then each folder you added with Add Source…. A source
-   shows each spot as its card with sample data, or as its icon when it has none.
-2. Click a spot. Its page shows its card with Try, its readme, and what it uses, runs by itself and can also do,
-   before you install it. Show Files lists its files.
+   Stores come Openspot, the spots that ship with the app, then each folder you added with Add Store…. A store
+   shows each spot as its card, drawn from its sample data.
+2. Click a spot. Its page shows its card, its readme, and what it uses, runs by itself and can also do, before you
+   install it. Try shows its card at each size, from 1×1 to 4×2, beside its open sheet. Show Files lists its files,
+   and a click on one shows it in Finder.
 3. Press Install on its page, and it is copied at once, since the page is its review. Install on its card, or a drag
    onto My spots, opens the review first, and nothing is copied until its Install. While you drag, My spots says
    Drop to install.
