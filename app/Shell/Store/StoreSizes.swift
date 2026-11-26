@@ -8,7 +8,7 @@ struct StoreSizes: View {
     var width: CGFloat?
 
     private var rows: [[SpotSize]] {
-        [[.small, .wide, .square], [.strip, .large]].map { $0.filter(sizes.contains) }.filter { !$0.isEmpty }
+        [[.small, .wide, .strip], [.square, .large]].map { $0.filter(sizes.contains) }.filter { !$0.isEmpty }
     }
 
     private var scale: CGFloat {
@@ -28,11 +28,8 @@ struct StoreSizes: View {
             ForEach(rows, id: \.self) { row in
                 HStack(alignment: .top, spacing: SpotTokens.storeTileGap * scale) {
                     ForEach(row, id: \.self) { size in
-                        VStack(spacing: SpotTokens.storeTileLineGap) {
+                        StorePreviewUnit(label: "\(size.columns)×\(size.rows)") {
                             StoreCardPreview(spot: spot, face: face, size: size, scale: scale)
-                            Text("\(size.columns)×\(size.rows)")
-                                .font(SpotType.detail)
-                                .foregroundStyle(.secondary)
                         }
                     }
                 }

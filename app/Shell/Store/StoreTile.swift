@@ -20,7 +20,8 @@ struct StoreTile: View {
                     Text(card.spot.subtitle ?? "")
                         .font(SpotType.detail)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2, reservesSpace: true)
+                        .lineLimit(2)
+                        .frame(height: 2 * SpotType.detailLine, alignment: .topLeading)
                 }
                 Spacer(minLength: 0)
                 Group {

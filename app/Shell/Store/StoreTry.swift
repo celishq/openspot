@@ -15,7 +15,7 @@ struct StoreTry: View {
             HStack(alignment: .top, spacing: SpotTokens.storeInset) {
                 StoreSizes(spot: spot, face: output.face, sizes: SpotSize.all, width: SpotTokens.storeTryWidth)
                 if hasSheet {
-                    SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: spot, run: nil)) { output }
+                    StoreSheetPreview(model: model, spot: spot, output: output)
                 }
             }
             HStack {

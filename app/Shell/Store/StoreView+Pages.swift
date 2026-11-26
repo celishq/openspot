@@ -36,6 +36,7 @@ extension StoreView {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
                         ForEach(store.cards) { card in StoreTile(store: store, card: card) }
                     }
+                    .padding(.horizontal, -SpotTokens.storeColumnBleed)
                     Text("Drag a spot to My spots to install it.")
                         .font(SpotType.settingsLine)
                         .foregroundStyle(.secondary)
@@ -60,7 +61,7 @@ extension StoreView {
     private func cardLine(_ card: StoreCard) -> some View {
         row(action: { Task { await store.open(card.id) } }) {
             SettingsSpotIcon(spot: card.spot, side: SpotTokens.settingsRowTile)
-            titled(card.spot.name, card.spot.subtitle ?? "")
+            titled(card.spot.name, card.spot.subtitle ?? " ")
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             switch card.mark {
             case .update:
@@ -86,9 +87,11 @@ extension StoreView {
                     VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                         Text(page.spot.name)
                             .font(SpotType.settingsHeader)
+                            .lineLimit(1)
                         Text(pageLine(page))
                             .font(SpotType.settingsPageLine)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                     Spacer(minLength: SpotTokens.settingsTrailingGap)
                     HStack(spacing: SpotTokens.settingsValueGap) {
@@ -98,19 +101,23 @@ extension StoreView {
                         }
                         if sample?.id == page.id, model != nil {
                             Button("Try") { isTrying = true }
+                                .buttonStyle(.bordered)
                         }
                         button(page)
                     }
                     .controlSize(.large)
+                    .fixedSize()
                 }
-                if preview.drawsCard {
+                VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
                     StoreSizes(spot: page.spot, face: preview.face, sizes: preview.sizes, width: SpotTokens.storeRowWidth)
-                } else if let model, let sample, sample.id == page.id, sample.hasSheet {
-                    SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: page.spot, run: nil), selects: false) { sample.output }
-                        .allowsHitTesting(false)
-                        .frame(maxHeight: SpotTokens.storeSheetPreviewHeight, alignment: .top)
-                        .clipped()
+                    if !preview.drawsCard, let model, let sample, sample.id == page.id, sample.hasSheet {
+                        StoreSheetPreview(model: model, spot: page.spot, output: sample.output, selects: false)
+                            .allowsHitTesting(false)
+                            .frame(maxHeight: SpotTokens.storeSheetPreviewHeight, alignment: .top)
+                            .clipped()
+                    }
                 }
+                .offset(x: -SpotTokens.storeColumnBleed)
             }
             .foregroundStyle(.primary)
             .textCase(nil)
@@ -169,15 +176,15 @@ extension StoreView {
     private func button(_ page: StorePage) -> some View {
         switch page.button {
         case .install:
-            Button("Install") { Task { await store.installPage() } }
+            Button { Task { await store.installPage() } } label: { action("Install") }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
         case .update, .edited, .installed, .locked:
             if page.button == .update {
-                Button("Update") { Task { await store.update(page.id) } }
+                Button { Task { await store.update(page.id) } } label: { action("Update") }
                     .buttonStyle(.borderedProminent)
             } else if let model {
-                Button("Open") { model.openSpot(page.id) }
+                Button { model.openSpot(page.id) } label: { action("Open") }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
@@ -189,10 +196,19 @@ extension StoreView {
             } label: {
                 Image(systemName: "ellipsis")
             }
+            .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
+            .frame(width: SpotTokens.storeActionHeight, height: SpotTokens.storeActionHeight)
+            .background(SpotTheme.ink.opacity(SpotTheme.hover), in: Capsule())
+            .contentShape(Capsule())
             .help("More")
         }
+    }
+
+    private func action(_ title: String) -> some View {
+        Text(title)
+            .frame(minWidth: SpotTokens.storePrimaryWidth)
     }
 
     private func badge(_ button: StoreButton) -> String {

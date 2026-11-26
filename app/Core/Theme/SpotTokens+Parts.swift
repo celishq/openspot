@@ -290,6 +290,9 @@ extension SpotTokens {
     public static let storeSheetPreviewHeight: CGFloat = 320
     public static let storePreviewIcon: CGFloat = 56
     public static let storeActionWidth: CGFloat = 84
+    public static let storeColumnBleed: CGFloat = 10
+    public static let storeActionHeight: CGFloat = 28
+    public static let storePrimaryWidth: CGFloat = 52
     public static let storeReadWidth: CGFloat = 520
     public static let storeMarkGap: CGFloat = 2
     public static let storeMarkPadding: CGFloat = 6
