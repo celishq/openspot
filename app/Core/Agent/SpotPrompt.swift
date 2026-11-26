@@ -26,6 +26,7 @@ public struct SpotPrompt: Equatable, Sendable {
     static let finishNew = "Choose a short name and sensible defaults yourself, and build it to the end."
     static let finishChange = "Make the change to the end, and keep what already works."
     static let review = "Find what works poorly in this spot, such as a call that fails, a slow answer, work while the panel is hidden or a card that looks wrong, and fix it. If nothing does, change nothing and tell me why."
+    static let simplest = "Build it the simplest way that does it, as the guide's Choose how to build it says. If you take a way past a shell script, tell me why."
     static let loadAgain = "Make Openspot load this spot again, and keep what it does."
 
     public func building(_ description: String) -> String {
@@ -84,6 +85,7 @@ public struct SpotPrompt: Equatable, Sendable {
 
     private func rules(for id: String) -> [String] {
         [
+            Self.simplest,
             "It's done when \(quoted) check spots --json \"\(folder.path)\" prints [], and its card looks right in \(quoted) render spot \(id) --card wide card.png.",
             "At the end, run \(quoted) spot open \(id) --select, and tell me what the spot runs on my Mac."
         ]

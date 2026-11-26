@@ -86,6 +86,18 @@ final class SpotPromptTests: XCTestCase {
         }
     }
 
+    func testEachSpotPromptAsksForTheSimplestWayAndAWhyForAnyOther() {
+        let texts = [
+            prompt().building("Show the weather"),
+            prompt().changing(weather, wish: "Show the weather"),
+            prompt().fixing(weather, faults: ["Weather has an unknown key."])
+        ]
+
+        for text in texts {
+            XCTAssertTrue(text.contains(SpotPrompt.simplest), text)
+        }
+    }
+
     func testAChangeNamesTheSpotItsLogAndItsLastFailure() {
         let text = prompt().changing(weather, wish: "Add a refresh button", failure: "The server did not answer.")
 
