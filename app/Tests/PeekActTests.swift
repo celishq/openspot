@@ -80,4 +80,20 @@ final class PeekActTests: PanelCase {
         try await wait("the refusal") { self.host.toasts.contains { $0.note.words.contains("clipboard") } }
         XCTAssertEqual(board.count(), 0)
     }
+
+    func testAButtonWhoseIdHoldsAnotherAsItsStartIsTheSubmenuOfIt() async throws {
+        model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
+        try script("shades", toml: "title = 'Shades'\nuses = [\"clipboard\"]\n\n[on]\n\"sheet.open\" = true", "printf 'item=red\\ntitle=Red\\ntext=#ff0000\\n\\npeek=p\\nparent=red\\n\\ntext=t\\nparent=p\\ntitle=Red\\n\\nbutton=as\\nparent=p\\ntitle=Copy as\\n\\nbutton=as.hex\\nparent=p\\ntitle=HEX\\ncopy=#FF0000\\n\\nbutton=as.rgb\\nparent=p\\ntitle=RGB\\ncopy=rgb(255 0 0)\\n'")
+        await model.reload()
+        model.press("shades")
+        try await wait("the open list") { self.model.openSheet?.list.shown.isEmpty == false }
+        let target = try XCTUnwrap(model.target)
+
+        let row = try XCTUnwrap(model.actionMenu(on: target)?.rows.first { $0.title == "Copy as" })
+
+        XCTAssertEqual(row.children.map(\.title), ["HEX", "RGB"])
+        XCTAssertFalse(model.actionMenu(on: target)?.rows.contains { $0.title == "HEX" } ?? true)
+        model.run(try XCTUnwrap(row.children.last?.action), on: target)
+        try await wait("the copied rgb") { self.board.text() == "rgb(255 0 0)" }
+    }
 }

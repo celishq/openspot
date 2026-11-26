@@ -39,7 +39,9 @@ struct ClipboardCalls {
             case .text:
                 let text = autoreleasepool { mac.text() }
                 guard text.utf8.count <= Timeline.entryLimit, text.contains(where: { !$0.isWhitespace }) else { return "" }
-                return TextBlock(fields: Clipboard.link(in: text).map { AttachmentValue.Kind.url.fields([$0]) } ?? AttachmentValue.Kind.text.fields([text])).text
+                let value = TextBlock(fields: Clipboard.link(in: text).map { AttachmentValue.Kind.url.fields([$0]) } ?? AttachmentValue.Kind.text.fields([text]))
+                let peek = text.count > HexColor.cssLimit ? [] : HexColor(css: text)?.peek ?? []
+                return ([value] + peek).map(\.text).joined(separator: "\n")
             case .image(let kind):
                 guard let data = autoreleasepool(invoking: { mac.image() }) else { return "" }
                 let folder = images.appendingPathComponent("blocks", isDirectory: true)

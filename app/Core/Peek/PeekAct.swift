@@ -47,10 +47,13 @@ public enum PeekAct: Equatable, Sendable {
     }
 
     static func actions(of blocks: [TextBlock]) -> [CommandAction] {
-        blocks.dropFirst().compactMap { block in
-            guard block.fields.first?.key == BlockKind.button.word, let title = block.value("title") else { return nil }
-            if let act = PeekAct(block: block) { return .act(act, title: title) }
-            return block.value(runKey).map { CommandAction(id: $0, title: title, scope: .item, after: .close) }
+        let buttons = blocks.dropFirst().filter { $0.fields.first?.key == BlockKind.button.word }
+        let names = buttons.compactMap { $0.fields.first?.value }
+        return buttons.compactMap { block in
+            guard let name = block.fields.first?.value, let title = block.value("title") else { return nil }
+            if let act = PeekAct(block: block) { return .act(act, name: name, title: title) }
+            if let run = block.value(runKey) { return CommandAction(id: run, title: title, scope: .item, after: .close) }
+            return names.contains { $0.hasPrefix(name + ".") } ? .group(name, title: title) : nil
         }
     }
 }

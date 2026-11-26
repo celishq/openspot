@@ -51,6 +51,24 @@ final class ClipboardReadTests: XCTestCase {
         XCTAssertEqual(copied.output, "file=\(files[0].path)\nfile=\(files[1].path)\n")
     }
 
+    func testBlocksOfACopiedColourCarryItsPeekAfterTheValue() async throws {
+        board.copy("#FF3B30")
+
+        let blocks = TextBlock.blocks(in: try await call(["--blocks"]).output)
+
+        XCTAssertEqual(blocks.first?.fields, [.init(key: "text", value: "#FF3B30")])
+        XCTAssertEqual(blocks.dropFirst().first?.firstLine, "peek=color")
+        XCTAssertTrue(blocks.contains { $0.value("copy") == "rgb(255 59 48)" })
+    }
+
+    func testBlocksOfAPlainTextCarryNoPeek() async throws {
+        board.copy("hello")
+
+        let output = try await call(["--blocks"]).output
+
+        XCTAssertEqual(TextBlock.blocks(in: output).count, 1)
+    }
+
     func testBlocksSaveAPictureToAFile() async throws {
         board.copy(image: Data([1, 2, 3]), kind: "png")
 

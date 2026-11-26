@@ -43,6 +43,7 @@
 		07E92CC784B06FBC1E34557F /* ReviewSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9BDEAA645A7CD91FDAD63B /* ReviewSpotTests.swift */; };
 		07F40EE46CDFAB9329EFF7BC /* CommandHelpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECF468B975F5CB95A36410C /* CommandHelpTests.swift */; };
 		081E05253591CFA1909148D0 /* FakeAccesses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5CD180C043A17E4EF32988 /* FakeAccesses.swift */; };
+		08D943A80B8F2665A0DA179A /* ClipboardSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027D2C6BB5FDE792AD9621A9 /* ClipboardSpotTests.swift */; };
 		094651F3E4F48184A6DD80FA /* SpotsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E762C91602F73F6719500879 /* SpotsModel.swift */; };
 		095DF16B5D9CE11A2EE0D0AD /* CalendarAddTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0ABD4DC3959E204822BE5FD /* CalendarAddTests.swift */; };
 		0965F71FDEF4527C393F53BC /* SpotViewPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0748F7084B58EC62D0778A39 /* SpotViewPlace.swift */; };
@@ -174,6 +175,7 @@
 		2071303C2B913DFEF8902187 /* ColorCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = C453BCE620D31DE869C4446B /* ColorCall.swift */; };
 		2084F96C3A1CB7E9A550257D /* FakeReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3474D5A34A4F16393629F6F /* FakeReminders.swift */; };
 		20C595D08A6C0DCB45DC58EC /* RemindersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4BCB2AF5BC515EE265370 /* RemindersTests.swift */; };
+		211A7969FC713B020864D019 /* HexColor+CSS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EF20996E109ECFAFAF5D1 /* HexColor+CSS.swift */; };
 		2128D97AE61D28977C35A9C1 /* SpotPlacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55281667DA5D266778D3B00C /* SpotPlacement.swift */; };
 		2129521F4878616F35A2FFD7 /* ConfettiSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457BDE565E8FABFB95747207 /* ConfettiSpotTests.swift */; };
 		21B54DDB386F106835480186 /* CardTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208C81E9E0EB7A4E13145C98 /* CardTreeView.swift */; };
@@ -549,6 +551,7 @@
 		6FE374AA85A34E9EAE7D23AC /* AccessListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0682A40C9AC1B068E9BFA1A2 /* AccessListTests.swift */; };
 		7026E54A517D635043BAF496 /* FakeMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669D4E68E27BDA628E590B20 /* FakeMode.swift */; };
 		702F9563586969DECB438364 /* MacScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 674CC4101F751CAA9E51E752 /* MacScreen.swift */; };
+		707015B8032F6090E018AC08 /* ColorPeekTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45CD885CA1908D6A3F3A02 /* ColorPeekTests.swift */; };
 		709414AA12B8D30CFDB7E0A5 /* UpdateCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84A418522A17D33DE7C40C9 /* UpdateCalls.swift */; };
 		70A9D3B717260C57BC7F056E /* Stats+Refused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5588F26C88720107E79C17C2 /* Stats+Refused.swift */; };
 		70AE36CF167ECD5985F9714C /* ViewLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8212EFF0E6981177B955332C /* ViewLibraryTests.swift */; };
@@ -1391,6 +1394,7 @@
 		01ED13F3AC6E3FCA367E0219 /* UnlockPassTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockPassTests.swift; sourceTree = "<group>"; };
 		0241961BFAB0332387C87B6B /* TextBlock+Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TextBlock+Series.swift"; sourceTree = "<group>"; };
 		024ABCEEFA1C0579E42D8D16 /* SettingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingRow.swift; sourceTree = "<group>"; };
+		027D2C6BB5FDE792AD9621A9 /* ClipboardSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardSpotTests.swift; sourceTree = "<group>"; };
 		0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneWords.swift; sourceTree = "<group>"; };
 		0351605D1BDE815F126BF3DC /* SheetOpening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetOpening.swift; sourceTree = "<group>"; };
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1502,6 +1506,7 @@
 		1BDF9593FE28B31C6655ECD9 /* CalendarAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAccess.swift; sourceTree = "<group>"; };
 		1BE313B422EC952BB6E4703F /* SpotReadme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReadme.swift; sourceTree = "<group>"; };
 		1BF69273AA1F98E8F02DF94C /* StatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTests.swift; sourceTree = "<group>"; };
+		1C3EF20996E109ECFAFAF5D1 /* HexColor+CSS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HexColor+CSS.swift"; sourceTree = "<group>"; };
 		1C9F812903AF337B12E46FEB /* ToastID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastID.swift; sourceTree = "<group>"; };
 		1D203723750660C5ACB1972C /* HookAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookAnswers.swift; sourceTree = "<group>"; };
 		1D33426E68F9956BD3B55BBE /* ClipboardReadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardReadTests.swift; sourceTree = "<group>"; };
@@ -1984,6 +1989,7 @@
 		7C806398AB4FCF913C4C32C2 /* StorePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorePage.swift; sourceTree = "<group>"; };
 		7C9D25A7787544A2E3859B09 /* AppCommandLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCommandLink.swift; sourceTree = "<group>"; };
 		7D232AA89F8D8DA0343EB227 /* SpotUse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotUse.swift; sourceTree = "<group>"; };
+		7D45CD885CA1908D6A3F3A02 /* ColorPeekTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPeekTests.swift; sourceTree = "<group>"; };
 		7D5C81464286C36C5C388552 /* WireTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireTests.swift; sourceTree = "<group>"; };
 		7D60A67961EA840AA7C90653 /* PanelSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelSearchTests.swift; sourceTree = "<group>"; };
 		7DFBF636288E9CF91890E2DE /* PlaygroundCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCommand.swift; sourceTree = "<group>"; };
@@ -3155,6 +3161,7 @@
 				41BA04420AD4E605B4EB8588 /* HelperCall.swift */,
 				880126AA2A6FFF90441687DD /* HexColor.swift */,
 				CAF7265077B5E78264B1CDFF /* HexColor+Contrast.swift */,
+				1C3EF20996E109ECFAFAF5D1 /* HexColor+CSS.swift */,
 				9C462005019A07CDCB802C03 /* LanguageCodes.swift */,
 				6690DD894311538EAE43555B /* LoginItem.swift */,
 				FAE3480ACBE742701BA648C5 /* Mac.swift */,
@@ -3531,7 +3538,9 @@
 				2232DB3A6AB6EEA4ABFF7017 /* ClassStyleTests.swift */,
 				0AFBB33279C1CECA85540126 /* ClipboardContentsTests.swift */,
 				1D33426E68F9956BD3B55BBE /* ClipboardReadTests.swift */,
+				027D2C6BB5FDE792AD9621A9 /* ClipboardSpotTests.swift */,
 				6552E5F292394568C1A4AD12 /* ClockExampleTests.swift */,
+				7D45CD885CA1908D6A3F3A02 /* ColorPeekTests.swift */,
 				397CEA709720AFBD838D24EA /* CommandAPITests.swift */,
 				7167E24FE15BACE4A458F71D /* CommandClientTests.swift */,
 				52DD271085F7DD9A6EAFEE11 /* CommandFormTests.swift */,
@@ -5358,6 +5367,7 @@
 				9B3F8CCEC141894E0BF5F29E /* GuideTopic.swift in Sources */,
 				9AA3FCBFDC928A084795B7D1 /* HelpCall.swift in Sources */,
 				07A553F1E91A4EA5A054D46C /* HelperCall.swift in Sources */,
+				211A7969FC713B020864D019 /* HexColor+CSS.swift in Sources */,
 				C00FFD57619BA590314E35A9 /* HexColor+Contrast.swift in Sources */,
 				BE61D30092F9EA96A8FDAEEF /* HexColor.swift in Sources */,
 				BCE416C19F5777B28C90D7E3 /* HintWords.swift in Sources */,
@@ -6178,7 +6188,9 @@
 				FBA7BF1E85F2E56B560E9041 /* ClassStyleTests.swift in Sources */,
 				D1C2209B67F7AED29E67E081 /* ClipboardContentsTests.swift in Sources */,
 				01665FCDCD8A08892B113539 /* ClipboardReadTests.swift in Sources */,
+				08D943A80B8F2665A0DA179A /* ClipboardSpotTests.swift in Sources */,
 				889181434259B98D5A2C5E7B /* ClockExampleTests.swift in Sources */,
+				707015B8032F6090E018AC08 /* ColorPeekTests.swift in Sources */,
 				E548ABC46BFF2A55AEC029B6 /* CommandAPITests.swift in Sources */,
 				E8D9384903380E56E7E4994A /* CommandClientTests.swift in Sources */,
 				F16627C7DC2C9B8622226878 /* CommandFormTests.swift in Sources */,
