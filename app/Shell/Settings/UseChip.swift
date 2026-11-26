@@ -14,7 +14,7 @@ struct UseChip: View {
         .padding(.leading, SpotTokens.settingsChipInset)
         .padding(.trailing, SpotTokens.settingsChipPadding)
         .padding(.vertical, SpotTokens.settingsChipInset)
-        .background(tile.color.opacity(SpotTheme.settingsChipFill), in: Capsule())
+        .background(tile.color.opacity(SpotTheme.settingsChipFill), in: SpotRoundShape(radius: SpotTokens.settingsChipTile * SpotTokens.settingsTileCorner + SpotTokens.settingsChipInset))
         .help([use.id.purpose, use.needsLine].compactMap { $0 }.joined(separator: " "))
     }
 }
