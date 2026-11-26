@@ -36,14 +36,10 @@ public struct SearchQuery: Equatable, Sendable {
         ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
     }
 
-    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], weights: PickWeights) -> [Int] {
-        index.withItems { folded in
-            indices.compactMap { index in
-                match(folded[index]).map { (rank: $0, weight: weights.weight(of: items[index].run), index: index) }
-            }
-        }
-        .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
-        .map(\.index)
+    func ranking(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Int] {
+        ranked(index, items: items, among: offsets, weights: weights)
+            .sorted { ($0.rank, -$0.weight, $0.offset) < ($1.rank, -$1.weight, $1.offset) }
+            .map(\.offset)
     }
 
     func narrows(to next: SearchQuery) -> Bool {
