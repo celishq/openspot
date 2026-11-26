@@ -14,7 +14,7 @@ public final class Store {
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
     public internal(set) var trail = PageTrail(StoreStop(place: .mine, spot: nil))
-    @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
+    @ObservationIgnored private var shelves: [StorePlace: SearchList<StoreCard>] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?
     @ObservationIgnored private let places: AppPlaces
@@ -40,14 +40,14 @@ public final class Store {
         if shelf.tookUpdates { await changed() }
         if sources != shelf.sources { sources = shelf.sources }
         if missing != shelf.missing { missing = shelf.missing }
-        shelves = shelf.cards
+        shelves = shelf.cards.mapValues { SearchList($0) { SearchText(title: $0.spot.name, subtitle: $0.spot.subtitle, keywords: $0.spot.keywords) } }
         if shelves[place] == nil {
             place = .mine
             page = nil
             trail.replace(stop)
         }
         trail.keep { shelves[$0.place] != nil }
-        refilter()
+        match()
     }
 
     public func show(_ id: String?, search text: String?) async -> Bool {
@@ -55,13 +55,13 @@ public final class Store {
         defer { arrive() }
         if let text {
             query = text
-            let folded = text.trimmingCharacters(in: .whitespaces).folded
-            let matched = (placesInOrder.dropFirst() + [.mine]).first { place in shelves[place]?.contains { $0.words.contains(folded) } == true }
+            let query = SearchQuery(text: text)
+            let matched = (placesInOrder.dropFirst() + [.mine]).first { shelves[$0]?.matching(query).isEmpty == false }
             move(to: matched ?? .mine)
-            refilter()
+            match()
         }
         guard let id else { return true }
-        guard let found = placesInOrder.first(where: { place in shelves[place]?.contains { $0.id == id } == true }) else { return false }
+        guard let found = placesInOrder.first(where: { place in shelves[place]?.all.contains { $0.id == id } == true }) else { return false }
         if page?.id == id, place == found { return true }
         move(to: found)
         await load(id)
@@ -76,10 +76,10 @@ public final class Store {
         case .success(let source):
             opened = source
             await read()
-            guard let id = shelves[.source(source)]?.first?.id else { return false }
+            guard let id = shelves[.source(source)]?.all.first?.id else { return false }
             query = ""
             move(to: .source(source))
-            refilter()
+            match()
             await load(id)
             arrive()
             return page?.id == id
@@ -96,14 +96,14 @@ public final class Store {
         if page != nil { page = nil }
         guard next != place else { return }
         place = next
-        refilter()
+        match()
     }
 
     public func search(_ text: String) {
         guard text != query else { return }
         query = text
         if page != nil { page = nil }
-        refilter()
+        match()
         arrive()
     }
 
@@ -209,13 +209,12 @@ public final class Store {
         }
     }
 
-    private func refilter() {
-        let folded = query.trimmingCharacters(in: .whitespaces).folded
-        let next = (shelves[place] ?? []).filter { folded.isEmpty || $0.words.contains(folded) }
+    private func match() {
+        let next = shelves[place]?.matching(SearchQuery(text: query)) ?? []
         if next != cards { cards = next }
         let grouped = StoreGroup.of(next, at: place)
         if grouped != groups { groups = grouped }
-        let said = place == .mine ? StoreGroup.summary(of: shelves[.mine] ?? []) : ""
+        let said = place == .mine ? StoreGroup.summary(of: shelves[.mine]?.all ?? []) : ""
         if said != summary { summary = said }
     }
 

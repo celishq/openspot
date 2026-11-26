@@ -42,8 +42,4 @@ struct TimelineEntry: Codable, Equatable, Sendable {
     static func format(_ date: Date) -> String {
         formatter.string(from: date)
     }
-
-    var words: String {
-        [title, value, app ?? "", files.map { ($0.original as NSString).lastPathComponent }.joined(separator: " ")].joined(separator: " ")
-    }
 }

@@ -42,7 +42,7 @@ final class PlaygroundPlaceTests: XCTestCase {
         try await wait("the closed sheet") { self.panel.model.openSheetID == nil }
     }
 
-    func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
+    func testThePanelSearchShowsTheRowsThatTheSpotAnswers() async throws {
         let id = try await panel.place(file: nil, text: answering, manifest: manifest)
 
         panel.show(.card, id: id)

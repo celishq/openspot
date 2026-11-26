@@ -197,7 +197,7 @@ public struct ItemList: Equatable, Sendable {
 
     public func ready(_ items: [SpotItem], search: ItemSearch) -> Rows {
         guard items != all else { return Rows(items: all, base: all, search: search, index: nil) }
-        return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items))
+        return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items.map(\.searchText)))
     }
 
     public mutating func replace(_ items: [SpotItem]) {
@@ -301,7 +301,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func reindex() {
-        searchIndex = search == .off ? SearchIndex() : SearchIndex(all)
+        searchIndex = search == .off ? SearchIndex() : SearchIndex(all.map(\.searchText))
         pin()
     }
 
@@ -323,7 +323,7 @@ public struct ItemList: Equatable, Sendable {
 
     private func onHand() -> [Int]? {
         guard search == .script, isWaiting, !query.isEmpty else { return Array(all.indices) }
-        let matches = SearchQuery(text: query).ranking(searchIndex, items: all, among: Array(all.indices), weights: weights).sorted()
+        let matches = SearchQuery(text: query).ranking(searchIndex, among: Array(all.indices)) { weights.weight(of: all[$0].run) }.sorted()
         return matches.isEmpty && !shown.isEmpty ? nil : matches
     }
 
@@ -333,7 +333,7 @@ public struct ItemList: Equatable, Sendable {
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
         if narrowings.last?.query.text != next.text {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
-            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
+            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, among: among) { weights.weight(of: all[$0].run) }))
         }
         return narrowings
     }

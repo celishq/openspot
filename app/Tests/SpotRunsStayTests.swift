@@ -375,7 +375,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         """
     }
 
-    func testAStayingScriptAnswersTheMainSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
+    func testAStayingScriptAnswersThePanelSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
         try script(toml: "stay = true\n[on]\nsearch = '^[0-9]'", answering)
         let sheet = try sheet()
         runs.panelOpened()
@@ -418,7 +418,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.answers, [])
     }
 
-    func testAServedStayingScriptAnswersItsSheetAndTheMainSearchApart() async throws {
+    func testAServedStayingScriptAnswersItsSheetAndThePanelSearchApart() async throws {
         try """
         #!/bin/sh
         . "$OPENSPOT_SH"

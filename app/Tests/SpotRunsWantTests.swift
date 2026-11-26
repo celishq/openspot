@@ -267,7 +267,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
-    func testATimedSpotJoinsTheMainSearchWithNoKeyAndStartsOffTheGrid() throws {
+    func testATimedSpotJoinsThePanelSearchWithNoKeyAndStartsOffTheGrid() throws {
         try script("a", toml: "[on]\nevery = 30\nsearch = true")
         try script("b", toml: "[on]\n\"panel.open\" = true\nevery = 30\nsearch = true")
 

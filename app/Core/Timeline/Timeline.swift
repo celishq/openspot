@@ -56,7 +56,7 @@ final class Timeline: Sendable {
 
     private struct Kept {
         var entries: [TimelineEntry] = []
-        var folded: [String: String] = [:]
+        var search: SearchList<TimelineEntry>?
         var isRead = false
         var choices = Choices()
         var readers: [String: Set<String>?] = [:]
@@ -92,7 +92,7 @@ final class Timeline: Sendable {
     func unload() {
         kept.withLock { kept in
             kept.entries = []
-            kept.folded = [:]
+            kept.search = nil
             kept.isRead = false
         }
     }
@@ -124,14 +124,14 @@ final class Timeline: Sendable {
             read(&kept)
             if let until = kept.choices.pausedUntil, now < until { return nil }
             var id = Self.newID()
-            while kept.folded[id] != nil { id = Self.newID() }
+            while kept.entries.contains(where: { $0.id == id }) { id = Self.newID() }
             let at = draft.at ?? now
             let entry = try make(draft, id: id, spot: spot, at: at)
             if let key = draft.key, let old = kept.entries.first(where: { $0.spot == spot && $0.key == key && $0.forgotten == nil }) {
                 remove([old.id], from: &kept)
             }
             kept.entries.append(entry)
-            kept.folded[id] = entry.words.folded
+            kept.search = nil
             append(entry)
             cut(&kept, at: now)
             return entry
@@ -142,16 +142,22 @@ final class Timeline: Sendable {
         kept.withLock { kept in
             read(&kept)
             cut(&kept, at: now)
-            let words = (query.text ?? "").folded.split(whereSeparator: \.isWhitespace).map(String.init)
             let since = query.within.map { now.addingTimeInterval(-$0) }
-            let folded = kept.folded
             let found = kept.entries.filter { entry in
                 entry.forgotten == nil
                     && query.spots.map { $0.contains(entry.spot) } != false
                     && since.map { entry.at >= $0 } != false
-                    && words.allSatisfy { folded[entry.id]?.contains($0) == true }
             }
-            let sorted = found.sorted { $0.at > $1.at }
+            var sorted = found.sorted { $0.at > $1.at }
+            let text = SearchQuery(text: query.text ?? "")
+            if !text.text.isEmpty {
+                let search = kept.search ?? SearchList(kept.entries.sorted { $0.at > $1.at }) {
+                    SearchText(title: $0.title, subtitle: $0.value, keywords: [$0.app].compactMap { $0 } + $0.files.map { ($0.original as NSString).lastPathComponent })
+                }
+                kept.search = search
+                let byID = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })
+                sorted = search.matching(text).compactMap { byID[$0.id] }
+            }
             return query.limit.map { Array(sorted.prefix($0)) } ?? sorted
         }
     }
@@ -262,7 +268,7 @@ final class Timeline: Sendable {
             }
         }
         kept.entries = found.values.sorted { $0.at < $1.at }
-        for entry in kept.entries { kept.folded[entry.id] = entry.words.folded }
+        kept.search = nil
     }
 
     private func cut(_ kept: inout Kept, at now: Date) {
@@ -283,7 +289,7 @@ final class Timeline: Sendable {
         let ids = Set(ids)
         let gone = kept.entries.filter { ids.contains($0.id) }
         kept.entries.removeAll { ids.contains($0.id) }
-        for id in ids { kept.folded[id] = nil }
+        kept.search = nil
         for entry in gone {
             try? FileManager.default.removeItem(at: blobs(of: entry.spot, day: day(of: entry.at)).appendingPathComponent(entry.id, isDirectory: true))
         }

@@ -3,7 +3,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class LinksSpotTests: SampleSpotsCase {
-    func testLinksAndAppsJoinTheMainSearch() throws {
+    func testLinksAndAppsJoinThePanelSearch() throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
 

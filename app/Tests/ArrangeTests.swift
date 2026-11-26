@@ -61,6 +61,19 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, ["notes", "snooze", "snoozetab", "tabs"])
     }
 
+    func testTheShelfFindsSpotsByWordsInAnyOrderAndByInitialsAsThePanelDoes() async throws {
+        model.dragRest = .zero
+        try await spots(["wordcount", "soundwave"]) { ["wordcount": "Word Count", "soundwave": "Sound Wave"][$0] ?? $0 }
+        for id in ["wordcount", "soundwave"] { model.takeOffGrid(id) }
+        model.shelf.place(screen: CGSize(width: 1440, height: 900), panelOrigin: CGPoint(x: 520, y: 40))
+        model.beginEditing()
+
+        model.searchShelf("count word")
+        XCTAssertEqual(shelf, ["wordcount"])
+        model.searchShelf("sw")
+        XCTAssertEqual(shelf, ["soundwave"])
+    }
+
     func testArrangeOpensFromGridEditAndEscapeEndsIt() async throws {
         try await spots(["a"])
 
