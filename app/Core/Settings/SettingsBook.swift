@@ -214,6 +214,14 @@ public final class SettingsBook {
         await run(ThemeCall.use(name), as: "theme use")
     }
 
+    public func duplicate(theme name: String) async {
+        await run(ThemeCall.duplicate(name), as: "theme duplicate")
+    }
+
+    public func delete(theme name: String) async {
+        await run(ThemeCall.delete(name), as: "theme delete", says: true)
+    }
+
     public func themePrompt(words: String) async -> String? {
         guard let api = model?.runs.api, let used = looks.first(where: \.isUsed) else { return nil }
         let answer = await api.answer(PromptCall.theme(used.name, words: words), as: "prompt theme")
@@ -254,10 +262,11 @@ public final class SettingsBook {
         model?.toast(ToastNote(words: words))
     }
 
-    func run(_ call: any NounCall, as name: String) async {
+    func run(_ call: any NounCall, as name: String, says: Bool = false) async {
         guard let api = model?.runs.api else { return }
         let answer = await api.answer(call, as: name)
         if answer.code != 0, let line = answer.errors.split(separator: "\n").last { model?.toast(.failure(String(line))) }
+        if answer.code == 0, says, let line = answer.output.split(separator: "\n").last { say(String(line)) }
         await read()
     }
 }

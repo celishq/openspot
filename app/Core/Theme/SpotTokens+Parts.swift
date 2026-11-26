@@ -241,9 +241,11 @@ extension SpotTokens {
     public static let settingsKeyName: CGFloat = 150
     public static let settingsFieldWidth: CGFloat = 220
     public static let settingsUseGap: CGFloat = 6
-    public static let settingsLookColumn: CGFloat = 170
     public static let settingsLookGap: CGFloat = 18
-    public static let settingsLookHeight: CGFloat = 104
+    public static let settingsLookHeight: CGFloat = 150
+    public static let settingsLookSpots = 6
+    public static let settingsLookColumns: CGFloat = 4
+    public static let settingsLookRows: CGFloat = 3
     public static let settingsLookWords: CGFloat = 6
     public static let settingsLookTopInset: CGFloat = 14
     public static let settingsLookRing: CGFloat = 3

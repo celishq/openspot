@@ -287,6 +287,19 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.looks.first { $0.isUsed }?.id, "Dracula")
     }
 
+    func testADuplicateOfAThemeIsYoursAndInUseAndAMoveToTheTrashTakesItAway() async throws {
+        await read()
+
+        await book.duplicate(theme: "Dracula")
+        let copy = try XCTUnwrap(book.looks.first { $0.isUsed })
+        XCTAssertFalse(copy.isBuiltIn)
+        XCTAssertEqual(copy.colours, book.looks.first { $0.id == "Dracula" }?.colours)
+        await book.delete(theme: copy.id)
+
+        XCTAssertFalse(book.looks.contains { $0.id == copy.id })
+        XCTAssertEqual(model.toasts.queue.last?.words, "Moved the theme \(copy.id) to the Trash, and switched to the theme Openspot.")
+    }
+
     func testAThemePromptAsksForTheWordsOverTheThemeInUse() async throws {
         await read()
         await book.use(theme: "Dracula")
@@ -391,7 +404,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.access.needed.map(\.id), [.screen])
         XCTAssertFalse(book.access.unneeded.contains { $0.id == .screen })
         XCTAssertEqual(book.spots.waiting.map(\.id), ["cups"])
-        XCTAssertEqual(Set(book.looks.map(\.group)), [.builtIn])
+        XCTAssertTrue(book.looks.allSatisfy(\.isBuiltIn))
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }

@@ -207,6 +207,7 @@
 		26C07C3946A891ABC79C769C /* GridCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 606AD39DC8126EED8B7CC3A9 /* GridCell.swift */; };
 		26EC8658AA9CD00D0698D8A5 /* SpotPushedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FD4C89A96E3C2717B08878 /* SpotPushedCard.swift */; };
 		26FDD8A19291197BC2B298D1 /* InputLogSpan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AFD158149207207BB521D3 /* InputLogSpan.swift */; };
+		272194D93A54BB042C99D489 /* LookPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DEAFD221324AF723C7CF1C /* LookPanel.swift */; };
 		27219EC1C530144C108E9674 /* FlowSwipeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB6300B9A82BFD47A55DB88 /* FlowSwipeTests.swift */; };
 		27392B4578D33BD55D098CBC /* SpotFetchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CE7F9E5C5FC31CAE686DBC /* SpotFetchTests.swift */; };
 		27759B812E73E5B534DB526E /* SpotWindowSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = F69F9943EA26BE8679191AC3 /* SpotWindowSurface.swift */; };
@@ -1130,6 +1131,7 @@
 		E34E07F19D2607FF824F6CB2 /* SpotFieldPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441D60D3142BDD50E886B27D /* SpotFieldPrompt.swift */; };
 		E35FF643DEE40ACBC75E11DA /* StoreTileLift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16726BABB815CDD353496807 /* StoreTileLift.swift */; };
 		E38BC40E13C3D0E46209D5AB /* DocCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464CFE2907DC69FAA29ACCEB /* DocCommandTests.swift */; };
+		E43ED4C15AE338B70B367053 /* LookSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2624051E9020D789A5570801 /* LookSpot.swift */; };
 		E4A97EE544ED615135A380DD /* ActionCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFDB03BD1A1F45215D7295C /* ActionCallTests.swift */; };
 		E53EF651F9EA3FB8F874BB7E /* SpotMenuDim.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4ECB49D270874528114D620 /* SpotMenuDim.swift */; };
 		E545EA02D131BEDD3B4697B5 /* SpotIconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6077094CBAB36A423024B24A /* SpotIconStore.swift */; };
@@ -1514,6 +1516,7 @@
 		25FC7F894D69748148D7B1D1 /* SpotLeafShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLeafShape.swift; sourceTree = "<group>"; };
 		260245DA7CC4992C090CAD4B /* StyleCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCache.swift; sourceTree = "<group>"; };
 		2621499D9B901193E9DD8BF5 /* Theme+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme+Layout.swift"; sourceTree = "<group>"; };
+		2624051E9020D789A5570801 /* LookSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookSpot.swift; sourceTree = "<group>"; };
 		26873FF3438F703F6D50E357 /* SheetPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetPage.swift; sourceTree = "<group>"; };
 		26F10F9EEBA011739F695FDE /* KeyWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyWidth.swift; sourceTree = "<group>"; };
 		273FB2EF365B1DEA1351117D /* SpotVerbTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotVerbTests.swift; sourceTree = "<group>"; };
@@ -2046,6 +2049,7 @@
 		932ED086E56E457F0CDF55F3 /* FieldValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldValues.swift; sourceTree = "<group>"; };
 		938C9DE2FBE3F37275E5D22C /* SpotTrendBars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTrendBars.swift; sourceTree = "<group>"; };
 		93A8A529120533FFABD7824F /* PlaygroundCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCalls.swift; sourceTree = "<group>"; };
+		93DEAFD221324AF723C7CF1C /* LookPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookPanel.swift; sourceTree = "<group>"; };
 		944E30DC365277055D4AAE56 /* SpotCardPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardPlace.swift; sourceTree = "<group>"; };
 		945DC5FEE72948CB57E46716 /* AppSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSignal.swift; sourceTree = "<group>"; };
 		946708600A684F9A5DC68137 /* SettingCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingCalls.swift; sourceTree = "<group>"; };
@@ -2806,6 +2810,8 @@
 				6E88D5C3614330D6B75871A6 /* CardEmblem.swift */,
 				99F407B796A0ED1F6B737103 /* Foil.metal */,
 				06561B44F73CD38592734DAD /* KeyLook+Foil.swift */,
+				93DEAFD221324AF723C7CF1C /* LookPanel.swift */,
+				2624051E9020D789A5570801 /* LookSpot.swift */,
 				C8A03764FA3752B3375BBB8D /* PublisherCard.swift */,
 				B73F2A6CEF772A766327013C /* SettingsAccountSheet.swift */,
 				ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */,
@@ -5662,6 +5668,8 @@
 				0085501189CF1C5C6FAEEF32 /* HotKey.swift in Sources */,
 				477C80447806ECD4FF61E4A2 /* KeyFill.swift in Sources */,
 				69EB0896F599CBA457185231 /* KeyLook+Foil.swift in Sources */,
+				272194D93A54BB042C99D489 /* LookPanel.swift in Sources */,
+				E43ED4C15AE338B70B367053 /* LookSpot.swift in Sources */,
 				263C01EB7C13448ABCEB8866 /* MenuBarHost.swift in Sources */,
 				62D1A945819C4B956583987D /* MenuBarMarkItem.swift in Sources */,
 				E74C869A1970287514B9DCB0 /* MenuBarMarkItemView.swift in Sources */,
