@@ -35,6 +35,8 @@ final class ColorsSpotTests: BuiltInCase {
 
         XCTAssertFalse(spot.isFound)
         XCTAssertEqual(spot.commands.map(\.id), [])
-        XCTAssertEqual(spot.actions.compactMap(\.type), ["color", "color", "color"])
+        XCTAssertEqual(spot.actions.compactMap(\.typeName), ["color", "color", "color"])
+        XCTAssertEqual(spot.chipActions.filter { $0.fits(AttachmentValue(text: "#ff3b30")) }.map(\.title), ["Copy as Hex", "Copy as RGBA", "Copy as HSL"])
+        XCTAssertEqual(spot.chipActions.filter { $0.fits(AttachmentValue(text: "red")) }.map(\.title), [])
     }
 }

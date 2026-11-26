@@ -60,10 +60,11 @@ match = '^#[0-9a-fA-F]{6}$'
 
 [actions.copy-rgba]
 title = "Copy as RGBA"
-type = "color"
+inputs.color = { type = "color", required = true }
 ```
 
-A copied `#ff3b30` then shows in the Timeline sheet with its colour, and `⌘K` on it offers Copy as RGBA. The sheet's
+A copied `#ff3b30` then shows in the Timeline sheet with its colour, and `⌘K` on it offers Copy as RGBA, which runs with `input.color=#ff3b30`. The same action shows under a chip of a copied
+colour after Tab. The sheet's
 own spot draws the preview when it answers `item.preview` itself. [spot.toml](../reference/spot-toml.md#typesname) lists
 the keys.
 

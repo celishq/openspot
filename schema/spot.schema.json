@@ -36,9 +36,6 @@
         "title" : {
           "type" : "string"
         },
-        "type" : {
-          "type" : "string"
-        },
         "when" : {
           "type" : "string"
         }
@@ -105,6 +102,9 @@
           "$ref" : "#/$defs/type"
         },
         {
+          "$ref" : "#/$defs/typeName"
+        },
+        {
           "additionalProperties" : false,
           "properties" : {
             "default" : {
@@ -130,7 +130,14 @@
               "type" : "boolean"
             },
             "type" : {
-              "$ref" : "#/$defs/type"
+              "anyOf" : [
+                {
+                  "$ref" : "#/$defs/type"
+                },
+                {
+                  "$ref" : "#/$defs/typeName"
+                }
+              ]
             }
           },
           "required" : [
@@ -306,6 +313,10 @@
         "choice",
         "[choice]"
       ]
+    },
+    "typeName" : {
+      "pattern" : "^[A-Za-z][A-Za-z0-9_-]*$",
+      "type" : "string"
     }
   },
   "$schema" : "https://json-schema.org/draft/2020-12/schema",

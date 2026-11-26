@@ -183,7 +183,13 @@ extension SpotsModel {
             closeMenu()
             if isShown { host.dismiss() }
         }
-        sheets[owner]?.run(action, item: target.item ?? SpotItem(title: target.entry.state.title, run: target.entry.id)) { [weak self] in
+        if let typed = typedAction(action, of: owner, on: target.item) {
+            closeMenu()
+            if isShown { host.dismiss() }
+            sheets[owner]?.run(typed.chip, with: typed.value)
+            return
+        }
+        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id)) { [weak self] in
             guard let self, flow.current == nil || transition.id != nil else { return }
             closeMenu()
         }

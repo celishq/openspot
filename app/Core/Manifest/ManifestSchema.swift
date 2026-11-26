@@ -48,16 +48,20 @@ public enum ManifestSchema {
             "offers": ["type": "array", "items": ["type": "string"]], "shortcut": ["type": "string"], "close": ["type": "boolean"], "when": ["type": "string"]
         ]
         let settingKeys = Manifest.Parameter.settingKeys
-        let parameter: [String: Any] = ["anyOf": [reference("type"), object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])]]
+        var input = object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])
+        var inputProperties = input["properties"] as? [String: Any] ?? [:]
+        inputProperties["type"] = ["anyOf": [reference("type"), reference("typeName")]]
+        input["properties"] = inputProperties
+        let parameter: [String: Any] = ["anyOf": [reference("type"), reference("typeName"), input]]
         var action = object(Manifest.Action.keys.union(Manifest.Action.appKeys), from: fields)
         var actionProperties = action["properties"] as? [String: Any] ?? [:]
         actionProperties[Manifest.Action.inputs] = table(reference("parameter"))
         actionProperties[Manifest.Action.outputs] = table(reference("parameter"))
-        actionProperties["type"] = ["type": "string"]
         action["properties"] = actionProperties
         return [
             "texts": ["anyOf": [["type": "string"], ["type": "array", "items": ["type": "string"]]]],
             "type": ["enum": names],
+            "typeName": ["type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"],
             "setting": object(settingKeys, from: fields),
             "parameter": parameter,
             "action": action,

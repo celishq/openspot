@@ -36,7 +36,7 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testAKeyThatAnActionOrASettingDoesNotTakeIsAFault() {
-        XCTAssertEqual(fault(of: "title = 'T'\n[actions.go]\ntitle = 'Go'\ncolour = 'red'"), "Probe cannot load: spot.toml: [actions.go] has an unknown key: colour. Use title, icon, confirm, type, inputs.<name> or outputs.<name>.")
+        XCTAssertEqual(fault(of: "title = 'T'\n[actions.go]\ntitle = 'Go'\ncolour = 'red'"), "Probe cannot load: spot.toml: [actions.go] has an unknown key: colour. Use title, icon, confirm, inputs.<name> or outputs.<name>.")
         XCTAssertEqual(fault(of: "title = 'T'\n[settings]\nlook = { type = 'text', titel = 'Look' }"), "Probe cannot load: spot.toml: [settings] look has an unknown key: titel. Use default, description, icon, options, title, type.")
     }
 

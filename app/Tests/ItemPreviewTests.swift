@@ -92,10 +92,10 @@ final class ItemPreviewTests: PanelCase {
 
         [actions.copy-rgba]
         title = "Copy as RGBA"
-        type = "color"
+        inputs.color = { type = "color", required = true }
         """, """
         input=$(cat)
-        printf '%s|%s|%s\\n' "$1" "$(printf '%s\\n' "$input" | sed -n 's/^input.type=//p')" "$(printf '%s\\n' "$input" | sed -n 's/^input.item.text=//p')" >> '\(folder.appendingPathComponent("colors").path)'
+        printf '%s|%s|%s\\n' "$1" "$(printf '%s\\n' "$input" | sed -n 's/^input.type=//p')" "$(printf '%s\\n' "$input" | sed -n 's/^input.item.text=//p')$(printf '%s\\n' "$input" | sed -n 's/^input.color=//p')" >> '\(folder.appendingPathComponent("colors").path)'
         [ "$1" = item.preview ] && printf 'text=swatch\\ntitle=rgba\\n'
         exit 0
         """)
@@ -135,5 +135,15 @@ final class ItemPreviewTests: PanelCase {
 
         try await wait("the action's run") { self.colorRuns.contains("copy-rgba||#ff0000") }
         XCTAssertEqual(model.sheets["colors"]?.spot.commands.map(\.id), [])
+    }
+
+    func testAnInputOfATypeThatNoTypesTableDeclaresIsAFault() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("typed-\(UUID().uuidString).sh")
+        try "#!/bin/sh\n".writeScript(to: url, toml: "title = 'Paint'\n\n[actions.copy]\ntitle = 'Copy'\ninputs.color = { type = 'colr', required = true }")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        XCTAssertThrowsError(try SpotFile(file: url, id: "paint")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "spot.toml: [actions.copy] inputs.color has an unknown type: colr. Use \(ValueType.names), or declare it in [types.colr].")
+        }
     }
 }

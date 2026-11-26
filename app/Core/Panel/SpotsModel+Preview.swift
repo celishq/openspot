@@ -47,12 +47,16 @@ extension SpotsModel {
     }
 
     func typedActions(on item: SpotItem) -> [OfferedAction] {
-        guard let typed = rowType(of: item) else { return [] }
-        return typed.spot.actions.filter { $0.type == typed.type.name }.compactMap { action in
-            guard let title = action.title else { return nil }
-            let command = CommandAction(id: action.id, title: title, key: nil, scope: .spot, after: action.closes ? .close : .stay, confirm: action.confirm)
+        guard let typed = rowType(of: item), let value = item.handedValue() else { return [] }
+        return typed.spot.chipActions.filter { $0.typeName == typed.type.name && $0.fits(value) }.map { chip in
+            let command = CommandAction(id: chip.name, title: chip.title, key: nil, scope: .spot, after: .close, confirm: chip.confirm)
             return OfferedAction(action: command, owner: typed.spot.id, group: typed.spot.name)
         }
+    }
+
+    func typedAction(_ action: CommandAction, of owner: String, on item: SpotItem?) -> (chip: ChipAction, value: AttachmentValue)? {
+        guard let value = item?.handedValue(), let chip = sheets[owner]?.spot.chipActions.first(where: { $0.name == action.id && $0.typeName != nil && $0.fits(value) }) else { return nil }
+        return (chip, value)
     }
 
     func closePreview() {

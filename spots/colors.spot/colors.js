@@ -66,8 +66,8 @@ function hsl(c) {
 
 /** Copies the row's colour in one form, and says so. */
 async function copy(input, env, form) {
-  const colour = parse(input["item.text"] || input["item.url"])
-  if (!colour) throw new Error("This row holds no colour.")
+  const colour = parse(input.color)
+  if (!colour) throw new Error("This holds no colour.")
   const text = form(colour)
   openspot.call(["clipboard", "copy"], text)
   await env.toast(`Copied ${text}.`)

@@ -42,6 +42,10 @@ struct ChipAction: Equatable, Sendable {
         drop != nil
     }
 
+    var typeName: String? {
+        input.typeName
+    }
+
     var isPatterned: Bool {
         input.pattern != nil
     }
