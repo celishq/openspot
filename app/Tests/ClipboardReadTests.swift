@@ -57,7 +57,8 @@ final class ClipboardReadTests: XCTestCase {
         let answer = try await call(["--blocks"])
 
         let block = try XCTUnwrap(TextBlock.blocks(in: answer.output).first)
-        let picture = try XCTUnwrap(block.value("picture"))
+        XCTAssertNil(block.value("picture"))
+        let picture = try XCTUnwrap(block.value("file"))
         XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: picture)), Data([1, 2, 3]))
         XCTAssertTrue(picture.hasSuffix(".png"), picture)
         XCTAssertEqual(block.value("title"), "Copied image")

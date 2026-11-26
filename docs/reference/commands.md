@@ -48,7 +48,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timer add <time> <action> [<name>=<value>...]` | Runs an action of your spot at an ISO 8601 time, or `someday`, and prints the timer's id. It needs `timer` in `uses`. |
 | `openspot timer list`                               | Prints an item for each timer of your spot.                              |
 | `openspot timer remove <id>`                        | Removes a timer.                                                         |
-| `openspot timeline add [<key>=<value>...]`          | Adds an entry to your spot's timeline and prints its id: `text=`, `url=`, `picture=` or `file=` once for each file, with `title=`, `app=`, `icon=`, `key=` and `at=`. With none, it takes the same lines on stdin. It needs `timeline` in `uses`, and works in a show. |
+| `openspot timeline add [<key>=<value>...]`          | Adds an entry to your spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, `app=`, `icon=`, `key=` and `at=`. With none, it takes the same lines on stdin. It needs `timeline` in `uses`, and works in a show. |
 | `openspot timeline list [--spot <id>] [--all] [--within <age>] [--text <words>] [--limit <n>]` | Prints an item for each entry of your spot's timeline, newest first. `--spot` and `--all` read other timelines and need `read`. |
 | `openspot timeline forget <id>`                     | Takes an entry out of the timeline.                                      |
 | `openspot timeline restore <id>`                    | Brings back an entry forgotten in the last 10 minutes.                   |
@@ -61,7 +61,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot spot open <id>`                           | Opens the panel on a spot, or its window.                                |
 | `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>` or `openspot selection read <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
 | `openspot clipboard read [--within <age>]` | Prints the text on the clipboard. With `--within`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
-| `openspot clipboard read --blocks [--within <age>]` | Prints the copy in its kind, as `openspot timeline add` takes it: `text=`, `url=`, `file=` once for each file, or `picture=` with the image saved to a file. It prints nothing for a password or a text over 25 MB. |
+| `openspot clipboard read --blocks [--within <age>]` | Prints the copy in its kind, as `openspot timeline add` takes it: `text=`, `url=`, or `file=` once for each file, with an image saved to a file. It prints nothing for a password or a text over 25 MB. |
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
 In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.

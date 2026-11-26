@@ -9,14 +9,14 @@ enum TimelineCall: NounCall {
     case pause(String)
     case resume
 
-    private static let keys = ["text", "url", "file", "picture", "title", "app", "icon", "key", "at"]
+    private static let keys = ["text", "url", "file", "title", "app", "icon", "key", "at"]
     private static let notes: Set<String> = ["title", "app", "icon", "key", "at"]
     private static let listForm = "[--spot id] [--all] [--within age] [--text words] [--limit n]"
 
     static let noun = CommandNoun("timeline", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=`, `picture=` or `file=` once for each file, with `title=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A picture, and a file up to 25 MB on the same disk, is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value. It works in a show.",
+            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A file up to 25 MB on the same disk is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value. It works in a show.",
             rule: CallRule(use: .timeline, used: "added to its timeline")
         ) { Self.add($0.rest) },
         CommandVerb(
@@ -73,7 +73,7 @@ enum TimelineCall: NounCall {
                 var fields: [TextBlock.Field] = []
                 for word in words {
                     guard let split = word.firstIndex(of: "="), Self.keys.contains(String(word[..<split])) else {
-                        return { CommandAnswer(errors: "`openspot timeline add` does not take \(word). Write text=, url=, picture= or file=, and title=, app=, icon=, key= or at=.\n", code: 2) }
+                        return { CommandAnswer(errors: "`openspot timeline add` does not take \(word). Write text=, url= or file=, and title=, app=, icon=, key= or at=.\n", code: 2) }
                     }
                     fields.append(TextBlock.Field(key: String(word[..<split]), value: String(word[word.index(after: split)...])))
                 }
@@ -141,7 +141,7 @@ enum TimelineCall: NounCall {
         let values = fields.filter { kinds.contains($0.key) }.map(\.value)
         let note = { (key: String) in fields.last { $0.key == key }?.value }
         guard kinds.count == 1, let kind = kinds.first.flatMap(TimelineEntry.Kind.init(rawValue:)), kind == .file || values.count == 1 else {
-            return { CommandAnswer(errors: "`openspot timeline add` takes one kind of value: text=, url=, picture= or file= once for each file.\n", code: 2) }
+            return { CommandAnswer(errors: "`openspot timeline add` takes one kind of value: text=, url= or file= once for each file.\n", code: 2) }
         }
         guard values.allSatisfy({ !$0.isEmpty }) else {
             return { CommandAnswer(errors: "`openspot timeline add` takes a value that is not empty.\n", code: 2) }

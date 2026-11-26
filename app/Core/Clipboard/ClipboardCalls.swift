@@ -52,7 +52,7 @@ struct ClipboardCalls {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                 let file = folder.appendingPathComponent("Copied image \(mac.count()) \(UUID().uuidString.prefix(8)).\(kind)")
                 try data.write(to: file, options: .atomic)
-                return TextBlock(fields: [.init(key: "picture", value: file.path), .init(key: "title", value: "Copied image")]).text
+                return TextBlock(fields: [.init(key: "file", value: file.path), .init(key: "title", value: "Copied image")]).text
             }
         }
     }

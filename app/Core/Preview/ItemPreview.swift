@@ -38,7 +38,7 @@ public struct ItemPreview: Equatable, Sendable {
         } else if let swatch = item.swatch {
             look = .color(swatch)
         } else if let file = value("whole") ?? (value("text") == nil ? item.file : nil) {
-            let isPicture = value("kind") == "picture" || Self.pictureKinds.contains((file as NSString).pathExtension.lowercased())
+            let isPicture = Self.pictureKinds.contains((file as NSString).pathExtension.lowercased())
             look = isPicture ? .picture(file) : .file(file)
         } else {
             look = .text(value("text") ?? "")

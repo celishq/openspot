@@ -22,11 +22,14 @@ function what(kind, value, long, count,    host, lines) {
     sub(/[\/?#].*/, "", host)
     return host
   }
-  if (kind == "picture") return "Image"
-  if (kind == "file") return (count > 1 ? count " files" : "File")
+  if (kind == "file") return (count > 1 ? count " files" : (picture(value) ? "Image" : "File"))
   if (long) return "Long text"
   lines = gsub(/\\n/, "&", value) + 1
   return (lines > 1 ? lines " lines" : length(value) " characters")
+}
+
+function picture(path) {
+  return tolower(path) ~ /\.(png|jpe?g|gif|heic|tiff|webp|bmp)$/
 }
 
 function source(spot,    name) {
@@ -42,14 +45,13 @@ function source(spot,    name) {
     n = index($i, "=")
     key = substr($i, 1, n - 1)
     value = substr($i, n + 1)
-    if ((key == "file" || key == "picture") && files++ > 0) continue
+    if (key == "file" && files++ > 0) continue
     f[key] = value
   }
   if (f["item"] == "") next
   kind = "text"
   if ("url" in f) kind = "url"
   if ("file" in f) kind = "file"
-  if ("picture" in f) kind = "picture"
   day = substr(f["at"], 1, 10)
   detail = substr(f["at"], 12, 5) " · " what(kind, f[kind], f["text.file"] != "", files)
   if (f["spot"] != "clipboard") detail = detail " · " source(f["spot"])
@@ -67,12 +69,12 @@ function source(spot,    name) {
     printf "\nbox=day-%s\nparent=list\ntitle=%s\n", day, day_title(day)
     last = day
   }
-  icon = (kind == "url" ? "link" : (kind == "file" ? "doc" : (kind == "picture" ? f["picture"] : "text.alignleft")))
+  icon = (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : "text.alignleft"))
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
   if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]
   if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
-  if (kind == "file" || kind == "picture") printf "file=%s\n", f[kind]
+  if (kind == "file") printf "file=%s\n", f[kind]
   if (f["text.file"] != "") printf "whole=%s\n", f["text.file"]
   printf "open.title=%s\n", (kind == "url" ? "Open" : "Paste")
 }

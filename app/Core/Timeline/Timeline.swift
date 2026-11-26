@@ -208,9 +208,9 @@ public final class Timeline: Sendable {
             } else {
                 value = text
             }
-        case .file, .picture:
+        case .file:
             for path in draft.values {
-                let file = keep(path, isPicture: draft.kind == .picture, in: place)
+                let file = keep(path, in: place)
                 if file.isKept { bytes += Self.size(of: URL(fileURLWithPath: file.path)) }
                 files.append(file)
             }
@@ -221,13 +221,13 @@ public final class Timeline: Sendable {
         )
     }
 
-    private func keep(_ path: String, isPicture: Bool, in place: URL) -> TimelineEntry.File {
+    private func keep(_ path: String, in place: URL) -> TimelineEntry.File {
         let source = URL(fileURLWithPath: path)
         let link = TimelineEntry.File(path: path, original: path, isKept: false)
         guard folder != nil, FileManager.default.fileExists(atPath: path) else { return link }
         try? FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         guard (try? source.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, Self.size(of: source) <= Self.cloneLimit else { return link }
-        guard isPicture || Self.volume(of: source) == Self.volume(of: place) else { return link }
+        guard Self.volume(of: source) == Self.volume(of: place) else { return link }
         var target = place.appendingPathComponent(source.lastPathComponent)
         var number = 2
         while FileManager.default.fileExists(atPath: target.path) {
@@ -346,7 +346,7 @@ public final class Timeline: Sendable {
             return String(line.trimmingCharacters(in: .whitespaces).prefix(200))
         case .url:
             return draft.values.first ?? ""
-        case .file, .picture:
+        case .file:
             let name = draft.values.first.map { ($0 as NSString).lastPathComponent } ?? ""
             return draft.values.count > 1 ? "\(name) and \(draft.values.count - 1) more" : name
         }

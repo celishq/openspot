@@ -2,7 +2,7 @@ import Foundation
 
 public struct TimelineEntry: Codable, Equatable, Sendable {
     public enum Kind: String, Codable, Sendable {
-        case text, url, file, picture
+        case text, url, file
     }
 
     public struct File: Codable, Equatable, Sendable {
@@ -29,7 +29,7 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
         var fields = [TextBlock.Field(key: "item", value: id), .init(key: "title", value: title), .init(key: "spot", value: spot), .init(key: "at", value: Self.format(at))]
         switch kind {
         case .text, .url: fields.append(.init(key: kind.rawValue, value: value))
-        case .file, .picture: fields += files.map { .init(key: kind.rawValue, value: $0.isKept ? $0.path : $0.original) }
+        case .file: fields += files.map { .init(key: kind.rawValue, value: $0.isKept ? $0.path : $0.original) }
         }
         if let textFile { fields.append(.init(key: "text.file", value: textFile)) }
         if let app { fields.append(.init(key: "app", value: app)) }

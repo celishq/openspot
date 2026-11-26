@@ -56,6 +56,16 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
     }
 
+    func testAFileOfAPictureShowsAsAnImageWithItsThumbnail() async throws {
+        try add(.file, "/tmp/shot.png")
+        try add(.file, "/tmp/notes.txt", at: Date().addingTimeInterval(1))
+
+        let rows = try await rows()
+
+        XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· File", "· Image"])
+        XCTAssertEqual(rows.map(\.picture), [.symbol("doc"), .image("/tmp/shot.png")])
+    }
+
     func testTheCardShowsTheNewestEntry() async throws {
         try add(.text, "older", at: Date().addingTimeInterval(-60))
         try add(.text, "newest")
