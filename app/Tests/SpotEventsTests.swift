@@ -6,6 +6,7 @@ final class SpotEventsTests: SpotRunsCase {
     private final class FakeMac: MacEvents, @unchecked Sendable {
         var heard: (@MainActor (AppSignal) -> Void)?
         var count = 0
+        var idleSeconds: TimeInterval = 0
         private(set) var looks = 0
 
         func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
@@ -272,6 +273,50 @@ final class SpotEventsTests: SpotRunsCase {
         mac.count = 1
 
         runs.panelOpened()
+
+        try await wait("the clipboard read") { self.log("reasons").contains("clipboard.change none") }
+    }
+
+    func testWithThePanelClosedAPersonIdleForHalfAMinuteHasTheClipboardLookedAtTenTimesLessOften() throws {
+        runs.listen(to: mac)
+        let active = runs.clipboardWait
+
+        mac.idleSeconds = SpotRuns.clipboardActiveSpan
+        let idle = runs.clipboardWait
+        runs.panelOpened()
+        let open = runs.clipboardWait
+
+        XCTAssertEqual(active, .milliseconds(40))
+        XCTAssertEqual(idle, .milliseconds(400))
+        XCTAssertEqual(open, .milliseconds(20))
+    }
+
+    func testWhileTheScreenIsAwayNothingWatchesTheClipboardAndItsReturnLooksAtOnce() async throws {
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, clipboardPause: .seconds(4))
+        menuBar.insert("script")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
+
+        mac.heard?(.away)
+        XCTAssertFalse(runs.watchesClipboard)
+        mac.count = 1
+        mac.heard?(.back)
+
+        try await wait("the clipboard read") { self.log("reasons").contains("clipboard.change none") }
+    }
+
+    func testASwitchOfAppLooksAtTheClipboardAtOnce() async throws {
+        runs = SpotRuns(clock: clock.value, stopPause: 0.2, clipboardPause: .seconds(4))
+        menuBar.insert("script")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
+        mac.count = 1
+
+        mac.heard?(.named(EventName.frontApp, value: "com.apple.Notes"))
 
         try await wait("the clipboard read") { self.log("reasons").contains("clipboard.change none") }
     }

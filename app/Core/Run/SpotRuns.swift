@@ -38,6 +38,7 @@ public final class SpotRuns {
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
     @ObservationIgnored var seenCopy: SeenCopy?
+    @ObservationIgnored var isAway = false
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
     @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?

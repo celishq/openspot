@@ -86,6 +86,10 @@ Openspot runs `<script> drop` once, with one `input.file=` line for each file.
 | `device.connect`   | its name                        | When a USB device connects.                            |
 | `system.load`      | `cpu=<percent> memory=<percent>` | Every 5 seconds.                                       |
 
+macOS tells no app when the clipboard changes, so Openspot looks for a new copy: each half second while the panel shows,
+each second while you use the Mac, and each 10 seconds after half a minute with no key or click. It looks at once when
+another app comes to the front, and not at all while the screen sleeps or is locked.
+
 ## Next
 
 - [Run every minute or on a schedule](on-a-schedule.md)

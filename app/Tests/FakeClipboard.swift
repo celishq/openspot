@@ -81,6 +81,7 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
 
     func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {}
     var clipboardCount: Int { lock.withLock { countValue } }
+    var idleSeconds: TimeInterval { 0 }
     var pasteCount: Int { lock.withLock { pasteValue } }
     func measureLoad() -> LoadSample { LoadSample(busy: 0, total: 0, memory: 0) }
 }

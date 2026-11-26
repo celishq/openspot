@@ -6,9 +6,13 @@ extension SpotRuns {
         case .panel: openPanel()
         case .wake: wake()
         case .sleep: usage.flush()
+        case .away: leave()
+        case .back: come()
         case .clock: updateClock()
         case .query(let text): ask(text)
-        case .named(let name, let value, let showsEachSpot): show(name, value, showsEachSpot: showsEachSpot)
+        case .named(let name, let value, let showsEachSpot):
+            if name == EventName.frontApp { lookAtClipboard() }
+            show(name, value, showsEachSpot: showsEachSpot)
         }
     }
 
@@ -82,8 +86,28 @@ extension SpotRuns {
 
     private static let loadFreshness: TimeInterval = 10
 
+    static let clipboardActiveSpan: TimeInterval = 30
+
     var clipboardWait: Duration {
-        isPanelOpen ? clipboardPause : clipboardPause * 2
+        guard !isPanelOpen else { return clipboardPause }
+        return (source?.idleSeconds ?? 0) < Self.clipboardActiveSpan ? clipboardPause * 2 : clipboardPause * 20
+    }
+
+    private func leave() {
+        isAway = true
+        watchClipboard()
+    }
+
+    private func come() {
+        isAway = false
+        watchClipboard(looksNow: true)
+    }
+
+    private func lookAtClipboard() {
+        guard clipboardWatch != nil else { return }
+        clipboardWatch?.cancel()
+        clipboardWatch = nil
+        watchClipboard(looksNow: true)
     }
 
     var watchesClipboard: Bool {
@@ -103,7 +127,7 @@ extension SpotRuns {
 
     func watchClipboard(looksNow: Bool = false) {
         let isWanted = sheets.values.contains { $0.hearsEvents && $0.spot.triggers.events.contains(EventName.clipboard) }
-        guard let source, isWanted, !hasQuit else {
+        guard let source, isWanted, !hasQuit, !isAway else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
             return
@@ -149,11 +173,7 @@ extension SpotRuns {
         isPanelOpen = true
         if !wasOpen { wanted = [] }
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
-        if !wasOpen, clipboardWatch != nil {
-            clipboardWatch?.cancel()
-            clipboardWatch = nil
-            watchClipboard(looksNow: true)
-        }
+        if !wasOpen { lookAtClipboard() }
         updateClock()
         showPanel(toEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }

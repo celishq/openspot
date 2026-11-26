@@ -3,7 +3,10 @@ import OpenspotCore
 
 @MainActor
 final class SpotMac: MacEvents {
+    private static let locked = Notification.Name("com.apple.screenIsLocked")
+    private static let unlocked = Notification.Name("com.apple.screenIsUnlocked")
     private var observers: [NSObjectProtocol] = []
+    private var lockObservers: [NSObjectProtocol] = []
     private let system = SpotSystemEvents()
 
     nonisolated var mac: Mac {
@@ -29,6 +32,10 @@ final class SpotMac: MacEvents {
         NSPasteboard.general.changeCount
     }
 
+    var idleSeconds: TimeInterval {
+        CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+    }
+
     func measureLoad() -> LoadSample {
         SpotSystemEvents.measureLoad()
     }
@@ -36,8 +43,27 @@ final class SpotMac: MacEvents {
     func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
         system.listen(heard)
         let center = NSWorkspace.shared.notificationCenter
+        let screens = DistributedNotificationCenter.default()
         observers.forEach(center.removeObserver)
+        lockObservers.forEach(screens.removeObserver)
+        lockObservers = [
+            screens.addObserver(forName: Self.locked, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.away) }
+            },
+            screens.addObserver(forName: Self.unlocked, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.back) }
+            }
+        ]
         observers = [
+            center.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.away) }
+            },
+            center.addObserver(forName: NSWorkspace.sessionDidResignActiveNotification, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.away) }
+            },
+            center.addObserver(forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { heard(.back) }
+            },
             center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated { heard(.wake) }
             },
@@ -45,7 +71,10 @@ final class SpotMac: MacEvents {
                 MainActor.assumeIsolated { heard(.sleep) }
             },
             center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { heard(.named(EventName.screenWake, value: nil)) }
+                MainActor.assumeIsolated {
+                    heard(.back)
+                    heard(.named(EventName.screenWake, value: nil))
+                }
             },
             center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
                 guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
