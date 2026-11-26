@@ -202,6 +202,16 @@ public final class SettingsBook {
         await run(ThemeCall.use(name), as: "theme use")
     }
 
+    public func themePrompt(words: String) async -> String? {
+        guard let api = model?.runs.api, let used = looks.first(where: \.isUsed) else { return nil }
+        let answer = await api.answer(PromptCall.theme(used.name, words: words), as: "prompt theme")
+        guard answer.code == 0 else {
+            say(answer.errors)
+            return nil
+        }
+        return answer.output
+    }
+
     public func allow(_ spot: String) async {
         await run(AccessCall.grant(spot, end: false), as: "access grant")
     }

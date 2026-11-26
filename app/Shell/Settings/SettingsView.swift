@@ -8,6 +8,9 @@ struct SettingsView: PageView {
     @State var isFolded = true
     @State var isKeysFolded = true
     @State var isAboutShown = false
+    @State var isThemeAsked = false
+    @State var themeWish = ""
+    @State var isThemeCopied = false
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
 
@@ -33,6 +36,7 @@ struct SettingsView: PageView {
         .onDisappear { HotKey.pause(false) }
         .overlay { book.grant.map { SettingsGrantSheet(book: book, grant: $0) } }
         .sheet(isPresented: $isAboutShown) { about }
+        .sheet(isPresented: $isThemeAsked) { themeForm }
         .sheet(isPresented: Binding(get: { step != nil }, set: { if !$0 { step = nil } })) { SettingsAccountSheet(book: book, step: $step) }
     }
 

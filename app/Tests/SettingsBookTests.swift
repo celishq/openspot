@@ -237,6 +237,16 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.looks.first { $0.isUsed }?.id, "Dracula")
     }
 
+    func testAThemePromptAsksForTheWordsOverTheThemeInUse() async throws {
+        await read()
+        await book.use(theme: "Dracula")
+
+        let asked = await book.themePrompt(words: "warm sunset colours")
+        let prompt = try XCTUnwrap(asked)
+
+        XCTAssertTrue(prompt.contains("its theme Dracula: warm sunset colours"))
+    }
+
     func testAFailedActSaysWhyInAToast() async throws {
         await read()
 

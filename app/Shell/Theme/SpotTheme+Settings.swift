@@ -24,6 +24,8 @@ extension SpotTheme {
     static let settingsLookCell = 0.12
     static let settingsLookHint = 0.5
     static let settingsLookPanelFill = 0.92
+    static let settingsLookClearFill = 0.2
+    static let settingsLookClearRim = Color.white.opacity(0.45)
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
     static let settingsLookWall = 0.35
 
