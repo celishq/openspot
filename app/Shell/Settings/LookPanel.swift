@@ -2,7 +2,6 @@ import OpenspotCore
 import SwiftUI
 
 struct LookPanel: View {
-    let palette: SpotPalette
     let swatch: Theme.Appearance
     let layout: Theme.Layout
     let spots: [LookSpot]
@@ -37,14 +36,13 @@ struct LookPanel: View {
 
     private var backdrop: some View {
         ZStack {
-            if layout.backdrop.style != .tint { Rectangle().fill(.ultraThinMaterial) }
-            if layout.backdrop.style != .blur { palette.backdropTint }
+            if layout.backdrop.style != .blur { swatch.backdropTint.color }
         }
         .mask(SpotRoundShape(radius: CGFloat(layout.radius.card) + halo / 2).padding(halo / 2).blur(radius: halo * SpotTokens.settingsLookFade))
     }
 
-    private var glass: Glass {
-        (palette.glassVariant == .clear ? Glass.clear : Glass.regular).tint(palette.glassTint)
+    private func glass(_ shape: SpotRoundShape) -> some View {
+        shape.fill(swatch.glass.color).overlay(shape.stroke(SpotTheme.pictureRim, lineWidth: SpotTokens.pictureRimLine))
     }
 
     private func field(_ faces: SpotType.Faces) -> some View {
@@ -57,7 +55,7 @@ struct LookPanel: View {
         .foregroundStyle(swatch.ink.color.opacity(swatch.secondary))
         .padding(.horizontal, padding)
         .frame(width: layout.width(columns: SpotTokens.columns), height: layout.fieldHeight, alignment: .leading)
-        .spotGlass(glass, in: shape)
+        .background(glass(shape))
     }
 
     private func card(at index: Int, size: SpotSize, faces: SpotType.Faces) -> some View {
@@ -78,6 +76,6 @@ struct LookPanel: View {
         .padding(.horizontal, size.columns > 1 ? padding : 0)
         .frame(width: layout.width(columns: size.columns), height: layout.height(rows: size.rows), alignment: size.columns > 1 ? .leading : .center)
         .background(swatch.ink.color.opacity(swatch.fill), in: shape)
-        .spotGlass(glass, in: shape)
+        .background(glass(shape))
     }
 }

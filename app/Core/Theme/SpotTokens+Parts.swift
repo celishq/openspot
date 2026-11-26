@@ -245,6 +245,7 @@ extension SpotTokens {
     public static let settingsLookSpots = 6
     public static let settingsLookHalo: CGFloat = 3
     public static let settingsLookFade: CGFloat = 0.75
+    public static let settingsLookPictureScale: CGFloat = 2
     public static let settingsLookFill: CGFloat = 0.92
     public static let settingsLookWords: CGFloat = 6
     public static let settingsLookRing: CGFloat = 3

@@ -103,18 +103,19 @@ extension SettingsView {
 
     private func preview(_ look: ListedTheme, spots: [LookSpot]) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.pageTileRadius)
-        let swatch = colorScheme == .dark ? look.colours.dark : look.colours.light
-        let panel = LookPanel(palette: LookPalettes.shared.palette(of: look), swatch: swatch, layout: look.layout, spots: spots)
-        let scale = SpotTokens.settingsLookHeight * SpotTokens.settingsLookFill / panel.size.height
+        let isDark = colorScheme == .dark
+        let swatch = isDark ? look.colours.dark : look.colours.light
         return ZStack {
             swatch.background.color
             LinearGradient(colors: [swatch.accent.color.opacity(SpotTheme.settingsLookWall), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
-            panel
-                .scaleEffect(scale)
-                .frame(width: panel.size.width * scale, height: panel.size.height * scale)
+            LookPictures.shared.picture(of: look, isDark: isDark, spots: spots)?
+                .resizable()
+                .scaledToFit()
+                .frame(height: SpotTokens.settingsLookHeight * SpotTokens.settingsLookFill)
         }
         .frame(height: SpotTokens.settingsLookHeight)
         .clipShape(shape)
         .overlay(shape.strokeBorder(look.isUsed ? Color.accentColor : Color.primary.opacity(SpotTheme.settingsStepFill), lineWidth: look.isUsed ? SpotTokens.settingsLookRing : SpotTokens.settingsRim))
+        .task(id: LookPictures.Key(colours: look.colours, layout: look.layout, isDark: isDark, spots: spots)) { LookPictures.shared.draw(look, isDark: isDark, spots: spots) }
     }
 }
