@@ -216,7 +216,7 @@ extension SpotsModel {
             if confirming != key || !runConfirmed() { confirming = key }
             return
         }
-        if isShown { host.dismiss() }
+        if isShown, entry.spot.commands.first(where: { $0.id == command })?.closes != false { host.dismiss() }
         run(key)
     }
 
