@@ -28,7 +28,8 @@ final class SpotSampleTests: XCTestCase {
 
     private func output(of id: String) async throws -> Frame? {
         let items = SpotCatalog(folder: SpotsFolder(url: spots, core: core), arrangement: SpotChoices(), stores: [StoreSource(url: store)]).items
-        return await SpotSample.output(of: try XCTUnwrap(items.first { $0.id == id }), runs: runs)
+        let item = try XCTUnwrap(items.first { $0.id == id })
+        return await SpotSample.output(of: item.spot, runsScript: item.store == nil, runs: runs)
     }
 
     func testASampleScriptBesideASpotGivesItASampleAndIsNoSpotOfItsOwn() throws {

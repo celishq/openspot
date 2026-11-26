@@ -22,11 +22,6 @@ public enum SpotSample {
     }
 
     @MainActor
-    public static func output(of item: SpotCatalog.Item, runs: SpotRuns) async -> Frame? {
-        await output(of: item.spot, runsScript: item.runsSample, runs: runs)
-    }
-
-    @MainActor
     public static func output(of spot: Spot, runsScript: Bool, runs: SpotRuns) async -> Frame? {
         if runsScript, let sampled = spot.sampled {
             guard let text = try? await runs.answer(of: sampled, ScriptEntry.show.name, limit: limit) else { return nil }

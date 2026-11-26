@@ -34,7 +34,6 @@ public final class SpotsModel {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
     }
-    @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
     public private(set) var cards: [Entry] = []
     public var entries: [Entry] = [] {
@@ -42,7 +41,6 @@ public final class SpotsModel {
             entryPlaces = Dictionary(entries.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             takeCards()
             spotListIsStale = true
-            storeCards = nil
             askAnswers()
             takePreview()
             showVisible()

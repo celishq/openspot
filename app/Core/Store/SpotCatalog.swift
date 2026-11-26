@@ -16,10 +16,6 @@ public struct SpotCatalog: Sendable {
             store != nil ? .store : isCore ? .core : .mine
         }
 
-        public var runsSample: Bool {
-            store == nil
-        }
-
         public var step: String {
             guard isAdded else { return "get" }
             return "added"
