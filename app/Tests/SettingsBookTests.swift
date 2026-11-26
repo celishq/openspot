@@ -335,7 +335,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.keys.unset.last?.id, "Cups")
         XCTAssertEqual(book.keys.unset.last?.rows.map(\.key), ["open", "key.fill", "float"])
         XCTAssertEqual(book.spots.groups.map(\.id), ["Needs Attention"])
-        XCTAssertEqual(book.looks.first { $0.isUsed }?.word, "In use")
+        XCTAssertEqual(Set(book.looks.map(\.group)), ["Built In"])
         XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
         XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }

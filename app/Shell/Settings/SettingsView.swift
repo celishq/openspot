@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: PageView {
     let model: SpotsModel
+    @Environment(\.colorScheme) var colorScheme
     @State var isFolded = true
     @State var isKeysFolded = true
     @State var isAboutShown = false

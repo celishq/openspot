@@ -5,65 +5,50 @@ extension SettingsView {
     var lookPage: some View {
         Group {
             title(of: .look)
-            Section {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
-                    ForEach(book.looks) { look in
-                        VStack(spacing: SpotTokens.settingsLookWords) {
-                            preview(look)
-                            Text(look.id)
-                                .fontWeight(.medium)
-                                .lineLimit(1)
-                            Text(look.word)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+            ForEach(["Built In", "Yours"], id: \.self) { name in
+                let looks = book.looks.filter { $0.group == name }
+                if !looks.isEmpty {
+                    group(name) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: SpotTokens.settingsLookColumn), spacing: SpotTokens.settingsLookGap)], spacing: SpotTokens.settingsLookGap) {
+                            ForEach(looks) { tile($0) }
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture { if !look.isUsed { act { await $0.use(theme: look.id) } } }
-                        .help(look.isUsed ? "\(look.id) is in use" : "Use \(look.id)")
                     }
                 }
             }
         }
+    }
+
+    private func tile(_ look: ListedTheme) -> some View {
+        VStack(spacing: SpotTokens.settingsLookWords) {
+            preview(look)
+            Text(look.id)
+                .fontWeight(look.isUsed ? .semibold : .regular)
+                .lineLimit(1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { if !look.isUsed { act { await $0.use(theme: look.id) } } }
+        .accessibilityAddTraits(look.isUsed ? [.isButton, .isSelected] : .isButton)
+        .help(look.isUsed ? "\(look.id) is in use" : "Use \(look.id)")
     }
 
     private func preview(_ look: ListedTheme) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        return ZStack {
-            half(look, look.colours.dark, wall: SpotTheme.settingsLookWallDark)
-            half(look, look.colours.light, wall: SpotTheme.settingsLookWallLight)
-                .mask {
-                    GeometryReader { box in
-                        Rectangle()
-                            .frame(width: box.size.width / 2)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                }
-        }
-        .frame(height: SpotTokens.settingsLookHeight)
-        .clipShape(shape)
-        .overlay(shape.strokeBorder(look.isUsed ? Color.accentColor : Color.primary.opacity(SpotTheme.settingsStepFill), lineWidth: look.isUsed ? SpotTokens.settingsLookRing : SpotTokens.settingsRim))
-        .overlay(alignment: .topTrailing) {
-            if look.isUsed {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(SpotType.settingsLookCheck)
-                    .foregroundStyle(SpotTheme.settingsSelectedInk, Color.accentColor)
-                    .padding(SpotTokens.settingsLookCheckInset)
-            }
-        }
-    }
-
-    private func half(_ look: ListedTheme, _ swatch: Theme.Appearance, wall: [Color]) -> some View {
+        let swatch = colorScheme == .dark ? look.colours.dark : look.colours.light
         let layout = look.layout
         let columns = CGFloat(SpotTheme.settingsLookCards.count)
         let width = columns * CGFloat(layout.space.cell) + (columns - 1) * CGFloat(layout.space.columnGap) + 2 * CGFloat(layout.space.padding)
         let height = 2 * (CGFloat(layout.space.padding) + CGFloat(layout.space.cell)) + CGFloat(layout.space.rowGap)
         let scale = (SpotTokens.settingsLookHeight - 2 * SpotTokens.settingsLookTopInset) / height
         return ZStack {
-            LinearGradient(colors: wall, startPoint: .topLeading, endPoint: .bottomTrailing)
+            swatch.background.color
+            LinearGradient(colors: [swatch.accent.color.opacity(SpotTheme.settingsLookWall), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
             panelTop(swatch, layout, width: width, height: height)
                 .scaleEffect(scale)
                 .frame(width: width * scale, height: height * scale)
         }
+        .frame(height: SpotTokens.settingsLookHeight)
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(look.isUsed ? Color.accentColor : Color.primary.opacity(SpotTheme.settingsStepFill), lineWidth: look.isUsed ? SpotTokens.settingsLookRing : SpotTokens.settingsRim))
     }
 
     private func panelTop(_ swatch: Theme.Appearance, _ layout: Theme.Layout, width: CGFloat, height: CGFloat) -> some View {

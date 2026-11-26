@@ -11,7 +11,7 @@ public struct ListedTheme: Identifiable, Equatable, Sendable {
         name
     }
 
-    public var word: String {
-        isUsed ? "In use" : isBuiltIn ? "Built in" : "Yours"
+    public var group: String {
+        isBuiltIn ? "Built In" : "Yours"
     }
 }

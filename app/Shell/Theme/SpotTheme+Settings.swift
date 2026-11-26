@@ -25,8 +25,7 @@ extension SpotTheme {
     static let settingsLookHint = 0.5
     static let settingsLookPanelFill = 0.92
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
-    static let settingsLookWallDark = [Color(red: 0.13, green: 0.17, blue: 0.33), Color(red: 0.29, green: 0.20, blue: 0.42)]
-    static let settingsLookWallLight = [Color(red: 0.74, green: 0.84, blue: 0.97), Color(red: 0.86, green: 0.80, blue: 0.96)]
+    static let settingsLookWall = 0.35
 
     static let settingsSpotColours: [Color] = [.blue, .indigo, .purple, .pink, .red, .orange, .yellow, .green, .mint, .teal, .cyan, .brown, .gray]
 

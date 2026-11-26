@@ -12,7 +12,6 @@ extension SpotType {
     static let settingsGroup = Font.headline
     static let settingsHero = Font.title.weight(.bold)
     static let settingsPageLine = Font.body
-    static let settingsLookCheck = Font.title3
     static let settingsPageTitle = Font.system(size: 15, weight: .semibold)
     static let settingsTileShare: CGFloat = 0.52
     static let settingsGlyphShare: CGFloat = 0.55
