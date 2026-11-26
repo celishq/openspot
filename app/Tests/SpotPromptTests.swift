@@ -68,6 +68,7 @@ final class SpotPromptTests: XCTestCase {
         let text = prompt().building("Show the weather")
 
         XCTAssertTrue(text.contains("guide for the map of the guide"))
+        XCTAssertTrue(text.contains("guide <word> for the row of a key, a block, a class or a command"))
         XCTAssertFalse(text.contains("read all of it"))
         XCTAssertTrue(text.contains(examples.path))
         XCTAssertTrue(text.contains(folder.path))

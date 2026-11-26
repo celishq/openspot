@@ -27,7 +27,7 @@ public struct ThemePrompt: Equatable, Sendable {
                 "A key that the file leaves out keeps its value from the theme \(ThemeFolder.builtInName)\(base.map { ", in \($0.path)" } ?? "")."
             ],
             reading: [
-                "Run \(quoted) guide use-openspot, and read its section Change the look of Openspot. It says what each key does, and which values to set only when the rule gives the wrong one.",
+                "Run \(quoted) guide use-openspot/change-the-look-of-openspot. It says what each key does. \(quoted) guide use-openspot/set-a-value-exactly says which values to set only when the rule gives the wrong one.",
                 "The file holds these sections and keys, and every other value of the look follows from them:\n\(keys)"
             ],
             finish: Self.finish,

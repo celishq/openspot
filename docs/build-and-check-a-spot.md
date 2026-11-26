@@ -17,6 +17,16 @@ Build each spot the simplest way that does what it must. Take the next way only 
 
 When you take a way past the shell script, say why in your answer.
 
+## Look up what you need
+
+```text
+openspot guide
+```
+
+It prints the map of the guide: the address and the size of each page, and of each section of a long one. Print one
+part by its address, a page or a page/section, and the row of a key, a block, a class or a command with
+`openspot guide <word>`. `openspot guide --find <words>` lists each part that holds the words.
+
 ## Start from a spot that works
 
 ```text

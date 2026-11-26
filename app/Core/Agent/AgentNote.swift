@@ -36,7 +36,8 @@ public struct AgentNote: Equatable, Sendable {
         In this file, `openspot` stands for `"\(command)"`. Type that full path in quotes, since it can hold a space, when `openspot` is not on the PATH.
 
         Before you change a file here, run `openspot guide build-and-check-a-spot` and follow it. `openspot guide`
-        prints the map of the guide. Read each part that your change needs.
+        prints the map of the guide. Print only the parts that your change needs: a page or a page/section by its address,
+        and `openspot guide <word>` for the row of a key, a block, a class or a command.
 
         """
     }

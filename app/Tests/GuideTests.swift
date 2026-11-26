@@ -25,7 +25,7 @@ final class GuideTests: XCTestCase {
         try script.run()
         script.waitUntilExit()
         let guide = Guide(text: try String(contentsOf: out, encoding: .utf8), pages: [:])
-        let regex = try NSRegularExpression(pattern: "`openspot guide ([^`]+)`")
+        let regex = try NSRegularExpression(pattern: "\\(`openspot guide ([^`]+)`\\)")
         let addresses = guide.topics.flatMap { topic in
             regex.matches(in: topic.text, range: NSRange(topic.text.startIndex..., in: topic.text)).compactMap { Range($0.range(at: 1), in: topic.text).map { String(topic.text[$0]) } }
         }
