@@ -5,7 +5,7 @@ public struct SpotEvidence: Equatable, Sendable {
 
     public let id: String
     public let facts: [String]
-    public let goal: String
+    public let goal: String?
     let app: String
 
     public init?(of id: String, in days: [StatsLog.Day], app: String) {
@@ -42,9 +42,7 @@ public struct SpotEvidence: Equatable, Sendable {
         self.id = id
         self.facts = facts
         self.app = app
-        goal = goals.isEmpty
-            ? "Judge from these numbers whether anything is worth improving, such as its cost while the panel is hidden or how fast it answers. If nothing is, change nothing and tell me why."
-            : goals.joined(separator: " ")
+        goal = goals.isEmpty ? nil : goals.joined(separator: " ")
     }
 
     static func read(of id: String, runs: SpotRuns?, stats: URL, app: String) async -> SpotEvidence? {
@@ -55,7 +53,7 @@ public struct SpotEvidence: Equatable, Sendable {
         """
         What Openspot counted of this spot over the last \(Self.days) days on this Mac:
         \(facts.map { "- \($0)" }.joined(separator: "\n"))
-        Run "\(app)" spot stats --days \(Self.days) --spot \(id) --by version for every count.
+        Run \(AgentBrief.quoted(app)) spot stats --days \(Self.days) --spot \(id) --by version for every count.
         """
     }
 

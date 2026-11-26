@@ -36,7 +36,7 @@ final class SpotEvidenceTests: XCTestCase {
         XCTAssertTrue(evidence.facts.contains("Calls that its spot.toml does not declare: app.quit 1 time."), "\(evidence.facts)")
     }
 
-    func testACleanSpotGetsItsShareOfAllSpotsAndTheGoalToJudge() throws {
+    func testACleanSpotGetsItsShareOfAllSpotsAndNoGoal() throws {
         let usage = StatsLog(at: day)
         usage.panel(shown: true)
         usage.acted(weather, at: day)
@@ -48,7 +48,8 @@ final class SpotEvidenceTests: XCTestCase {
 
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
 
-        XCTAssertTrue(evidence.goal.hasPrefix("Judge from these numbers whether anything is worth improving"), evidence.goal)
+        XCTAssertNil(evidence.goal)
+        XCTAssertTrue(AgentPrompt(folder: URL(fileURLWithPath: "/spots"), references: [], app: "openspot").changing(URL(fileURLWithPath: "/spots/weather.spot/weather.sh"), evidence: evidence).hasSuffix("<request>\n\(AgentPrompt.review)\n</request>"))
         XCTAssertTrue(evidence.facts.contains("CPU: 1.5 s a day, 33% of the CPU of all spots, 1.5 s for each act."), "\(evidence.facts)")
         XCTAssertTrue(evidence.facts.contains("While the panel was hidden: 500 ms CPU and 200 wakeups a day."), "\(evidence.facts)")
         XCTAssertTrue(evidence.facts.contains("Acts: 1.0 a day, 100% of the acts of all spots."), "\(evidence.facts)")
