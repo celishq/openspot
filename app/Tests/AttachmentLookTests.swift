@@ -22,6 +22,7 @@ final class AttachmentLookTests: AttachmentCase {
         XCTAssertEqual(look(over: safari, own: picture, value: value("https://a.com/b.png")), .file(.image("https://a.com/b.png")))
         XCTAssertEqual(look(over: safari, own: picture, value: value("/Applications/Notes.app")), .file(FileIcon(path: "/Applications/Notes.app")))
         XCTAssertEqual(look(over: safari, own: picture, value: value("★")), .glyph("★"))
+        XCTAssertEqual(look(over: safari, own: picture, value: value("#ff3b30")), .color("#ff3b30"))
     }
 
     func testThePictureOfTheSpotComesBeforeTheAppAtRestAndWithAValue() {

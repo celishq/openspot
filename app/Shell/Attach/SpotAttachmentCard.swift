@@ -45,6 +45,10 @@ struct SpotAttachmentCard: View, Equatable {
                 .frame(width: SpotTokens.attachmentIcon, height: SpotTokens.attachmentIcon)
                 .grayscale(isQuiet ? 1 : 0)
                 .opacity(isQuiet ? SpotTheme.attachmentQuietPicture : 1)
+        case .color(let hex):
+            SpotItemIcon(icon: nil, glyph: nil, symbol: nil, size: SpotTokens.attachmentIcon, swatch: hex)
+                .grayscale(isQuiet ? 1 : 0)
+                .opacity(isQuiet ? SpotTheme.attachmentQuietPicture : 1)
         case .symbol(let symbol):
             let tile = SpotRoundShape(radius: SpotTokens.attachmentIconRadius)
             ZStack {
