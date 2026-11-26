@@ -8,7 +8,7 @@ extension SettingsView {
         let rows = book.rows.rows(in: .account)
         return Group {
             if let account, account.signedIn {
-                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "Your Publisher Card", SettingsPage.Section.account.line) {
+                title(.hero, PublisherCard(account: account) { copy(account.npub ?? "") }, "", SettingsPage.Section.account.line) {
                     Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
                 }
@@ -41,15 +41,12 @@ extension SettingsView {
                     }
                 }
             } else {
-                title(.hero, SettingsAvatar(side: SpotTokens.settingsHeroAvatar), "Sign In to Publish", SettingsPage.Section.account.line) {
+                title(.hero, PublisherCard(account: nil) { step = .handle }, "Sign In to Publish", SettingsPage.Section.account.line) {
                     HStack(spacing: SpotTokens.settingsRowGap) {
                         Button("Use My Own Key…") { step = .signIn }
-                        Button("Create a New Key…") { step = .handle }
-                            .buttonStyle(.borderedProminent)
+                        Button("How It Works…") { step = .how }
+                            .buttonStyle(.link)
                     }
-                    .padding(.top, SpotTokens.settingsSheetTop)
-                    Button("How It Works…") { step = .how }
-                        .buttonStyle(.link)
                 }
             }
         }

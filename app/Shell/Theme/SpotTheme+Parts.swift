@@ -6,6 +6,7 @@ extension SpotTheme {
     static let foilBase = ThemeColor(text: "#FFFFFF")!.color
     static let publisherRim = ThemeColor(text: "#FFFFFF4D")!.color
     static let publisherPill = 0.1
+    static let publisherBlank = 0.4
     static let publisherPillHover = 0.18
     static let publisherPillRing = 0.22
     static let publisherPillShine = ThemeColor(text: "#FFFFFF73")!.color

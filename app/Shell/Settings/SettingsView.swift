@@ -43,7 +43,6 @@ struct SettingsView: PageView {
     private var reveal: CGFloat {
         switch book.page {
         case _ where book.isSearching: PageTitle.heading.reveal
-        case .account where book.account?.signedIn == true: SpotTokens.settingsCardReveal
         case .account: PageTitle.hero.reveal
         case .access, .accessOf, .spotOf: PageTitle.header.reveal
         default: PageTitle.heading.reveal

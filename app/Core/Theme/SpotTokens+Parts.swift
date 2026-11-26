@@ -199,7 +199,6 @@ extension SpotTokens {
     public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
     public static var settingsTitleReveal: CGFloat { settingsPagePadding + settingsHeaderPadding + settingsHeaderTile }
-    public static var settingsHeroReveal: CGFloat { settingsPagePadding + settingsHeroAvatar + settingsHeroGap }
     public static var settingsHeadingReveal: CGFloat { settingsPagePadding + settingsTitleLine }
     public static let settingsTitleLine: CGFloat = 32
     public static let settingsHeadingGap: CGFloat = 20
@@ -212,7 +211,6 @@ extension SpotTokens {
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 22
     public static let settingsHeaderTile: CGFloat = 52
-    public static let settingsHeroAvatar: CGFloat = 72
     public static let settingsHeroGap: CGFloat = 8
     public static let settingsFoundTile: CGFloat = 24
     public static let settingsSpotIcon: CGFloat = 44

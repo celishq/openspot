@@ -8,7 +8,7 @@ enum PageTitle {
         switch self {
         case .heading: SpotTokens.settingsHeadingReveal
         case .header: SpotTokens.settingsTitleReveal
-        case .hero: SpotTokens.settingsHeroReveal
+        case .hero: SpotTokens.settingsCardReveal
         }
     }
 }

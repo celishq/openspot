@@ -44,9 +44,11 @@ extension PageView {
             Section {} header: {
                 VStack(spacing: SpotTokens.settingsHeroGap) {
                     icon
-                    Text(title)
-                        .font(SpotType.settingsHero)
-                        .foregroundStyle(.primary)
+                    if !title.isEmpty {
+                        Text(title)
+                            .font(SpotType.settingsHero)
+                            .foregroundStyle(.primary)
+                    }
                     Text(line)
                         .font(SpotType.settingsPageLine)
                         .foregroundStyle(.secondary)

@@ -2,8 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 struct PublisherCard: View {
-    let account: AccountStatus
-    let copy: () -> Void
+    let account: AccountStatus?
+    let act: () -> Void
     @Environment(\.controlActiveState) private var activeState
     @Environment(\.spotMoves) private var moves
     @State private var pointer: CGPoint?
@@ -11,7 +11,7 @@ struct PublisherCard: View {
     @State private var isOnPill = false
 
     var body: some View {
-        let look = KeyLook(key: account.npub ?? "")
+        let look = KeyLook(key: account?.npub ?? "openspot")
         let size = Self.size
         let place = CGSize(width: size.width + 2 * SpotTokens.publisherTiltReach.width, height: size.height + 2 * SpotTokens.publisherTiltReach.height)
         TimelineView(.animation(paused: !moves || activeState != .key && pointer == nil)) { context in
@@ -61,11 +61,15 @@ struct PublisherCard: View {
                 CardEmblem(dots: look.emblem).fill(look.engrave).frame(width: SpotTokens.emblemSide, height: SpotTokens.emblemSide)
             }
             Spacer(minLength: 0)
-            if let handle = account.handle {
-                Text("@\(handle)").font(SpotType.publisherHandle).lineLimit(1).minimumScaleFactor(SpotType.leastValueScale)
+            if let account {
+                if let handle = account.handle {
+                    Text("@\(handle)").font(SpotType.publisherHandle).lineLimit(1).minimumScaleFactor(SpotType.leastValueScale)
+                }
+            } else {
+                Text("@yourname").font(SpotType.publisherHandle).opacity(SpotTheme.publisherBlank)
             }
             HStack(alignment: .bottom) {
-                if let since = account.since { Text("Since \(since)").font(SpotType.publisherSince) }
+                if let since = account?.since { Text("Since \(since)").font(SpotType.publisherSince) }
                 Spacer(minLength: 0)
             }
             .frame(height: pillSize.height, alignment: .bottom)
@@ -76,24 +80,28 @@ struct PublisherCard: View {
         .shadow(color: look.catchLight, radius: 0, x: -tilt.x * SpotTokens.publisherCatchShift, y: 1 - tilt.y * SpotTokens.publisherCatchShift)
     }
 
+    private var pillWords: String {
+        account?.shortNpub ?? "Create a New Key…"
+    }
+
     private var pillSize: CGSize {
-        CGSize(width: Double((account.shortNpub ?? "").count) * SpotTokens.publisherPillCharWidth + SpotTokens.publisherPillRoom, height: SpotTokens.publisherPillHeight)
+        CGSize(width: Double(pillWords.count) * SpotTokens.publisherPillCharWidth + SpotTokens.publisherPillRoom, height: SpotTokens.publisherPillHeight)
     }
 
     private func glassPill(_ look: KeyLook, size: CGSize) -> some View {
         HStack(spacing: SpotTokens.publisherPillGap) {
-            Text(account.shortNpub ?? "").font(SpotType.publisherKey)
-            Image(systemName: "doc.on.doc").font(SpotType.publisherCopy)
+            Text(pillWords).font(SpotType.publisherKey)
+            Image(systemName: account == nil ? "plus" : "doc.on.doc").font(SpotType.publisherCopy)
         }
-        .foregroundStyle(look.engrave)
+        .foregroundStyle(account == nil ? look.inverse : look.engrave)
         .frame(width: size.width, height: size.height)
-        .background(Capsule().fill(look.engrave.opacity(isOnPill ? SpotTheme.publisherPillHover : SpotTheme.publisherPill)))
+        .background(Capsule().fill(look.engrave.opacity(account == nil ? 1 : isOnPill ? SpotTheme.publisherPillHover : SpotTheme.publisherPill)))
         .overlay(Capsule().strokeBorder(look.engrave.opacity(SpotTheme.publisherPillRing), lineWidth: SpotTokens.publisherRim))
         .overlay(Capsule().strokeBorder(LinearGradient(colors: [SpotTheme.publisherPillShine, .clear], startPoint: .top, endPoint: .center), lineWidth: SpotTokens.publisherRim))
         .contentShape(Capsule())
         .onHover { isOnPill = $0 }
-        .onTapGesture(perform: copy)
+        .onTapGesture(perform: act)
         .accessibilityAddTraits(.isButton)
-        .help("Copy your whole key")
+        .help(account == nil ? "Create a key that signs the spots you publish" : "Copy your whole key")
     }
 }

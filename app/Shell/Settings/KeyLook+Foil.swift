@@ -6,6 +6,10 @@ extension KeyLook {
         isDark ? SpotTheme.engraveDark : SpotTheme.engraveLight
     }
 
+    @MainActor var inverse: Color {
+        isDark ? SpotTheme.engraveLight : SpotTheme.engraveDark
+    }
+
     @MainActor var catchLight: Color {
         isDark ? SpotTheme.catchLightDark : SpotTheme.catchLightLight
     }
