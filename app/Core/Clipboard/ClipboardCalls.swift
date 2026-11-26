@@ -31,7 +31,7 @@ struct ClipboardCalls {
         CommandAnswer.work { [mac] in
             if let limit, let runs, await !runs.isCopy(within: limit) { return "" }
             guard let mac, let value = try? Clipboard(board: mac).value(count: mac.count(), images: images)?.whole(from: mac),
-                  value.texts.allSatisfy({ $0.utf8.count <= Timeline.cloneLimit }) else { return "" }
+                  value.texts.allSatisfy({ $0.utf8.count <= Timeline.entryLimit }) else { return "" }
             var fields = value.kind.fields(value.texts)
             if value.kind == .file, let title = value.title { fields.append(.init(key: "title", value: title)) }
             return TextBlock(fields: fields).text

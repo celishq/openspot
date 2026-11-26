@@ -159,7 +159,7 @@ final class TimelineTests: PanelCase {
         let original = folder.appendingPathComponent("movie.mov")
         FileManager.default.createFile(atPath: original.path, contents: nil)
         let handle = try FileHandle(forWritingTo: original)
-        try handle.truncate(atOffset: UInt64(Timeline.cloneLimit + 1))
+        try handle.truncate(atOffset: UInt64(Timeline.entryLimit + 1))
         try handle.close()
 
         _ = try await add(["file=\(original.path)"])

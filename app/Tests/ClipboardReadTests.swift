@@ -75,7 +75,7 @@ final class ClipboardReadTests: XCTestCase {
     }
 
     func testBlocksPrintNothingForATextOverTheLimitOfAKeptFile() async throws {
-        board.copy(String(repeating: "a", count: Int(Timeline.cloneLimit) + 1))
+        board.copy(String(repeating: "a", count: Int(Timeline.entryLimit) + 1))
         let huge = try await call(["--blocks"])
 
         XCTAssertEqual(huge.output, "")

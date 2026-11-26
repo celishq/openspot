@@ -4,7 +4,7 @@ import Synchronization
 public final class Timeline: Sendable {
     public static let keptDays = 30
     public static let byteLimit: Int64 = 2 << 30
-    public static let cloneLimit: Int64 = 25 << 20
+    public static let entryLimit: Int64 = 25 << 20
     static let heldText = 16 << 10
     static let forgottenAge: TimeInterval = 600
 
@@ -64,12 +64,6 @@ public final class Timeline: Sendable {
     public init(folder: URL?, byteLimit: Int64 = Timeline.byteLimit) {
         self.folder = folder
         self.byteLimit = byteLimit
-    }
-
-    public static func standard(environment: [String: String]) -> Timeline {
-        let home = environment["HOME"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.homeDirectoryForCurrentUser
-        let config = SpotsFolder.ownConfig(environment: environment) ?? SpotsFolder.defaultConfig(home: home)
-        return Timeline(folder: config.appendingPathComponent("timeline", isDirectory: true))
     }
 
     public func keep(days: Int, at now: Date) {
@@ -228,7 +222,7 @@ public final class Timeline: Sendable {
         let link = TimelineEntry.File(path: path, original: path, isKept: false)
         guard folder != nil, FileManager.default.fileExists(atPath: path) else { return link }
         try? FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        guard (try? source.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, Self.size(of: source) <= Self.cloneLimit else { return link }
+        guard (try? source.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, Self.size(of: source) <= Self.entryLimit else { return link }
         guard Self.volume(of: source) == Self.volume(of: place) else { return link }
         var target = place.appendingPathComponent(source.lastPathComponent)
         var number = 2

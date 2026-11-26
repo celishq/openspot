@@ -27,9 +27,13 @@ public struct ItemList: Equatable, Sendable {
     private var pinnedBelow: [SpotItem] = []
     private var holdsFiles = false
     private var narrowings: [Narrowing] = []
-    private var unasked: [SpotItem] = []
-    private var unaskedIndex = SearchIndex()
+    private var unasked: Unasked?
     private var holdsUnasked = false
+
+    private struct Unasked: Equatable, Sendable {
+        let items: [SpotItem]
+        let index: SearchIndex
+    }
 
     fileprivate struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
@@ -132,9 +136,9 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func begin(_ text: String) {
-        if search == .script, !holdsUnasked, !unasked.isEmpty {
-            all = unasked
-            searchIndex = unaskedIndex
+        if search == .script, !holdsUnasked, let unasked, !unasked.items.isEmpty {
+            all = unasked.items
+            searchIndex = unasked.index
             holdsUnasked = true
             pin()
         }
@@ -210,10 +214,7 @@ public struct ItemList: Equatable, Sendable {
             all = rows.items
             searchIndex = index
             holdsUnasked = search == .script && query.isEmpty
-            if holdsUnasked {
-                unasked = all
-                unaskedIndex = index
-            }
+            if holdsUnasked { unasked = Unasked(items: all, index: index) }
             pin()
             narrowings = []
             refresh()

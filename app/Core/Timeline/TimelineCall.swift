@@ -25,9 +25,9 @@ enum TimelineCall: NounCall {
             rule: CallRule(use: .timeline, used: "read its timeline")
         ) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }
-            let within = ClipboardCall.within(in: CommandForm("[--within age]").fit(fit.value("--within").map { ["--within", $0] } ?? []))
-            guard let within, fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
-            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within, text: fit.value("--text"), limit: fit.value("--limit").flatMap { Int($0) })
+            let within = fit.value("--within").map { Manifest.Triggers.age(orSeconds: $0).flatMap { $0 > 0 ? $0 : nil } }
+            guard within != .some(nil), fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
+            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within ?? nil, text: fit.value("--text"), limit: fit.value("--limit").flatMap { Int($0) })
         },
         CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
         CommandVerb("restore", "<id>", "Brings back an entry that `openspot timeline forget` took out.", rule: CallRule(use: .timeline, used: "restored an entry")) { $0.one.map(Self.restore) },
@@ -90,7 +90,7 @@ enum TimelineCall: NounCall {
             return {
                 if let reader { timeline.note(reader: reader, of: spots) }
                 let now = await runs.timeNow()
-                let entries = timeline.list(Timeline.Query(spots: spots, within: within, text: text, limit: limit), at: now)
+                let entries = timeline.list(Timeline.Query(spots: spots, within: within ?? nil, text: text, limit: limit), at: now)
                 return CommandAnswer(output: entries.map(\.block).joined(separator: "\n"))
             }
         case .keep(let text):
@@ -102,7 +102,7 @@ enum TimelineCall: NounCall {
                 return CommandAnswer()
             }
         case .pause(let text):
-            guard let age = Int(text).map(TimeInterval.init) ?? Manifest.Triggers.age(text), age > 0 else {
+            guard let age = Manifest.Triggers.age(orSeconds: text), age > 0 else {
                 return { CommandAnswer(errors: "`\(text)` is not an age. Write seconds, or a number with s, m, h or d, such as 1h.\n", code: 2) }
             }
             return {

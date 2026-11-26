@@ -25,7 +25,7 @@ public enum ClipboardCall: NounCall {
     static func within(in fit: CommandForm.Words?) -> TimeInterval?? {
         guard let fit, fit.rest.isEmpty else { return nil }
         guard let within = fit.value("--within") else { return .some(nil) }
-        let age = Int(within).map(TimeInterval.init) ?? Manifest.Triggers.age(within)
+        let age = Manifest.Triggers.age(orSeconds: within)
         return age.flatMap { $0 > 0 ? .some($0) : nil }
     }
 
