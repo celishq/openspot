@@ -217,5 +217,26 @@ title = "Resume Timeline"
 
 [scripts.timeline.actions.restore]
 
+[scripts.timeline.actions.use]
+inputs.kind = { type = "text", required = true, description = "text, url, file or picture" }
+inputs.text = "text"
+inputs.url = "text"
+inputs.file = "text"
+inputs.whole = "text"
+
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }
+search = { type = "bool", title = "Show in search", icon = "magnifyingglass", default = false }
+
+[scripts.timeline-search]
+title = "Timeline in search"
+icon = "clock.arrow.circlepath"
+detail = "The newest entries of the timeline that hold the words you type"
+answers = "last"
+uses = ["timeline", "read", "spots"]
+
+[scripts.timeline-search.bindings]
+timeline = { spot = "openspot/timeline" }
+
+[scripts.timeline-search.on]
+search = "\\S"

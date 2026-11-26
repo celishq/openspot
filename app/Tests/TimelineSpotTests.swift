@@ -142,4 +142,39 @@ final class TimelineSpotTests: BuiltInCase {
 
         XCTAssertEqual(effects, ["spot open openspot/timeline"])
     }
+
+    private var finder: Spot {
+        get throws {
+            try spot("timeline-search")
+        }
+    }
+
+    func testTheSearchShowsNoEntryWhileShowInSearchIsOff() async throws {
+        try add(.text, "cafe latte")
+
+        let rows = try await finder.items(query: "cafe", timeout: 60).items
+
+        XCTAssertEqual(rows, [])
+    }
+
+    func testTheSearchShowsTheThreeNewestEntriesThatHoldTheWords() async throws {
+        try file.change { $0.set(setting: "search", of: "openspot/timeline", to: "true") }
+        let now = Date()
+        for index in 0..<4 { try add(.text, "cafe \(index)\nsecond line", at: now.addingTimeInterval(Double(index))) }
+        try add(.url, "https://tea.com", at: now.addingTimeInterval(10))
+
+        let rows = try await finder.items(query: "cafe", timeout: 60).items
+
+        XCTAssertEqual(rows.map(\.title), ["cafe 3", "cafe 2", "cafe 1"])
+        XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Timeline · Clipboard · "), true)
+        XCTAssertEqual(rows.first?.handedValue(), AttachmentValue(text: "cafe 3\nsecond line", title: "cafe 3"))
+        XCTAssertEqual(rows.first?.openTitle, "Paste")
+    }
+
+    func testUsePastesATextAndOpensALinkAsReturnInTheSheetDoes() async throws {
+        try await timeline.perform("use", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
+        try await timeline.perform("use", input: "input.kind=url\ninput.url=https://a.com\n", timeout: 60)
+
+        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "open https://a.com"])
+    }
 }

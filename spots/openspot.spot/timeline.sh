@@ -23,16 +23,26 @@ list() {
   printf '%s\n' "$entries" | awk -v today="$(date +%F)" -v yesterday="$(date -v-1d +%F)" -f "${0%/*}/timeline.awk"
 }
 
-# Copies the entry of the pressed row.
+# Copies the entry of the pressed row, or of the inputs of `use` when $1 is empty.
 copy() {
-  case $(value item.kind) in
+  case $(value "${1}kind") in
     text)
-      whole=$(value item.whole)
-      if [ -n "$whole" ]; then openspot clipboard copy < "$whole"; else printf '%s' "$(value item.text)" | openspot clipboard copy; fi
+      whole=$(value "${1}whole")
+      if [ -n "$whole" ]; then openspot clipboard copy < "$whole"; else printf '%s' "$(value "${1}text")" | openspot clipboard copy; fi
       ;;
-    url) printf '%s' "$(value item.url)" | openspot clipboard copy ;;
-    *) openspot clipboard copy "$(value item.file)" ;;
+    url) printf '%s' "$(value "${1}url")" | openspot clipboard copy ;;
+    *) openspot clipboard copy "$(value "${1}file")" ;;
   esac
+}
+
+# Pastes the entry into the front app, or opens a link.
+use() {
+  if [ "$(value "${1}kind")" = url ]; then
+    open "$(value "${1}url")"
+    exit 0
+  fi
+  copy "$1" || exit 1
+  exec openspot clipboard paste
 }
 
 forgotten="$OPENSPOT_DATA/forgotten"
@@ -44,14 +54,10 @@ case "$1" in
   command) exec openspot spot open openspot/timeline ;;
   press)
     [ "$(value item)" = empty ] && exit 0
-    if [ "$(value item.kind)" = url ]; then
-      open "$(value item.url)"
-      exit 0
-    fi
-    copy || exit 1
-    exec openspot clipboard paste
+    use item.
     ;;
-  copy) copy && openspot toast "Copied." ;;
+  use) use "" ;;
+  copy) copy item. && openspot toast "Copied." ;;
   forget)
     id=$(value item)
     openspot timeline forget "$id" || exit 1
