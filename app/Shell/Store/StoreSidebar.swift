@@ -37,10 +37,9 @@ struct StoreSidebar: View {
     }
 
     private var mine: some View {
-        HStack(spacing: SpotTokens.settingsGroupGap) {
+        PageSidebarRow(title: "My spots") {
             SettingsTile(symbol: "house.fill", color: SpotTheme.storeMine, side: SpotTokens.settingsSectionTile)
-            Text("My spots")
-            Spacer(minLength: 0)
+        } trailing: {
             if drag.isOverTarget {
                 Text("Drop to install")
                     .font(SpotType.settingsLine)
@@ -52,11 +51,9 @@ struct StoreSidebar: View {
 
     private func sourceRow(_ source: StoreSource) -> some View {
         let isMissing = store.missing.contains(source.url.path)
-        return HStack(spacing: SpotTokens.settingsGroupGap) {
+        return PageSidebarRow(title: source.name) {
             SettingsTile(symbol: isMissing ? "questionmark.folder.fill" : source.symbol, color: SpotTheme.storeSource(source), side: SpotTokens.settingsSectionTile)
-            Text(source.name)
-                .lineLimit(1)
-            Spacer(minLength: 0)
+        } trailing: {
             if isMissing {
                 Text("Not Found")
                     .font(SpotType.settingsLine)

@@ -37,20 +37,26 @@ extension PageView {
                 .padding(SpotTokens.settingsBannerPadding)
             }
         case .header:
-            Section {
-                HStack(alignment: .top, spacing: SpotTokens.settingsCompactGap) {
+            Section {} header: {
+                HStack(alignment: .center, spacing: SpotTokens.settingsCompactGap) {
                     icon
-                    VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
+                    VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
                         Text(title)
-                            .font(SpotType.settingsCompactTitle)
+                            .font(SpotType.settingsHeader)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
                         if !line.isEmpty || link != nil {
                             lineText(line, link)
+                                .font(SpotType.settingsPageLine)
                         }
-                        actions()
                     }
-                    Spacer(minLength: 0)
+                    Spacer(minLength: SpotTokens.settingsTrailingGap)
+                    HStack(spacing: SpotTokens.settingsValueGap) { actions() }
+                        .controlSize(.large)
+                        .fixedSize()
                 }
-                .padding(.vertical, SpotTokens.settingsCompactPadding)
+                .padding(.bottom, SpotTokens.settingsHeadingGap)
+                .textCase(nil)
             }
         case .hero:
             Section {} header: {
@@ -119,6 +125,24 @@ extension PageView {
                 }
                 .buttonStyle(.link)
             }
+        }
+    }
+
+    func tiles<Tiles: View>(note: String? = nil, @ViewBuilder _ tiles: () -> Tiles) -> some View {
+        Section {} header: {
+            VStack(alignment: .leading, spacing: SpotTokens.pageTileGap) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.pageTileGap), count: SpotTokens.pageTileColumns), spacing: SpotTokens.pageTileGap) {
+                    tiles()
+                }
+                .padding(.horizontal, -SpotTokens.pageTileBleed)
+                if let note {
+                    Text(note)
+                        .font(SpotType.settingsLine)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .textCase(nil)
+            .foregroundStyle(.primary)
         }
     }
 

@@ -46,8 +46,7 @@ extension SettingsView {
             title(.header, SettingsTile(access: access.id, side: SpotTokens.settingsCompactTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
                 if !access.isAllowed {
                     Button("Allow…") { act { await $0.allow(access: access.id) } }
-                        .controlSize(.large)
-                        .padding(.top, SpotTokens.settingsTitleGap)
+                        .buttonStyle(.borderedProminent)
                 }
             }
             group("Spots Using This") {

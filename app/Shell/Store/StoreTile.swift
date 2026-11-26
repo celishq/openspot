@@ -39,7 +39,7 @@ struct StoreTile: View {
             }
         }
         .padding(SpotTokens.storeTilePadding)
-        .background(SpotTheme.ink.opacity(isHovered ? SpotTheme.fill : SpotTheme.hover), in: SpotRoundShape(radius: SpotTokens.storeTileRadius))
+        .background(SpotTheme.ink.opacity(isHovered ? SpotTheme.fill : SpotTheme.hover), in: SpotRoundShape(radius: SpotTokens.pageTileRadius))
         .onHover { isHovered = $0 }
         .contentShape(Rectangle())
         .onTapGesture { Task { await store.open(card.id) } }

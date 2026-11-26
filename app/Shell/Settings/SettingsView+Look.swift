@@ -9,12 +9,9 @@ extension SettingsView {
         let shown = spots.isEmpty ? SpotTheme.settingsLookCards.map { LookSpot(symbol: $0, name: "") } : Array(spots)
         return Group {
             title(of: .look)
-            group(nil) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.settingsLookGap), count: 2), spacing: SpotTokens.settingsLookGap) {
-                    ForEach(book.looks) { tile($0, spots: shown) }
-                    makeTile
-                }
-                .padding(.vertical, SpotTokens.settingsLookGap / 2)
+            tiles {
+                ForEach(book.looks) { tile($0, spots: shown) }
+                makeTile
             }
         }
     }
@@ -49,7 +46,7 @@ extension SettingsView {
     }
 
     private var makeTile: some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
+        let shape = SpotRoundShape(radius: SpotTokens.pageTileRadius)
         return VStack(spacing: SpotTokens.settingsLookWords) {
             Image(systemName: "plus")
                 .font(SpotType.settingsTitle)
@@ -105,7 +102,7 @@ extension SettingsView {
     }
 
     private func preview(_ look: ListedTheme, spots: [LookSpot]) -> some View {
-        let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
+        let shape = SpotRoundShape(radius: SpotTokens.pageTileRadius)
         let swatch = colorScheme == .dark ? look.colours.dark : look.colours.light
         let panel = LookPanel(palette: LookPalettes.shared.palette(of: look), swatch: swatch, layout: look.layout, spots: spots)
         let scale = SpotTokens.settingsLookHeight * SpotTokens.settingsLookFill / panel.size.height

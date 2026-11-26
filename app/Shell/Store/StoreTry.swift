@@ -12,7 +12,7 @@ struct StoreTry: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             Text("Try \(spot.name)")
                 .font(SpotType.settingsGroup)
-            HStack(alignment: .top, spacing: SpotTokens.storeInset) {
+            HStack(alignment: .top, spacing: SpotTokens.settingsSheetGap) {
                 StoreSizes(spot: spot, face: output.face, sizes: SpotSize.all, width: SpotTokens.storeTryWidth)
                 if hasSheet {
                     StoreSheetPreview(model: model, spot: spot, output: output)
@@ -27,6 +27,6 @@ struct StoreTry: View {
                     .keyboardShortcut(.cancelAction)
             }
         }
-        .padding(SpotTokens.storeInset)
+        .padding(SpotTokens.settingsSheetPadding)
     }
 }
