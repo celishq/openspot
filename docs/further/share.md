@@ -64,7 +64,7 @@ message. The first time, Openspot opens Account in Settings, so you can make one
 - A shared spot holds 25 MB at most. A bigger one fails to share and says so.
 - Your files go as they are, so check them for secrets first.
 
-To offer your spot in the Store instead, put its folder in a folder of spots that your friend adds with Add Source….
+To offer your spot in the Store instead, put its folder in a folder of spots that your friend adds with Add Store….
 
 ## Add a shared spot
 

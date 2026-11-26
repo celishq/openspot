@@ -53,11 +53,11 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Runs by itself", runs)
         ].compactMap { $0 }.joined()
         lines = [
-            ReviewLine(title: "Uses", words: [uses.isEmpty ? "Nothing" : uses.map(\.rawValue).joined(separator: ", ")]),
+            ReviewLine(title: "Uses", words: [uses.isEmpty ? (canAlso.isEmpty ? "No Mac features" : "None declared") : uses.map(\.rawValue).joined(separator: ", ")]),
             ReviewLine(title: "Runs by itself", words: runs.isEmpty ? [quiet] : runs),
             ReviewLine(title: "Can also", words: canAlso),
             ReviewLine(title: "Binds", words: bindings.map(\.shown)),
-            ReviewLine(title: "Files", words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
+            ReviewLine(title: ReviewLine.filesTitle, words: spot.files.map(\.path).filter { !$0.hasSuffix("/\(ReleaseLog.fileName)") })
         ].filter { !$0.words.isEmpty }
         text = [
             ([primary.name] + release.lines + (grown.isEmpty ? [] : ["This version adds: \(grown.map(\.rawValue).joined(separator: ", "))"])).joined(separator: "\n") + "\n\n",
@@ -120,18 +120,30 @@ public struct ReviewSpot: Equatable, Sendable {
     static let otherKeySubtitle = "Signed by another key"
 
     private static func selfRuns(in scan: ScanResult) -> [String] {
-        return scan.scripts.compactMap { script in
+        let runs: [(name: String, moments: [String])] = scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
             case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
             for event in script.triggers.events where event != EventName.sheetOpen && event != EventName.sheetText {
-                moments.append(event == EventName.panelOpen ? "when the panel opens" : "on \(event)")
+                if event == EventName.appLaunch, script.mode == .stay, script.showsAtLaunch { continue }
+                moments.append(eventWords[event] ?? "on \(event)")
             }
             if let every = script.triggers.every { moments.append("every \(every) seconds") }
-            return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
+            return moments.isEmpty ? nil : (script.name, moments)
+        }
+        return runs.map { run in
+            let said = run.moments.joined(separator: ", ")
+            return runs.count > 1 ? "\(run.name): \(said)" : said.prefix(1).uppercased() + said.dropFirst()
         }
     }
+
+    private static let eventWords = [
+        EventName.panelOpen: "when the panel opens", EventName.appLaunch: "when Openspot starts", EventName.appUpdate: "when Openspot downloads an update",
+        EventName.clipboard: "when you copy", EventName.frontApp: "when you switch apps", EventName.screenWake: "when the screen wakes",
+        EventName.systemLoad: "every 5 seconds while it shows", EventName.powerChange: "when the power changes", EventName.diskMount: "when a disk mounts",
+        EventName.deviceConnect: "when a USB device connects", EventName.spotWant: "when it first shows"
+    ]
 
     private static func bindings(in scan: ScanResult, folder: URL, core: URL?) -> [(binding: Manifest.Binding, shown: String)] {
         let own = Set(scan.scripts.map(\.id))
@@ -144,7 +156,11 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     private static func canAlso(_ spot: SpotPackage, uses: Set<SpotUse>, id: String) -> [String] {
-        let texts = spot.files.compactMap(\.text)
+        let texts = spot.files.filter { !$0.path.hasSuffix(".\(SpotReadme.fileExtension)") }.compactMap(\.text)
+        func has(_ pattern: String) -> Bool {
+            let found = try? NSRegularExpression(pattern: pattern)
+            return texts.contains { found?.firstMatch(in: $0, range: NSRange($0.startIndex..., in: $0)) != nil }
+        }
         func found(_ tools: [String]) -> [String] {
             tools.filter { tool in
                 let word = try? NSRegularExpression(pattern: "(?<![\\w./-])\(tool)(?![\\w-])")
@@ -158,6 +174,10 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with screencapture in place of openspot screen") }
         if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
         if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
+        if has(#"\bAV(AudioEngine|AudioRecorder|CaptureDevice|CaptureSession)\b"#) { lines.append("Record from the microphone or camera") }
+        if has(#"\bProcess\(\)|\bNSTask\b|\bposix_spawn\b"#) { lines.append("Start other programs") }
+        if !found(["osascript"]).isEmpty { lines.append("Control other apps with osascript") }
+        if has(#"\$HOME\b|\$\{HOME\}|\bhomeDirectoryForCurrentUser\b|\bNSHomeDirectory\b|"HOME"|(^|[\s"'=(])~/"#) { lines.append("Read files in your home folder") }
         for arguments in texts.flatMap(WrittenCalls.calls) {
             guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
             let line = "Call openspot \(arguments[0]) \(arguments[1]) without \(needed.use.rawValue) in the uses of its spot.toml"

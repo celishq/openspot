@@ -7,9 +7,10 @@ enum SpotStorePicture {
     private static let settle = 1.5
     private static let far = CGPoint(x: -9000, y: -9000)
 
-    static func run(path: String, place: String?, spot: String?, review: String?) -> Never {
+    static func run(path: String, place: String?, spot: String?, review: String?, isTrying: Bool) -> Never {
         SpotPicture.start()
         let store = Store(places: .standard)
+        let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await store.read()
             if let place {
@@ -26,7 +27,15 @@ enum SpotStorePicture {
                 await store.install(review)
                 guard store.ask != nil else { fail("Openspot has no review of \(review) to show.") }
             }
-            draw(store, to: path)
+            if isTrying {
+                guard let page = store.page, let output = await SpotSample.output(of: page.spot, runsScript: page.runsSample, runs: model.runs) else {
+                    fail("\(spot ?? "") has no sample data to try.")
+                }
+                let sample = StoreSample(id: page.id, output: output)
+                draw(StoreTry(model: model, spot: page.spot, output: sample.output, hasSheet: sample.hasSheet) {}, to: path)
+            } else {
+                draw(StoreView(store: store, model: model), to: path)
+            }
         }
         NSApplication.shared.run()
         exit(0)
@@ -41,8 +50,8 @@ enum SpotStorePicture {
         exit(1)
     }
 
-    private static func draw(_ store: Store, to path: String) {
-        let content = StoreView(store: store, model: nil)
+    private static func draw(_ view: some View, to path: String) {
+        let content = view
             .environment(\.spotDrawsGlass, false)
             .environment(\.spotMoves, false)
         let window = SpotSheetWindow.make(pages: "Store", name: "store-picture", content: content)

@@ -167,6 +167,66 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(page.trust.map(\.title), ["Uses", "Runs by itself", "Files"])
     }
 
+    func testMySpotsGroupYoursApartFromTheOnesThatComeWithOpenspot() async throws {
+        await store.read()
+
+        XCTAssertEqual(store.groups.map(\.title), ["Yours", "Comes with Openspot"])
+        XCTAssertEqual(store.groups.map { $0.cards.map(\.id) }, [["mine"], ["timer"]])
+        XCTAssertEqual(store.summary, "1 yours · 1 comes with Openspot")
+        store.choose(.source(.builtIn(examples)))
+        XCTAssertEqual(store.groups.map(\.title), [nil])
+    }
+
+    func testASourceCardCarriesTheCardOfItsSampleData() async throws {
+        try "frame=\nclass=gap-part\n\ntext=time\nclass=hidden card:flex\ntitle=21:45\n".write(to: examples.appendingPathComponent("clock.spot/sample.frame"), atomically: true, encoding: .utf8)
+        await store.read()
+
+        store.choose(.source(.builtIn(examples)))
+
+        let clock = try XCTUnwrap(store.cards.first { $0.id == "clock" })
+        XCTAssertEqual(clock.preview.size, .wide)
+        XCTAssertTrue(clock.preview.face.draws(on: .wide))
+        let paste = try XCTUnwrap(store.cards.first { $0.id == "paste" })
+        XCTAssertEqual(paste.preview.size, .strip)
+        XCTAssertEqual(paste.preview.sizes, [.strip])
+        XCTAssertFalse(paste.preview.drawsCard)
+        XCTAssertTrue(clock.preview.drawsCard)
+        XCTAssertEqual(clock.preview.sizes, SpotSize.all)
+        XCTAssertFalse(paste.preview.face.draws(on: .strip))
+    }
+
+    func testInlineCodeOfAReadmeNeverBreaksAcrossLines() async throws {
+        try "Run `claude -p /usage` or `a-b` here.\n".write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        _ = await store.show("clock", search: nil)
+
+        guard case .text(let text)? = store.page?.shown.first else { return XCTFail("No text") }
+        XCTAssertEqual(String(text.characters), "Run claude\u{00A0}-\u{2060}p\u{00A0}/usage or a-\u{2060}b here.")
+        let code = text.runs.filter { $0.inlinePresentationIntent?.contains(.code) == true }.map { String(text[$0.range].characters) }
+        XCTAssertEqual(code, ["claude\u{00A0}-\u{2060}p\u{00A0}/usage", "a-\u{2060}b"])
+    }
+
+    func testWrappedLinesOfAReadmeShowAsOneParagraph() async throws {
+        let readme = "# Clock\n\nTells the time\nof each city.\n\n## Use\n\n- one\n  more\n- two\n1. first\n\n> A note\n> that wraps.\n\n```\nsh clock.sh\n  --zone Tokyo\n```\n"
+        try readme.write(to: examples.appendingPathComponent("clock.spot/readme.md"), atomically: true, encoding: .utf8)
+
+        _ = await store.show("clock", search: nil)
+
+        let shown = try XCTUnwrap(store.page?.shown).map { line -> String in
+            switch line {
+            case .heading(let level, let text): "h\(level) \(text)"
+            case .text(let text): String(text.characters)
+            case .item(let marker, let text): "\(marker) \(String(text.characters))"
+            case .quote(let text): "> \(String(text.characters))"
+            case .code(let text): "code \(text)"
+            case .media(let path, _): path
+            }
+        }
+        XCTAssertEqual(shown, [
+            "Tells the time of each city.", "h2 Use", "• one more", "• two", "1. first", "> A note that wraps.", "code sh clock.sh\n  --zone Tokyo"
+        ])
+    }
+
     func testOpenWithTextSearchesTheFirstSourceThatHasAMatch() async throws {
         let found = await store.show(nil, search: "paste")
 
@@ -193,6 +253,11 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(trust.first { $0.title == "Uses" }?.words, ["clipboard"])
         XCTAssertEqual(trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
         XCTAssertEqual(trust.first { $0.title == "Files" }?.words, ["paste.spot/paste.sh", "paste.spot/spot.toml"])
+        let files = try XCTUnwrap(store.page?.files)
+        XCTAssertEqual(files.map(\.name), ["paste.sh", "spot.toml"])
+        XCTAssertEqual(files.map(\.symbol), ["terminal", "gearshape"])
+        XCTAssertEqual(files.first?.url, examples.appendingPathComponent("paste.spot/paste.sh"))
+        XCTAssertEqual(files.first?.size, "17 bytes")
     }
 
     func testACoreSpotIsLockedInMySpots() async throws {
@@ -201,7 +266,33 @@ final class StoreTests: XCTestCase {
         await store.open("timer")
 
         XCTAssertEqual(store.page?.button, .locked)
-        XCTAssertEqual(store.page?.from, "Comes with Openspot")
+        XCTAssertEqual(store.page?.from, "From Openspot")
+    }
+
+    func testInstallFromTheOpenPageCopiesAtOnceWithItsSampleCard() async throws {
+        try "frame=\n\ntext=one\nclass=hidden card:flex\ntitle=1\n".write(to: examples.appendingPathComponent("paste.spot/sample.frame"), atomically: true, encoding: .utf8)
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        await store.open("paste")
+        XCTAssertEqual(store.page?.preview.size, .wide)
+
+        await store.installPage()
+
+        XCTAssertNil(store.ask)
+        XCTAssertTrue(exists("paste.spot/paste.sh"))
+        XCTAssertEqual(store.page?.button, .installed)
+    }
+
+    func testInstallFromAPageWhoseSourceChangedSinceShowsTheReview() async throws {
+        await store.read()
+        store.choose(.source(.builtIn(examples)))
+        await store.open("clock")
+        try "title = 'Clock'\nuses = ['network']".write(to: examples.appendingPathComponent("clock.spot/spot.toml"), atomically: true, encoding: .utf8)
+
+        await store.installPage()
+
+        guard case .install? = store.ask else { return XCTFail("No review: \(String(describing: store.ask))") }
+        XCTAssertFalse(exists("clock.spot"))
     }
 
     func testInstallOpensTheReviewAndCopiesNothingUntilItsYes() async throws {

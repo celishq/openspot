@@ -22,7 +22,7 @@ struct SpotArrangeBar: View {
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.glassInk)
         .padding(.horizontal, SpotTokens.padding)
-        .frame(width: SpotTokens.arrangeSearchWidth, height: SpotTokens.cell)
+        .frame(maxWidth: .infinity, minHeight: SpotTokens.cell, maxHeight: SpotTokens.cell)
         .spotGlass(in: Capsule())
     }
 }

@@ -19,7 +19,6 @@ extension SpotTokens {
     public static let arrangeMargin: CGFloat = 24
     public static let arrangeBar: CGFloat = 96
     public static let arrangeFoot: CGFloat = 72
-    public static let arrangeSearchWidth: CGFloat = 340
     public static let arrangeButton: CGFloat = 34
     public static let arrangeButtonPadding: CGFloat = 16
     public static let scrollFadeDistance = 24.0
@@ -296,12 +295,26 @@ extension SpotTokens {
 
     public static let storeInset: CGFloat = 16
     public static let storeHeadingGap: CGFloat = 10
+    public static let storeMarkerWidth: CGFloat = 18
+    public static let storeQuoteBar: CGFloat = 3
+    public static let storeCodePadding: CGFloat = 8
     public static let storeTilePadding: CGFloat = 12
     public static let storeTileRadius: CGFloat = 14
     public static let storeTileLineGap: CGFloat = 4
+    public static let storeTileGap: CGFloat = 12
+    public static let storePreviewWidth: CGFloat = 240
+    public static let storePreviewHeight: CGFloat = 84
+    public static let storeRowWidth: CGFloat = 580
+    public static let storeTryWidth: CGFloat = 460
+    public static let storeSheetPreviewHeight: CGFloat = 320
+    public static let storePreviewIcon: CGFloat = 56
+    public static let storeActionWidth: CGFloat = 84
+    public static let storeColumnBleed: CGFloat = 10
+    public static let storeActionHeight: CGFloat = 28
+    public static let storePrimaryWidth: CGFloat = 52
+    public static let storeReadWidth: CGFloat = 520
     public static let storeMarkGap: CGFloat = 2
     public static let storeMarkPadding: CGFloat = 6
     public static let storeTrustTitleWidth: CGFloat = 110
     public static let storeMediaHeight: CGFloat = 240
-    public static let storeAskWidth: CGFloat = 440
 }

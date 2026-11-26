@@ -8,6 +8,25 @@ extension SpotsModel {
         return try await Task.detached(priority: .userInitiated) { try await package.release(by: key, keepingLogIn: spots) }.value
     }
 
+    @discardableResult
+    public func openSpot(_ id: String) -> Bool {
+        asOnePress { open(id) }
+    }
+
+    public func hasSettings(ofSpot id: String) -> Bool {
+        entries.first { $0.id == id && $0.item == nil }.map(hasSettings) ?? false
+    }
+
+    @discardableResult
+    public func openSettings(ofSpot id: String) -> Bool {
+        asOnePress { openSettings(at: .spotOf(id)) }
+    }
+
+    @discardableResult
+    public func removeSpot(_ id: String) -> Bool {
+        asOnePress { act(.delete, on: id) }
+    }
+
     public func isOwnSpot(_ id: String) -> Bool {
         entries.contains { $0.id == id && $0.item == nil && origin(of: $0.spot) == .mine }
     }

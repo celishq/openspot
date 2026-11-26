@@ -5,19 +5,22 @@ import SwiftUI
 struct StoreSidebar: View {
     let store: Store
     @State private var isOverMine = false
+    @State private var isAdding = false
 
     var body: some View {
-        List(selection: Binding(get: { store.page == nil ? store.place : nil }, set: { if let place = $0 { store.choose(place) } })) {
+        List(selection: Binding(get: { store.place }, set: { if let place = $0 { store.choose(place) } })) {
             mine
                 .tag(StorePlace.mine)
-            Section("Sources") {
+                .simultaneousGesture(TapGesture().onEnded { leavePage(at: .mine) })
+            Section("Stores") {
                 ForEach(store.sources, id: \.self) { source in
                     sourceRow(source)
                         .tag(StorePlace.source(source))
+                        .simultaneousGesture(TapGesture().onEnded { leavePage(at: .source(source)) })
                         .contextMenu {
                             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([source.url]) }
                             if source.canRemove {
-                                Button("Remove Source") { Task { await store.removeSource(source.url) } }
+                                Button("Remove Store") { Task { await store.removeSource(source.url) } }
                             }
                         }
                 }
@@ -26,6 +29,11 @@ struct StoreSidebar: View {
         .listStyle(.sidebar)
         .tint(SpotTheme.settingsSelection)
         .safeAreaInset(edge: .bottom) { addSource }
+    }
+
+    private func leavePage(at place: StorePlace) {
+        guard store.page != nil, store.place == place else { return }
+        store.choose(place)
     }
 
     private var mine: some View {
@@ -63,16 +71,14 @@ struct StoreSidebar: View {
 
     private var addSource: some View {
         Button {
-            Task {
-                guard let folder = await SpotFolderPick.pick() else { return }
-                await store.addSource(folder)
-            }
+            isAdding = true
         } label: {
-            Label("Add Source…", systemImage: "plus")
+            Label("Add Store…", systemImage: "plus")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .padding(SpotTokens.settingsAccountInset)
+        .sheet(isPresented: $isAdding) { StoreAddSheet(store: store, isShown: $isAdding) }
     }
 }

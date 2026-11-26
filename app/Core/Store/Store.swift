@@ -9,6 +9,8 @@ public final class Store {
     public private(set) var place = StorePlace.mine
     public private(set) var query = ""
     public private(set) var cards: [StoreCard] = []
+    public private(set) var groups: [StoreGroup] = []
+    public private(set) var summary = ""
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
     public internal(set) var back: [StoreStop] = []
@@ -133,7 +135,18 @@ public final class Store {
     }
 
     public func install(_ id: String) async {
+        await install(id, shown: nil)
+    }
+
+    public func installPage() async {
+        guard let page else { return }
+        await install(page.id, shown: page.trust)
+    }
+
+    private func install(_ id: String, shown: [ReviewLine]?) async {
         switch await Self.review(id, at: place, places, opened: opened, now: clock.now()) {
+        case .success(let review?) where !review.clashes && review.lines == shown:
+            await act { try await review.install.run(nil, isConfirmed: true) }
         case .success(let review?): ask = review.clashes ? .clash(review) : .install(review)
         case .success(nil): toast("\(id) is one of your spots already.")
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
@@ -207,6 +220,10 @@ public final class Store {
         let folded = query.trimmingCharacters(in: .whitespaces).folded
         let next = (shelves[place] ?? []).filter { folded.isEmpty || $0.words.contains(folded) }
         if next != cards { cards = next }
+        let grouped = StoreGroup.of(next, at: place)
+        if grouped != groups { groups = grouped }
+        let said = place == .mine ? StoreGroup.summary(of: shelves[.mine] ?? []) : ""
+        if said != summary { summary = said }
     }
 
     @concurrent
@@ -245,11 +262,12 @@ public final class Store {
             guard let own else { return nil }
             let review = (try? folder.scan()).flatMap { try? ReviewSpot(spot: SpotPackage(sharing: own.spot, from: $0), folder: folder.url, core: folder.core) }
             let entry = own.origin == .core ? nil : (try? places.lock.entries())?.first { $0.holds(id) }
-            let from = own.origin == .core ? "Comes with Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
+            let from = own.origin == .core ? "From Openspot" : entry.map { "From \(name(ofSource: $0, in: places, config: config))" } ?? "Yours"
             let text = readme(beside: own.spot)
             return StorePage(
                 id: id, spot: own.spot, from: from, updated: own.version?.updatedLine(now: now), readme: text.lines, shown: text.shown,
-                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
+                trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true,
+                preview: StorePreview(of: own.spot), files: files(review?.lines, beside: own.spot)
             )
         case .source(let chosen):
             guard let source = sources(in: places, config: config, opened: opened).first(where: { $0 == chosen }),
@@ -262,14 +280,20 @@ public final class Store {
             return StorePage(
                 id: id, spot: spot, from: "From \(source.name)", updated: (try? SpotVersion(of: spotFolder))?.updatedLine(now: now),
                 readme: text.lines, shown: text.shown, trust: review?.lines ?? [], button: button == .locked ? .installed : button,
-                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false
+                hasSample: SpotSample.exists(for: spot, runsScript: false), runsSample: false, preview: StorePreview(of: spot),
+                files: files(review?.lines, beside: spot)
             )
         }
     }
 
+    private nonisolated static func files(_ lines: [ReviewLine]?, beside spot: Spot) -> [StoreFile] {
+        StoreFile.read(lines?.first(where: \.isFiles)?.words ?? [], in: spot.url.deletingLastPathComponent().deletingLastPathComponent())
+    }
+
     private nonisolated static func readme(beside spot: Spot) -> (lines: [String], shown: [StoreReadmeLine]) {
         let lines = SpotReadme.lines(at: SpotReadme.url(beside: spot.url))
-        return (lines, lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.map(StoreReadmeLine.init))
+        let shown = StoreReadmeLine.paragraphs(lines)
+        return (lines, shown.first == .heading(level: 1, text: spot.name) ? Array(shown.dropFirst()) : shown)
     }
 
     private nonisolated static func name(ofSource entry: SpotLock.Entry, in places: AppPlaces, config: Config) -> String {

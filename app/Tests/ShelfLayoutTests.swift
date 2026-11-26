@@ -46,7 +46,8 @@ final class ShelfLayoutTests: XCTestCase {
 
         let onRight = layout.rects.filter { $0.minX >= layout.right }.count
         XCTAssertGreaterThan(onRight, 30 - onRight)
-        XCTAssertEqual(layout.rects[0].minY, SpotTokens.rowGap)
+        XCTAssertEqual(layout.band.lowerBound + SpotTokens.scrollFadeLength + layout.rects[0].minY, 200)
+        XCTAssertEqual(layout.panel, panel(x: 300))
     }
 
     func testACardWiderThanItsSideTakesTheLargestSizeThatFits() {

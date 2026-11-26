@@ -1,6 +1,7 @@
 import Foundation
 
 public struct ShelfLayout: Equatable, Sendable {
+    public let panel: CGRect
     public let leftColumns: Int
     public let rightColumns: Int
     public let left: CGFloat
@@ -30,13 +31,17 @@ public struct ShelfLayout: Equatable, Sendable {
             members[side].append(index)
             load[side] += fitted.columns * fitted.rows
         }
+        let fade = SpotTokens.scrollFadeLength
+        band = max(SpotTokens.arrangeBar - fade, 0)...max(min(screen.height - SpotTokens.arrangeFoot + fade, screen.height), SpotTokens.arrangeBar)
+        let top = max(panel.minY - band.lowerBound - fade, SpotTokens.rowGap)
         var rects = Array(repeating: CGRect.zero, count: sizes.count)
         for side in 0..<2 {
             let indices = members[side]
             for placement in GridLayout(columns: columns[side]).list(indices.map { sizes[$0] }) {
-                rects[indices[placement.index]] = placement.rect.offsetBy(dx: origins[side], dy: SpotTokens.rowGap)
+                rects[indices[placement.index]] = placement.rect.offsetBy(dx: origins[side], dy: top)
             }
         }
+        self.panel = panel
         leftColumns = columns[0]
         rightColumns = columns[1]
         left = origins[0]
@@ -46,8 +51,6 @@ public struct ShelfLayout: Equatable, Sendable {
         height = (rects.map(\.maxY).max() ?? 0) + SpotTokens.rowGap
         let count = max(Int((height / Self.chunkPitch).rounded(.up)), 1)
         chunks = (0..<count).map { chunk in rects.indices.filter { Int(rects[$0].minY / Self.chunkPitch) == chunk } }
-        let fade = SpotTokens.scrollFadeLength
-        band = max(SpotTokens.arrangeBar - fade, 0)...max(min(screen.height - SpotTokens.arrangeFoot + fade, screen.height), SpotTokens.arrangeBar)
     }
 
     private static func fitted(_ size: SpotSize, columns: Int) -> SpotSize {
