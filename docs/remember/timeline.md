@@ -39,6 +39,11 @@ instead of showing twice.
 once for each file. With `title=`, `detail=`, the line under the title, `app=`, the bundle ID of the app it came from, and `icon=` it says how the entry
 shows. With no words, it takes the same lines on stdin, and adds nothing when they hold no value.
 
+A [peek](../show/peek.md) on stdin after the value, a `peek=` block and the blocks under it, is kept with the entry, so
+`⌘P` shows it in the Timeline after your spot is gone. Openspot keeps a copy of each picture in it and drops each `run=`
+button, which would need your spot. A peek of more than 64 KB fails, and the entry is kept without it. `timeline list`
+names the kept peek in `peek.file=`.
+
 `key=` names the entry. An add with the key of an entry the spot kept moves that entry to the top with the new value.
 
 `at=` sets the time, as ISO 8601, such as `2026-11-20T08:00:00+01:00`, for an entry of the past. Without it, the entry
