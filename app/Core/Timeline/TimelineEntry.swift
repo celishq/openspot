@@ -23,7 +23,7 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
     public var forgotten: Date?
 
     var block: String {
-        var fields = [TextBlock.Field(key: "item", value: id), .init(key: "title", value: title), .init(key: "spot", value: spot), .init(key: "at", value: Self.format(at))]
+        var fields = [TextBlock.Field(key: "item", value: id), .init(key: "title", value: title), .init(key: "spot", value: spot), .init(key: "at", value: Self.format(at)), .init(key: "kind", value: kind.rawValue)]
         fields += kind.fields(kind == .file ? files.map { $0.isKept ? $0.path : $0.original } : [value])
         if let textFile { fields.append(.init(key: "text.file", value: textFile)) }
         if let app { fields.append(.init(key: "app", value: app)) }

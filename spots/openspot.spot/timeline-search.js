@@ -37,16 +37,18 @@ export default {
     const listed = openspot.call(["timeline", "list", "--all", "--limit", "3", "--text", text])
     if (listed.code !== 0) return []
     return entries(listed.stdout).map((entry) => {
-      const kind = "url" in entry ? "url" : "file" in entry ? "file" : "text"
+      const kind = entry.kind
       const row = { item: entry.item, title: entry.title, detail: detail(entry), kind, "open.title": kind === "url" ? "Open" : "Paste" }
       if (kind === "file") {
         row.icon = /\.(png|jpe?g|gif|heic|tiff|webp|bmp)$/i.test(entry.file) ? entry.file : "doc"
         row.file = entry.file
+      } else if (entry["text.file"]) {
+        row.icon = "text.alignleft"
+        row.file = entry["text.file"]
       } else {
         row.icon = kind === "url" ? "link" : "text.alignleft"
         row[kind] = entry[kind]
       }
-      if (entry["text.file"]) row.whole = entry["text.file"]
       return row
     })
   },
@@ -56,7 +58,6 @@ export default {
       text: input["item.text"],
       url: input["item.url"],
       file: input["item.file"],
-      whole: input["item.whole"],
     })
   },
 }

@@ -51,9 +51,7 @@ function source(spot,    name) {
     f[key] = value
   }
   if (f["item"] == "") next
-  kind = "text"
-  if ("url" in f) kind = "url"
-  if ("file" in f) kind = "file"
+  kind = f["kind"]
   day = substr(f["at"], 1, 10)
   detail = substr(f["at"], 12, 5) " · " (f["detail"] != "" ? f["detail"] : what(kind, f[kind], f["text.file"] != "", files))
   if (f["spot"] != "clipboard") detail = detail " · " source(f["spot"])
@@ -77,7 +75,6 @@ function source(spot,    name) {
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]
   if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
   if (kind == "file") printf "file=%s\n", f[kind]
-  if (f["text.file"] != "") printf "whole=%s\n", f["text.file"]
   printf "open.title=%s\n", (kind == "url" ? "Open" : "Paste")
 }
 

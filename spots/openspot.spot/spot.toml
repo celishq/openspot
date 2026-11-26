@@ -223,7 +223,6 @@ inputs.kind = { type = "text", required = true, description = "text, url or file
 inputs.text = "text"
 inputs.url = "text"
 inputs.file = "text"
-inputs.whole = "text"
 
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }

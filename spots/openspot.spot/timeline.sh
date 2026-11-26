@@ -26,8 +26,8 @@ list() {
 copy() {
   case $(value "${1}kind") in
     text)
-      whole=$(value "${1}whole")
-      if [ -n "$whole" ]; then openspot clipboard copy < "$whole"; else printf '%s' "$(value "${1}text")" | openspot clipboard copy; fi
+      file=$(value "${1}file")
+      if [ -n "$file" ]; then openspot clipboard copy < "$file"; else printf '%s' "$(value "${1}text")" | openspot clipboard copy; fi
       ;;
     url) printf '%s' "$(value "${1}url")" | openspot clipboard copy ;;
     *) openspot clipboard copy "$(value "${1}file")" ;;

@@ -21,7 +21,7 @@ enum TimelineCall: NounCall {
         ) { Self.add($0.rest) },
         CommandVerb(
             "list", listForm,
-            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`. --within keeps the entries of the age, such as 1d; --text the ones that hold each word; --limit the first n.",
+            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at`, its `kind` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`. --within keeps the entries of the age, such as 1d; --text the ones that hold each word; --limit the first n.",
             rule: CallRule(use: .timeline, used: "read its timeline")
         ) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }

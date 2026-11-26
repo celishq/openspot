@@ -44,13 +44,14 @@ shows. With no words, it takes the same lines on stdin, and adds nothing when th
 `at=` sets the time, as ISO 8601, such as `2026-11-20T08:00:00+01:00`, for an entry of the past. Without it, the entry
 takes the time of the add.
 
-`openspot timeline list` prints your spot's entries, newest first, each as an item:
+`openspot timeline list` prints your spot's entries, newest first, each as an item with its `kind`, `text`, `url` or `file`:
 
 ```ini
 item=3f9a2c1b
 title=good
 spot=moods
 at=2026-11-26T10:12:40+01:00
+kind=text
 text=good
 key=2026-11-26-good
 ```

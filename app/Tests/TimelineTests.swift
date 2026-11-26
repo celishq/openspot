@@ -54,6 +54,7 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(blocks.map { $0.value("title") }, ["A page", "first line"])
         XCTAssertEqual(blocks.first?.value("item"), id)
         XCTAssertEqual(blocks.first?.value("url"), "https://a.com")
+        XCTAssertEqual(blocks.map { $0.value("kind") }, ["url", "text"])
         XCTAssertEqual(blocks.first?.value("detail"), "Pull request #12")
         XCTAssertNil(blocks.last?.value("detail"))
         XCTAssertEqual(blocks.last?.value("text"), "first line\nsecond")
