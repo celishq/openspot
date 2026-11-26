@@ -16,4 +16,11 @@ final class StoreCarryTests: XCTestCase {
         XCTAssertTrue(carry.lands(on: target))
         XCTAssertFalse(carry.lands(on: nil))
     }
+
+    func testTheCardKeepsThePointOfItWhereItWasGrabbed() {
+        let carry = StoreCarry(id: "clock", size: .wide, point: CGPoint(x: 300, y: 200), grab: CGPoint(x: 0.25, y: 0.75))
+
+        XCTAssertEqual(carry.frame.minX + carry.frame.width / 4, 300)
+        XCTAssertEqual(carry.frame.minY + carry.frame.height * 3 / 4, 200)
+    }
 }

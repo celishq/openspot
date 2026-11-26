@@ -19,9 +19,9 @@ final class StoreDrag {
         target = next
     }
 
-    func move(_ card: StoreCard, to point: CGPoint) {
+    func move(_ card: StoreCard, to point: CGPoint, grab: CGPoint) {
         if carry?.id != card.id {
-            carry = StoreCarry(id: card.id, size: card.preview.size, point: point)
+            carry = StoreCarry(id: card.id, size: card.preview.size, point: point, grab: grab)
         } else {
             carry?.move(to: point)
         }
