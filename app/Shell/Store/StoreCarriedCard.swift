@@ -15,6 +15,7 @@ struct StoreCarriedCard: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 }
