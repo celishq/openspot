@@ -14,7 +14,10 @@ public final class Store {
     public private(set) var page: StorePage?
     public private(set) var ask: StoreAsk?
     public internal(set) var trail = PageTrail(StoreStop(place: .mine, spot: nil))
-    @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
+    @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:] {
+        didSet { searches = shelves.mapValues { SearchList($0) { ($0.spot.name, $0.spot.subtitle, $0.spot.keywords) } } }
+    }
+    @ObservationIgnored private var searches: [StorePlace: SearchList<StoreCard>] = [:]
     @ObservationIgnored private var opening: String?
     @ObservationIgnored private var opened: StoreSource?
     @ObservationIgnored private let places: AppPlaces
@@ -55,8 +58,8 @@ public final class Store {
         defer { arrive() }
         if let text {
             query = text
-            let folded = text.trimmingCharacters(in: .whitespaces).folded
-            let matched = (placesInOrder.dropFirst() + [.mine]).first { place in shelves[place]?.contains { $0.words.contains(folded) } == true }
+            let query = SearchQuery(text: text)
+            let matched = (placesInOrder.dropFirst() + [.mine]).first { searches[$0]?.matching(query).isEmpty == false }
             move(to: matched ?? .mine)
             refilter()
         }
@@ -210,8 +213,8 @@ public final class Store {
     }
 
     private func refilter() {
-        let folded = query.trimmingCharacters(in: .whitespaces).folded
-        let next = (shelves[place] ?? []).filter { folded.isEmpty || $0.words.contains(folded) }
+        let search = SearchQuery(text: query)
+        let next = search.text.isEmpty ? shelves[place] ?? [] : searches[place]?.matching(search) ?? []
         if next != cards { cards = next }
         let grouped = StoreGroup.of(next, at: place)
         if grouped != groups { groups = grouped }
