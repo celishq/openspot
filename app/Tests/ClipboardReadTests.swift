@@ -77,6 +77,20 @@ final class ClipboardReadTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: chip.path))
     }
 
+    func testASavedPictureIsDroppedAnHourLaterByTheClockOfTheRuns() async throws {
+        board.copy(image: Data([1, 2, 3]), kind: "png")
+        let saved = try await call(["--blocks"])
+        let first = try XCTUnwrap(TextBlock.blocks(in: saved.output).first?.value("file"))
+        try FileManager.default.setAttributes([.modificationDate: clock.time], ofItemAtPath: first)
+
+        _ = try await call(["--blocks"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first))
+
+        clock.advance(by: 3_601)
+        _ = try await call(["--blocks"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first))
+    }
+
     func testBlocksPrintNothingForAPasswordOrAnEmptyText() async throws {
         board.copy(concealed: "hunter2")
         let password = try await call(["--blocks"])

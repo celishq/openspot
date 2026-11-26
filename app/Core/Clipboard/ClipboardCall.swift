@@ -42,8 +42,8 @@ public enum ClipboardCall: NounCall {
         case .paste: calls.paste()
         case .read(nil, false): calls.read()
         case .read(let within?, false): context.runs.map { calls.read(within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
-        case .read(nil, true): calls.blocks(images: context.places.clipboard)
-        case .read(let within?, true): context.runs.map { calls.blocks(images: context.places.clipboard, within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
+        case .read(nil, true): calls.blocks(images: context.places.clipboard, clock: context.runs?.clock ?? RunClock())
+        case .read(let within?, true): context.runs.map { calls.blocks(images: context.places.clipboard, clock: $0.clock, within: within, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --within")
         }
     }
 }

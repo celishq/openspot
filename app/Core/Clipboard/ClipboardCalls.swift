@@ -27,7 +27,7 @@ struct ClipboardCalls {
         }
     }
 
-    func blocks(images: URL, within limit: TimeInterval? = nil, runs: SpotRuns? = nil) -> CommandAPI.Work {
+    func blocks(images: URL, clock: RunClock, within limit: TimeInterval? = nil, runs: SpotRuns? = nil) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
             if let limit, let runs, await !runs.isCopy(within: limit) { return "" }
             guard let mac else { return "" }
@@ -43,7 +43,7 @@ struct ClipboardCalls {
             case .image(let kind):
                 guard let data = autoreleasepool(invoking: { mac.image() }) else { return "" }
                 let folder = images.appendingPathComponent("blocks", isDirectory: true)
-                let hourAgo = Date().addingTimeInterval(-3_600)
+                let hourAgo = clock.now().addingTimeInterval(-3_600)
                 for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
                     if let made = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, made < hourAgo { try? FileManager.default.removeItem(at: old) }
                 }
