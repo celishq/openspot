@@ -4,7 +4,7 @@ import SwiftUI
 
 struct StoreSidebar: View {
     let store: Store
-    @State private var isOverMine = false
+    let drag: StoreDrag
     @State private var isAdding = false
 
     var body: some View {
@@ -41,17 +41,13 @@ struct StoreSidebar: View {
             SettingsTile(symbol: "house.fill", color: SpotTheme.storeMine, side: SpotTokens.settingsSectionTile)
             Text("My spots")
             Spacer(minLength: 0)
-            if isOverMine {
+            if drag.isOverTarget {
                 Text("Drop to install")
                     .font(SpotType.settingsLine)
             }
         }
-        .listRowBackground(isOverMine ? SpotTheme.settingsSelection.opacity(SpotTheme.storeDropFill) : nil)
-        .dropDestination(for: String.self) { ids, _ in
-            guard let id = ids.first else { return false }
-            Task { await store.install(id) }
-            return true
-        } isTargeted: { isOverMine = $0 }
+        .listRowBackground(drag.isOverTarget ? SpotTheme.settingsSelection.opacity(SpotTheme.storeDropFill) : nil)
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(StoreDrag.space)) }, action: { drag.take(target: $0) })
     }
 
     private func sourceRow(_ source: StoreSource) -> some View {

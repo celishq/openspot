@@ -34,7 +34,7 @@ extension StoreView {
             Section {} header: {
                 VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: SpotTokens.storeTileGap), count: 2), spacing: SpotTokens.storeTileGap) {
-                        ForEach(store.cards) { card in StoreTile(store: store, card: card) }
+                        ForEach(store.cards) { card in StoreTile(store: store, card: card, drag: drag) }
                     }
                     .padding(.horizontal, -SpotTokens.storeColumnBleed)
                     Text("Drag a spot to My spots to install it.")

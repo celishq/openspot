@@ -4,11 +4,13 @@ import SwiftUI
 struct StoreTile: View {
     let store: Store
     let card: StoreCard
+    let drag: StoreDrag
     @State private var isHovered = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.storeTilePadding) {
             preview
+                .opacity(drag.carry?.id == card.id ? MotionTokens.hiddenOpacity : 1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(height: SpotTokens.storePreviewHeight)
             HStack(spacing: SpotTokens.wordsGap) {
@@ -42,7 +44,9 @@ struct StoreTile: View {
         .contentShape(Rectangle())
         .onTapGesture { Task { await store.open(card.id) } }
         .accessibilityAddTraits(.isButton)
-        .draggable(card.id) { StoreTileLift(card: card) }
+        .gesture(DragGesture(coordinateSpace: .named(StoreDrag.space))
+            .onChanged { drag.move(card, to: $0.location) }
+            .onEnded { _ in drag.drop(store) })
     }
 
     @ViewBuilder
