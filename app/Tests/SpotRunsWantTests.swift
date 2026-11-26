@@ -156,6 +156,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the event's run") { self.exists("heard") }
     }
 
+    func testTheShowOfASpotInTheMenuBarStopsWhenTheSpotIsRemoved() async throws {
+        menuBar.insert("script")
+        let url = try script(toml: "[on]\nevery = 60", "printf 'text=t\\ntitle=1\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        _ = try scanned()
+        try await wait("the show") { self.log().count == 1 && self.runs.isShowing }
+
+        try FileManager.default.removeItem(at: url.deletingLastPathComponent())
+        _ = try scanned()
+        try await allEnded()
+
+        XCTAssertFalse(exists("went-on"))
+    }
+
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
         menuBar.insert("script")
         try script(toml: "[on]\nevery = 1", "printf 'text=t\\ntitle=1\\n'")

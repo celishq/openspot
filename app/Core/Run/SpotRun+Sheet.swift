@@ -128,7 +128,7 @@ extension SpotRun {
     }
 
     private var keepsEventRun: Bool {
-        isWanted || spot.uses.contains(.timeline) && shownEvent?.isEvent == true
+        spot.uses.contains(.timeline) && shownEvent?.isEvent == true
     }
 
     func settleScript() {
