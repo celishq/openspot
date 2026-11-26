@@ -21,6 +21,7 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
     public let title: String
     public let app: String?
     public let icon: String?
+    public let detail: String?
     public let key: String?
     public let bytes: Int64
     public var forgotten: Date?
@@ -34,6 +35,7 @@ public struct TimelineEntry: Codable, Equatable, Sendable {
         if let textFile { fields.append(.init(key: "text.file", value: textFile)) }
         if let app { fields.append(.init(key: "app", value: app)) }
         if let icon { fields.append(.init(key: "icon", value: icon)) }
+        if let detail { fields.append(.init(key: "detail", value: detail)) }
         if let key { fields.append(.init(key: "key", value: key)) }
         return TextBlock(fields: fields).text
     }

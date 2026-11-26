@@ -36,7 +36,7 @@ instead of showing twice.
 ## How it works
 
 `openspot timeline add` keeps one entry and prints its id. It takes one value: `text=`, `url=` or `file=`
-once for each file. With `title=`, `app=`, the bundle ID of the app it came from, and `icon=` it says how the entry
+once for each file. With `title=`, `detail=`, the line under the title, `app=`, the bundle ID of the app it came from, and `icon=` it says how the entry
 shows. With no words, it takes the same lines on stdin, and adds nothing when they hold no value.
 
 `key=` names the entry. An add with the key of an entry the spot kept moves that entry to the top with the new value.

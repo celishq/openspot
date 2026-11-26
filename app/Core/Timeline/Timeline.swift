@@ -14,15 +14,17 @@ public final class Timeline: Sendable {
         public var title: String?
         public var app: String?
         public var icon: String?
+        public var detail: String?
         public var key: String?
         public var at: Date?
 
-        public init(kind: TimelineEntry.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, key: String? = nil, at: Date? = nil) {
+        public init(kind: TimelineEntry.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil) {
             self.kind = kind
             self.values = values
             self.title = title
             self.app = app
             self.icon = icon
+            self.detail = detail
             self.key = key
             self.at = at
         }
@@ -217,7 +219,7 @@ public final class Timeline: Sendable {
         }
         return TimelineEntry(
             id: id, spot: spot, at: at, kind: draft.kind, value: value, textFile: textFile, files: files, title: draft.title ?? Self.title(of: draft),
-            app: draft.app, icon: draft.icon, key: draft.key, bytes: bytes, forgotten: nil
+            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, bytes: bytes, forgotten: nil
         )
     }
 

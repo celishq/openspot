@@ -47,13 +47,15 @@ final class TimelineTests: PanelCase {
     func testAnAddedEntryListsNewestFirstWithItsTitleSpotAndValue() async throws {
         _ = try await add(["text=first line\nsecond", "app=com.apple.Notes"])
         clock.advance(by: 5)
-        let id = try await add(["url=https://a.com", "title=A page"])
+        let id = try await add(["url=https://a.com", "title=A page", "detail=Pull request #12"])
 
         let blocks = try await listed()
 
         XCTAssertEqual(blocks.map { $0.value("title") }, ["A page", "first line"])
         XCTAssertEqual(blocks.first?.value("item"), id)
         XCTAssertEqual(blocks.first?.value("url"), "https://a.com")
+        XCTAssertEqual(blocks.first?.value("detail"), "Pull request #12")
+        XCTAssertNil(blocks.last?.value("detail"))
         XCTAssertEqual(blocks.last?.value("text"), "first line\nsecond")
         XCTAssertEqual(blocks.last?.value("app"), "com.apple.Notes")
         XCTAssertEqual(blocks.last?.value("spot"), "notes")

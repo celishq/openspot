@@ -66,6 +66,16 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.picture), [.symbol("doc"), .image("/tmp/shot.png")])
     }
 
+    func testAnEntryThatGivesItsIconAndDetailShowsThemOverThoseOfItsKind() async throws {
+        try runs.timeline.add(Timeline.Draft(kind: .url, values: ["https://github.com/a/b/pull/12"], title: "Fix the cut", icon: "arrow.triangle.pull", detail: "Pull request #12"), of: "pulls", at: Date())
+
+        let shown = try await rows()
+        let row = try XCTUnwrap(shown.first)
+
+        XCTAssertEqual(row.picture, .symbol("arrow.triangle.pull"))
+        XCTAssertEqual(row.subtitle?.drop { $0 != "·" }, "· Pull request #12 · Pulls")
+    }
+
     func testAColourShowsAsASquareOfItself() async throws {
         try add(.text, "#FF3B30")
         try add(.text, "#ff3b30 is red", at: Date().addingTimeInterval(1))
