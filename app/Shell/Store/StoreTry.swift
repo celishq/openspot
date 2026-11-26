@@ -10,16 +10,10 @@ struct StoreTry: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+            Text("Try \(spot.name)")
+                .font(SpotType.settingsGroup)
             HStack(alignment: .top, spacing: SpotTokens.storeInset) {
-                VStack(alignment: .leading, spacing: SpotTokens.storeTileGap) {
-                    HStack(alignment: .top, spacing: SpotTokens.storeTileGap) {
-                        sized(.small)
-                        sized(.wide)
-                        sized(.square)
-                    }
-                    sized(.strip)
-                    sized(.large)
-                }
+                StoreSizes(spot: spot, face: output.face, sizes: SpotSize.all, width: SpotTokens.storeTryWidth)
                 if hasSheet {
                     SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: spot, run: nil)) { output }
                 }
@@ -34,14 +28,5 @@ struct StoreTry: View {
             }
         }
         .padding(SpotTokens.storeInset)
-    }
-
-    private func sized(_ size: SpotSize) -> some View {
-        VStack(spacing: SpotTokens.storeTileLineGap) {
-            StoreCardPreview(spot: spot, face: output.face, size: size, fits: false)
-            Text("\(size.columns)×\(size.rows)")
-                .font(SpotType.detail)
-                .foregroundStyle(.secondary)
-        }
     }
 }

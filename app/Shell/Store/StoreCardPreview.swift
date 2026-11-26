@@ -5,7 +5,7 @@ struct StoreCardPreview: View {
     let spot: Spot
     let face: ViewTree
     let size: SpotSize
-    var fits = true
+    var scale: CGFloat?
 
     var body: some View {
         let frame = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
@@ -26,7 +26,7 @@ struct StoreCardPreview: View {
     }
 
     private func scale(of frame: CGSize) -> CGFloat {
-        fits ? min(1, SpotTokens.storePreviewWidth / frame.width, SpotTokens.storePreviewHeight / frame.height) : 1
+        scale ?? min(1, SpotTokens.storePreviewWidth / frame.width, SpotTokens.storePreviewHeight / frame.height)
     }
 
     @ViewBuilder

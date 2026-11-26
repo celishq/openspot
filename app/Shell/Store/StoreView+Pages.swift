@@ -103,19 +103,14 @@ extension StoreView {
                     }
                     .controlSize(.large)
                 }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .bottom, spacing: SpotTokens.storeTileGap) {
-                        ForEach(preview.sizes, id: \.self) { size in
-                            VStack(spacing: SpotTokens.storeTileLineGap) {
-                                StoreCardPreview(spot: page.spot, face: preview.face, size: size, fits: false)
-                                Text("\(size.columns)×\(size.rows)")
-                                    .font(SpotType.detail)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+                if preview.drawsCard {
+                    StoreSizes(spot: page.spot, face: preview.face, sizes: preview.sizes, width: SpotTokens.storeRowWidth)
+                } else if let model, let sample, sample.id == page.id, sample.hasSheet {
+                    SpotSampleSheet(model: model, entry: SpotsModel.Entry(spot: page.spot, run: nil), selects: false) { sample.output }
+                        .allowsHitTesting(false)
+                        .frame(maxHeight: SpotTokens.storeSheetPreviewHeight, alignment: .top)
+                        .clipped()
                 }
-                .scrollClipDisabled()
             }
             .foregroundStyle(.primary)
             .textCase(nil)

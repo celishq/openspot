@@ -4,12 +4,14 @@ public struct StorePreview: Equatable, Sendable {
     public let face: ViewTree
     public let size: SpotSize
     public let sizes: [SpotSize]
+    public let drawsCard: Bool
 
     public init(face: ViewTree, spot: Spot) {
         self.face = face
         size = ([spot.size] + SpotSize.all).first(where: face.draws) ?? .strip
         let drawn = SpotSize.all.filter(face.draws)
         sizes = drawn.isEmpty ? [size] : drawn
+        drawsCard = !drawn.isEmpty
     }
 
     init(of spot: Spot) {
