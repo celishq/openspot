@@ -5,7 +5,7 @@ public struct Manifest: Equatable, Sendable {
     public static let keys: Set<String> = [
         "title", "icon", "detail", "keywords", "edits", "starts", "views", "source", "uses", "pages", "answers", "stay"
     ]
-    public static let tables: Set<String> = [Setting.table, Action.table, Binding.table, Event.table, RowType.table, Triggers.table]
+    public static let tables: Set<String> = [Setting.table, Action.table, Binding.table, Event.table, Triggers.table]
     static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
     static let scriptsTable = "scripts"
@@ -18,7 +18,6 @@ public struct Manifest: Equatable, Sendable {
         var actions: [Action] = []
         var bindings: [Binding] = []
         var events: [Event] = []
-        var types: [RowType] = []
         var triggers = Triggers()
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
@@ -49,7 +48,6 @@ public struct Manifest: Equatable, Sendable {
     public let actions: [Action]
     public let bindings: [Binding]
     public let events: [Event]
-    public let types: [RowType]
     public let stay: Bool?
     public let triggers: Triggers
     private let written: [String]
@@ -104,7 +102,6 @@ public struct Manifest: Equatable, Sendable {
         actions = script.actions
         bindings = script.bindings
         events = script.events
-        types = script.types
         stay = text(Self.stayKey).flatMap(Bool.init)
         triggers = script.triggers
         written = script.written
@@ -158,7 +155,7 @@ public struct Manifest: Equatable, Sendable {
             var script = scripts[name] ?? Script()
             let heading = "[\(section.name)]"
             var table = Script()
-            let isTyped = path == [Setting.table] || path == [Triggers.table] || path == [Binding.table] || path.count == 2 && (path[0] == Action.table || path[0] == Event.table || path[0] == RowType.table)
+            let isTyped = path == [Setting.table] || path == [Triggers.table] || path == [Binding.table] || path.count == 2 && (path[0] == Action.table || path[0] == Event.table)
             if !isTyped { try table.take(section.keys.map { ($0, section[$0]) }) }
             if path == [Setting.table] {
                 script.settings += try section.keys.map { key in
@@ -169,8 +166,6 @@ public struct Manifest: Equatable, Sendable {
                 script.bindings += try section.keys.map { try Binding(name: $0, value: section[$0], section: heading) }
             } else if path.count == 2, path[0] == Event.table {
                 script.events.append(try Event(name: path[1], section: heading, table: section))
-            } else if path.count == 2, path[0] == RowType.table {
-                script.types.append(try RowType(name: path[1], section: heading, table: section))
             } else if path == [Triggers.table] {
                 script.triggers = try Triggers(section: heading, table: section)
             } else if path.count == 2, path[0] == Action.table {

@@ -102,9 +102,6 @@
           "$ref" : "#/$defs/type"
         },
         {
-          "$ref" : "#/$defs/typeName"
-        },
-        {
           "additionalProperties" : false,
           "properties" : {
             "default" : {
@@ -130,14 +127,7 @@
               "type" : "boolean"
             },
             "type" : {
-              "anyOf" : [
-                {
-                  "$ref" : "#/$defs/type"
-                },
-                {
-                  "$ref" : "#/$defs/typeName"
-                }
-              ]
+              "$ref" : "#/$defs/type"
             }
           },
           "required" : [
@@ -146,22 +136,6 @@
           "type" : "object"
         }
       ]
-    },
-    "rowType" : {
-      "additionalProperties" : false,
-      "properties" : {
-        "match" : {
-          "type" : "string"
-        },
-        "title" : {
-          "type" : "string"
-        }
-      },
-      "required" : [
-        "match",
-        "title"
-      ],
-      "type" : "object"
     },
     "script" : {
       "additionalProperties" : false,
@@ -232,12 +206,6 @@
         },
         "title" : {
           "$ref" : "#/$defs/texts"
-        },
-        "types" : {
-          "additionalProperties" : {
-            "$ref" : "#/$defs/rowType"
-          },
-          "type" : "object"
         },
         "uses" : {
           "$ref" : "#/$defs/texts"
@@ -313,10 +281,6 @@
         "choice",
         "[choice]"
       ]
-    },
-    "typeName" : {
-      "pattern" : "^[A-Za-z][A-Za-z0-9_-]*$",
-      "type" : "string"
     }
   },
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
@@ -394,12 +358,6 @@
     },
     "title" : {
       "$ref" : "#/$defs/texts"
-    },
-    "types" : {
-      "additionalProperties" : {
-        "$ref" : "#/$defs/rowType"
-      },
-      "type" : "object"
     },
     "uses" : {
       "$ref" : "#/$defs/texts"

@@ -16,7 +16,7 @@ extension BlockKind {
         let name = block.fields.first?.value ?? ""
         let known = commonKeys.union(kind.keys)
         var faults = kind.isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !known.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
-        for option in block.children where option.fields.first?.key == BlockKind.option.word {
+        for option in block.children {
             let id = option.value("option") ?? ""
             faults += option.fields.map(\.key).filter { !optionKeys.contains($0) }.map { "the option \(id) of \(name) has an unknown key: \($0)" }
         }

@@ -29,7 +29,6 @@ public struct SpotFacts: Equatable, Sendable {
     public let triggers: Manifest.Triggers
     public internal(set) var bindings: [Manifest.Binding] = []
     public internal(set) var events: [Manifest.Event] = []
-    public internal(set) var types: [Manifest.RowType] = []
     public let settings: [Manifest.Setting]
     public internal(set) var isBuiltIn = false
     public let keywords: [String]

@@ -30,7 +30,6 @@ public enum ManifestSchema {
         properties[Manifest.Action.table] = table(reference("action"))
         properties[Manifest.Binding.table] = table(reference("binding"))
         properties[Manifest.Event.table] = table(table(reference("parameter")))
-        properties[Manifest.RowType.table] = table(reference("rowType"))
         properties[scripts] = table(reference("script"))
         return ["type": "object", "additionalProperties": false, "properties": properties]
     }
@@ -48,11 +47,7 @@ public enum ManifestSchema {
             "offers": ["type": "array", "items": ["type": "string"]], "shortcut": ["type": "string"], "close": ["type": "boolean"], "when": ["type": "string"]
         ]
         let settingKeys = Manifest.Parameter.settingKeys
-        var input = object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])
-        var inputProperties = input["properties"] as? [String: Any] ?? [:]
-        inputProperties["type"] = ["anyOf": [reference("type"), reference("typeName")]]
-        input["properties"] = inputProperties
-        let parameter: [String: Any] = ["anyOf": [reference("type"), reference("typeName"), input]]
+        let parameter: [String: Any] = ["anyOf": [reference("type"), object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])]]
         var action = object(Manifest.Action.keys.union(Manifest.Action.appKeys), from: fields)
         var actionProperties = action["properties"] as? [String: Any] ?? [:]
         actionProperties[Manifest.Action.inputs] = table(reference("parameter"))
@@ -61,11 +56,9 @@ public enum ManifestSchema {
         return [
             "texts": ["anyOf": [["type": "string"], ["type": "array", "items": ["type": "string"]]]],
             "type": ["enum": names],
-            "typeName": ["type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"],
             "setting": object(settingKeys, from: fields),
             "parameter": parameter,
             "action": action,
-            "rowType": object(["title", "match"], from: ["title": ["type": "string"], "match": ["type": "string"]], required: ["match", "title"]),
             "binding": object([Manifest.Binding.spotKey], from: [Manifest.Binding.spotKey: ["type": "string"]], required: [Manifest.Binding.spotKey]),
             "on": triggers,
             "script": script

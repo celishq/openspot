@@ -24,11 +24,11 @@ final class SpotSubmenuWindow: NSPanel {
         return window
     }
 
-    func show(rows: Int, beside row: CGRect, of menu: CGRect, in panel: NSWindow, at content: NSRect) {
+    func show(rows: Int, beside row: CGRect, of menu: CGRect, in panel: NSWindow) {
         let size = CGSize(width: SpotTokens.menuWidth, height: SpotTokens.menuHeight(rows: rows))
-        let top = content.maxY - (row.minY - SpotTokens.menuPadding)
-        let right = content.minX + menu.maxX + SpotTokens.submenuGap
-        let left = content.minX + menu.minX - SpotTokens.submenuGap - size.width
+        let top = panel.frame.maxY - (row.minY - SpotTokens.menuPadding)
+        let right = panel.frame.minX + menu.maxX + SpotTokens.submenuGap
+        let left = panel.frame.minX + menu.minX - SpotTokens.submenuGap - size.width
         let area = panel.screen?.visibleFrame ?? .infinite
         let x = right + size.width <= area.maxX || left < area.minX ? right : left
         setFrame(NSRect(x: x, y: top - size.height, width: size.width, height: size.height), display: false)

@@ -13,7 +13,7 @@ extension Manifest {
         public let title: String?
         public let icon: String?
         public let confirm: String?
-        public private(set) var inputs: [Parameter]
+        public let inputs: [Parameter]
         public let outputs: [Parameter]
         public let offers: [String]
         let shortcut: String?
@@ -33,7 +33,7 @@ extension Manifest {
             for key in table.keys {
                 let path = Manifest.path(key)
                 if path.count == 2, path[0] == Self.inputs || path[0] == Self.outputs, Setting.isKey(path[1]) {
-                    let parameter = try Parameter(name: path[1], value: table[key], keys: Parameter.inputKeys, place: "\(section) \(key)", takesTypes: path[0] == Self.inputs)
+                    let parameter = try Parameter(name: path[1], value: table[key], keys: Parameter.inputKeys, place: "\(section) \(key)")
                     if path[0] == Self.inputs { inputs.append(parameter) } else { outputs.append(parameter) }
                 } else if Self.appKeys.contains(key) {
                     switch table[key] {
@@ -62,16 +62,6 @@ extension Manifest {
             close = appValues["close"]?.first.flatMap(Bool.init)
             when = appValues["when"]?.first
             self.appKey = appKey
-        }
-
-        public var typeName: String? {
-            inputs.first { $0.isRequired && $0.typeName != nil }?.typeName
-        }
-
-        func typed(by types: [RowType]) throws -> Action {
-            var typed = self
-            typed.inputs = try inputs.map { try $0.typed(by: types, place: "\(section) inputs.\($0.name)") }
-            return typed
         }
 
         public var isChipOnly: Bool {

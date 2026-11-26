@@ -128,7 +128,6 @@ extension SpotsModel {
     }
 
     func offered(on target: Target, answers: inout HookAnswers, asks: Bool) -> [OfferedAction] {
-        if openSheetID != nil, let item = target.item { return typedActions(on: item) }
         guard openSheetID == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
         let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
         var shown: [OfferedAction] = []
@@ -182,12 +181,6 @@ extension SpotsModel {
         if action.after == .close {
             closeMenu()
             if isShown { host.dismiss() }
-        }
-        if let typed = typedAction(action, of: owner, on: target.item) {
-            closeMenu()
-            if isShown { host.dismiss() }
-            sheets[owner]?.run(typed.chip, with: typed.value)
-            return
         }
         sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id)) { [weak self] in
             guard let self, flow.current == nil || transition.id != nil else { return }

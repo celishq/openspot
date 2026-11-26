@@ -4,7 +4,7 @@ public struct SpotItem: Equatable, Sendable {
     public let title: String
     public let subtitle: String?
     public let run: String
-    public private(set) var picture: Icon?
+    public let picture: Icon?
     public let place: String?
     public let hides: [String]?
     public let keywords: [String]
@@ -30,11 +30,10 @@ public struct SpotItem: Equatable, Sendable {
     public let staysOnPick: Bool
     public let move: FlowMove?
     public let section: String?
-    public let preview: [TextBlock]
     public let number: NumberReading?
     public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true, preview: [TextBlock] = []) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -56,7 +55,6 @@ public struct SpotItem: Equatable, Sendable {
         self.staysOnPick = staysOnPick
         self.move = move
         self.section = section
-        self.preview = preview
         self.number = number
         self.showsWords = showsWords
     }
@@ -93,8 +91,7 @@ public struct SpotItem: Equatable, Sendable {
             move: FlowMove(item: block),
             section: section,
             number: number,
-            showsWords: !style.hidesWords,
-            preview: kind == .item ? block.children : []
+            showsWords: !style.hidesWords
         )
     }
 
@@ -123,15 +120,6 @@ public struct SpotItem: Equatable, Sendable {
 
     public var swatch: String? {
         picture?.color
-    }
-
-    func typed(by types: [Manifest.RowType]) -> SpotItem {
-        guard picture?.image == nil, picture?.file == nil,
-              let value = fields.first(where: { ($0.key == "text" || $0.key == "url") && !$0.value.isEmpty })?.value.trimmingCharacters(in: .whitespacesAndNewlines),
-              let icon = types.lazy.compactMap({ $0.holds(value) ? $0.icon(of: value) : nil }).first else { return self }
-        var typed = self
-        typed.picture = icon
-        return typed
     }
 
     public func path(in spot: Spot) -> String {

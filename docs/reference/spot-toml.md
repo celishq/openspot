@@ -115,7 +115,7 @@ An input, an output or a value of an event takes a type alone, such as `url = "u
 
 | Key           | Type     | Default | Is                                                 |
 | ------------- | -------- | ------- | -------------------------------------------------- |
-| `type`        | text     |         | Its type, or the name of one of your [types](#typesname) for an input. Required. |
+| `type`        | text     |         | Its type. Required.                                |
 | `required`    | bool     | `false` | Whether it can't be empty.                         |
 | `default`     | its type | none    | The value it gets when it's given none. Not for a list. |
 | `description` | text     | none    | What it is. A form shows it as the placeholder.    |
@@ -126,21 +126,6 @@ An input, an output or a value of an event takes a type alone, such as `url = "u
 
 `name = { spot = "<id>" }` names one spot that your spot runs or listens to, such as
 `picker = { spot = "openspot/snooze" }`. A name holds no space and no dot.
-
-## [types.\<name\>]
-
-One table for each kind of value your spot knows, such as a colour. A row of any sheet whose `text=` or `url=` matches
-`match` is of the type: its preview comes from your spot's `item.preview`, with `input.type=<name>`. An action whose
-required input has the type, such as `inputs.color = { type = "color", required = true }`, shows in the `⌘K` menu of
-such a row and under such a chip, and not in the search. Openspot tests a row when people show it, so older rows gain a new type
-too. A spot with types whose `[on]` holds only `item.preview` stays off the grid and out of the search.
-See [Show a preview of a row](../show/preview.md#give-a-type).
-
-| Key     | Type | Is                                                          |
-| ------- | ---- | ----------------------------------------------------------- |
-| `title` | text | The type's name for people, such as `Color`. Required.      |
-| `match` | text | A regular expression of the whole value. Required.          |
-| `icon`  | text | The icon of each row of the type, as `icon` takes it. `swatch` shows a square of the value's colour, written as `#rrggbb`, `#rgb`, `rgb()` or `hsl()`. A row's own picture or file icon stays. |
 
 ## [events.\<name\>]
 
@@ -173,7 +158,6 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |
-| `item.preview`     | itself  | none                             | When `⌘Y` shows the preview of a row, or of a row beside it; see [Show a preview](../show/preview.md). |
 | `clipboard.change` | itself  | none                             | When the clipboard changes.                               |
 | `app.front`        | itself  | its bundle ID                    | When another app comes to the front.                      |
 | `app.update`       | itself  | its version                      | When Openspot has downloaded an update.                   |

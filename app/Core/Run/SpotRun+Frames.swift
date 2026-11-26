@@ -164,8 +164,7 @@ extension SpotRun {
 
     private func newRows(_ items: [SpotItem], search: ItemSearch) async -> ItemList.Rows {
         let list = rows
-        let types = runs.iconTypes
-        return await Task.detached(priority: .userInitiated) { list.ready(types.isEmpty ? items : items.map { $0.typed(by: types) }, search: search) }.value
+        return await Task.detached(priority: .userInitiated) { list.ready(items, search: search) }.value
     }
 
     private func preparePictures() async {

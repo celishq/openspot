@@ -66,6 +66,15 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.picture), [.symbol("doc"), .image("/tmp/shot.png")])
     }
 
+    func testAColourShowsAsASquareOfItself() async throws {
+        try add(.text, "#FF3B30")
+        try add(.text, "#ff3b30 is red", at: Date().addingTimeInterval(1))
+
+        let rows = try await rows()
+
+        XCTAssertEqual(rows.map(\.swatch), [nil, "#ff3b30"])
+    }
+
     func testTheCardShowsTheNewestEntry() async throws {
         try add(.text, "older", at: Date().addingTimeInterval(-60))
         try add(.text, "newest")

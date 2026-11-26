@@ -78,7 +78,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             guard let self else { return nil }
             let app = NSWorkspace.shared.frontmostApplication
             return ScreenPlace.toastWindow(
-                panel: model.isWarming ? nil : panel?.contentFrame,
+                panel: model.isWarming ? nil : panel?.frame,
                 isPanelShown: model.isShown,
                 isAppInFront: app == .current,
                 front: { SpotFrontWindow.frame(of: app) }
@@ -234,19 +234,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         guard let panel, let rows = model.menu?.submenu?.rows.count else { return }
         let window = submenu ?? SpotSubmenuWindow.make(model: model)
         submenu = window
-        window.show(rows: rows, beside: row, of: menu, in: panel, at: panel.contentFrame)
+        window.show(rows: rows, beside: row, of: menu, in: panel)
     }
 
     func hideSubmenu() {
         submenu?.hide()
-    }
-
-    func hasRoomRight(of sheet: CGRect, for width: CGFloat) -> Bool {
-        panel?.hasRoomRight(of: sheet, for: width) ?? true
-    }
-
-    func reach(_ rect: CGRect?) {
-        panel?.reach(rect)
     }
 
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {

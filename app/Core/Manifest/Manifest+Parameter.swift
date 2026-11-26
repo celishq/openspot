@@ -13,10 +13,9 @@ extension Manifest {
         public let icon: String?
         public let detail: String?
         public let options: [String]
-        public private(set) var pattern: AnswerPattern?
-        public let typeName: String?
+        public let pattern: AnswerPattern?
 
-        init(name: String, value: ConfigDocument.Value?, keys: Set<String>, place: String, takesTypes: Bool = false) throws {
+        init(name: String, value: ConfigDocument.Value?, keys: Set<String>, place: String) throws {
             let fault = { (reason: String) in SpotError.fault("\(Manifest.fileName): \(place) \(reason)") }
             var fields: [String: ConfigDocument.Value]
             switch value {
@@ -35,8 +34,7 @@ extension Manifest {
                 }
             }
             guard let typeName = try text("type") else { throw fault("needs a type, such as type = \"text\".") }
-            let named = ValueType(name: typeName) == nil && Self.isTypeName(typeName) && takesTypes
-            guard let type = ValueType(name: typeName) ?? (named ? ValueType(.text) : nil) else {
+            guard let type = ValueType(name: typeName) else {
                 throw fault("has an unknown type: \(typeName). Use \(ValueType.names), or a list such as [text].")
             }
             var isRequired = false
@@ -66,7 +64,6 @@ extension Manifest {
             }
             var pattern: AnswerPattern?
             if let text = try text("pattern") {
-                guard !named else { throw fault("has the type \(typeName), which brings its own pattern. Remove pattern.") }
                 guard type == ValueType(.url) || type == ValueType(.text) else { throw fault("has a pattern, which only a url or a text takes.") }
                 guard let parsed = AnswerPattern(text) else { throw fault("has a pattern that is not a regular expression: \(text).") }
                 pattern = parsed
@@ -76,7 +73,6 @@ extension Manifest {
             self.isRequired = isRequired
             self.defaultValue = defaultValue
             self.pattern = pattern
-            self.typeName = named ? typeName : nil
             self.title = try text("title")
             self.icon = try text("icon")
             self.detail = try text("description")
@@ -93,21 +89,6 @@ extension Manifest {
             detail = nil
             self.options = options
             pattern = nil
-            typeName = nil
-        }
-
-        static func isTypeName(_ text: String) -> Bool {
-            text.first?.isLetter == true && text.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }
-        }
-
-        func typed(by types: [RowType], place: String) throws -> Parameter {
-            guard let typeName else { return self }
-            guard let type = types.first(where: { $0.name == typeName }), let pattern = AnswerPattern(type.match) else {
-                throw SpotError.fault("\(Manifest.fileName): \(place) has an unknown type: \(typeName). Use \(ValueType.names), or declare it in [types.\(typeName)].")
-            }
-            var typed = self
-            typed.pattern = pattern
-            return typed
         }
 
         func fault(in values: [String]) -> String? {

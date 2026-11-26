@@ -86,15 +86,6 @@ public final class SpotsModel {
         }
     }
     public private(set) var heldDetails: AttachmentDetails?
-    public internal(set) var preview: ItemPreview?
-    public internal(set) var previewRect: CGRect?
-    public internal(set) var previewSource: CGRect?
-    public internal(set) var isPreviewOpen = false
-    @ObservationIgnored var isPreviewGrowing = false
-    var isPreviewing = false
-    @ObservationIgnored var previewAsked: String?
-    @ObservationIgnored var ownPreviews: [String: ItemPreview] = [:]
-    @ObservationIgnored var previewAsk: Task<Void, Never>?
     public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var spotListBuilds = 0
@@ -580,7 +571,6 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
-            dropPreviewNow()
             holdCommand(false)
             endSpread()
             if attachments.spreads { attachments.fold() }

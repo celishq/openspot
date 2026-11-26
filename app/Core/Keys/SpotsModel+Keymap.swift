@@ -238,7 +238,6 @@ extension SpotsModel {
                 leaveAttachment()
                 return true
             },
-            previewEscapeRow,
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }
@@ -247,7 +246,6 @@ extension SpotsModel {
                 return menu != nil
             },
             .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
-            previewRow,
             .any { [self] key in openSheet(on: key) ? true : nil },
         ]
         return rows

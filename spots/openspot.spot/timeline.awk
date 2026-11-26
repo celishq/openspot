@@ -1,6 +1,7 @@
 # Turns the entries that `openspot timeline list` prints into the rows of the Timeline sheet: a group for each day, and
 # a row for each entry, with its time and what it holds under its title, such as `09:57 · 3 lines` or
-# `09:57 · github.com`, and the spot it came from when that is not Clipboard. The card shows the newest entry.
+# `09:57 · github.com`, and the spot it came from when that is not Clipboard. A colour such as `#ff3b30` shows as a
+# square of itself. The card shows the newest entry.
 BEGIN { RS = ""; FS = "\n"; count = 0 }
 
 function day_title(day,    line) {
@@ -69,7 +70,7 @@ function source(spot,    name) {
     printf "\nbox=day-%s\nparent=list\ntitle=%s\n", day, day_title(day)
     last = day
   }
-  icon = (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : "text.alignleft"))
+  icon = (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : (f["text"] ~ /^#[0-9a-fA-F]{6}$/ ? tolower(f["text"]) : "text.alignleft")))
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
   if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]
