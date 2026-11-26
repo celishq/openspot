@@ -37,13 +37,10 @@ export default {
     const listed = openspot.call(["timeline", "list", "--all", "--limit", "3", "--text", text])
     if (listed.code !== 0) return []
     return entries(listed.stdout).map((entry) => {
-      const kind = "url" in entry ? "url" : "file" in entry ? "file" : "picture" in entry ? "picture" : "text"
+      const kind = "url" in entry ? "url" : "file" in entry ? "file" : "text"
       const row = { item: entry.item, title: entry.title, detail: detail(entry), kind, "open.title": kind === "url" ? "Open" : "Paste" }
-      if (kind === "picture") {
-        row.icon = entry.picture
-        row.file = entry.picture
-      } else if (kind === "file") {
-        row.icon = "doc"
+      if (kind === "file") {
+        row.icon = /\.(png|jpe?g|gif|heic|tiff|webp|bmp)$/i.test(entry.file) ? entry.file : "doc"
         row.file = entry.file
       } else {
         row.icon = kind === "url" ? "link" : "text.alignleft"
@@ -54,9 +51,8 @@ export default {
     })
   },
   async press(input, env) {
-    const kind = input["item.kind"]
     await env.timeline.use({
-      kind: kind === "picture" ? "file" : kind,
+      kind: input["item.kind"],
       text: input["item.text"],
       url: input["item.url"],
       file: input["item.file"],

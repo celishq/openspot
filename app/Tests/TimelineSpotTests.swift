@@ -56,7 +56,7 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· 5 characters", "· a.com", "· 2 lines"])
     }
 
-    func testAFileOfAPictureShowsAsAnImageWithItsThumbnail() async throws {
+    func testAFileOfAPictureShowsAsAnImageWithItselfAsItsIcon() async throws {
         try add(.file, "/tmp/shot.png")
         try add(.file, "/tmp/notes.txt", at: Date().addingTimeInterval(1))
 
@@ -213,6 +213,16 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.first?.subtitle?.hasPrefix("Timeline · Clipboard · "), true)
         XCTAssertEqual(rows.first?.handedValue(), AttachmentValue(text: "cafe 3\nsecond line", title: "cafe 3"))
         XCTAssertEqual(rows.first?.openTitle, "Paste")
+    }
+
+    func testTheSearchShowsACopiedImageWithItselfAsItsIcon() async throws {
+        try file.change { $0.set(setting: "in-search", of: "openspot/timeline", to: "true") }
+        try add(.file, "/tmp/cafe.png")
+
+        let rows = try await finder.items(query: "cafe", timeout: 60).items
+
+        XCTAssertEqual(rows.map(\.picture), [.image("/tmp/cafe.png")])
+        XCTAssertEqual(rows.first?.file, "/tmp/cafe.png")
     }
 
     func testUsePastesATextAndOpensALinkAsReturnInTheSheetDoes() async throws {

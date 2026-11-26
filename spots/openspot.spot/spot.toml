@@ -218,7 +218,7 @@ title = "Resume Timeline"
 [scripts.timeline.actions.restore]
 
 [scripts.timeline.actions.use]
-inputs.kind = { type = "text", required = true, description = "text, url, file or picture" }
+inputs.kind = { type = "text", required = true, description = "text, url or file" }
 inputs.text = "text"
 inputs.url = "text"
 inputs.file = "text"
