@@ -43,7 +43,7 @@ enum SpotTheme {
     static let glassFadeReach = 3.0
     static let dragFill = 0.4
     static let hover = 0.08
-    static let menuDim = 0.4
+    @MainActor static var menuDim: Double { current.menuDim }
     static let liftShadow: CGFloat = 14
     static let chosenRow = 0.1
     static let liftShadowStrength = 0.25
