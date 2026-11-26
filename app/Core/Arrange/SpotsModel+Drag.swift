@@ -50,7 +50,7 @@ extension SpotsModel {
             guard let drag else { return }
             let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
             if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
-                cancelDrag()
+                dropGesture()
                 return takeOffGrid(entry.id)
             }
             let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home

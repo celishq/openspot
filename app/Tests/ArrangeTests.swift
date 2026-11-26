@@ -191,6 +191,19 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, ["a"])
     }
 
+    func testACardDroppedOutsideThePanelLandsNowhereOnTheGridOnItsWayToTheShelf() async throws {
+        try await arrangeWithOff([], on: ["a", "b"])
+        let away = CGSize(width: -900, height: 40)
+        model.dragSpot("a", by: away)
+        host.heldEnds = []
+
+        model.dropSpot(by: away)
+
+        XCTAssertNil(model.landing)
+        XCTAssertNil(model.carry)
+        XCTAssertEqual(order, ["b"])
+    }
+
     func testASpotTakenOffByItsMinusComesBackByAPin() async throws {
         try await spots(["a", "b"])
         model.takeOffGrid("a")
