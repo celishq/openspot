@@ -68,22 +68,44 @@ extension StoreView {
 
     @ViewBuilder
     func spotPage(_ page: StorePage) -> some View {
-        title(.header, SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile), page.spot.name, pageLine(page)) {
-            HStack(spacing: SpotTokens.settingsValueGap) {
-                button(page)
-            }
-            .padding(.top, SpotTokens.settingsTitleGap)
-        }
-        Section {
-            VStack(spacing: SpotTokens.storeTilePadding) {
-                let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
-                StoreCardPreview(spot: page.spot, face: preview.face, size: preview.size)
-                if sample?.id == page.id, model != nil {
-                    Button("Try") { isTrying = true }
+        let preview = sample.flatMap { $0.id == page.id ? StorePreview(face: $0.output.face, spot: page.spot) : nil } ?? page.preview
+        Section {} header: {
+            VStack(alignment: .leading, spacing: SpotTokens.settingsHeadingGap) {
+                HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
+                    SettingsSpotIcon(spot: page.spot, side: SpotTokens.settingsHeaderTile)
+                    VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
+                        Text(page.spot.name)
+                            .font(SpotType.settingsHeader)
+                        Text(pageLine(page))
+                            .font(SpotType.settingsPageLine)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: SpotTokens.settingsTrailingGap)
+                    HStack(spacing: SpotTokens.settingsValueGap) {
+                        if sample?.id == page.id, model != nil {
+                            Button("Try") { isTrying = true }
+                        }
+                        button(page)
+                    }
+                    .controlSize(.large)
                 }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: SpotTokens.storeTileGap) {
+                        ForEach(preview.sizes, id: \.self) { size in
+                            VStack(spacing: SpotTokens.storeTileLineGap) {
+                                StoreCardPreview(spot: page.spot, face: preview.face, size: size, fits: false)
+                                Text("\(size.columns)×\(size.rows)")
+                                    .font(SpotType.detail)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .scrollClipDisabled()
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, SpotTokens.storeTilePadding)
+            .foregroundStyle(.primary)
+            .textCase(nil)
+            .padding(.bottom, SpotTokens.settingsHeadingGap)
         }
         group("About") {
             StoreReadmeView(lines: page.shown, name: page.spot.name)

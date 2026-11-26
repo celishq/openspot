@@ -3,10 +3,13 @@ import Foundation
 public struct StorePreview: Equatable, Sendable {
     public let face: ViewTree
     public let size: SpotSize
+    public let sizes: [SpotSize]
 
     public init(face: ViewTree, spot: Spot) {
         self.face = face
         size = ([spot.size] + SpotSize.all).first(where: face.draws) ?? .strip
+        let drawn = SpotSize.all.filter(face.draws)
+        sizes = drawn.isEmpty ? [size] : drawn
     }
 
     init(of spot: Spot) {
