@@ -1,8 +1,7 @@
 # Turns the entries that `openspot timeline list` prints into the rows of the Timeline sheet: a group for each day, and
 # a row for each entry, with its time and the detail its spot gave under its title, or else what it holds, such as
 # `09:57 · 3 lines` or `09:57 · github.com`, and the spot it came from when that is not Clipboard. The icon is the one
-# its spot gave, or else that of its kind; a colour such as `#ff3b30` shows as a square of itself. The card shows the
-# newest entry.
+# its spot gave, or else that of its kind; a colour such as `#ff3b30` shows as a square of itself.
 BEGIN { RS = ""; FS = "\n"; count = 0 }
 
 function day_title(day,    line) {
@@ -56,10 +55,6 @@ function source(spot,    name) {
   detail = substr(f["at"], 12, 5) " · " (f["detail"] != "" ? f["detail"] : what(kind, f[kind], f["text.file"] != "", files))
   if (f["spot"] != "clipboard") detail = detail " · " source(f["spot"])
   if (count++ == 0) {
-    if (card) {
-      printf "title=%s\ndetail=%s\n", f["title"], source(f["spot"]) " · " substr(f["at"], 12, 5)
-      exit
-    }
     printf "title=Timeline\n\n"
     printf "button=copy\ntitle=Copy\nshortcut=cmd+c\nscope=item\n\n"
     printf "button=forget\ntitle=Forget\nshortcut=cmd+backspace\nscope=item\nclose=false\n\n"
@@ -79,6 +74,5 @@ function source(spot,    name) {
 }
 
 END {
-  if (card) exit
   if (count == 0) printf "\nitem=empty\ntitle=Copy something, and it shows here.\nicon=doc.on.clipboard\nhides=copy\nhides=forget\n"
 }

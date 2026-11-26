@@ -5,11 +5,6 @@
 # that hold each word typed in the sheet. Return pastes a text, a picture or a file into the front app and opens a link,
 # ⌘C copies, ⌘⌫ forgets the entry, with a toast that puts it back, and Tab hands it to a spot that takes it.
 
-# Prints the newest entry for the card when the panel opens.
-card() {
-  printf 'frame=\n'
-  openspot timeline list --all --limit 1 | awk -v today="$(date +%F)" -v yesterday="$(date -v-1d +%F)" -v card=1 -f "${0%/*}/timeline.awk"
-}
 
 # Prints the frame of the entries that hold the words of $1.
 list() {
@@ -53,7 +48,7 @@ case "$1" in
   show)
     days=$(value setting.keep | tr -dc 0-9)
     openspot timeline keep "${days:-30}" || exit 1
-    if [ "$(value event)" = panel.open ]; then card; else list ""; fi
+    list ""
     ;;
   sheet.text) list "$(value value)" ;;
   command) exec openspot spot open openspot/timeline ;;

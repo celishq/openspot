@@ -88,13 +88,13 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.swatch), ["#666666", nil, "#ff3b30"])
     }
 
-    func testTheCardShowsTheNewestEntry() async throws {
-        try add(.text, "older", at: Date().addingTimeInterval(-60))
+    func testTheSpotIsTitledTimelineAndNotByItsNewestEntry() async throws {
         try add(.text, "newest")
 
-        let card = try await timeline.items(input: "input.event=panel.open\n", timeout: 60)
+        let shown = try await timeline.items(input: "input.event=panel.open\n", timeout: 60)
 
-        XCTAssertEqual(card.root?.value("title"), "newest")
+        XCTAssertEqual(shown.root?.value("title"), "Timeline")
+        XCTAssertFalse(try timeline.triggers.events.contains(EventName.panelOpen))
     }
 
     func testTheSheetKeepsTheTitleOfTheSpotAndNotOfTheNewestEntry() async throws {

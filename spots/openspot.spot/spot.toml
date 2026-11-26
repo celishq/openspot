@@ -204,7 +204,6 @@ keywords = ["timeline", "history", "clipboard history"]
 uses = ["timeline", "read", "clipboard"]
 
 [scripts.timeline.on]
-"panel.open" = true
 "sheet.open" = true
 "sheet.text" = true
 command = ["timeline"]
