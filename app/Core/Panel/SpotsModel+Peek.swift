@@ -81,6 +81,8 @@ extension SpotsModel {
         guard let sheet, isShown else {
             guard peekRect != nil else { return }
             guard isShown else { return dropPeek() }
+            guard isPeekOpen || isPeekGrowing else { return }
+            isPeekGrowing = false
             change(.sheet(isOpen: false), {
                 isPeekOpen = false
                 if isPeekGrown { isPeekGrown = false }

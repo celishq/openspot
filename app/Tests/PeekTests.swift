@@ -167,4 +167,19 @@ final class PeekTests: PanelCase {
         guard case .text(let shown) = model.peek?.look else { return XCTFail("no text") }
         XCTAssertEqual(shown.count, Peek.textLimit)
     }
+
+    func testAPeekThatIsClosingStartsNoSecondCloseThatWouldEndIt() async throws {
+        try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
+        model.followHint()
+        _ = model.handleKey(peekKey)
+        try await wait("the grown peek") { self.model.isPeekGrown }
+        host.heldEnds = []
+
+        _ = model.handleKey(peekKey)
+        model.takePeek()
+
+        XCTAssertEqual(host.heldEnds?.count, 1)
+        XCTAssertNotNil(model.peekRect)
+        XCTAssertEqual(model.peek?.look, .text("words"))
+    }
 }
