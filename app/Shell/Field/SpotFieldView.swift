@@ -193,8 +193,8 @@ struct SpotFieldView: View {
         isOpen ? 1 : 0
     }
 
-    private var crossing: (Double) -> Double {
-        guard let morph = sheet?.morph else { return { _ in 1 } }
+    private var crossing: ((Double) -> Double)? {
+        guard let morph = sheet?.morph else { return nil }
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
         let field = gridPlace
@@ -210,8 +210,8 @@ struct SpotFieldView: View {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.cardRadius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
-    private var glassLook: (Double) -> Double {
-        guard let morph = sheet?.morph else { return { _ in 1 } }
+    private var glassLook: ((Double) -> Double)? {
+        guard let morph = sheet?.morph else { return nil }
         let rest = gridPlace
         let row = Self.sheetRow(top: model.fieldTop)
         return { progress in

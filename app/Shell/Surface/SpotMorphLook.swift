@@ -3,8 +3,8 @@ import SwiftUI
 
 struct SpotMorphLook: ViewModifier, @preconcurrency Animatable {
     var progress: Double
-    var offset: (Double) -> CGSize = { _ in .zero }
-    var opacity: (Double) -> Double = { _ in 1 }
+    var offset: ((Double) -> CGSize)?
+    var opacity: ((Double) -> Double)?
 
     var animatableData: Double {
         get { progress }
@@ -13,17 +13,17 @@ struct SpotMorphLook: ViewModifier, @preconcurrency Animatable {
 
     func body(content: Content) -> some View {
         content
-            .opacity(max(opacity(progress), MotionTokens.hiddenOpacity))
-            .offset(offset(progress))
+            .opacity(max(opacity?(progress) ?? 1, MotionTokens.hiddenOpacity))
+            .offset(offset?(progress) ?? .zero)
     }
 }
 
 extension View {
     func morph(
         _ progress: Double,
-        offset: @escaping (Double) -> CGSize = { _ in .zero },
-        opacity: @escaping (Double) -> Double = { _ in 1 }
+        offset: ((Double) -> CGSize)? = nil,
+        opacity: ((Double) -> Double)? = nil
     ) -> some View {
-        modifier(SpotMorphLook(progress: progress, offset: offset, opacity: opacity))
+        modifier(SpotMorphLook(progress: offset == nil && opacity == nil ? 0 : progress, offset: offset, opacity: opacity))
     }
 }
