@@ -6,6 +6,7 @@ final class WorkCardPanel: NSPanel {
     private static let size = NSSize(width: SpotTokens.workCardSide + 2 * SpotTokens.workCardMargin, height: SpotTokens.workCardSide + 2 * SpotTokens.workCardMargin)
 
     private let stage = WorkCardStage()
+    private let nextFrames = NextFrame()
     private var model: SpotsModel?
     private var shows = 0
 
@@ -29,7 +30,7 @@ final class WorkCardPanel: NSPanel {
             setFrameOrigin(origin)
         }
         orderFrontRegardless()
-        DispatchQueue.main.async {
+        nextFrames.run(in: contentView) {
             if self.shows == current { self.stage.isShown = true }
         }
     }
