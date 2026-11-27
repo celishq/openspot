@@ -57,7 +57,7 @@ final class AttachmentSpreadTests: AttachmentCase {
             stack.leave()
             stack.fold()
             stack.place()
-            XCTAssertEqual(stack.layout.places.map(\.chip.source), Array(order[1...] + order[..<1]))
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), ["b"] + late + ["a"])
             stack.turn(by: 1)
             stack.spread()
             stack.place()

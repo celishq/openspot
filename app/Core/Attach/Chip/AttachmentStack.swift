@@ -39,7 +39,7 @@ public struct AttachmentStack: Equatable, Sendable {
         isMoving = false
         chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: $0.look), state: .unread) }
         settle()
-        layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, lead: nil, spreads: false, fit: fit)
+        place()
     }
 
     mutating func fill(_ source: String, with value: AttachmentValue, look own: AttachmentChip.Look?) {
@@ -64,16 +64,15 @@ public struct AttachmentStack: Equatable, Sendable {
 
     mutating func remove(_ source: String) {
         chips.removeAll { $0.source == source }
-        if selected == source { selected = chips.first?.source }
-        if lead == source { lead = nil }
+        settle()
     }
 
     mutating func turn(by step: Int) {
         let order = chips.map(\.source)
         guard !order.isEmpty else { return }
         guard let selected, let index = order.firstIndex(of: selected) else {
-            let first = lead.flatMap { order.firstIndex(of: $0) } ?? 0
-            self.selected = order[step < 0 ? (first + order.count - 1) % order.count : first]
+            let front = (step < 0 ? layout.places.last : layout.places.first)?.chip.source
+            self.selected = front.flatMap { order.contains($0) ? $0 : nil } ?? order[0]
             return
         }
         self.selected = order[(index + step % order.count + order.count) % order.count]
