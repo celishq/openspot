@@ -150,6 +150,7 @@ public final class SpotsModel {
     }
     @ObservationIgnored var session = PanelSession()
     @ObservationIgnored var trail = SessionTrail()
+    @ObservationIgnored var restoreTime = PanelSession.restoreTime
     @ObservationIgnored var holdsVisit = false
     @ObservationIgnored var isRestoringVisit = false
     public internal(set) var textSelections = 0
@@ -461,6 +462,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         if grid != config.grid { grid = config.grid }
+        restoreTime = config.restoreTime
         if let store, Set(scan.spots.map(\.url)) != Set(scanned.map(\.url)) { Task { await store.read() } }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }

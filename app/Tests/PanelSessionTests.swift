@@ -158,4 +158,25 @@ final class PanelSessionTests: PanelCase {
         reopen()
         XCTAssertNil(model.openSheetID)
     }
+
+    func testTheRestoreTimeOfTheConfigDecidesHowLongAParkedPlaceWaits() async throws {
+        _ = try model.files.config.change { $0.set(restoreWithin: "5 minutes") }
+        await model.reload()
+        model.search("ban")
+
+        clickOutside()
+        clock.advance(by: 200)
+        reopen()
+
+        XCTAssertEqual(model.searchText, "ban")
+    }
+
+    func testTheRestoreTimeIsAChoiceOfGeneralAndAnUnknownOneIsAFault() throws {
+        let row = try XCTUnwrap(AppSetting.rows([.restore: "90 seconds"]).first)
+
+        XCTAssertEqual(row.section, .general)
+        XCTAssertEqual(row.choices, ["30 seconds", "90 seconds", "5 minutes", "1 hour"])
+        XCTAssertEqual(Config(text: "restore-within = \"1 hour\"\n").restoreTime, 3600)
+        XCTAssertEqual(Config(text: "restore-within = \"forever\"\n").faults, ["config.toml: restore-within is \"30 seconds\", \"90 seconds\", \"5 minutes\", \"1 hour\"."])
+    }
 }

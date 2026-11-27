@@ -79,7 +79,7 @@ final class SettingListTests: XCTestCase {
         XCTAssertEqual(Set(TextBlock.blocks(in: answer.output).map { $0.value("name") }), ["Weather"])
     }
 
-    func testTheRowsOfTheAppAreItsKeysItsMacChoicesAndItsTheme() async throws {
+    func testTheRowsOfTheAppAreItsKeysItsRestoreTimeItsMacChoicesAndItsTheme() async throws {
         try places.config.change {
             $0.set(Shortcut(text: "option+space") ?? .standard, for: "panel-key")
             $0.set(theme: ThemeFolder.builtInName)
@@ -95,6 +95,7 @@ final class SettingListTests: XCTestCase {
         XCTAssertEqual(rows, [
             Row(item: "openspot/panel-key", key: "panel-key", title: "Open Openspot", value: "option+space", kind: "key", section: "general"),
             Row(item: "openspot/fix-key", key: "fix-key", title: "Open a fix", value: "cmd+option+o", kind: "key", section: "general"),
+            Row(item: "openspot/restore-within", key: "restore-within", title: "Keep your place", value: "90 seconds", kind: "choice", section: "general"),
             Row(item: "openspot/slow", key: "slow", title: "Slow motion", value: "false", kind: "toggle", section: "developer"),
             Row(item: "openspot/login", key: "login", title: "Open at login", value: "true", kind: "toggle", section: "general"),
             Row(item: "openspot/theme", key: "theme", title: "Theme", value: ThemeFolder.builtInName, kind: "choice", section: "look")

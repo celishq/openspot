@@ -26,7 +26,7 @@ extension SpotsModel {
     func resumeSession() {
         let kept = session
         session = PanelSession(visit: kept.visit)
-        guard !kept.startsClean(at: runs.clock.now()) else { return startClean() }
+        guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
         guard let parked = kept.parked else { return }
         if openSheetID == nil, flow.current == nil, let page = parked.flow.current, sheets[page.spot] != nil {
             holdsVisit = true

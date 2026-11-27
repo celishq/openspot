@@ -18,6 +18,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var stores: [StoreSource] = []
     public private(set) var theme: String?
     public private(set) var grid = GridLayout()
+    public private(set) var restoreWithin = Self.restoreTimes[1].name
     private(set) var browsers = Browser.builtIn
     public private(set) var isReadable = true
     private var kept = ConfigDocument()
@@ -46,7 +47,7 @@ public struct Config: Equatable, Sendable {
         Self.gone.forEach { kept.remove($0) }
         let known = ["spots", "keys", "settings", "stores"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
-        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns"] + Self.gone + known).contains(key) {
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns", "restore-within"] + Self.gone + known).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotChoices(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
@@ -74,6 +75,11 @@ public struct Config: Equatable, Sendable {
                     browsers.append(Browser(bundleID: id, family: family))
                 }
             }
+        }
+        switch document.values["restore-within"] {
+        case .string(let name)? where Self.restoreTimes.contains(where: { $0.name == name }): restoreWithin = name
+        case nil: break
+        default: faults.append("config.toml: restore-within is \(Self.restoreTimes.map { "\"\($0.name)\"" }.joined(separator: ", ")).")
         }
         switch document.values["columns"] {
         case .integer(let count)? where GridLayout.widths.contains(count): grid = GridLayout(columns: count)
@@ -120,6 +126,17 @@ public struct Config: Equatable, Sendable {
     public mutating func set(theme: String) {
         self.theme = theme
         kept.set("theme", to: .string(theme))
+    }
+
+    public static let restoreTimes: [(name: String, seconds: TimeInterval)] = [("30 seconds", 30), ("90 seconds", PanelSession.restoreTime), ("5 minutes", 300), ("1 hour", 3600)]
+
+    public var restoreTime: TimeInterval {
+        Self.restoreTimes.first { $0.name == restoreWithin }?.seconds ?? PanelSession.restoreTime
+    }
+
+    public mutating func set(restoreWithin name: String) {
+        restoreWithin = name
+        kept.set("restore-within", to: .string(name))
     }
 
     public mutating func set(columns: Int) {

@@ -35,6 +35,7 @@ Every spot answers the same keys, so you learn them once.
 
 The panel keeps your place when you click outside it. Open it again within 90 seconds, and you're back on the same
 page of the same spot, with your text selected so you can type over it. After 90 seconds it opens on an empty search.
+Keep your place, in the General section of Settings, sets that time: 30 seconds, 90 seconds, 5 minutes or 1 hour.
 
 | Key        | Does                                                                          |
 | ---------- | ----------------------------------------------------------------------------- |
