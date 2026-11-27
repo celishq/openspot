@@ -41,46 +41,69 @@ label() {
   printf '%s%s' "$marks" "$rest"
 }
 
+# Prints the heading of a page in a box that is as tall as its words, 24 points under the sheet's header: the title in
+# large type, then the words under it.
+heading() {
+  printf '\nbox=head\nclass=gap-2 px-1.5 pt-3\n'
+  printf '\ntext=title\nparent=head\nclass=font-heading\ntitle=%s\n' "$1"
+}
+
+lead() {
+  printf '\ntext=detail\nparent=head\nclass=font-lead text-secondary\ntitle=%s\n' "$1"
+}
+
+# Prints a hand-drawn note of the heading, which welcome.swift draws in the accent colour, always at one height.
+drawing() {
+  printf '\nwelcome=note\nparent=head\nclass=h-10\ngrow=false\ndrawing=%s/%s\n' "$here" "$1"
+}
+
 # Prints one thing to try on the last page, which welcome.swift draws like a spot's card: its title, detail, icon and the
 # hand-drawn number on its icon.
 card() {
-  printf 'card.title=%s\ncard.detail=%s\ncard.icon=%s\ncard.note=%s\n' "$1" "$2" "$3" "$4"
+  printf '\nwelcome=%s\nparent=cards\nclass=h-16\ngrow=false\ntitle=%s\ndetail=%s\nicon=%s\nnote=%s/%s\n' "$1" "$2" "$3" "$4" "$here" "$5"
 }
 
-# Prints the heading of a page, which welcome.swift draws: its words in large type, the words under them, then a hand-drawn
-# note when it names one. It is as tall as the class $1 says.
-heading() {
-  printf '\nwelcome=head\nclass=%s\ngrow=false\ntitle=%s\ndetail=%s\n' "$1" "$2" "$3"
-  [ -z "${4-}" ] || printf 'note=%s\n' "$4"
+# Prints the box of the buttons, 24 points under what is above it.
+buttons() {
+  printf '\nbox=end\nclass=gap-part pt-6\n'
 }
 
 # Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'frame=\nclass=gap-part\n'
-  heading h-44 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
-  printf 'icon=%s/even-this-onboarding.svg\n' "$here"
-  printf '\nbutton=next\ntitle=Continue\nclass=bg-accent\nshortcut=return\nclose=false\n'
+  printf 'frame=\nclass=gap-0\n'
+  heading 'Everything is a disposable spot'
+  drawing even-this-onboarding.svg
+  lead 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
+  buttons
+  printf '\nbutton=next\nparent=end\ntitle=Continue\nclass=bg-accent\nclose=false\n'
 }
 
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
-  printf 'frame=key\nclass=gap-part\n'
-  heading h-24 'Choose your key' 'It opens Openspot from any app.'
-  printf '\nfield=key\nclass=h-32\ntype=hotkey\n'
+  printf 'frame=key\nclass=gap-0\n'
+  heading 'Choose your key'
+  lead 'It opens Openspot from any app.'
+  printf '\nbox=body\nclass=pt-5\n'
+  printf '\nfield=key\nparent=body\nclass=h-32\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
-  [ -z "${1-}" ] || printf 'recording=true\n'
-  printf '\nbutton=use\ntitle=Use this key\nclass=bg-accent\nshortcut=return\nclose=false\n'
-  printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\nclose=false\n'
+  if [ -n "${1-}" ]; then printf 'recording=true\n'; else printf 'recording=false\n'; fi
+  buttons
+  printf '\nbutton=use\nparent=end\ntitle=Use this key\nclass=bg-accent\nclose=false\n'
+  printf '\nbutton=record\nparent=end\ntitle=Record another key\nshortcut=backspace\nclose=false\n'
 }
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'frame=agent\nclass=gap-part\n'
-  heading h-72 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
-  card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
-  card 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
-  printf '\nbutton=done\ntitle=Start using Openspot\nclass=bg-accent\nshortcut=return\nclose=false\n'
+  printf 'frame=agent\nclass=gap-0\n'
+  heading 'Make it yours'
+  lead 'Easily, with any of your favourite agents'
+  drawing note-and-pls.svg
+  printf '\nbox=cards\nclass=gap-part pt-1.5\n'
+  card card-1 'Create your own spot' 'Open New spot and describe it.' plus note-1.svg
+  card card-2 'Change it with your agent' 'Select it and press ⌘E.' pencil note-2.svg
+  buttons
+  printf '\nbutton=done\nparent=end\ntitle=Start using Openspot\nclass=bg-accent\nclose=false\n'
 }
 
 case "$1" in

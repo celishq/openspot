@@ -80,6 +80,8 @@ final class ClassStyleTests: XCTestCase {
     func testWordColourAndShapeClassesNameTheLooksOfTheTheme() {
         let words = Style(classes: "font-section font-semibold text-right truncate line-clamp-2 tabular-nums")
         XCTAssertEqual(words.font, .section)
+        XCTAssertEqual(Style(classes: "font-heading").font, .heading)
+        XCTAssertEqual(Style(classes: "font-lead").font, .lead)
         XCTAssertEqual(words.weight, .semibold)
         XCTAssertEqual(words.textAlignment, .right)
         XCTAssertTrue(words.truncates)

@@ -63,6 +63,8 @@ struct NodeLook: ViewModifier {
         case .detail: SpotType.detail
         case .metric: SpotType.metric
         case .value: SpotType.value
+        case .heading: SpotType.heading
+        case .lead: SpotType.lead
         }
     }
 

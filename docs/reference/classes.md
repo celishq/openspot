@@ -39,7 +39,7 @@ people's theme. A class that isn't here, such as `w-[120px]`, is skipped, and `o
 
 | Class                                                     | Tailwind     | Is                                                     |
 | --------------------------------------------------------- | ------------ | ------------------------------------------------------ |
-| `font-title`, `font-detail`, `font-value`, `font-metric`, `font-section` | none | The fonts of Openspot's cards and sheets: a title, a second line, a value, a big number, a section head. |
+| `font-title`, `font-detail`, `font-value`, `font-metric`, `font-section`, `font-heading`, `font-lead` | none | The fonts of Openspot's cards and sheets: a title, a second line, a value, a big number, a section head, the large heading of a page and the line under it. |
 | `font-medium`, `font-semibold`, `font-bold`               | the same     | The weight of the words.                               |
 | `text-left`, `text-center`, `text-right`                  | the same     | Where the words sit.                                   |
 | `truncate`                                                | the same     | Words cut at one line.                                 |

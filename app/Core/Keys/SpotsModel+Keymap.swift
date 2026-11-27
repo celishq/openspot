@@ -45,7 +45,13 @@ extension SpotsModel {
     private var recordingRows: [KeyRow] {
         let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
             let field = recordsField ? recording : nil
+            let wasAsked = openParts?.parts.contains { $0.id == recording && $0.asksToRecord } == true
+            let left = flow.current
             stopRecording()
+            if wasAsked, flow.behind != nil, popPage() {
+                if let left { sheets[left.spot]?.forget(route: left.route) }
+                return true
+            }
             if let field { focusAfterRecording(field) }
             return true
         }
