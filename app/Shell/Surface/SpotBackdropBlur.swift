@@ -14,6 +14,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private var isMoving = false
         private let mask = SpotBackdropMask()
         private var drawn: (radius: CGFloat, fade: SpotBackdropFade, isMoving: Bool)?
+        private var shownMask: CGImage?
 
         init(radius: CGFloat, area: CGRect?) {
             self.radius = radius
@@ -82,13 +83,18 @@ struct SpotBackdropBlur: NSViewRepresentable {
                 backdrop.filters = [filter]
                 backdrop.setValue(1, forKey: "scale")
                 drawn = nil
+                shownMask = nil
             }
             let fade = SpotBackdropFade(fade: .current(blur: radius), area: area, size: bounds.size)
             if drawn?.radius != radius {
                 backdrop.setValue(radius, forKeyPath: "filters.\(Self.kind).inputRadius")
             }
             if drawn?.fade != fade || drawn?.isMoving != isMoving {
-                backdrop.setValue(mask.image(of: fade, isMoving: isMoving), forKeyPath: "filters.\(Self.kind).inputMaskImage")
+                let image = mask.image(of: fade, isMoving: isMoving)
+                if image !== shownMask {
+                    backdrop.setValue(image, forKeyPath: "filters.\(Self.kind).inputMaskImage")
+                    shownMask = image
+                }
             }
             drawn = (radius, fade, isMoving)
         }
