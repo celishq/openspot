@@ -36,9 +36,8 @@ progress() {
     printf -- '---\n'
     return
   fi
-  printf 'frame=\nbackground=true\n'
+  printf 'frame=\n'
   openspot_kv title "$work"
-  [ -n "$was" ] || openspot_kv builds "$(get "$building" spot)"
   printf 'progress=%s\n\n---\n' "$1"
 }
 

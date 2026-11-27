@@ -194,8 +194,6 @@ extension SpotTokens {
     public static let workCardGlyph: CGFloat = 72
     public static let workCardMargin: CGFloat = 20
     public static let workBarHeight: CGFloat = 4
-    public static let workChipSide: CGFloat = 30
-    public static let workChipGap: CGFloat = 3
     public static let dragFan: CGFloat = 6
 
     public static let playgroundSize = CGSize(width: 1180, height: 940)

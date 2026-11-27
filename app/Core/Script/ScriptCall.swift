@@ -15,8 +15,6 @@ public final class ScriptCall: Identifiable {
     public let started: Date
     public private(set) var status: TextBlock?
     public private(set) var isStopped = false
-    public private(set) var isBackground = false
-    public private(set) var builds: String?
     public private(set) var progress: WorkFill
     @ObservationIgnored let key: String
     @ObservationIgnored var halt: () -> Void = {}
@@ -48,8 +46,6 @@ public final class ScriptCall: Identifiable {
 
     func take(_ output: Frame, at now: Date) {
         heard += 1
-        if output.isBackground, !isBackground { isBackground = true }
-        if let id = output.builds, id != builds { builds = id }
         guard !output.isPicture else { return }
         let reported = fill
         status = output.root

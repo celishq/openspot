@@ -12,7 +12,7 @@ struct SpotGlyph: View {
         if entry.showsHeaderPicture {
             SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: side)
         } else {
-            SpotWorkingSymbol(entry: entry)
+            Image(systemName: entry.symbol)
                 .font(font)
                 .foregroundStyle(isOnSolid ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
                 .frame(width: side, height: side)

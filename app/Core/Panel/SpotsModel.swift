@@ -338,6 +338,7 @@ public final class SpotsModel {
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
     @ObservationIgnored var usedIDs: Set<String> = []
+    @ObservationIgnored var workToasts: [String: String] = [:]
     var teachesEdit: String?
 
     @ObservationIgnored public unowned let host: SpotsHost
@@ -364,7 +365,7 @@ public final class SpotsModel {
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
-        self.runs.onBuilding = { [weak self] in self?.rebuildEntries() }
+        self.runs.onToasted = { [weak self] works in self?.toastWork(works) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
@@ -567,7 +568,7 @@ public final class SpotsModel {
 
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        return arrangement.ordered(defaultArrangement.ordered(sorted)).filter { !runs.buildingIDs.contains($0.id) }
+        return arrangement.ordered(defaultArrangement.ordered(sorted))
     }
 
     public func panelWillShow() {

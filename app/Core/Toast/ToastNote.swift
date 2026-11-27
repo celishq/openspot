@@ -12,8 +12,8 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
     public let fix: ToastFix?
     private let source: Source?
 
-    public init(words: String, kind: ToastKind = .confirm, fix: ToastFix? = nil) {
-        id = nil
+    public init(words: String, kind: ToastKind = .confirm, fix: ToastFix? = nil, id: String? = nil) {
+        self.id = id
         self.words = words
         self.kind = kind
         self.fix = fix
@@ -26,8 +26,8 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
         ToastNote(words: words, kind: .failure, fix: fix)
     }
 
-    public static func work(_ words: String) -> ToastNote {
-        ToastNote(words: words, kind: .work)
+    public static func work(_ words: String, id: String? = nil) -> ToastNote {
+        ToastNote(words: words, kind: .work, id: id)
     }
 
     public init(stringLiteral words: String) {

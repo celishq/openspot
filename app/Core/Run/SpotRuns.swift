@@ -23,6 +23,7 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let keptSheets: KeptSheets
+    public static let cardHold: TimeInterval = 5
     @ObservationIgnored public var layoutMoves: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
@@ -53,10 +54,9 @@ public final class SpotRuns {
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
     public private(set) var acts: [Work] = []
-    public private(set) var workingIDs: Set<String> = []
-    public private(set) var buildingIDs: Set<String> = []
-    @ObservationIgnored public var onBuilding: () -> Void = {}
-    public private(set) var unseenWork: [Work] = []
+    public private(set) var toasted: [Work] = []
+    @ObservationIgnored public var onToasted: ([Work]) -> Void = { _ in }
+    @ObservationIgnored private var holding: Task<Void, Never>?
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
@@ -312,7 +312,7 @@ public final class SpotRuns {
     }
 
     private func isInMenuBar(_ spot: Spot) -> Bool {
-        menuBar.contains(spot.id) && spot.canShowInMenuBar && !spot.isDraft && !buildingIDs.contains(spot.id)
+        menuBar.contains(spot.id) && spot.canShowInMenuBar && !spot.isDraft
     }
 
     func showActs() {
@@ -330,20 +330,33 @@ public final class SpotRuns {
         showWork()
     }
 
-    func showBuilding() {
-        let ids = Set(sheets.values.filter(\.spot.isBuiltIn).flatMap { sheet in sheet.calls.compactMap { $0.isStopped ? nil : $0.builds } })
-        guard ids != buildingIDs else { return }
-        buildingIDs = ids
-        showMarks()
-        onBuilding()
+    private func showWork() {
+        let time = now()
+        let next = acts.filter { time.timeIntervalSince($0.call.started) >= Self.cardHold }
+        if next != toasted {
+            toasted = next
+            onToasted(next)
+        }
+        holdWork(at: time)
     }
 
-    private func showWork() {
-        let work = acts.filter { $0.call.isBackground }
-        let ids = Set(work.map(\.spot))
-        if ids != workingIDs { workingIDs = ids }
-        let unseen = work.filter { !grid.contains($0.spot) }
-        if unseen != unseenWork { unseenWork = unseen }
+    func workMoved(_ call: ScriptCall) {
+        guard toasted.contains(where: { $0.call === call }) else { return }
+        onToasted(toasted)
+    }
+
+    private func holdWork(at time: Date) {
+        holding?.cancel()
+        guard let due = acts.map({ $0.call.started.addingTimeInterval(Self.cardHold) }).filter({ $0 > time }).min() else { return }
+        holding = Task { [weak self, sleep = clock.sleep] in
+            var left = due.timeIntervalSince(time)
+            while left > 0 {
+                try? await sleep(.seconds(left), .seconds(left / 10))
+                guard !Task.isCancelled, let self else { return }
+                left = due.timeIntervalSince(now())
+            }
+            self?.showWork()
+        }
     }
 
     public var workCard: Work? {
@@ -352,7 +365,7 @@ public final class SpotRuns {
     }
 
     private var shownAct: Work? {
-        acts.first { !shows($0.spot) && !$0.call.isBackground }
+        acts.first { !shows($0.spot) && !toasted.contains($0) }
     }
 
     private func finish(_ card: Work) {

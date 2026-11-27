@@ -53,9 +53,9 @@ extension SpotRun {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         if call.refusal == nil { call.refusal = refusal(of: lines, in: call) }
         if !lines.outputs.isEmpty || lines.root?.value(RootKey.error) != nil { runs.answerPushed(lines, from: spot.id) }
-        let builds = call.made.builds
+        let words = call.made.title
         call.made.take(lines, at: runs.now())
-        if call.made.builds != builds { runs.showBuilding() }
+        if call.made.title != words { runs.workMoved(call.made) }
         switch call.request.purpose {
         case .ask(let ask):
             if lines.isPicture {
@@ -73,7 +73,7 @@ extension SpotRun {
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: act) {
                     call.showedPicture = true
-                    if !call.made.isBackground { drewFrame(call.made) }
+                    drewFrame(call.made)
                 }
             } else {
                 takeEffects(frame: text)

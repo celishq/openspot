@@ -6,10 +6,6 @@ extension SpotsModel {
         open(FlowSheet(spot: id))
     }
 
-    public func openWorking(_ id: String) {
-        asOnePress { _ = open(id) }
-    }
-
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard let entry = entry(page.spot), !entry.spot.isDraft else { return false }

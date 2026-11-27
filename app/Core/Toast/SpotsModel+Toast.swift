@@ -27,6 +27,16 @@ extension SpotsModel {
         }
     }
 
+    func toastWork(_ works: [Work]) {
+        let next = Dictionary(works.map { ("work-\($0.call.id.uuidString)", $0.spot) }) { first, _ in first }
+        for (id, spot) in workToasts where next[id] == nil { toasts.drop(id, of: spot) }
+        for work in works {
+            let spot = work.spot
+            toasts.add(.work(work.words, id: "work-\(work.call.id.uuidString)"), spot: spot, press: { [weak self] in _ = self?.open(spot) })
+        }
+        workToasts = next
+    }
+
     func askSchedule(of id: String) {
         let name = runs.sheets[id]?.spot.name ?? id
         toast(ToastNote(words: "\(name) runs by itself on a schedule, so Openspot held its first run. Click to allow it.", fix: .schedule(id)), of: id)

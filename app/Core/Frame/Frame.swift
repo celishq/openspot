@@ -187,14 +187,6 @@ public struct Frame: Equatable, Sendable {
         }
     }
 
-    public var isBackground: Bool {
-        root?.flag(RootKey.background) == true
-    }
-
-    public var builds: String? {
-        root?.value(RootKey.builds)
-    }
-
     public var isForm: Bool {
         root?.value(RootKey.type) == RootKey.form
     }

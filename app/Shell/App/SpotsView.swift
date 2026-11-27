@@ -69,7 +69,6 @@ struct SpotsView: View {
                 .id(model.grid.columns)
             }
             field(card: card, motion: motion, isGlass: false)
-            SpotWorkChip(model: model, isShown: !sheetOpen && showsSearchField)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())

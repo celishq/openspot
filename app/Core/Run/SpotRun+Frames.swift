@@ -42,7 +42,6 @@ extension SpotRun {
     func forget(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
         drewFrame(call)
-        if call.builds != nil { runs.showBuilding() }
     }
 
     func take(_ error: Error, of ask: Ask) {

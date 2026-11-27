@@ -122,15 +122,25 @@ final class WorkCardTests: SpotRunsCase {
         XCTAssertNil(runs.workCard)
     }
 
-    func testABackgroundCallShowsNoCardAndJoinsTheBackgroundActs() async throws {
-        try script(body: "printf 'frame=\\nbackground=true\\ntitle=Building\\n---\\n'\nsleep 30")
+    func testACallPastItsHoldMovesFromTheCardIntoAToastUntilItEnds() async throws {
+        try script(body: "printf 'frame=\\ntitle=Building\\n---\\n'\n" + until("end"))
         let sheet = try sheet()
+        var told: [[Work]] = []
+        runs.onToasted = { told.append($0) }
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
-        try await wait("the background act") { self.runs.unseenWork.first?.call.title == "Building" }
-        XCTAssertEqual(runs.workingIDs, [sheet.spot.id])
+        try await wait("the card") { self.runs.workCard != nil }
+        XCTAssertTrue(runs.toasted.isEmpty)
+
+        time += SpotRuns.cardHold
+
+        try await wait("the toast") { self.runs.toasted.first?.words == "Building" }
         XCTAssertNil(runs.workCard)
-        XCTAssertEqual(sheet.shownState, sheet.state)
+        XCTAssertEqual(told.last?.map(\.spot), [sheet.spot.id])
+        touch("end")
+        try await wait("the end") { self.runs.toasted.isEmpty }
+        XCTAssertNil(runs.workCard)
+        XCTAssertEqual(told.last?.isEmpty, true)
     }
 }

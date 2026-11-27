@@ -76,9 +76,6 @@ struct SpotCalls {
             if await runs?.sheets[id]?.spot.isDraft == true {
                 throw SpotError.failed(1, "`\(id)` is a draft. Remove `state` from its spot.toml when it works, or run `openspot render spot \(id) <file.png>` to see it.")
             }
-            if await runs?.buildingIDs.contains(id) == true {
-                throw SpotError.failed(1, "`\(id)` is still being built, so Openspot shows it when its build is done. Run `openspot render spot \(id) <file.png>` to see it.")
-            }
             guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }

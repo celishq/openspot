@@ -43,7 +43,7 @@ extension SpotRun {
     }
 
     public var shownState: SpotState {
-        guard let call = acts.first(where: { !$0.isBackground }) else { return state }
+        guard let call = acts.first else { return state }
         return state.showing(title: call.title, detail: call.detail)
     }
 
