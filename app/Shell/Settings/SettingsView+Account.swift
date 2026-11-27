@@ -53,8 +53,7 @@ extension SettingsView {
     }
 
     private func copy(_ npub: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(npub, forType: .string)
+        try? SpotClipboard().copy(text: npub)
         book.say("Copied your key")
     }
 }

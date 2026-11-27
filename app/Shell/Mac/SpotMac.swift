@@ -30,7 +30,7 @@ final class SpotMac: MacEvents {
     }
 
     var clipboardCount: Int {
-        NSPasteboard.general.changeCount
+        SpotClipboard().count()
     }
 
     var idleSeconds: TimeInterval {

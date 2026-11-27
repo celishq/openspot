@@ -130,8 +130,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func copy(_ file: URL) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.writeObjects([file as NSURL])
+        SpotClipboard.write([file as NSURL])
     }
 
     func prepare(_ items: [SpotItem], glyphs: [String]) async {
