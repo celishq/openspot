@@ -85,7 +85,7 @@ extension SpotsModel {
         }
 
         @MainActor public var isOnGrid: Bool {
-            isNew && spot.isFound || (gridChoice ?? state.isOnGrid)
+            !spot.isDraft && (isNew && spot.isFound || (gridChoice ?? state.isOnGrid))
         }
 
         @MainActor public var kind: SpotKind {

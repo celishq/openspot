@@ -3,6 +3,7 @@ import Foundation
 public struct SpotFile: Equatable, Sendable {
     public static let inlineExtension = "js"
     static let editsSpots = "spots"
+    static let draft = "draft"
 
     public let id: String
     public let spots: [Spot]
@@ -77,7 +78,11 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
-        let isFound = (!triggers.answersOnly || !commands.isEmpty) && (offeredActions.isEmpty || triggers.lists)
+        guard manifest.state == nil || manifest.state == Self.draft else {
+            throw SpotError.fault("\(name) has an unknown state: \(manifest.state ?? ""). Use state = \"\(Self.draft)\" while it is built, or remove it.")
+        }
+        let isDraft = manifest.state == Self.draft
+        let isFound = !isDraft && (!triggers.answersOnly || !commands.isEmpty) && (offeredActions.isEmpty || triggers.lists)
         var command = Spot(
             id: id,
             name: name,
@@ -85,13 +90,13 @@ public struct SpotFile: Equatable, Sendable {
             kind: .list,
             icon: icon,
             subtitle: manifest.detail,
-            triggers: triggers,
+            triggers: isDraft ? Manifest.Triggers() : triggers,
             isFound: isFound,
             mode: mode,
             dataName: SpotID(id).name,
             isOnGrid: isFound && commands.isEmpty && triggers.every == nil,
-            commands: commands,
-            offeredActions: offeredActions,
+            commands: isDraft ? [] : commands,
+            offeredActions: isDraft ? [] : offeredActions,
             settings: manifest.settings,
             views: Dictionary(manifest.views.map { (URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent, Self.path($0, beside: url)) }) { first, _ in first },
             viewDates: Dictionary(manifest.views.map { Self.path($0, beside: url) }.compactMap { view in Self.viewDate(of: view, script: url).map { (view, $0) } }) { first, _ in first },
@@ -106,6 +111,7 @@ public struct SpotFile: Equatable, Sendable {
         command.actions = manifest.actions
         command.bindings = manifest.bindings
         command.events = manifest.events
+        command.isDraft = isDraft
         self.init(id: id, spots: [command])
     }
 

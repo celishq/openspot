@@ -81,6 +81,9 @@ struct SpotCalls {
     func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
         return CommandAnswer.work { [runs] in
+            if await runs?.sheets[id]?.spot.isDraft == true {
+                throw SpotError.failed(1, "`\(id)` is a draft. Remove `state` from its spot.toml when it works, or run `openspot render spot \(id) <file.png>` to see it.")
+            }
             if await runs?.buildingIDs.contains(id) == true {
                 throw SpotError.failed(1, "`\(id)` is still being built, so Openspot shows it when its build is done. Run `openspot render spot \(id) <file.png>` to see it.")
             }

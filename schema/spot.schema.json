@@ -201,6 +201,11 @@
         "starts" : {
           "$ref" : "#/$defs/texts"
         },
+        "state" : {
+          "enum" : [
+            "draft"
+          ]
+        },
         "stay" : {
           "type" : "boolean"
         },
@@ -352,6 +357,11 @@
     },
     "starts" : {
       "$ref" : "#/$defs/texts"
+    },
+    "state" : {
+      "enum" : [
+        "draft"
+      ]
     },
     "stay" : {
       "type" : "boolean"

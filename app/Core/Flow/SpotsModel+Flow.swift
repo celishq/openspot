@@ -12,7 +12,7 @@ extension SpotsModel {
 
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
-        guard entry(page.spot) != nil else { return false }
+        guard let entry = entry(page.spot), !entry.spot.isDraft else { return false }
         afterShowing({ host.show() }) { [weak self] in
             guard let self else { return }
             endFlow()
