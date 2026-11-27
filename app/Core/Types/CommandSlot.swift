@@ -32,34 +32,79 @@ struct CommandSlot: Equatable, Sendable {
     }
 
     static func slots(of form: String) -> [CommandSlot] {
-        let named = (try? NSRegularExpression(pattern: "<([^<>]*)>")).map { expression in
-            var text = form
-            for match in expression.matches(in: form, range: NSRange(form.startIndex..., in: form)).reversed() {
-                guard let range = Range(match.range, in: text) else { continue }
-                text.replaceSubrange(range, with: text[range].replacingOccurrences(of: " ", with: "-"))
-            }
-            return text
-        } ?? form
         var slots: [CommandSlot] = []
-        let groups = try? NSRegularExpression(pattern: #"\[((?:[^\[\]]|\[[^\]]*\])*)\](\.\.\.)?|(\S+)"#)
-        for match in groups?.matches(in: named, range: NSRange(named.startIndex..., in: named)) ?? [] {
-            let text = { (index: Int) in Range(match.range(at: index), in: named).map { String(named[$0]) } }
-            if let word = text(3) {
+        for group in groups(of: joinedNames(form)) {
+            switch group {
+            case .word(let word):
                 slots.append(positional(word, repeats: word.hasSuffix("..."), isRepeated: word.hasSuffix("..."), isRequired: true))
-                continue
+            case .optional(let inside, let repeats):
+                let choices = inside.split(separator: "|").map { $0.split(separator: " ").map(String.init) }
+                for choice in choices {
+                    guard let option = choice.first, option.hasPrefix("--") else { continue }
+                    slots.append(CommandSlot(name: String(option.dropFirst(2)), kind: choice.count > 1 ? .option : .flag, isRequired: false, option: option, isRepeated: repeats))
+                }
+                let words = choices.filter { $0.first?.hasPrefix("--") == false }
+                guard let first = words.first?.first else { continue }
+                slots.append(positional(words.count > 1 ? "value" : first, repeats: repeats || inside.hasSuffix("..."), isRepeated: repeats, isRequired: false))
             }
-            let inside = text(1) ?? ""
-            let repeats = text(2) != nil
-            let choices = inside.split(separator: "|").map { $0.split(separator: " ").map(String.init) }
-            for choice in choices {
-                guard let option = choice.first, option.hasPrefix("--") else { continue }
-                slots.append(CommandSlot(name: String(option.dropFirst(2)), kind: choice.count > 1 ? .option : .flag, isRequired: false, option: option, isRepeated: repeats))
-            }
-            let words = choices.filter { $0.first?.hasPrefix("--") == false }
-            guard let first = words.first?.first else { continue }
-            slots.append(positional(words.count > 1 ? "value" : first, repeats: repeats || inside.hasSuffix("..."), isRepeated: repeats, isRequired: false))
         }
         return slots
+    }
+
+    private enum Group {
+        case word(String)
+        case optional(String, repeats: Bool)
+    }
+
+    private static func joinedNames(_ form: String) -> String {
+        var characters = Array(form)
+        var open: Int?
+        for index in characters.indices {
+            switch characters[index] {
+            case "<": open = index
+            case ">":
+                if let start = open {
+                    for inner in (start + 1)..<index where characters[inner] == " " { characters[inner] = "-" }
+                }
+                open = nil
+            default: break
+            }
+        }
+        return String(characters)
+    }
+
+    private static func groups(of text: String) -> [Group] {
+        let characters = Array(text)
+        var groups: [Group] = []
+        var index = 0
+        while index < characters.count {
+            if characters[index].isWhitespace {
+                index += 1
+            } else if characters[index] == "[", let close = closing(characters, after: index) {
+                let repeats = characters[(close + 1)...].starts(with: "...")
+                groups.append(.optional(String(characters[(index + 1)..<close]), repeats: repeats))
+                index = close + 1 + (repeats ? 3 : 0)
+            } else {
+                let start = index
+                while index < characters.count, !characters[index].isWhitespace { index += 1 }
+                groups.append(.word(String(characters[start..<index])))
+            }
+        }
+        return groups
+    }
+
+    private static func closing(_ characters: [Character], after open: Int) -> Int? {
+        var index = open + 1
+        while index < characters.count {
+            switch characters[index] {
+            case "]": return index
+            case "[":
+                guard let inner = characters[(index + 1)...].firstIndex(of: "]") else { return nil }
+                index = inner + 1
+            default: index += 1
+            }
+        }
+        return nil
     }
 
     static func schema(of slots: [CommandSlot]) -> [String: Any] {
