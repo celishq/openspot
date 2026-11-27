@@ -37,6 +37,7 @@ public final class StatsLog: @unchecked Sendable {
         public let spot: String
         public let call: String
         public let declared: Bool
+        public let use: SpotUse?
     }
 
     public struct Version: Codable, Equatable, Sendable {
@@ -68,6 +69,8 @@ public final class StatsLog: @unchecked Sendable {
     static let keptDays = 90
     private static let useLimit = 100
     static let searchLimit = 50
+    private static let lastLimit = 1000
+    private static let lastFile = "last-uses.json"
 
     private let folder: URL?
     private let pause: TimeInterval
@@ -76,6 +79,8 @@ public final class StatsLog: @unchecked Sendable {
     private var today: Day
     private var isDirty = false
     private var isWaiting = false
+    private var last: [String: [String: Date]]
+    private var isLastDirty = false
     private var views: [String: (id: String, name: String)] = [:]
     private var spotVersions: [String: String] = [:]
     private var isShown = false
@@ -88,8 +93,13 @@ public final class StatsLog: @unchecked Sendable {
         self.now = now
         let day = Self.day(of: date)
         today = folder.flatMap { Self.read(day, in: $0) } ?? Day(day: day)
+        last = folder.map(Self.readLastUses) ?? [:]
         today.countsActs = true
         if let folder { Self.prune(folder, at: date) }
+    }
+
+    public var lastUses: [String: [String: Date]] {
+        lock.withLock { last }
     }
 
     public var counts: [String: Count] {
@@ -100,6 +110,10 @@ public final class StatsLog: @unchecked Sendable {
         writes.sync {}
         let now = lock.withLock { withLive(today) }
         return Self.days(count, at: date, today: now, in: folder)
+    }
+
+    var keepsDays: Bool {
+        folder != nil
     }
 
     public static func days(_ count: Int, at date: Date, today: Day? = nil, in folder: URL?) -> [Day] {
@@ -185,23 +199,38 @@ public final class StatsLog: @unchecked Sendable {
         }
     }
 
-    func used(_ call: SpotUseCall, by caller: Spot, at date: Date) -> Bool {
-        let declared = caller.uses.contains(call.use)
-        var tells = false
+    func used(_ call: SpotUseCall, by caller: Spot, at date: Date) {
         change(at: date) { day in
             day.change(caller.id, version: spotVersions[caller.id], at: date) { count in
                 count.name = caller.name
                 count.calls[call.name, default: 0] += 1
                 count.network = caller.uses.contains(.network)
             }
-            if !declared { day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit)) }
-            let told = "\(caller.id) \(call.use.rawValue)"
-            if !declared, !day.told.contains(told) {
+        }
+    }
+
+    func refused(_ refusal: UseRefusal, at date: Date) -> Bool {
+        var tells = false
+        change(at: date) { day in
+            day.uses = Array((day.uses + [Use(time: date, spot: refusal.spot, call: refusal.call, declared: false, use: refusal.use)]).suffix(Self.useLimit))
+            let told = "\(refusal.spot) \(refusal.use.rawValue)"
+            if !day.told.contains(told) {
                 day.told.append(told)
                 tells = true
             }
         }
         return tells
+    }
+
+    func used(_ call: String, by spot: String) {
+        let date = now()
+        change(at: date) { _ in
+            last[spot, default: [:]][call] = date
+            if last.count > Self.lastLimit, let oldest = last.min(by: { ($0.value.values.max() ?? .distantPast) < ($1.value.values.max() ?? .distantPast) })?.key {
+                last[oldest] = nil
+            }
+            isLastDirty = true
+        }
     }
 
     func missed(_ search: String, at date: Date) {
@@ -228,6 +257,12 @@ public final class StatsLog: @unchecked Sendable {
                 return today
             }
             if let day { Self.write(day, in: folder) }
+            let uses: [String: [String: Date]]? = lock.withLock {
+                guard isLastDirty else { return nil }
+                isLastDirty = false
+                return last
+            }
+            if let uses { Self.write(uses, to: folder.appendingPathComponent(Self.lastFile)) }
         }
         if ended != nil { Self.prune(folder, at: date) }
     }
@@ -303,13 +338,24 @@ public final class StatsLog: @unchecked Sendable {
         return try? decoder.decode(Day.self, from: data)
     }
 
+    static func readLastUses(in folder: URL) -> [String: [String: Date]] {
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent(lastFile)) else { return [:] }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return (try? decoder.decode([String: [String: Date]].self, from: data)) ?? [:]
+    }
+
     private static func write(_ day: Day, in folder: URL) {
+        write(day, to: folder.appendingPathComponent("\(day.day).json"))
+    }
+
+    private static func write(_ value: some Encodable, to file: URL) {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(day) else { return }
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try? data.write(to: folder.appendingPathComponent("\(day.day).json"), options: .atomic)
+        guard let data = try? encoder.encode(value) else { return }
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: file, options: .atomic)
     }
 
     private static func prune(_ folder: URL, at date: Date) {

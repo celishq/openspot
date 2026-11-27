@@ -57,7 +57,11 @@ case "$1" in
         pane "${info%/Contents/Info.plist}"
       done > "$cache.$$" && mv "$cache.$$" "$cache"
     fi
-    cat "$cache"
+    if [ "$(value setting.sections)" = true ]; then
+      cat "$cache"
+    else
+      awk 'BEGIN { RS = ""; ORS = "\n\n" } !/(^|\n)place=/' "$cache"
+    fi
     ;;
   press)
     item=$(value item)

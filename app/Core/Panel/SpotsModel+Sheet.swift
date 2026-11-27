@@ -81,7 +81,7 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
+        return arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
     func presentSheet(of id: String, showingPanel: () -> Void = {}) {
@@ -98,29 +98,23 @@ extension SpotsModel {
         if wasShown { open() } else { host.nextFrame(open) }
     }
 
-    public func openSettings() {
-        asOnePress {
-            guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
-            pushFirst(id, moving: true)
-        }
-    }
-
     @discardableResult
-    func openKeys(of id: String) -> Bool {
-        guard let entry = entry(id), let settings = settingsSheet(of: entry) else { return false }
-        let moves = isShown
-        if !moves { host.show() }
-        pushFirst(settings, moving: moves)
-        return true
+    public func openSettings(at place: SettingsPlace? = nil) -> Bool {
+        if case .page(.spotOf(let id)) = place, let entry = cards.first(where: { $0.id == id && $0.item == nil }), !hasSettings(entry) {
+            toast(.failure("\(entry.state.title) has nothing to set."))
+            return false
+        }
+        return asOnePress {
+            settingsBook.open(at: place)
+            host.showSettings()
+            return true
+        }
     }
 
     public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil) {
         if let spot = sheets[id]?.spot, spot.opensToKeys {
-            openKeys(of: id)
+            openSettings(at: .spotOf(id))
             return
-        }
-        if let owner = SpotSettings.owner(of: id), let spot = sheets[owner]?.spot ?? entry(owner)?.spot {
-            runs.settingsSheet(of: spot)
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
@@ -355,10 +349,6 @@ extension SpotsModel {
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         asOnePress {
-            if action == nil, !item.records, entry.spot.holdsSettings, let settings = entry.spot.settingsSheet, let key = settings.field(of: item.run) {
-                _ = changeSetting(key, of: settings.spot)
-                return
-            }
             if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
                 push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
                 return
@@ -386,8 +376,7 @@ extension SpotsModel {
                 perform(action, on: (entry, item))
             } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
                 if closes { closingPick = (item, entry) }
-                Task { [weak self] in
-                    let answer = await sheet.answer(toPick: item, closes: closes)
+                sheet.pick(item, closes: closes) { [weak self] answer in
                     guard let self else { return }
                     switch answer {
                     case .form, .stopped: if closingPick?.item == item { closingPick = nil }

@@ -83,8 +83,6 @@ view runs inside Openspot, so a crash in it quits Openspot.
 | `spot.media(path)`                                     | A picture or a video of your spot's folder.                            |
 | `spot.loop(period:fill:path:)`, `spot.loop(period:stroke:width:path:)` | A shape that moves in a loop, drawn by macOS while the view shows. |
 | `spot.tip(text)`, `spot.tipDelay`                      | A tip that shows on hover, and how long it waits.                      |
-| `spot.cornerButton(symbol, label:, card:, action:)`   | The round button on the rim of a card.                                 |
-| `spot.card(id)`, `spot.cardSize(id)`, `spot.sheet(id)` | The card of another spot, its size, and its sheet from its `sample.sh`. |
 | `spot.columnGap`, `spot.rowGap`, `spot.columns`        | The gaps between cards, and how many columns a window holds.           |
 | `SpotMetric(spot, value:, detail:, mark:, onFill:)`    | A big number with its detail and an SF Symbol, laid out for the card's size. |
 

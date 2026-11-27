@@ -18,7 +18,7 @@ public struct FocusRing: Equatable, Sendable {
         let row = FocusRing(edge: surface.inner(), outset: CGSize(width: SpotTokens.controlPadding, height: 0))
         if hasLabel || part.isEditable || look == .tile {
             self = box
-        } else if case .round = part.press, look == .bare {
+        } else if case .round = part.press {
             self.init(edge: SurfaceEdge(radius: .infinity), outset: around, hugsControl: true)
         } else if part.press != .line {
             self = row

@@ -27,8 +27,9 @@ final class SpotSampleTests: XCTestCase {
     }
 
     private func output(of id: String) async throws -> Frame? {
-        let items = SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotChoices(), stores: [Store(url: store)]).items(publications: false)
-        return await SpotSample.output(of: try XCTUnwrap(items.first { $0.id == id }), runs: runs)
+        let items = SpotCatalog(folder: SpotsFolder(url: spots, core: core), arrangement: SpotChoices(), stores: [StoreSource(url: store)]).items
+        let item = try XCTUnwrap(items.first { $0.id == id })
+        return await SpotSample.output(of: item.spot, runsScript: item.store == nil, runs: runs)
     }
 
     func testASampleScriptBesideASpotGivesItASampleAndIsNoSpotOfItsOwn() throws {
@@ -46,16 +47,6 @@ final class SpotSampleTests: XCTestCase {
 
         XCTAssertEqual(spot.name, "Sample")
         XCTAssertNil(spot.sample)
-    }
-
-    func testTheCaptureRunsTheSampleScriptAndKeepsItsTextBesideTheSpot() async throws {
-        try "#!/bin/sh\nprintf 'item=a\\ntitle=Sample\\n'\n".writeScript(to: SpotSample.script(beside: spots.spotFile("timer")))
-        let spot = try self.spot("title = 'Timer'", body: "printf 'item=a\\ntitle=Real\\n'")
-
-        try await SpotSample.capture(of: spot, runs: runs)
-
-        let sample = try String(contentsOf: SpotSample.text(beside: spot.url), encoding: .utf8)
-        XCTAssertEqual(Frame(text: sample).items.map(\.title), ["Sample"])
     }
 
     func testTheSampleOfASwiftSpotWithSourcesRunsItsSampleScriptAndBuildsNothing() async throws {

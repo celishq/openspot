@@ -47,9 +47,9 @@ kept() {
   [ -f "$data/$1" ] && /bin/cat "$data/$1"
 }
 
-# Prints the battery. A change of the power source reads it again.
+# Prints the battery. Each read but a load reads it again, since a change while the panel is hidden reaches no spot.
 battery() {
-  if [ "$event" = power.change ] || [ ! -f "$data/battery.number" ]; then
+  if [ "$event" != system.load ] || [ ! -f "$data/battery.number" ]; then
     borrowed battery "$here/../battery.spot/battery.sh" show | openspot_keep "$data/battery.number"
   fi
   kept battery.number
@@ -69,21 +69,14 @@ devices() {
   kept devices.number
 }
 
-# Prints the use of all cores, the last of the trend of the last 30 points. The load that Openspot measures every 5
-# seconds adds a point, and a read before the first point measures the use now.
+# Prints the use of all cores. The load that Openspot measures every 5 seconds gives it, and a read with no load
+# measures it now.
 cpu() {
-  set -- $(kept trend)
   case $load in
-    cpu=*)
-      now=${load#cpu=}
-      set -- "$@" "${now%% *}"
-      [ $# -le 30 ] || shift $(($# - 30))
-      printf '%s\n' "$@" | openspot_keep "$data/trend"
-      ;;
+    cpu=*) now=${load#cpu=} now=${now%% *} ;;
+    *) now=$(ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }') ;;
   esac
-  [ $# -gt 0 ] || set -- $(ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }')
-  for last; do :; done
-  printf 'number=cpu\ntitle=CPU\nmax=100\nunit=%%\nvalue=%s\n' "$last"
+  printf 'number=cpu\ntitle=CPU\nmax=100\nunit=%%\nvalue=%s\n' "$now"
 }
 
 # Prints the memory in use, as a percent, with a tone when little is left. The load gives it, and a read

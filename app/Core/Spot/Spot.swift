@@ -20,7 +20,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
     public private(set) var frameActions: [CommandAction]
-    public private(set) var settingsSheet: SpotSettings?
+    public private(set) var rows: SpotRows?
     public private(set) var opensToKeys = false
     private var chosenIcon: Icon?
 
@@ -90,12 +90,20 @@ public struct Spot: Equatable, Sendable {
     public static func == (left: Spot, right: Spot) -> Bool {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
             && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
-            && left.frameActions == right.frameActions && left.settingsSheet == right.settingsSheet
+            && left.frameActions == right.frameActions && left.rows == right.rows
             && left.opensToKeys == right.opensToKeys && left.chosenIcon == right.chosenIcon
     }
 
     public var icon: Icon? {
         chosenIcon ?? header.facts.headerIcon
+    }
+
+    public var picture: String {
+        self.image ?? self.file ?? self.glyph ?? self.symbol
+    }
+
+    public func comesBefore(_ other: Spot) -> Bool {
+        self.name.localizedStandardCompare(other.name) == .orderedAscending
     }
 
     public var symbol: String {
@@ -165,46 +173,26 @@ public struct Spot: Equatable, Sendable {
         soleCommand != nil && self.hasSheet
     }
 
-    private var settingKeys: [SpotSettings.Key] {
-        let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
-        let commands = self.commands.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
-        return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
+    private var settingKeys: [SpotRows.Key] {
+        let icon = picture
+        let commands = self.commands.map { SpotRows.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
+        return [SpotRows.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotRows.Key(act: .float, title: "Float", icon: icon)]
     }
 
-    func takingSettings(in config: ConfigFile, secrets: SecretStore, isWindow: Bool = false) -> Spot {
+    func takingRows(isWindow: Bool = false) -> Spot {
         guard self.host == nil else { return self }
         var spot = self
-        spot.settingsSheet = SpotSettings(
-            file: config,
-            secrets: secrets,
+        spot.rows = SpotRows(
             spot: self.id,
             fields: self.settings,
             showsInMenuBar: canShowInMenuBar,
             keys: settingKeys,
-            isWindowByDefault: isWindow
+            isWindowByDefault: isWindow,
+            name: self.name
         )
         if !self.hasSheet, !self.commands.isEmpty {
             spot.opensToKeys = true
         }
-        return spot
-    }
-
-    public var settingsSpot: Spot? {
-        guard let settingsSheet = self.settingsSheet, !self.holdsSettings else { return nil }
-        var spot = Spot(
-            id: SpotSettings.sheetID(of: self.id),
-            name: "\(self.name) Settings",
-            url: self.url,
-            kind: .list,
-            size: self.size,
-            symbol: header.facts.baseSymbol,
-            icon: self.icon,
-            triggers: .sheet,
-            isFound: false,
-            isOnGrid: false
-        )
-        spot.settingsSheet = self.settingsSheet
-        spot.holdsSettings = true
         return spot
     }
 
@@ -226,7 +214,7 @@ public struct Spot: Equatable, Sendable {
             uses: self.uses
         )
         spot.isBuiltIn = true
-        spot.editedFile = isOwn ? owner.url : nil
+        spot.editedFile = owner.url
         return spot
     }
 
@@ -240,6 +228,13 @@ public struct Spot: Equatable, Sendable {
         guard let icon = Icon(text: text) else { return self }
         var spot = self
         spot.chosenIcon = icon
+        return spot
+    }
+
+    func hidingSource(_ isHidden: Bool) -> Spot {
+        guard isHidden, self.isSource else { return self }
+        var spot = self
+        spot.isSourceHidden = true
         return spot
     }
 
@@ -271,6 +266,10 @@ public struct Spot: Equatable, Sendable {
         self.triggers.events.contains(EventName.appLaunch)
     }
 
+    var hearsEventsHidden: Bool {
+        self.uses.contains(.timeline)
+    }
+
     public var showsOfferedItems: Bool {
         self.triggers.lists && !self.triggers.showsOnPanel && self.triggers.every == nil
     }
@@ -280,7 +279,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesHandlers: Bool {
-        self.host == nil && !self.holdsSettings
+        self.host == nil
     }
 
     public var canShowInMenuBar: Bool {
@@ -300,7 +299,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
-        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment)
+        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment && !self.isSourceHidden)
     }
 
     public func takes(_ value: AttachmentValue) -> Bool {

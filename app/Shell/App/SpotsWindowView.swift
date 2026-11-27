@@ -6,8 +6,12 @@ struct SpotsWindowView: View {
     let place: SpotsWindowPlace
 
     var body: some View {
-        let origin = CGPoint(x: place.left, y: 0)
+        let origin = CGPoint(x: place.left, y: place.top)
         ZStack(alignment: .topLeading) {
+            if model.isArranging, let screen = place.screen {
+                SpotArrangeView(model: model, size: screen, panelOrigin: origin)
+                    .transition(.opacity)
+            }
             SpotsView(model: model)
                 .animation(nil) { $0.offset(x: origin.x, y: origin.y) }
             SpotCarriedCard(model: model, panelOrigin: origin)

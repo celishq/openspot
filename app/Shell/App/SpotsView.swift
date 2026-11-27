@@ -78,6 +78,7 @@ struct SpotsView: View {
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
+        .contentShape(Rectangle().inset(by: model.isArranging ? SpotTokens.halo - SpotTokens.cornerMark : 0))
         .coordinateSpace(name: Self.panelSpace)
         .allowsHitTesting(!model.transition.isMoving)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
@@ -116,7 +117,7 @@ struct SpotsView: View {
 
     private func morph(of card: SpotSheetCard?, at frame: CGRect?) -> SheetMorph? {
         guard sheetID != nil else { return nil }
-        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.fieldRoom), sheet: sheetRect, source: .field) }
+        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.detailsRoom), sheet: sheetRect, source: .field) }
         return SheetMorph(card: frame, sheet: sheetRect)
     }
 

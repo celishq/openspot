@@ -1,0 +1,29 @@
+frame=
+
+button=press
+title=Copy
+
+button=delete
+title=Delete
+shortcut=cmd+backspace
+close=false
+
+item=1795682700000
+title=Let's move the design review to Thursday at three, and I'll send the new mock-ups before then.
+detail=Just now
+
+item=1795682400000
+title=Thanks for the quick fix. It works on my Mac now.
+detail=5 min ago
+
+item=1795675200000
+title=Buy oat milk, coffee beans and a birthday card for Sam.
+detail=2 h ago
+
+item=1795593600000
+title=The onboarding loses people at the second step. Let's cut it to one screen and test it next week.
+detail=25 Nov
+
+item=1795420800000
+title=Dear Ms Lee, I'm writing to confirm our meeting on Monday at ten.
+detail=23 Nov

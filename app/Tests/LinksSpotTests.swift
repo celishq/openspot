@@ -1,8 +1,9 @@
+import ImageIO
 import XCTest
 @testable import OpenspotCore
 
 final class LinksSpotTests: SampleSpotsCase {
-    func testLinksAndAppsJoinTheMainSearch() throws {
+    func testLinksAndAppsJoinThePanelSearch() throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
 
@@ -150,6 +151,19 @@ final class LinksSpotTests: SampleSpotsCase {
 
             XCTAssertFalse(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
             XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: icons.path))?.filter { $0.hasPrefix(".") }, [])
+        }
+    }
+
+    func testASiteWithAVectorIconSavesItSharpAtTheLargestSize() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            try await self.savedLink("https://vector.test", in: links)
+            let icon = folder.appendingPathComponent(".config/openspot/data/links/icons/vector.test.png")
+            try await self.wait("the icon") { FileManager.default.fileExists(atPath: icon.path) }
+            let source = try XCTUnwrap(CGImageSourceCreateWithURL(icon as CFURL, nil))
+            let properties = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+
+            XCTAssertEqual(properties[kCGImagePropertyPixelWidth] as? Int, 256)
         }
     }
 

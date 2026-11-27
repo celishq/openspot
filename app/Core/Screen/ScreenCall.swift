@@ -14,14 +14,14 @@ public enum ScreenCall: NounCall {
         CommandVerb(
             "shot", "[source] [--cursor] [file]",
             "Takes a picture and prints its path. A source is display, window, window:front or area:x,y,w,h; with no value the person picks one, and with no source any. With no file, it goes where macOS keeps screenshots.",
-            rule: CallRule(use: .screen, used: "took a screenshot", inShow: .captures, flags: .events)
+            rule: CallRule(use: .screen, used: "took a screenshot", inShow: .captures, flags: .events, needs: [.screen])
         ) { words in
             ScreenCapture(words: words.rest, records: false).map(Self.shot)
         },
         CommandVerb(
             "record start", "[source] [input]... [--cursor] [--events file] [file]",
             "Starts a recording to .mp4 or .mov. An input is mic, system or camera, or mic:<id> or camera:<id>; the camera goes to its own file beside it. --events writes each pointer move, click and key as a JSON line.",
-            rule: CallRule(use: .screen, used: recording, inShow: .captures, flags: .events)
+            rule: CallRule(use: .screen, used: recording, inShow: .captures, flags: .events, needs: [.screen], mayNeed: [.camera, .microphone, .input])
         ) { words in
             ScreenCapture(words: words.rest, records: true).map(Self.recordStart)
         },

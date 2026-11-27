@@ -1,3 +1,4 @@
+SpotsModel.dragShelfSpot
 SpotsModel.dragSpot
 SpotsModel.gridScrolled
 SpotsModel.resizeSpot

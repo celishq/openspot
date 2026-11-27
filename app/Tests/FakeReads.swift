@@ -5,15 +5,15 @@ final class FakeReads: MacReads, @unchecked Sendable {
     private let lock = NSLock()
     private var frontValue: FrontApp?
     private var installedValue: Set<String> = []
-    private var accessValue: [String: ReadAccess] = [:]
-    private var grantValue: ReadAccess = .allowed
-    private var trustValue: ReadAccess = .allowed
+    private var accessValue: [String: AccessStatus] = [:]
+    private var grantValue: AccessStatus = .allowed
+    private var trustValue: AccessStatus = .allowed
     private var answersValue: [String: [String]] = [:]
     private var selectedValue: String?
     private var scriptsValue: [String] = []
     private var asksValue: [String] = []
 
-    func set(front: String? = nil, installed: Set<String> = [], access: [String: ReadAccess] = [:], grant: ReadAccess = .allowed, trust: ReadAccess = .allowed,
+    func set(front: String? = nil, installed: Set<String> = [], access: [String: AccessStatus] = [:], grant: AccessStatus = .allowed, trust: AccessStatus = .allowed,
              answers: [String: [String]] = [:], selected: String? = nil) {
         lock.withLock {
             frontValue = front.map { FrontApp(bundleID: $0, path: "/Applications/\($0.split(separator: ".").last ?? "").app") }
@@ -38,7 +38,7 @@ final class FakeReads: MacReads, @unchecked Sendable {
         lock.withLock { installedValue.contains(bundleID) || bundleID == "com.apple.finder" ? "/Applications/\(bundleID.split(separator: ".").last?.capitalized ?? bundleID).app" : nil }
     }
 
-    func access(to bundleID: String, asks: Bool) async -> ReadAccess {
+    func access(to bundleID: String, asks: Bool) async -> AccessStatus {
         lock.withLock {
             asksValue.append("\(bundleID) \(asks)")
             let access = accessValue[bundleID] ?? .allowed
@@ -53,7 +53,7 @@ final class FakeReads: MacReads, @unchecked Sendable {
         }
     }
 
-    func accessibility(asks: Bool) -> ReadAccess {
+    func accessibility(asks: Bool) -> AccessStatus {
         lock.withLock {
             asksValue.append("accessibility \(asks)")
             return trustValue == .unasked && asks ? grantValue : trustValue

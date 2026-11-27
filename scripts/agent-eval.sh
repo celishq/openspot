@@ -12,14 +12,21 @@ if [ "$1" = "--run" ]; then
   place="$out/$label/runs/$task-$n"
   rm -rf "$place"
   mkdir -p "$place/spots" "$place/work"
-  prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  if [ -f "$tasks/$task/ask" ]; then
+    [ ! -d "$tasks/$task/seed" ] || cp -R "$tasks/$task/seed/." "$place/spots/"
+    eval "set -- $(cat "$tasks/$task/ask")"
+    prompt=$("$real" --config "$place" prompt "$@" </dev/null | sed "s|\"$real\"|openspot|g")
+  else
+    prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
+  fi
+  printf '%s\n' "$prompt" >"$place/prompt.txt"
   if [ -f "$tasks/$task/live" ]; then
     until mkdir "$out/live.lock" 2>/dev/null; do sleep 2; done
     trap 'rmdir "$out/live.lock" 2>/dev/null' EXIT
   fi
   start=$(date +%s)
   (cd "$place/work" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" perl -e 'alarm shift; exec @ARGV' 900 \
-    claude -p "$prompt" --model sonnet --output-format json --permission-mode acceptEdits \
+    claude -p "$prompt" --model "${MODEL:-sonnet}" --output-format json --permission-mode acceptEdits \
     --allowedTools "Bash Read Write Edit" </dev/null >"$place/report.json" 2>"$place/agent.err")
   seconds=$(($(date +%s) - start))
   touch "$place/calls.tsv"

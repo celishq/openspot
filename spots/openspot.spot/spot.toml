@@ -1,7 +1,7 @@
 [scripts.actions]
 title = "Card actions"
 icon = "ellipsis.circle"
-detail = "Share, set, edit, rearrange, change the icon of, delete or turn off a spot"
+detail = "Share, set, edit, arrange, change the icon of or remove a spot"
 uses = ["spots"]
 
 [scripts.actions.bindings]
@@ -22,10 +22,10 @@ offers = ["actions"]
 title = "Edit"
 shortcut = "cmd+e"
 close = false
-offers = ["actions mine, core"]
+offers = ["actions mine"]
 
-[scripts.actions.actions.rearrange]
-title = "Rearrange"
+[scripts.actions.actions.arrange]
+title = "Arrange"
 close = false
 offers = ["actions"]
 
@@ -47,15 +47,10 @@ close = false
 when = "hasIcon"
 
 [scripts.actions.actions.delete]
-title = "Delete"
+title = "Remove"
 shortcut = "cmd+backspace"
 close = false
 offers = ["actions mine"]
-
-[scripts.actions.actions.off]
-title = "Turn off"
-shortcut = "cmd+backspace"
-offers = ["actions core"]
 
 [scripts.icon]
 title = "Icon"
@@ -119,34 +114,32 @@ uses = ["app"]
 [scripts.quit.actions.quit]
 title = "Quit"
 
-[scripts.settings]
-title = "Settings"
-icon = "gearshape"
-detail = "Choose your key"
-uses = ["app"]
-
-[scripts.settings.on]
-search = true
-
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"
-detail = "Edit Spots"
-keywords = ["edit spots"]
+detail = "Arrange your spots"
+keywords = ["arrange", "edit spots"]
 
 [scripts.spots.actions.edit]
-title = "Edit Spots"
+title = "Arrange"
+close = false
+
+[scripts.spots.on]
+command = ["spots"]
 
 [scripts.store]
 title = "Store"
 icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
-uses = ["spots", "account"]
-views = ["store.swift"]
+answers = "last"
+uses = ["spots"]
 
 [scripts.store.on]
-"sheet.open" = true
+search = "\\S"
+
+[scripts.store.actions.open]
+title = "Open Store"
 
 [scripts.themes]
 title = "Themes"
@@ -164,7 +157,7 @@ title = "Attachments"
 icon = "rectangle.on.rectangle"
 detail = "Choose what the panel hands to spots"
 keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
-uses = ["spots", "read"]
+uses = ["spots"]
 edits = "attachments"
 
 [scripts.attachments.on]
@@ -215,3 +208,46 @@ morning = { type = "choice", title = "Morning", icon = "sunrise", options = ["6:
 evening = { type = "choice", title = "Evening", icon = "moon.stars", options = ["17:00", "18:00", "19:00", "20:00", "21:00"] }
 later = { type = "choice", title = "Later", icon = "cup.and.saucer", options = ["1 hour", "2 hours", "3 hours", "4 hours", "6 hours"] }
 weekend = { type = "choice", title = "Weekend", icon = "sofa", options = ["Saturday", "Sunday"] }
+
+[scripts.timeline]
+title = "Timeline"
+icon = "clock.arrow.circlepath"
+detail = "What you copied, newest first"
+keywords = ["timeline", "history", "clipboard history"]
+uses = ["timeline", "read", "clipboard"]
+
+[scripts.timeline.on]
+"sheet.open" = true
+"sheet.text" = true
+command = ["timeline"]
+
+[scripts.timeline.actions.pause]
+title = "Pause Timeline for an Hour"
+
+[scripts.timeline.actions.resume]
+title = "Resume Timeline"
+
+[scripts.timeline.actions.restore]
+
+[scripts.timeline.actions.copy]
+inputs.kind = { type = "text", required = true, description = "text, url or file" }
+inputs.text = "text"
+inputs.url = "text"
+inputs.file = "text"
+
+[scripts.timeline.settings]
+keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }
+in-search = { type = "bool", title = "Show in search", icon = "magnifyingglass", default = false }
+
+[scripts.timeline-search]
+title = "Timeline in search"
+icon = "clock.arrow.circlepath"
+detail = "The newest entries of the timeline that hold the words you type"
+answers = "last"
+uses = ["spots"]
+
+[scripts.timeline-search.bindings]
+timeline = { spot = "openspot/timeline" }
+
+[scripts.timeline-search.on]
+search = "\\S"

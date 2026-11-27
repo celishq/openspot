@@ -1,7 +1,6 @@
 import Foundation
 
 public enum OwnedSheet: String, Sendable {
-    case settings
     case edit
 
     private static let mark: Character = "\u{1F}"

@@ -1,8 +1,6 @@
 import Foundation
 
 public final class SpotCaller: @unchecked Sendable, Equatable {
-    static let sandboxed = SpotCaller(spot: Spot(id: "", name: "A sandboxed process", url: URL(fileURLWithPath: "/")))
-
     public let spot: Spot
     let keepsFix: Bool
     private let lock = NSLock()

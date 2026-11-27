@@ -5,7 +5,7 @@ final class OnTableTests: XCTestCase {
     private func load(_ toml: String) throws -> (spot: Spot?, refused: [String]) {
         let spots = try temporaryFolder()
         try "#!/bin/sh\necho\n".writeScript(to: spots.appendingPathComponent("snooze.spot/snooze.sh"), toml: toml)
-        let scan = try SpotsFolder(url: spots, enabled: ["snooze"]).scan()
+        let scan = try SpotsFolder(url: spots).scan()
         return (scan.spots.first, scan.refused.map(\.reason))
     }
 
@@ -103,7 +103,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(scan.refused.map(\.reason), ["Snooze has [on] picker.chosen, but picker declares no event chosen. Name one of its [events]: picked"])
     }
 
-    func testAnEventThatACoreSpotThatIsOffDoesNotDeclareFailsTheLoadOfItsListener() throws {
+    func testAnEventThatACoreSpotDoesNotDeclareFailsTheLoadOfItsListener() throws {
         let spots = try temporaryFolder()
         let core = try temporaryFolder()
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("picker.spot/picker.sh"), toml: "[events.picked]\nuntil = \"date\"")
@@ -111,7 +111,7 @@ final class OnTableTests: XCTestCase {
 
         let scan = try SpotsFolder(url: spots, core: core).scan()
 
-        XCTAssertEqual(scan.spots.map(\.id), [])
+        XCTAssertEqual(scan.spots.map(\.id), ["picker"])
         XCTAssertEqual(scan.refused.map(\.reason), ["Snooze has [on] picker.chosen, but picker declares no event chosen. Name one of its [events]: picked"])
     }
 
@@ -143,7 +143,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(spot.triggers.search?.isCard, true)
     }
 
-    func testSearchTrueListsTheItemsOfTheSpotInTheMainSearch() throws {
+    func testSearchTrueListsTheItemsOfTheSpotInThePanelSearch() throws {
         let loaded = try load("[on]\nsearch = true")
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())

@@ -4,11 +4,12 @@ public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     let mac: Mac
+    let access = KeptAccess()
     private let raise: (@Sendable (AppSignal) async -> Void)?
-    private let app: (any RunningApp)?
-    private let places: AppPlaces
-    private let account: Account?
-    private weak var runs: SpotRuns?
+    let app: (any RunningApp)?
+    let places: AppPlaces
+    let account: Account?
+    private(set) weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
     private let nouns: [CommandNoun]
@@ -55,10 +56,13 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.refused("\(caller.name) \(refusal)"))
         }
         guard let needed = call.use else { return call }
-        if runs.callers.isCareful, !caller.uses.contains(needed.use) {
-            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `\(needed.use.rawValue)` in the `uses` of its spot.toml. Add it, or turn Careful mode off."))
+        guard caller.uses.contains(needed.use) else {
+            let refusal = UseRefusal(spot: caller, call: needed)
+            Task { @MainActor in runs.refused(refusal) }
+            return CommandLineCall(name: call.name, call: CallFault.undeclared(refusal))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
+        runs.usage.used(call.name, by: caller.id)
         return call
     }
 
@@ -74,7 +78,7 @@ public final class CommandAPI: @unchecked Sendable {
             return { kept.answer(ending: await work()) }
         }
         let caller = caller(of: request)
-        if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.callers.isCareful == true && caller != nil { return nil }
+        if call.rule.flags.contains(.startsScripts), caller?.isBuiltIn != true, isSandboxed || caller != nil { return nil }
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, places: places, app: app, runs: runs, account: account, secrets: places.secrets, trash: places.trash, raise: raise, caller: caller,

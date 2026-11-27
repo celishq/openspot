@@ -44,6 +44,11 @@ public struct GridLayout: Equatable, Sendable {
             .first { fits($0, at: cell, in: taken) } ?? size
     }
 
+    public func fit(_ size: SpotSize, at cell: GridCell, among others: [SpotPlacement], choices: [SpotSize]) -> SpotSize? {
+        let fitted = self.size(of: size, at: cell, among: others, choices: choices)
+        return fits(fitted, at: cell, in: occupancy(of: others)) ? fitted : nil
+    }
+
     public func freeCells(around placements: [SpotPlacement]) -> [GridCell] {
         let taken = occupancy(of: placements)
         return taken.indices.filter { !taken[$0] }.map { GridCell(row: $0 / columns, column: $0 % columns) }

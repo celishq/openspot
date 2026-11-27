@@ -37,8 +37,8 @@ final class ScheduleTests: SpotRunsCase {
         try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
     }
 
-    private func load(enabled: Set<String>) throws -> ScanResult {
-        let scan = try KeptScan.shared.load(SpotsFolder(url: folder)).result(enabled: enabled, disabled: [])
+    private func load() throws -> ScanResult {
+        let scan = try KeptScan.shared.load(SpotsFolder(url: folder)).result()
         runs.take(scan)
         return scan
     }
@@ -55,7 +55,7 @@ final class ScheduleTests: SpotRunsCase {
 
     func testADueTimeRunsTheScheduleOnceWithItsLine() async throws {
         try write("script")
-        _ = try load(enabled: ["script"])
+        _ = try load()
         let due = firstDue
         try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
 
@@ -67,13 +67,13 @@ final class ScheduleTests: SpotRunsCase {
 
     func testATimeMissedWhileOpenspotWasAwayRunsOnceWithHowLateItIs() async throws {
         try write("script")
-        _ = try load(enabled: ["script"])
+        _ = try load()
         let due = firstDue
         runs.quit()
 
         time += 3600
         runs = scheduled()
-        _ = try load(enabled: ["script"])
+        _ = try load()
 
         try await self.wait("the late run") { self.log("script.calls").count == 1 && self.ended("script") }
         XCTAssertEqual(log("script.calls"), ["schedule|input.cron=\(Self.line) input.late=\(Int(3600 - due)) "])
@@ -81,42 +81,29 @@ final class ScheduleTests: SpotRunsCase {
 
     func testAReloadThatBrieflyLoadsNoSpotsKeepsTheRecordOfAMissedTime() async throws {
         try write("script")
-        _ = try load(enabled: ["script"])
+        _ = try load()
         let due = firstDue
         runs.quit()
 
         time += 3600
         runs = scheduled()
         runs.take(ScanResult(files: [], refused: []))
-        _ = try load(enabled: ["script"])
+        _ = try load()
 
         try await self.wait("the late run") { self.log("script.calls").count == 1 && self.ended("script") }
         XCTAssertEqual(log("script.calls"), ["schedule|input.cron=\(Self.line) input.late=\(Int(3600 - due)) "])
     }
 
-    func testASpotTurnedOffBesideAnotherDropsItsRecord() async throws {
+    func testASpotRemovedBesideAnotherDropsItsRecord() async throws {
         try write("one")
         try write("two")
-        _ = try load(enabled: ["one", "two"])
+        _ = try load()
 
-        _ = try load(enabled: ["two"])
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("one.spot"))
+        _ = try load()
 
         let kept = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
         XCTAssertEqual(kept.map { Array($0.keys) }, ["two \(Self.line)"])
-    }
-
-    func testASpotWithAScheduleStartsOffAndRunsNothing() async throws {
-        try write("off")
-        try write("on")
-
-        let scan = try load(enabled: ["on"])
-        let due = firstDue
-        try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
-        time += due
-
-        XCTAssertEqual(scan.spots.map(\.id), ["on"])
-        try await self.wait("the run of the spot that is on") { self.log("on.calls").count == 1 && self.ended("on") }
-        XCTAssertEqual(log("off.calls"), [])
     }
 
     func testADueTimeRunsTheScheduleOfAStayingSpotAndOfAnInlineSpot() async throws {
@@ -126,7 +113,7 @@ final class ScheduleTests: SpotRunsCase {
             guard record.arguments == ["schedule"], record.end == .exited(0) else { return }
             answers[record.spot] = record.frames.joined()
         }
-        _ = try load(enabled: ["stay", "inline"])
+        _ = try load()
         let due = firstDue
         try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
 

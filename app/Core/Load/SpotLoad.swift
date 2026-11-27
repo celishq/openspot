@@ -16,10 +16,6 @@ public struct SpotLoad: Sendable {
         let refusal: String?
         let added: Date?
 
-        var isScheduled: Bool {
-            spots?.contains { !$0.triggers.schedule.isEmpty } == true
-        }
-
         func add(to result: inout ScanResult) {
             if let refusal { result.refused.append(ScanResult.Refusal(file: id, reason: refusal)) }
             guard let spots else { return }
@@ -43,18 +39,17 @@ public struct SpotLoad: Sendable {
     let failure: String?
     public let stamp: [String: [Int]]
     let sources: [String: [String]]
-    public let hasAppSpots: Bool
 
-    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:], hasAppSpots: false)
+    public static let empty = SpotLoad(entries: [], loose: [], failure: nil, stamp: [:], sources: [:])
 
-    public func result(enabled: Set<String>, disabled: Set<String>, hosted: [Spot] = []) throws -> ScanResult {
+    public func result(hosted: [Spot] = []) throws -> ScanResult {
         if let failure { throw SpotError.fault(failure) }
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: loose)
-        let ownIDs = Set(entries.filter { $0.origin == .own }.map(\.id))
-        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) && (enabled.contains(entry.id) || !entry.isScheduled) {
+        let ownIDs = ownIDs
+        for entry in entries where entry.origin == .own {
             entry.add(to: &result)
         }
-        for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) && enabled.contains(entry.id) {
+        for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) {
             entry.add(to: &result)
         }
         for entry in entries where entry.origin == .app {
@@ -66,6 +61,10 @@ public struct SpotLoad: Sendable {
 
     var ownIDs: Set<String> {
         Set(entries.filter { $0.origin == .own }.map(\.id))
+    }
+
+    var coreIDs: Set<String> {
+        Set(entries.filter { $0.origin == .core }.map(\.id)).subtracting(ownIDs)
     }
 
     public var coreChoices: [Spot] {
@@ -84,7 +83,7 @@ public struct SpotLoad: Sendable {
         return ([toml] + (sources[spot.url.path] ?? [])).reduce(own) { $0 + (stamp[$1] ?? []) }
     }
 
-    public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {
+    public func faultSpots(of scan: ScanResult, prompt: SpotPrompt) -> [Spot] {
         let loaded = Set(scan.files.filter { !$0.spots.isEmpty }.map(\.id))
         let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
         return faults.keys.sorted().compactMap { id in

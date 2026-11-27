@@ -33,6 +33,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
+            .overlay(alignment: .topTrailing) { WaitingMark(model: model, entry: entry, size: size) }
             .overlay(alignment: .topLeading) { if entry.isNew { SpotCornerMark(face: .word("New"), corner: .leading, size: size).accessibilityLabel("New spot") } }
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
@@ -166,7 +167,7 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var glyph: some View {
-        if let item = entry.item, item.icon != nil {
+        if let item = entry.item, item.icon != nil || item.color != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyph)
         } else if entry.showsHeaderPicture {
             SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)
@@ -216,6 +217,20 @@ private struct FailureMark: View {
             SpotCornerMark(face: .symbol("exclamationmark.triangle.fill"), corner: .trailing, size: size)
                 .accessibilityLabel("Last run failed")
                 .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
+        }
+    }
+}
+
+private struct WaitingMark: View {
+    let model: SpotsModel
+    let entry: SpotsModel.Entry
+    let size: SpotSize
+
+    var body: some View {
+        if entry.item == nil, model.waiting.contains(entry.spot.id), model.failure(of: entry) == nil {
+            SpotCornerMark(face: .symbol("lock.fill"), corner: .trailing, size: size)
+                .allowsHitTesting(false)
+                .accessibilityLabel("Needs you in Settings")
         }
     }
 }

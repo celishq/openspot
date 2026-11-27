@@ -137,12 +137,6 @@ final class StayMode: ScriptMode {
         runs.updateClock()
     }
 
-    func restart() {
-        guard script != nil else { return }
-        end(because: "Openspot restarted it")
-        settle()
-    }
-
     func end() {
         script?.end()
         script = nil

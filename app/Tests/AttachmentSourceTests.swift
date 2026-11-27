@@ -41,6 +41,31 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(shown, [["tab"], ["tab"], []])
     }
 
+    func testAHiddenSourceGivesNoChipAndRunsNothingUntilItIsShown() async throws {
+        let config = ConfigFile(url: folder.appendingPathComponent("config/config.toml"))
+        try FileManager.default.createDirectory(at: config.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try config.change { $0.set(setting: "attachment", of: "tab", to: "false"); $0.set(setting: "attachment", of: "copy", to: "false") }
+        try taker(takes: "'text', 'url'")
+        try pickSource("tab", runs: "true")
+        try source("copy", adds: "text=hola")
+        try witness()
+
+        await open()
+        try await wait("the spots of the open") { self.log("witness-log").count == 1 }
+
+        XCTAssertEqual(chips, [])
+        XCTAssertEqual(log("copy-log"), [])
+        XCTAssertEqual(model.entry("copy")?.spot.isOnGrid, false)
+        model.panelWillHide()
+        model.panelDidHide()
+
+        try config.change { $0.set(setting: "attachment", of: "tab", to: nil); $0.set(setting: "attachment", of: "copy", to: nil) }
+        await open()
+
+        try await wait("both chips") { self.chips.count == 2 }
+        XCTAssertEqual(Set(chips.map(\.source)), ["tab", "copy"])
+    }
+
     func testASourceThatEndsWithNoValueLeavesNoChip() async throws {
         try taker(takes: "'url'")
         try source(adds: nil)
@@ -154,6 +179,40 @@ final class AttachmentSourceTests: AttachmentCase {
         try await wait("the end of the source") { self.log("done").count == 1 }
         XCTAssertEqual(log("done"), ["2"])
         XCTAssertEqual(log("errors"), ["`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."])
+    }
+
+    private func detailsSource(_ details: String) throws {
+        try script("tab", toml: "title = 'tab'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = true", """
+        case "$1" in
+          show) printf 'url=https://example.com/a\\ntitle=A\\n\\n\(details)' | \(cli) attachment add 2>> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
+        esac
+        """)
+    }
+
+    func testBlocksAfterTheValueDrawThePreviewInItsWholeRoom() async throws {
+        try taker(takes: "'url'")
+        try detailsSource("frame=\\nclass=gap-part\\n\\ntext=host\\ntitle=example.com\\n\\nnumber=views\\nvalue=42\\n")
+
+        await open()
+        try await wait("the value") { self.chips.first?.value != nil }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
+
+        XCTAssertEqual(model.details?.tree.node("host")?.title, "example.com")
+        XCTAssertNotNil(model.details?.tree.node("views"))
+        XCTAssertEqual(model.details?.lines, SpotTokens.detailsLineLimit)
+        XCTAssertEqual(chips.first?.value?.payload, .url("https://example.com/a"))
+    }
+
+    func testAPreviewWithABlockThatTakesAPressFailsWithExit2() async throws {
+        try taker(takes: "'url'")
+        try detailsSource("button=open\\ntitle=Open\\n")
+
+        await open()
+
+        try await wait("the end of the source") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["2"])
+        XCTAssertEqual(log("errors"), ["The details after the value of `openspot attachment add` take only text, number, series, picture and icon blocks, not button=open."])
+        XCTAssertTrue(chips.isEmpty)
     }
 
     func testAPanelOpenRegexKeepsAnOrdinarySpotToItsApp() async throws {

@@ -16,6 +16,8 @@ extension SpotTokens {
 
     public static var toastRoom: CGFloat { max(toastMargin, 2 * CGFloat(backdrop.shadow)) }
 
+    public static var toastWidest: CGFloat { toastMaxWidth - 2 * toastRoom }
+
     public static var panelWidth: CGFloat { layout.panelWidth }
     public static var panelFrame: CGRect { CGRect(x: 0, y: 0, width: panelWidth, height: panelHeight) }
 
@@ -26,11 +28,11 @@ extension SpotTokens {
     public static var sheetFieldDrop: CGFloat { layout.sheetFieldDrop }
 
     public static func width(columns: Int) -> CGFloat {
-        CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap
+        layout.width(columns: columns)
     }
 
     public static func height(rows: Int) -> CGFloat {
-        CGFloat(rows) * cell + CGFloat(rows - 1) * rowGap
+        layout.height(rows: rows)
     }
 
     public static func cardPadding(for size: SpotSize, isDrawn: Bool) -> CGFloat {
@@ -48,24 +50,26 @@ extension SpotTokens {
         (partsWidth - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
     }
 
+    public static var listSection: CGFloat { listRow * listSectionShare }
+
     public static var listRoom: CGFloat { sheetMaxHeight - sheetRowsTop - padding }
 
-    public static func rowsHeight(rows: Int, perLine: Int = 1) -> CGFloat {
+    public static func rowsHeight(rows: Int, perLine: Int = 1, sections: Int = 0) -> CGFloat {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        return lines * line + (lines - 1) * listRowGap
+        return lines * line + (lines - 1) * listRowGap - CGFloat(sections) * (listRow - listSection)
     }
 
-    public static func rowsFit(rows: Int, perLine: Int = 1, in room: CGFloat = listRoom) -> Bool {
-        rowsHeight(rows: rows, perLine: perLine) < room
+    public static func rowsFit(rows: Int, perLine: Int = 1, sections: Int = 0, in room: CGFloat = listRoom) -> Bool {
+        rowsHeight(rows: rows, perLine: perLine, sections: sections) < room
     }
 
-    public static func listHeight(rows: Int, perLine: Int, setsApart: Bool) -> CGFloat {
-        rowsHeight(rows: rows, perLine: perLine) + (setsApart ? pinRuleRoom + listRowGap : 0)
+    public static func listHeight(rows: Int, perLine: Int, setsApart: Bool, sections: Int = 0) -> CGFloat {
+        rowsHeight(rows: rows, perLine: perLine, sections: sections) + (setsApart ? pinRuleRoom + listRowGap : 0)
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, setsApart: Bool = false, top: SheetTop = .plain) -> CGRect {
-        let height = top.rowsTop + listHeight(rows: rows, perLine: perLine, setsApart: setsApart) + padding
+    public static func sheetRect(rows: Int, perLine: Int = 1, setsApart: Bool = false, sections: Int = 0, top: SheetTop = .plain) -> CGRect {
+        let height = top.rowsTop + listHeight(rows: rows, perLine: perLine, setsApart: setsApart, sections: sections) + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -77,18 +81,18 @@ extension SpotTokens {
 
     public static var windowSize: CGSize { CGSize(width: width(columns: windowColumns) + 2 * padding, height: windowHeight) }
 
-    public static func floatSize(rows: Int, perLine: Int, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
+    public static func floatSize(rows: Int, perLine: Int, parts: SheetParts? = nil, setsApart: Bool = false, sections: Int = 0) -> CGSize {
         let content: CGFloat
         if let parts, parts.holdsParts {
             content = parts.height
         } else {
-            content = listHeight(rows: rows, perLine: perLine, setsApart: setsApart)
+            content = listHeight(rows: rows, perLine: perLine, setsApart: setsApart, sections: sections)
         }
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }
 
     public static func floatSize(list: ItemList) -> CGSize {
-        floatSize(rows: list.lineCount, perLine: list.perLine, setsApart: list.setsApart)
+        floatSize(rows: list.lineCount, perLine: list.perLine, setsApart: list.setsApart, sections: list.sectionCount)
     }
 
     public static func panelRect(_ panel: SheetParts) -> CGRect {
@@ -123,7 +127,7 @@ extension SpotTokens {
     }
 
     static func corner(for size: SpotSize) -> CGFloat {
-        size.rows == 1 && size.columns < columns ? min(cell / 2 * cardRadius / builtIn.radius.card, cell / 2) : cardRadius
+        layout.corner(for: size)
     }
 
     public static var gridTop: CGFloat { layout.gridTop }
@@ -133,7 +137,7 @@ extension SpotTokens {
     }
 
     public static var menuTextInset: CGFloat { padding - menuPadding + 4 }
-    public static var wordsGap: CGFloat { padding - 5 }
+    public static var wordsGap: CGFloat { layout.wordsGap }
     public static var formInset: CGFloat { padding - 5 }
     public static var arrowRowInset: CGFloat { padding - 6 }
 

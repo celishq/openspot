@@ -8,6 +8,8 @@ actor FakeRunningApp: RunningApp {
     private(set) var installs = 0
     private(set) var quits = 0
     private(set) var opened: [String] = []
+    private(set) var grants: [String] = []
+    private var running: AccessGrant?
     private var update: String?
     private var calls = 0
     private var isFirstLaunch = false
@@ -27,6 +29,20 @@ actor FakeRunningApp: RunningApp {
     func slowMotion(_ isOn: Bool?) -> Bool? {
         if let isOn, slow != nil { slow = isOn }
         return slow
+    }
+
+    func grant(_ id: String, needs: [MacAccess]) -> Bool {
+        grants.append(([id] + needs.map(\.rawValue)).joined(separator: " "))
+        running = AccessGrant(spot: id, steps: needs)
+        return true
+    }
+
+    func grant() -> AccessGrant? {
+        running
+    }
+
+    func endGrant() {
+        running = nil
     }
 
     func spotsChanged() {
@@ -55,6 +71,10 @@ actor FakeRunningApp: RunningApp {
 
     func apply(_ theme: Theme) {
         themes.append(theme)
+    }
+
+    func openSettings(at place: SettingsPlace?) {
+        opened.append((["settings"] + (place.map { ["at", $0.place] } ?? [])).joined(separator: " "))
     }
 
     func open(_ id: String) -> Bool {
@@ -91,18 +111,19 @@ actor FakeRunningApp: RunningApp {
         opened.append("grid")
     }
 
-    func publish(_ id: String) -> SpotPublish {
-        opened.append("publish \(id)")
-        return id == "unread" ? .needsReadme : .published
+    func openStore(_ id: String?, search: String?) -> Bool {
+        opened.append((["store"] + [id, search.map { "search \($0)" }].compactMap { $0 }).joined(separator: " "))
+        return true
     }
+
 
     func reveal(_ id: String) -> Bool {
         opened.append("reveal \(id)")
         return id != "gone"
     }
 
-    func playground(_ file: URL?, isCareful: Bool) {
-        opened.append("playground \(file?.path ?? "") careful=\(isCareful)")
+    func playground(_ file: URL?) {
+        opened.append("playground \(file?.path ?? "")")
     }
 
     func changeSetting(_ key: String, of spot: String) -> Bool {

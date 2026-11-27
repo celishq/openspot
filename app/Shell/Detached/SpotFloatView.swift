@@ -30,7 +30,6 @@ struct SpotFloatView: View {
         .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
-        .environment(\.spotCards, SpotCardSource(model: model))
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
         .environment(\.spotViewDates, entry?.spot.viewDates ?? [:])
         .id(SpotLoadedTheme.shared.layout)
@@ -41,7 +40,7 @@ struct SpotFloatView: View {
         guard entry.kind.opensSheet else {
             return CGSize(width: SpotTokens.width(columns: entry.size.columns), height: SpotTokens.height(rows: entry.size.rows))
         }
-        return SpotTokens.floatSize(rows: run.shape.rows, perLine: run.shape.perLine, parts: run.panel, setsApart: run.shape.setsApart)
+        return SpotTokens.floatSize(rows: run.shape.rows, perLine: run.shape.perLine, parts: run.panel, setsApart: run.shape.setsApart, sections: run.shape.sections)
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {

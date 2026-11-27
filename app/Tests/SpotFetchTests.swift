@@ -101,8 +101,7 @@ final class SpotFetchTests: SpotRunsCase {
         XCTAssertEqual(title, "timeout")
     }
 
-    func testCarefulModeRefusesAFetchOfASpotWithoutTheNetworkUse() async throws {
-        runs.isCareful = true
+    func testAFetchOfASpotWithoutTheNetworkUseIsRefused() async throws {
         answer("https://fetch.test/careful", body: "ok")
         let sheet = try fetching(uses: "", """
         await env.fetch("https://fetch.test/careful")

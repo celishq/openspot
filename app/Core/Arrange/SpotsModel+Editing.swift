@@ -8,7 +8,7 @@ extension SpotsModel {
     }
 
     public func beginEditing() {
-        begin(.open)
+        begin(.arrange)
     }
 
     private func begin(_ session: EditSession) {
@@ -16,10 +16,12 @@ extension SpotsModel {
             guard openSheetID == nil else { return }
             closeMenu()
             missedSearch.drop()
-            hold(nil, motion: .edit)
+            showDetails(nil)
+            if session == .arrange { host.arrange(true) }
             change(.edit) {
                 editing = session
                 query = ""
+                clearArrange()
                 updateVisible()
             }
             hideAttachments()
@@ -57,39 +59,34 @@ extension SpotsModel {
         endEditing()
     }
 
-    public func turnsOff(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.spot.host == nil && !entry.spot.isBuiltIn && entry.spot.fault == nil
+    public func takesOffGrid(_ entry: Entry) -> Bool {
+        entry.item == nil && entry.spot.host == nil && entry.spot.fault == nil
     }
 
-    public func turnOff(_ id: String) {
+    public func takeOffGrid(_ id: String, to slot: ShelfSlot? = nil) {
         asOnePress {
-            guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
-            turn(entry.spot, on: false)
+            guard let entry = visible.first(where: { $0.id == id }), takesOffGrid(entry) else { return }
+            let next: KeptConfig
+            do {
+                next = try files.config.change(from: kept) { $0.arrangement.set(isOnGrid: false, of: id) }
+            } catch {
+                if carry != nil { change(.edit) { carry = nil } }
+                return toast(.failure("\(entry.spot.name) stays on the grid. \(Self.reason(error))"))
+            }
+            change(.edit, {
+                reload(patching: nil, to: next)
+                if let slot { shelf.lay(placing: (id, slot)) }
+                carryToShelf()
+            }, completion: { self.endLanding(of: id) })
         }
-    }
-
-    @discardableResult
-    func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
-        let id = folder.fileID(of: spot)
-        let next: KeptConfig
-        do {
-            next = try files.config.change(from: kept) { $0.arrangement.set(isEnabled: isOn, of: id) }
-        } catch {
-            toast(.failure("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))"))
-            return false
-        }
-        change(.edit) {
-            ending()
-            reload(patching: nil, to: next)
-        }
-        return true
     }
 
     public func endEditing(moving: Bool = true) {
         asOnePress {
             guard isEditing else { return }
             stopDragWait()
-            change(moving ? .edit : nil) {
+            let wasArranging = isArranging
+            change(moving ? .edit : nil, {
                 editing = nil
                 tip = nil
                 gesture = nil
@@ -98,8 +95,11 @@ extension SpotsModel {
                 pointerMove = nil
                 if lift.offset != .zero { lift.offset = .zero }
                 selected = 0
+                clearArrange()
                 updateVisible()
-            }
+            }, completion: { [self] in
+                if wasArranging, !isArranging { host.arrange(false) }
+            })
         }
     }
 
@@ -148,9 +148,10 @@ extension SpotsModel {
         }
     }
 
-    func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotChoices) -> Void = { _ in }) {
+    func saveLayout(_ layout: [SpotPlacement], of spots: [Entry]? = nil, selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotChoices) -> Void = { _ in }) {
         let count = grid.columns
-        let changes = layout.filter { visible.indices.contains($0.index) }.map { (visible[$0.index], $0) }
+        let spots = spots ?? visible
+        let changes = layout.filter { spots.indices.contains($0.index) }.map { (spots[$0.index], $0) }
         save { next in
             for (entry, placement) in changes {
                 if entry.cell(in: grid) != placement.cell { next.set(cell: placement.cell, of: entry.id, columns: count) }

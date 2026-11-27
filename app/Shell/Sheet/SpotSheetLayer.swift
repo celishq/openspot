@@ -119,7 +119,7 @@ struct SpotSheetLayer: View {
     }
 
     private var closedRect: CGRect {
-        let field = SpotTokens.fieldRect(room: model.fieldRoom)
+        let field = SpotTokens.fieldRect(room: model.detailsRoom)
         return isInstall ? field : frame ?? field
     }
 

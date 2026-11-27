@@ -26,6 +26,14 @@ public struct SpotSchedule: Equatable, Sendable {
         last[Self.key(line, of: spot)] = time
     }
 
+    func isAllowed(_ spot: String) -> Bool {
+        last[spot] != nil
+    }
+
+    mutating func allow(_ spot: String, at time: Date) {
+        last[spot] = time
+    }
+
     mutating func keep(only kept: Set<String>) -> Bool {
         let before = last.count
         last = last.filter { kept.contains($0.key) }

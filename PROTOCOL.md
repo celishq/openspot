@@ -7,7 +7,8 @@ spot prints what to show.
 
 <img src="docs/images/panel.png" alt="The Openspot panel: a search field, then a card for each spot" width="360">
 
-Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, five minutes.
+Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, five minutes. Then
+[Build and check a spot](docs/build-and-check-a-spot.md) from the terminal: run it, look at it and check it.
 
 ## Show
 
@@ -25,6 +26,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 - [Settings people choose](docs/remember/settings.md)
 - [Keep your own data](docs/remember/data.md)
 - [Keep a copy that goes old](docs/remember/cache.md)
+- [Keep a timeline](docs/remember/timeline.md)
 
 ## React
 

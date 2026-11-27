@@ -10,9 +10,19 @@ own_id() {
 }
 
 lint() {
-  found=$("$OPENSPOT" --config "$OPENSPOT_CONFIG" check spots --json "$PLACE/spots" </dev/null 2>&1)
+  found=$("$OPENSPOT" --config "$OPENSPOT_CONFIG" check spots --json "$PLACE/spots" </dev/null 2>/dev/null)
   echo "check: $found"
   [ "$found" = "[]" ]
+}
+
+ways() {
+  "$OPENSPOT" --config "$OPENSPOT_CONFIG" check spots --json "$PLACE/spots" </dev/null 2>&1 >/dev/null
+}
+
+plain() {
+  found=$(ways)
+  echo "ways: $found"
+  [ -z "$found" ]
 }
 
 used() {

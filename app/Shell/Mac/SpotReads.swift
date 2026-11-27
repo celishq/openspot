@@ -22,7 +22,7 @@ struct SpotReads: MacReads {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path
     }
 
-    func access(to bundleID: String, asks: Bool) async -> ReadAccess {
+    func access(to bundleID: String, asks: Bool) async -> AccessStatus {
         await Self.off { Self.access(to: bundleID, asks: asks) }
     }
 
@@ -30,7 +30,7 @@ struct SpotReads: MacReads {
         await Self.off { Self.run(script) }
     }
 
-    func accessibility(asks: Bool) -> ReadAccess {
+    func accessibility(asks: Bool) -> AccessStatus {
         AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": asks] as CFDictionary) ? .allowed : .unasked
     }
 
@@ -45,7 +45,7 @@ struct SpotReads: MacReads {
         }
     }
 
-    private static func access(to bundleID: String, asks: Bool) -> ReadAccess {
+    private static func access(to bundleID: String, asks: Bool) -> AccessStatus {
         var target = AEAddressDesc()
         let id = Array(bundleID.utf8)
         guard AECreateDesc(DescType(typeApplicationBundleID), id, id.count, &target) == noErr else { return .unknown }

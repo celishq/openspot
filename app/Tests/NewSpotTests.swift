@@ -119,7 +119,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(opened.scheme, "claude")
         XCTAssertEqual(opened.path, "/new")
         XCTAssertNil(opened.queryItems?.first { $0.name == "folder" })
-        XCTAssertEqual(opened.queryItems?.first { $0.name == "q" }?.value?.hasPrefix("Build an Openspot spot"), true, "\(opened)")
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "q" }?.value?.contains("<request>\nA timer\n</request>"), true, "\(opened)")
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
     }
 
@@ -149,7 +149,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(opened.scheme, "codex")
         XCTAssertEqual(opened.host, "new")
         XCTAssertNil(opened.queryItems?.first { $0.name == "path" })
-        XCTAssertEqual(opened.queryItems?.first { $0.name == "prompt" }?.value?.hasPrefix("Build an Openspot spot"), true, "\(opened)")
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "prompt" }?.value?.contains("<request>\nA timer\n</request>"), true, "\(opened)")
     }
 
     private func fakeApp(_ name: String, id: String) throws -> URL {
@@ -193,9 +193,9 @@ final class NewSpotTests: BuiltInCase {
     func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
         try await newSpot().perform("press", input: "input.item=time in kyiv\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: time in kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\ntime in kyiv\n</request>"), prompt)
     }
 
     func testAfterACopyTheNextOpenStartsEmpty() async throws {
@@ -203,7 +203,7 @@ final class NewSpotTests: BuiltInCase {
 
         try await spot.perform("copy", input: "input.describe=Show the weather\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value ?? "", "")
     }
@@ -227,25 +227,27 @@ final class NewSpotTests: BuiltInCase {
 
         try await spot.perform("copy", input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
 
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["toast \(SpotPrompt.copied)"])
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: Show the weather\nin Kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nShow the weather\nin Kyiv\n</request>"), prompt)
+        XCTAssertTrue(prompt.contains(SpotPrompt.finishNew), prompt)
         XCTAssertTrue(prompt.contains(spots.path))
         XCTAssertEqual(try SpotsFolder(url: spots).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
-    func testCopyPromptWithAnEmptyFieldCopiesThePromptThatAsksWhatToBuild() async throws {
-        try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
-
-        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
-        let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"), prompt)
-        XCTAssertFalse(prompt.contains("Build an Openspot spot that does this"))
+    func testCopyPromptWithAnEmptyFieldAsksForTheWordsAndCopiesNothing() async throws {
+        do {
+            try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
+            XCTFail("expected a fault")
+        } catch {
+            XCTAssertEqual((error as? SpotError)?.reason, SpotPrompt.wordsNeeded)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
     }
 
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         runs.panelOpened()
         let sheet = runs.sheet(for: try newSpot())
@@ -257,10 +259,10 @@ final class NewSpotTests: BuiltInCase {
 
         sheet.press(try XCTUnwrap(panel.parts.first { $0.id == "copy" }))
 
-        for _ in 0..<6000 where (try? saved("clipboard"))?.contains("what the spot runs on my computer.") != true {
+        for _ in 0..<6000 where (try? saved("clipboard"))?.hasSuffix("</request>") != true {
             try await Task.sleep(for: .milliseconds(10))
         }
-        XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
+        XCTAssertTrue(try saved("clipboard").hasSuffix("<request>\nShow the weather here\n</request>"))
         let copy = { sheet.panel?.parts.first { $0.id == "copy" } }
         for _ in 0..<6000 where copy()?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(copy()?.title, "✓ Copied")
@@ -272,13 +274,13 @@ final class NewSpotTests: BuiltInCase {
     }
 
     private func editSheet(of id: String) throws -> Spot {
-        let place = SpotsFolder(url: spots, core: core, enabled: ["cups"])
+        let place = SpotsFolder(url: spots, core: core)
         let owner = try XCTUnwrap(try place.scan().scripts.first { $0.id == id })
         return try XCTUnwrap(try newSpot().editSheet(of: owner, isOwn: !place.isCore(owner)))
     }
 
     private func edit(_ sheet: Spot, _ action: String, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await SpotRuns(environment: TestEnvironment.values).answer(of: sheet, action, input: input, limit: 60, variables: variables)
+        try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: sheet, action, input: input, limit: 60, variables: variables)
     }
 
     func testTheEditSheetIsTheSameFormForAChangeWithOpenInEditor() async throws {
@@ -308,20 +310,20 @@ final class NewSpotTests: BuiltInCase {
         _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=Add a refresh button\n")
 
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path): Add a refresh button\n\(AgentPrompt.finishChange)\n"), prompt)
-        XCTAssertTrue(prompt.contains("spot run weather"))
+        XCTAssertTrue(prompt.contains(spots.spotFile("weather").path), prompt)
+        XCTAssertTrue(prompt.contains(SpotPrompt.finishChange), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nAdd a refresh button\n</request>"), prompt)
         XCTAssertFalse(prompt.contains("comes with Openspot"))
     }
 
-    func testCopyPromptOnAnEmptyEditSheetAsksWhatToChangeWithTheLastFailure() async throws {
+    func testCopyPromptOnAnEmptyEditSheetAsksForAReviewWithTheLastFailure() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
         _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=\n", variables: ["OPENSPOT_EDIT_FAILURE": "The server did not answer."])
 
         let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path). Ask me what to change before you change it."), prompt)
-        XCTAssertTrue(prompt.contains("Its last call failed, and said: The server did not answer."))
-        XCTAssertFalse(prompt.contains(AgentPrompt.finishChange))
+        XCTAssertTrue(prompt.contains("The server did not answer."), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\n\(SpotPrompt.review)\n</request>"), prompt)
     }
 
     func testEachSpotKeepsADraftOfItsOwnApartFromNewSpot() async throws {
@@ -345,32 +347,6 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(after.1, "Sort by date")
     }
 
-    func testACoreSpotIsCopiedIntoTheSpotsFolderFirstAndAnOwnCopyChangesInPlace() async throws {
-        try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
-        try file.turn("cups", on: true)
-        let sheet = try editSheet(of: "cups")
-        let copy = spots.appendingPathComponent("cups.spot", isDirectory: true)
-
-        let read = Frame(text: try await edit(sheet, ScriptEntry.show.name))
-        XCTAssertFalse(read.actions.contains { $0.title == "Open in editor" })
-        _ = try await edit(sheet, "copy", input: "input.describe=Count in litres\n")
-        let prompt = try saved("clipboard")
-        XCTAssertTrue(prompt.hasPrefix("\(AgentPrompt(folder: spots, guide: guide, app: "").copying(core.appendingPathComponent("cups.spot"), to: copy))\n"), prompt)
-        XCTAssertTrue(prompt.contains(core.appendingPathComponent("cups.spot").path))
-        XCTAssertTrue(prompt.contains("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"))
-        XCTAssertTrue(prompt.contains(AgentPrompt.finishChange))
-        _ = try await edit(sheet, "copy", input: "input.describe=\n")
-        let asking = try saved("clipboard")
-        XCTAssertTrue(asking.contains(core.appendingPathComponent("cups.spot").path))
-        XCTAssertTrue(asking.contains("Ask me what to change"))
-
-        try "#!/bin/sh\necho\n".writeScript(to: copy.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
-        _ = try await edit(try editSheet(of: "cups"), "copy", input: "input.describe=Count in litres\n")
-        let own = try saved("clipboard")
-        XCTAssertTrue(own.hasPrefix("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"), own)
-        XCTAssertFalse(own.contains("comes with Openspot"))
-    }
-
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
         let spot = try newSpot()
 
@@ -390,20 +366,11 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    func testTheGuideIsTheGuideThenTheProtocolWithEachLinkInThePage() throws {
-        let headings = Set(guideText.split(separator: "\n").filter { $0.hasPrefix("#") && $0.contains("# ") }.map { line in
-            String(line.drop { $0 == "#" }.dropFirst()).lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" }.replacingOccurrences(of: " ", with: "-")
-        })
-        let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
-
+    func testTheGuideIsTheMapThenEachPageWithNoLinkToARepoFile() throws {
         XCTAssertTrue(guideText.hasPrefix("# How Openspot works"))
         XCTAssertTrue(guideText.contains("\n# Your first spot\n"))
         XCTAssertTrue(guideText.contains("\n# The openspot command\n"))
         XCTAssertFalse(guideText.contains("PROTOCOL.md") || guideText.contains("](docs/"))
-        XCTAssertGreaterThan(links.count, 20)
-        for link in links {
-            XCTAssertTrue(headings.contains(link), link)
-        }
     }
 
     func testEachTopicOfTheGuideIsAPageOfTheMapOnce() throws {

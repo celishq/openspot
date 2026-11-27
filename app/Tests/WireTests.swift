@@ -11,7 +11,7 @@ final class WireTests: SpotRunsCase {
         printf 'args=%s\\n%s\\n--\\n' "$*" "$in" >> '\(path("calls"))'
         case "$1" in show|every|sheet.text) printf '\(Self.view)' ;; esac
         """)
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         return try sheet()
     }
 
@@ -154,8 +154,8 @@ final class WireTests: SpotRunsCase {
         let sheet = try spot("\"sheet.open\" = true")
         let settings = [TextBlock.Field(key: "city", value: "Paris")]
 
-        _ = await TerminalRun(spot: sheet.spot, handler: nil, input: nil, inputs: [], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
-        _ = await TerminalRun(spot: sheet.spot, handler: "go", input: "x=2\n", inputs: [.init(key: "x", value: "1")], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
+        _ = await TerminalRun(spot: sheet.spot, handler: nil, input: nil, inputs: [], settings: settings, callers: nil, environment: nil, folder: nil).start { _ in }
+        _ = await TerminalRun(spot: sheet.spot, handler: "go", input: "x=2\n", inputs: [.init(key: "x", value: "1")], settings: settings, callers: nil, environment: nil, folder: nil).start { _ in }
         _ = try await runs.answer(of: sheet.spot, ScriptEntry.show.name)
 
         XCTAssertEqual(calls, ["args=show\ninput.event=sheet.open\nsetting.city=Paris", "args=go\ninput.x=1\nx=2\nsetting.city=Paris", "args=show\n"])
@@ -172,7 +172,7 @@ final class WireTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         runs.panelOpened()
         sheet.open {}
         try await wait("the show") { ((try? String(contentsOfFile: self.path("stdin"), encoding: .utf8)) ?? "").hasSuffix("\n\n") }

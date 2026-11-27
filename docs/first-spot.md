@@ -89,15 +89,8 @@ You don't need the panel to test a spot. Run it the way Openspot does:
 openspot spot run ports show
 ```
 
-It prints what your script printed. `show` has 10 seconds to print its first block. If something's wrong, these help:
-
-```text
-openspot check spots ~/.config/openspot/spots
-openspot spot log ports
-```
-
-`check` names each mistake, such as a key Openspot doesn't know. `log` shows the last runs, with what went in and what
-came out.
+It prints what your script printed. `show` has 10 seconds to print its first block. If something's wrong,
+[Build and check a spot](build-and-check-a-spot.md) shows how to find it.
 
 ## The same idea in JavaScript
 

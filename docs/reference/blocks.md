@@ -113,7 +113,8 @@ footer.
 | `place`         | Where the row sits in your spot, which the panel's search shows.          |
 | `pin`           | `top` or `bottom`: the edge the row stays at while the rest scroll.       |
 | `hides`         | A button of the ⌘K menu the row doesn't offer, one line each.             |
-| `file`          | The file the row stands for, which people can drag out. Dragging runs `drag`. |
+| `file`          | The file the row stands for, which people can drag out. Dragging runs `drag`. Tab hands it to a spot that takes files. |
+| `url`, `text`   | The value the row stands for. Tab hands it, with the row's title, to a spot that takes its kind. |
 | `close`         | `false` keeps the panel open after a press.                               |
 | `shake`         | `true` lets a shake be the key the row records.                           |
 | `open.title`    | The words of Return on this row.                                          |
@@ -144,7 +145,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |
 | `<field>`, `<switch>`, `<choice>` | When its value changes.               | `value`, the new value.                              |
-| `<setting>`          | When people press Return on a setting that isn't a `secret` and has no `options`. | none              |
+| `<setting>`          | When `openspot setting change <setting>` runs, for a setting that isn't a `secret` and has no `options`. | none |
 
 ## Environment variables
 

@@ -38,10 +38,11 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertEqual(SpotSize.square.reach(among: sizes).shrinks, true)
     }
 
-    func testAFloatingListHoldsALineForEachSectionTitle() {
+    func testAFloatingListHoldsAShortLineForEachSectionTitle() {
         let list = ItemList(items: Frame(text: "items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\nitem=mouse\nparent=nearby\ntitle=Mouse\n\nitem=keyboard\nparent=nearby\ntitle=Keyboard\n").items)
 
-        XCTAssertEqual(SpotTokens.floatSize(list: list), SpotTokens.floatSize(rows: 3, perLine: 1))
+        XCTAssertEqual(SpotTokens.floatSize(list: list), SpotTokens.floatSize(rows: 3, perLine: 1, sections: 1))
+        XCTAssertEqual(SpotTokens.floatSize(rows: 3, perLine: 1).height - SpotTokens.floatSize(list: list).height, SpotTokens.listRow - SpotTokens.listSection)
     }
 
     func testAFloatingSheetWithRowsSetApartHoldsTheRuleAsThePanelDoes() {

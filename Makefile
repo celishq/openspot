@@ -36,7 +36,7 @@ shots:
 	sh scripts/menu-shots.sh
 
 eval-agent:
-	sh scripts/agent-eval.sh $(or $(LABEL),base) $(or $(N),3) $(TASKS)
+	MODEL=$(or $(MODEL),sonnet) sh scripts/agent-eval.sh $(or $(LABEL),base) $(or $(N),3) $(TASKS)
 
 eval-compare:
 	python3 -I scripts/agent-eval/summary.py $(foreach l,$(LABELS),.temp/agent-eval/$(l)/runs.tsv)

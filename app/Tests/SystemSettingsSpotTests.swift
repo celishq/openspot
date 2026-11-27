@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class SystemSettingsSpotTests: SampleSpotsCase {
-    func testSystemSettingsJoinsTheMainSearch() throws {
+    func testSystemSettingsJoinsThePanelSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 
         XCTAssertTrue(settings.triggers.lists)
@@ -14,8 +14,17 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
         XCTAssertTrue(read.showsOnPanel)
     }
 
+    func testTheSearchHoldsOnlyThePanesByDefault() async throws {
+        try await withPanes { _ in
+            let rows = try await self.rows()
+
+            XCTAssertTrue(rows.contains { $0.title == "Звук" })
+            XCTAssertFalse(rows.contains { $0.title == "Громкость" })
+        }
+    }
+
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {
-        try await withPanes { home in
+        try await withPanes(settings: ["sections": "true"]) { home in
             let panes = home.appendingPathComponent("panes")
             let rows = try await self.rows()
 
@@ -43,7 +52,7 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
     }
 
     func testAPickOpensTheSectionOfItsPane() async throws {
-        try await withPanes { home in
+        try await withPanes(settings: ["sections": "true"]) { home in
             let settings = try XCTUnwrap(try self.scan.spots.first { $0.name == "System Settings" })
             let rows = try await self.rows()
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
@@ -62,8 +71,8 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
         return output.items
     }
 
-    private func withPanes(_ body: @escaping (URL) async throws -> Void) async throws {
-        try await withPrivateHome { folder in
+    private func withPanes(settings: [String: String] = [:], _ body: @escaping (URL) async throws -> Void) async throws {
+        try await withPrivateHome(settings: settings) { folder in
             let panes = folder.appendingPathComponent("panes")
             try Self.pane("Sound", in: panes, info: ["CFBundleIdentifier": "com.apple.Sound-Settings.extension", "CFBundleName": "Sound", "CFBundleIcons": [:]],
                           names: ["en": ["CFBundleDisplayName": "Sound"], "ru": ["CFBundleDisplayName": "Звук"]],

@@ -153,20 +153,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the end that the script prints") { sheet.calls.isEmpty }
     }
 
-    func testAHeldCallThatOpenspotEndsByARestartSaysThatTheSpotStopped() async throws {
-        try holding()
-        let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
-        sheet.pressKey("hold")
-        _ = try await pid("children")
-
-        runs.isCareful = true
-
-        try await wait("the end of the held call") { sheet.calls.isEmpty }
-        XCTAssertEqual(toasts, ["Script stopped, since Openspot restarted it. Start it again to go on."])
-    }
-
     func testEachFrameWithABlockReplacesAllAndOnlyTheFrameThatEndsAReadAnswersIt() async throws {
         try script(toml: "stay = true", """
         while IFS= read -r line; do
@@ -389,7 +375,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         """
     }
 
-    func testAStayingScriptAnswersTheMainSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
+    func testAStayingScriptAnswersThePanelSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
         try script(toml: "stay = true\n[on]\nsearch = '^[0-9]'", answering)
         let sheet = try sheet()
         runs.panelOpened()
@@ -432,7 +418,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.answers, [])
     }
 
-    func testAServedStayingScriptAnswersItsSheetAndTheMainSearchApart() async throws {
+    func testAServedStayingScriptAnswersItsSheetAndThePanelSearchApart() async throws {
         try """
         #!/bin/sh
         . "$OPENSPOT_SH"

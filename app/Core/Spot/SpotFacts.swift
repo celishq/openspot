@@ -11,6 +11,7 @@ public struct SpotFacts: Equatable, Sendable {
     public let hasSheet: Bool
     public let isFound: Bool
     public let isSource: Bool
+    public internal(set) var isSourceHidden = false
     public internal(set) var order: Int
     public let host: HostSheet?
     public let growsFromField: Bool
@@ -29,7 +30,6 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var bindings: [Manifest.Binding] = []
     public internal(set) var events: [Manifest.Event] = []
     public let settings: [Manifest.Setting]
-    public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false
     public let keywords: [String]
     public let sample: URL?

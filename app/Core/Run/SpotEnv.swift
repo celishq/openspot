@@ -10,16 +10,14 @@ final class SpotEnv: Sendable {
     let spot: Spot
     private let cache: SpotCache
     private let fetching: Fetch
-    private let isCareful: Bool
     private let locale: Locale
     nonisolated(unsafe) private weak var runs: SpotRuns?
     private let session = Mutex<URLSession?>(nil)
 
-    init(spot: Spot, cache: SpotCache, fetch: Fetch = Fetch(), isCareful: Bool = false, locale: Locale = .autoupdatingCurrent, runs: SpotRuns? = nil) {
+    init(spot: Spot, cache: SpotCache, fetch: Fetch = Fetch(), locale: Locale = .autoupdatingCurrent, runs: SpotRuns? = nil) {
         self.spot = spot
         self.cache = cache
         fetching = fetch
-        self.isCareful = isCareful
         self.locale = locale
         self.runs = runs
     }
@@ -51,8 +49,10 @@ final class SpotEnv: Sendable {
     }
 
     func fetch(_ url: String, method: String, headers: [String: String], body: String?) async -> FetchAnswer {
-        if isCareful, !spot.uses.contains(.network) {
-            return .failed(.refused, "Careful mode stopped \(spot.name), because it reached the network without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.")
+        if let use = Fetch.use, !spot.uses.contains(.network) {
+            let refusal = UseRefusal(spot: spot, call: use)
+            tell { $0.refused(refusal) }
+            return .failed(.refused, refusal.lines.trimmingCharacters(in: .newlines))
         }
         if let use = Fetch.use { tell { [spot] in $0.used(use, by: spot) } }
         let session = session.withLock { kept in

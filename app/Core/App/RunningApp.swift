@@ -17,12 +17,19 @@ public protocol RunningApp: Sendable {
     func act(_ act: CardAct, on id: String) async -> Bool
     func choose(for id: String) async -> Bool
     func editGrid() async
-    func publish(_ id: String) async -> SpotPublish
+    func gridSpots() async -> [ArrangedSpot]
+    func pin(_ id: String) async -> GridPin
+    func openStore(_ id: String?, search: String?) async -> Bool
     func reveal(_ id: String) async -> Bool
-    func playground(_ file: URL?, isCareful: Bool) async
+    func playground(_ file: URL?) async
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
     func slowMotion(_ isOn: Bool?) async -> Bool?
+    func grant(_ id: String?, needs: [MacAccess]) async -> Bool
+    func grant() async -> AccessGrant?
+    func endGrant() async
+    func restart() async -> Bool
+    func openSettings(at place: SettingsPlace?) async
 }
 
 extension RunningApp {
@@ -37,4 +44,31 @@ extension RunningApp {
     public func slowMotion(_ isOn: Bool?) async -> Bool? {
         nil
     }
+
+    public func openStore(_ id: String?, search: String?) async -> Bool {
+        false
+    }
+
+    public func gridSpots() async -> [ArrangedSpot] {
+        []
+    }
+
+    public func pin(_ id: String) async -> GridPin {
+        .unknown
+    }
+    public func grant(_ id: String?, needs: [MacAccess]) async -> Bool {
+        false
+    }
+
+    public func grant() async -> AccessGrant? {
+        nil
+    }
+
+    public func endGrant() async {}
+
+    public func restart() async -> Bool {
+        false
+    }
+
+    public func openSettings(at place: SettingsPlace?) async {}
 }

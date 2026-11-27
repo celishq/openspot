@@ -59,24 +59,20 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(answer.output, "rang hi\n")
     }
 
-    func testARunOfAnotherSpotCountsOnItWithItsCaller() async throws {
+    func testARunOfAnotherSpotBySpotIsLeftToItsOwnSandbox() async throws {
         try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"), toml: "title = 'Echo'")
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
+        let request = CommandRequest(arguments: ["spot", "run", "echo"], folder: folder.path, caller: runs.callers.issue(for: caller))
 
-        let answer = try await ask(["spot", "run", "echo"], from: caller)
-
-        XCTAssertEqual(answer.output, "title=hi\n", answer.errors)
-        try await wait("the run by board") { self.runs.usage.counts["echo"]?.callers == ["board": 1] }
-        XCTAssertEqual(runs.usage.counts["echo"]?.runs, 1)
+        XCTAssertNil(api.work(for: request, input: { "" }))
     }
 
     func testARunThatOpenspotRefusesCountsNothing() async throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
         try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"), toml: "title = 'Keyed'\nuses = ['account']")
         api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, nouns: nouns)
-        let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 
-        let answer = try await ask(["spot", "run", "openspot/keyed"], from: caller)
+        let answer = try await ask(["spot", "run", "openspot/keyed"])
 
         XCTAssertTrue(answer.errors.contains("account key"), answer.errors)
         XCTAssertNil(runs.usage.counts["openspot/keyed"])
@@ -90,26 +86,15 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "count"], reason: "panel.open", nouns: nouns)?.value as? BellCall, .count)
     }
 
-    func testTheUseOfAVerbIsAdmittedAndCounted() async throws {
-        let answer = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
+    func testADeclaredUseOfAVerbIsAdmittedAndCountedAndAnUndeclaredOneIsRefused() async throws {
+        let answer = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
         try await wait("the count of the use") { self.runs.usage.counts["chime"]?.calls["bell.ring"] == 1 }
         XCTAssertEqual(answer.output, "rang hi\n")
 
-        runs.isCareful = true
         let refused = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
-        let declared = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
 
-        XCTAssertEqual(refused.errors, "Careful mode stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
-        XCTAssertEqual(declared.output, "rang hi\n")
-    }
-
-    func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
-        runs.isCareful = true
-
-        let answer = try await ask(["store", "publish", "x"], from: spot(uses: []))
-
-        XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n")
-        XCTAssertNil(runs.usage.counts["chime"])
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "Openspot stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml.\nAdd it there, or run `openspot spot allow chime network`.\n")
     }
 
     func testEachVerbThatReachesTheKeyRefusesACallerThatHoldsNoKey() async throws {
@@ -118,7 +103,7 @@ final class CommandNounTests: XCTestCase {
                 let arguments = [noun.name] + verb.words + (verb.form == "on|off" ? ["off"] : verb.form == "<id>" ? ["x"] : [])
                 for caller in [nil, spot(uses: [.account])] {
                     let answer = try await ask(arguments, from: caller)
-                    XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n", arguments.joined(separator: " "))
+                    XCTAssertEqual(answer.errors, "Only Openspot's own spots can reach your account key.\n", arguments.joined(separator: " "))
                 }
             }
         }

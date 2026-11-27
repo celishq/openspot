@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         panel?.layOut()
     }
 
+    func arrange(_ isOn: Bool) {
+        panel?.arrange(isOn)
+    }
+
     func widen() {
         SpotLoadedTheme.shared.widen()
         panel?.layOut()
@@ -55,6 +59,20 @@ extension OpenspotApp: SpotsHost {
         if model.isShown { panel?.hide() }
         recordFront()
         windows.window(entry)
+    }
+
+    func focusWindow(_ id: String) {
+        windows.focus(id)
+    }
+
+    func showSettings() {
+        if model.isShown { panel?.hide() }
+        recordFront()
+        windows.openSettings()
+    }
+
+    func focusSettings() {
+        windows.focusSettings()
     }
 
     func takesDrop(at point: NSPoint) -> Bool {
@@ -94,6 +112,10 @@ extension OpenspotApp: SpotsHost {
         panel?.makeKey()
     }
 
+    func openStore(file: URL) {
+        Task { _ = await StoreWindow.show(model: model, file: file) }
+    }
+
     func allows(_ reason: String) async -> Bool {
         if Self.unlocks.covers(reason, at: Date()) { return true }
         let context = LAContext()
@@ -119,10 +141,6 @@ extension OpenspotApp: SpotsHost {
 
     func prepareCards(glyphs: [String]) {
         SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyph)
-    }
-
-    func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "DOCS", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func nextFrame(_ body: @escaping @MainActor () -> Void) {

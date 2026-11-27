@@ -416,10 +416,8 @@ prompt() {
   if [ -n "$spot" ]; then
     set -- "$spot" ${OPENSPOT_EDIT_FAILURE:+--failure "$OPENSPOT_EDIT_FAILURE"} ${1:+"$1"}
     openspot prompt change "$@"
-  elif [ -n "$1" ]; then
-    openspot prompt new "$1"
   else
-    openspot prompt new
+    openspot prompt new "$1"
   fi
 }
 
@@ -831,7 +829,7 @@ case "$1" in
     open -t "$OPENSPOT_EDIT_FILE"
     ;;
   guide)
-    openspot guide > "$OPENSPOT_DATA/DOCS.md" && open "$OPENSPOT_DATA/DOCS.md"
+    openspot guide --all > "$OPENSPOT_DATA/DOCS.md" && open "$OPENSPOT_DATA/DOCS.md"
     ;;
   folder)
     mkdir -p "$folder" && open "$folder"

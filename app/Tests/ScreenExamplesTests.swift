@@ -82,7 +82,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in
-                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "input.inputs=\(input)\nsetting.inputs=\(kept)\n", limit: 60)
+                _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: record, inputs, input: "input.inputs=\(input)\nsetting.inputs=\(kept)\n", limit: 60)
                 return (try? self.read("setting-inputs", in: folder)) ?? ""
             }
 

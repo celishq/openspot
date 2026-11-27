@@ -43,7 +43,7 @@ struct SpotFieldView: View {
     }
 
     private var gridPlace: CGRect {
-        SpotTokens.fieldRect(room: model.fieldRoom)
+        SpotTokens.fieldRect(room: model.detailsRoom)
     }
 
     private var glass: some View {
@@ -72,7 +72,7 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
                 if !isInSheet {
-                    SpotAttachmentPreview(model: model)
+                    SpotAttachmentDetails(model: model)
                         .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotAttachmentStack(model: model)
@@ -101,7 +101,7 @@ struct SpotFieldView: View {
 
     private var editHeader: some View {
         HStack {
-            Text("Edit Spots")
+            Text(model.isArranging ? "Arranging spots" : "Edit Spots")
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
@@ -164,7 +164,7 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let left = fieldTextLeft
         return promptWords
-            .frame(height: SpotTokens.cell)
+            .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })

@@ -159,7 +159,7 @@ final class ConfigFileTests: XCTestCase {
         try file.set(setting: "folder", of: "repos", to: "~/Code")
 
         try file.set("panel-key", to: "option+space")
-        try file.turn("cpu", on: true)
+        try file.pin("cpu", on: true)
         try file.write(keys: [GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))])
 
         XCTAssertEqual(file.read().setting("folder", of: "repos"), "~/Code")
@@ -184,27 +184,27 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testASpotNameWithAQuoteSurvivesASave() throws {
-        try file.turn("a\"b\\c", on: true)
+        try file.pin("a\"b\\c", on: true)
         try file.set(setting: "x", of: "y", to: "z")
 
-        XCTAssertEqual(file.read().arrangement.enabled, ["a\"b\\c"])
+        XCTAssertEqual(file.read().arrangement.pinned, ["a\"b\\c"])
         XCTAssertEqual(file.read().faults, [])
     }
 
     func testAKeyEntryThatCannotBeReadSurvivesASave() throws {
         try write("[[keys]]\nspot = \"a\"\nkey = \"hyper+k\"\nwhen = \"held\"\n")
 
-        try file.turn("x", on: true)
+        try file.pin("x", on: true)
 
         let text = try String(contentsOf: file.url, encoding: .utf8)
         XCTAssertTrue(text.contains("[[keys]]\nspot = \"a\"\nkey = \"hyper+k\"\nwhen = \"held\"\n"), text)
-        XCTAssertEqual(file.read().arrangement.enabled, ["x"])
+        XCTAssertEqual(file.read().arrangement.pinned, ["x"])
     }
 
     func testATableWithAnUnknownNameSurvivesASave() throws {
         try write("[[themes]]\nname = \"dark\"\ntones = [\"a\", \"b\"]\n")
 
-        try file.turn("x", on: true)
+        try file.pin("x", on: true)
 
         let text = try String(contentsOf: file.url, encoding: .utf8)
         XCTAssertTrue(text.contains("[[themes]]\nname = \"dark\"\ntones = [\"a\", \"b\"]\n"), text)
@@ -214,7 +214,7 @@ final class ConfigFileTests: XCTestCase {
     func testASectionSurvivesASaveAndIsNotASetting() throws {
         try write("[look]\nink = \"#FFFFFF\"\n")
 
-        try file.turn("x", on: true)
+        try file.pin("x", on: true)
 
         let text = try String(contentsOf: file.url, encoding: .utf8)
         XCTAssertTrue(text.contains("[look]\nink = \"#FFFFFF\"\n"), text)
@@ -235,27 +235,27 @@ final class ConfigFileTests: XCTestCase {
         let file = ConfigFile(url: file.url, disk: disk)
 
         try file.change { config in
-            config.arrangement.set(isEnabled: true, of: "b")
+            config.arrangement.set(isOnGrid: true, of: "b")
             config.assign(.shake, to: "a", act: .float)
             config.set(setting: "folder", of: "a", to: "~/Code")
-            config.set(isCareful: true)
+            config.set(theme: "Dusk")
         }
 
         XCTAssertEqual(disk.reads, 1)
         XCTAssertEqual(disk.writes, 1)
         let config = Config(text: disk.text ?? "")
-        XCTAssertEqual(config.arrangement.enabled, ["b"])
+        XCTAssertEqual(config.arrangement.pinned, ["b"])
         XCTAssertEqual(config.keys.map(\.trigger), [.shake])
         XCTAssertEqual(config.setting("folder", of: "a"), "~/Code")
-        XCTAssertTrue(config.isCareful)
+        XCTAssertEqual(config.theme, "Dusk")
         XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+k"))
     }
 
     func testAChangeThatChangesNothingWritesNothing() throws {
-        let disk = FakeDisk(text: "careful = true\n")
+        let disk = FakeDisk(text: "theme = \"Dusk\"\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
-        try file.change { $0.set(isCareful: true) }
+        try file.change { $0.set(theme: "Dusk") }
 
         XCTAssertEqual(disk.writes, 0)
     }
@@ -266,25 +266,31 @@ final class ConfigFileTests: XCTestCase {
         let kept = file.readKept()
         let reads = disk.reads
 
-        let next = try file.change(from: kept) { $0.arrangement.set(isEnabled: true, of: "a") }
+        let next = try file.change(from: kept) { $0.arrangement.set(isOnGrid: true, of: "a") }
 
         XCTAssertEqual(disk.reads, reads)
         XCTAssertEqual(next.config, Config(text: disk.text ?? ""))
 
         disk.put((disk.text ?? "") + "\n[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n")
-        let last = try file.change(from: next) { $0.arrangement.set(isEnabled: true, of: "b") }
+        let last = try file.change(from: next) { $0.arrangement.set(isOnGrid: true, of: "b") }
 
         XCTAssertEqual(disk.reads, reads + 1)
         XCTAssertEqual(last.config.setting("k", of: "a"), "v")
-        XCTAssertEqual(last.config.arrangement.enabled, ["a", "b"])
+        XCTAssertEqual(last.config.arrangement.pinned, ["a", "b"])
     }
 
     func testAFileThatCannotBeReadIsNotWrittenFromAKeptConfig() throws {
         let disk = FakeDisk(text: "panel-key\n")
         let file = ConfigFile(url: file.url, disk: disk)
 
-        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(theme: "Dusk") })
         XCTAssertEqual(disk.text, "panel-key\n")
+    }
+
+    func testACarefulLineOfAnOlderConfigIsReadAndIgnored() {
+        XCTAssertEqual(Config(text: "careful = true\n").faults, [])
+        XCTAssertEqual(Config(text: "careful = 3\n").faults, [])
+        XCTAssertEqual(Config(text: "careful = true\n").text, "careful = true\n")
     }
 
     func testTheSectionsThatDifferNameEachFieldAndTheRest() {
@@ -294,7 +300,7 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\nkey = \"shake\"\n").sections(differingFrom: config), [.keys])
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\n").sections(differingFrom: config), [.spots])
         XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])
-        XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [.careful])
+        XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [])
         XCTAssertEqual(Config(text: "columns = 6\n").sections(differingFrom: config), [.columns])
         XCTAssertEqual(Config(text: "look = \"dark\"\n").sections(differingFrom: config), [.rest])
         XCTAssertEqual(Config(text: "theme = \"Dusk\"\n").sections(differingFrom: config), [])
@@ -304,18 +310,18 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testTheStampOfTheFileHoldsUntilAWriteAndAKeptConfigSeesTheWriteOfAnother() throws {
-        try file.turn("a", on: true)
+        try file.pin("a", on: true)
         let kept = file.readKept()
 
         XCTAssertEqual(LocalDisk().readStamp(of: file.url), LocalDisk().readStamp(of: file.url))
         XCTAssertEqual(try file.change(from: kept) { _ in }, kept)
 
         try file.set(setting: "k", of: "a", to: "v")
-        let next = try file.change(from: kept) { $0.arrangement.set(isEnabled: true, of: "b") }
+        let next = try file.change(from: kept) { $0.arrangement.set(isOnGrid: true, of: "b") }
 
         XCTAssertNotEqual(next, kept)
         XCTAssertEqual(file.read().setting("k", of: "a"), "v")
-        XCTAssertEqual(file.read().arrangement.enabled, ["a", "b"])
+        XCTAssertEqual(file.read().arrangement.pinned, ["a", "b"])
         XCTAssertEqual(next.config, file.read())
     }
 
@@ -324,14 +330,14 @@ final class ConfigFileTests: XCTestCase {
 
         for (index, value) in values.enumerated() {
             try file.set(setting: "k\(index)", of: value, to: value)
-            try file.turn(value, on: true)
+            try file.pin(value, on: true)
         }
 
         let config = file.read()
         XCTAssertEqual(config.faults, [])
         XCTAssertEqual(config.settings.map(\.value).map { Array($0.unicodeScalars) }, values.map { Array($0.unicodeScalars) })
         XCTAssertEqual(config.settings.map(\.spot).map { Array($0.unicodeScalars) }, values.map { Array($0.unicodeScalars) })
-        XCTAssertEqual(config.arrangement.enabled.count, values.count)
+        XCTAssertEqual(config.arrangement.pinned.count, values.count)
     }
 
     func testAFileThatIsNotTextIsAFaultAndIsNotWritten() throws {
@@ -342,9 +348,9 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertFalse(file.read().isReadable)
         XCTAssertEqual(file.read().faults.count, 1)
         XCTAssertNil(file.read().panelKey)
-        XCTAssertThrowsError(try file.turn("a", on: true))
-        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(isCareful: true) })
-        XCTAssertThrowsError(try file.begin(enabling: ["a"]))
+        XCTAssertThrowsError(try file.pin("a", on: true))
+        XCTAssertThrowsError(try file.change(from: file.readKept()) { $0.set(theme: "Dusk") })
+        XCTAssertThrowsError(try file.begin(naming: ["a"]))
         XCTAssertEqual(try Data(contentsOf: file.url), bytes)
     }
 }

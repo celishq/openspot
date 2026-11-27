@@ -105,28 +105,31 @@ extension SpotsModel {
         let plain = { [self] (name: String, dx: Int, dy: Int) in
             KeyRow(name, command: nil, shift: false, act: always { self.moveSelection(dx: dx, dy: dy) })
         }
-        return [
+        let held = !isArranging
+        let rows: [KeyRow?] = [
             .any { [self] key in
                 guard gesture != nil || carry != nil else { return nil }
                 if key.name == "escape" {
                     cancelDrag()
                     cancelResize()
+                    cancelPin()
                 }
                 return true
             },
             .any { [self] key in openSheet(on: key) ? true : nil },
-            KeyRow("s", command: nil, shift: nil, words: "Size", act: always { [self] in stepSelectedSize() }),
+            held ? KeyRow("s", command: nil, shift: nil, words: "Size", act: always { [self] in stepSelectedSize() }) : nil,
             shifted("left", -1, 0, "⇧ Arrows"),
             shifted("up", 0, -1, nil),
             shifted("right", 1, 0, nil),
             shifted("down", 0, 1, nil),
             KeyRow("escape", command: nil, shift: nil, words: "Done", act: always { [self] in endEditing() }),
-            plain("left", -1, 0),
-            plain("right", 1, 0),
+            held ? plain("left", -1, 0) : nil,
+            held ? plain("right", 1, 0) : nil,
             plain("up", 0, -1),
             plain("down", 0, 1),
-            .any { _ in true },
+            held ? .any { _ in true } : nil,
         ]
+        return rows.compactMap { $0 }
     }
 
     var formRows: [KeyRow] {
@@ -180,7 +183,7 @@ extension SpotsModel {
     }
 
     var settingsRow: KeyRow {
-        let shows = target.map { openSheetID == nil && $0.item == nil && settingsSheet(of: $0.entry) != nil } ?? false
+        let shows = target.map { openSheetID == nil && $0.item == nil && hasSettings($0.entry) } ?? false
         return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
             openSelectedSettings() ? true : nil
         }

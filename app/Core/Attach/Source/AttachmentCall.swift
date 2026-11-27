@@ -9,7 +9,7 @@ enum AttachmentCall: NounCall {
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. `clipboard` puts what the clipboard holds: its files, a link, a text or an image, and nothing for a password; with --within, only a copy that Openspot first saw within the age, as `clipboard read` takes it. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value; blocks after the value draw its details, with text, number, series, picture and icon blocks. `clipboard` puts what the clipboard holds: its files, a link, a text or an image, and nothing for a password or a one-time code; with --within, only a copy that Openspot first saw within the age, as `clipboard read` takes it. It works in a show.",
             rule: rule
         ) { words in
             guard words.rest.first == "clipboard" else { return Self.add(words.rest) }
@@ -53,9 +53,16 @@ enum AttachmentCall: NounCall {
             return Self.add(fields, to: runs, from: caller)
         }
         return {
-            let fields = (TextBlock.blocks(in: await input()).first?.fields ?? []).filter { Self.keys.contains($0.key) }
+            let blocks = TextBlock.blocks(in: await input())
+            let fields = (blocks.first?.fields ?? []).filter { Self.keys.contains($0.key) }
             guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
-            return await Self.add(fields, to: runs, from: caller)()
+            let details = Array(blocks.dropFirst())
+            do {
+                try AttachmentDetails.check(details)
+            } catch {
+                return CommandAnswer(errors: "The details after the value of `openspot attachment add` take only text, number, series, picture and icon blocks, not \((error as? SpotError)?.reason ?? "").\n", code: 2)
+            }
+            return await Self.add(fields, details: details, to: runs, from: caller)()
         }
     }
 
@@ -78,23 +85,22 @@ enum AttachmentCall: NounCall {
     }
 
     private static let notes = ["title", "app", "icon"]
-    private static let keys = ["file", "url", "text"] + notes
+    private static let keys = AttachmentValue.Kind.allCases.map(\.rawValue) + notes
 
-    private static func add(_ fields: [TextBlock.Field], to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
-        let kinds = Set(fields.map(\.key).filter { !notes.contains($0) })
+    private static func add(_ fields: [TextBlock.Field], details: [TextBlock] = [], to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
         let title = fields.last { $0.key == "title" }?.value
         let app = fields.last { $0.key == "app" }?.value
         let icon = Icon(text: fields.last { $0.key == "icon" }?.value)
-        let values = fields.filter { kinds.contains($0.key) }.map(\.value)
-        guard kinds.count == 1, let kind = kinds.first, kind == "file" || values.count == 1 else {
+        guard let (kind, values) = AttachmentValue.Kind.value(in: fields) else {
             return { CommandAnswer(errors: "\(oneKind)\n", code: 2) }
         }
         return {
-            let value = switch kind {
-            case "url": AttachmentValue(url: values[0], title: title, app: app, icon: icon)
-            case "text": AttachmentValue(text: values[0], title: title, app: app, icon: icon)
-            default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app, icon: icon)
+            let payload: AttachmentValue.Payload = switch kind {
+            case .url: .url(values[0])
+            case .text: .text(values[0])
+            case .file: .files(FileKinds.Disk().read(values))
             }
+            let value = AttachmentValue(payload, title: title, app: app, icon: icon, details: details)
             _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()
         }

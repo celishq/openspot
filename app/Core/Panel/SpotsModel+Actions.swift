@@ -11,15 +11,19 @@ extension SpotsModel {
     }
 
     func openSheet(on key: ActionKey) -> Bool {
-        guard openSheetID == nil, let id = spot(openedBy: key) else { return false }
+        guard let id = spot(openedBy: key) else { return key == Self.settingsKey && openSettings() }
+        guard openSheetID == nil || place(ofSheet: id) == .window else { return false }
         endEditing(moving: false)
         pushFirst(id, moving: true)
         return true
     }
 
     func spot(openedBy key: ActionKey) -> String? {
-        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        let chosen = arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
+        return chosen
     }
+
+    static let settingsKey = ActionKey(name: ",", isCommand: true)
 
     static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["a", "c", "v", "x", "z"].contains(key.name)
@@ -84,7 +88,7 @@ extension SpotsModel {
     @discardableResult
     public func openEdit(of entry: Entry) -> Bool {
         let spot = entry.spot
-        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn,
+        guard entry.item == nil, spot.fault == nil, spot.host == nil, !spot.isBuiltIn, !folder.isCore(spot),
               let sheet = runs.editSheet(of: spot, isOwn: !folder.isCore(spot))
         else { return false }
         pushFirst(sheet.spot.id, moving: true)
@@ -111,7 +115,7 @@ extension SpotsModel {
         } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
             show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
         } else if case .command(let command) = action.kind {
-            if isShown { host.dismiss() }
+            hidePanel(after: action.after)
             sheets[target.entry.id]?.pressKey(command)
         } else if action.after == .stay {
             perform(action, on: target)
@@ -120,9 +124,13 @@ extension SpotsModel {
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
-            if isShown { host.dismiss() }
+            hidePanel(after: action.after)
             perform(action, on: target)
         }
+    }
+
+    func hidePanel(after: CommandAction.After) {
+        if after == .close, isShown { host.dismiss() }
     }
 
     func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
@@ -164,7 +172,7 @@ extension SpotsModel {
         case .shown where target.entry.spot.kind.opensSheet:
             if openSheetID != id { pushFirst(id, moving: isShown) }
         case .shown, .done:
-            if action.after == .close, isShown { host.dismiss() }
+            hidePanel(after: action.after)
         case .stopped:
             break
         }
@@ -235,6 +243,15 @@ extension SpotsModel {
         }
     }
 
+    public func keep(secret value: String, key: String, of spot: String) async -> String? {
+        if value.count < SecretStore.shortest {
+            return "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value."
+        }
+        if let failure = await Self.keep(value, key: key, of: spot, in: files.secrets) { return failure }
+        configChanged(.value(spot: spot, caller: nil), to: kept)
+        return nil
+    }
+
     private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
@@ -271,7 +288,7 @@ extension SpotsModel {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
                     self.form = nil
-                    if form.action.after == .close, isShown { host.dismiss() }
+                    hidePanel(after: form.action.after)
                 case .form(let next)? where self.form?.id == form.id:
                     let kept = FormDraft(form: next, after: self.form?.draft ?? draft)
                     self.form?.draft = kept

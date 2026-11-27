@@ -11,7 +11,7 @@ grid = true
 [[spots]]
 id = "openspot/store"
 size = "wide"
-window = true
+grid = true
 
 [[spots]]
 id = "apps"
@@ -59,11 +59,6 @@ grid = false
 [[spots]]
 id = "snippets"
 size = "small"
-
-[[spots]]
-id = "openspot/settings"
-size = "small"
-key = "cmd+,"
 
 [[spots]]
 id = "translate"

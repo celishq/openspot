@@ -2,8 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 extension ConfigFile {
-    func turn(_ id: String, on isOn: Bool) throws {
-        try change { $0.arrangement.set(isEnabled: isOn, of: id) }
+    func pin(_ id: String, on isOn: Bool) throws {
+        try change { $0.arrangement.set(isOnGrid: isOn, of: id) }
     }
 
     func showInMenuBar(_ id: String, _ isShown: Bool) throws {
@@ -29,5 +29,15 @@ extension ConfigFile {
     func set(_ key: String, to text: String) throws {
         let shortcut = try XCTUnwrap(Shortcut(text: text))
         try change { $0.set(shortcut, for: key) }
+    }
+}
+
+extension SpotChoices {
+    var pinned: Set<String> {
+        Set(choices.filter { $0.isOnGrid == true }.map(\.id))
+    }
+
+    var unpinned: Set<String> {
+        Set(choices.filter { $0.isOnGrid == false }.map(\.id))
     }
 }

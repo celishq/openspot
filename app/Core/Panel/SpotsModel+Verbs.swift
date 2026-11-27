@@ -8,9 +8,8 @@ extension SpotsModel {
     public func act(_ act: CardAct, on id: String) -> Bool {
         guard let entry = cards.first(where: { $0.id == id && $0.item == nil }) else { return false }
         switch act {
-        case .settings:
-            if !isShown { host.show() }
-            if !openSettings(of: entry) { toast(.failure("\(entry.state.title) has nothing to set.")) }
+        case .edit where folder.isCore(entry.spot), .prompt where folder.isCore(entry.spot):
+            toast(.failure("\(entry.state.title) comes with Openspot, so it cannot be edited. Make a spot of your own with New spot."))
         case .edit:
             if openEdit(of: entry) {
                 if !isShown { host.show() }
@@ -37,11 +36,10 @@ extension SpotsModel {
     }
 
     func copyPrompt(changing entry: Entry) {
-        let prompt = host.agentPrompt(for: folder.url)
+        let prompt = SpotPrompt(places: files)
         let file = file(of: entry)
         Task {
-            let evidence = await SpotEvidence.read(of: entry.id, runs: runs, stats: files.stats, app: prompt.app)
-            let text = prompt.changing(file, failure: entry.failure, evidence: evidence)
+            let text = await prompt.readChange(of: file, id: entry.id, wish: nil, failure: entry.failure, runs: runs, stats: files.stats)
             do {
                 toast(ToastNote(words: try await prompt.copy(text, base: runs.environment)))
             } catch {
@@ -58,8 +56,9 @@ extension SpotsModel {
         let trash = files.trash
         let log = files.log
         let secrets = files.secrets
+        let lock = files.lock
         Task {
-            let failure = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, of: ids)
+            let failure = await Self.discard(command, in: folder, trash: trash, log: log, secrets: secrets, lock: lock, of: ids)
             await reload()
             if let failure {
                 toast(.failure("\(command.name) was not removed. \(failure)"))
@@ -71,10 +70,11 @@ extension SpotsModel {
 
     @concurrent
     private nonisolated static func discard(
-        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, of ids: Set<String>
+        _ spot: Spot, in folder: SpotsFolder, trash: @Sendable (URL) throws -> Void, log: CallLog, secrets: SecretStore, lock: SpotLock, of ids: Set<String>
     ) async -> String? {
         do {
             try folder.remove(spot, discard: trash)
+            try lock.drop(SpotID(file: spot.url).description)
             log.remove(spot.id)
             try secrets.remove { ids.contains($0) }
             return nil

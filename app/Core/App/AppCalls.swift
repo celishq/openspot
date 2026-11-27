@@ -14,7 +14,6 @@ struct AppCalls {
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
-                careful: config.isCareful,
                 slow: slow,
                 login: mac.login()?.isOn(),
                 link: mac.link()?.isOn,
@@ -41,14 +40,6 @@ struct AppCalls {
         }
     }
 
-    func careful(_ isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [places, app] in
-            let config = try places.config.change { $0.set(isCareful: isOn) }
-            await app?.configChanged(.careful, to: config)
-            return ""
-        }
-    }
-
     func slow(_ isOn: Bool) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("setting set --spot openspot slow") }
         return CommandAnswer.work {
@@ -62,6 +53,22 @@ struct AppCalls {
         return {
             await app.quit()
             return CommandAnswer()
+        }
+    }
+
+    func settings(at place: String?) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("app settings") }
+        return CommandAnswer.work {
+            await app.openSettings(at: place.map { SettingsPlace(place: $0) ?? .general })
+            return ""
+        }
+    }
+
+    func restart() -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("app restart") }
+        return CommandAnswer.work {
+            guard await app.restart() else { throw SpotError.failed(1, "This copy of Openspot cannot start again by itself. Quit it, then open it again.") }
+            return ""
         }
     }
 }

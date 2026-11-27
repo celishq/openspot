@@ -5,7 +5,7 @@ struct SpotEditControls: ViewModifier {
     let model: SpotsModel
     let id: String
     let size: SpotSize
-    let turnsOff: Bool
+    let takesOffGrid: Bool
     let sizes: [SpotSize]
     let isResizing: Bool
     let isDragging: Bool
@@ -13,9 +13,9 @@ struct SpotEditControls: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .topLeading) {
-                if turnsOff {
-                    SpotCornerButton(symbol: "minus", label: "Turn off", corner: .leading, size: size, onHover: tip(.leadingCorner, text: "Turn off")) {
-                        model.turnOff(id)
+                if takesOffGrid {
+                    SpotCornerButton(symbol: "minus", label: "Take off the grid", corner: .leading, size: size, onHover: tip(.leadingCorner, text: "Take off the grid")) {
+                        model.takeOffGrid(id)
                     }
                 }
             }

@@ -1,3 +1,2 @@
-app/Shell/Account/PublisherCard.swift
 app/Shell/Sheet/SpotColorBar.swift
 app/Shell/Sheet/SpotWorkMark.swift

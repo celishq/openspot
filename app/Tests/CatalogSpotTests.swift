@@ -20,11 +20,11 @@ final class CatalogSpotTests: BuiltInCase {
         let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Spots")
-        XCTAssertEqual(spot.subtitle, "Edit Spots")
+        XCTAssertEqual(spot.subtitle, "Arrange your spots")
         XCTAssertFalse(spot.triggers.shows)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
         XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
-        XCTAssertEqual(spot.keywords, ["edit spots"])
+        XCTAssertEqual(spot.keywords, ["arrange", "edit spots"])
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {
@@ -51,10 +51,10 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
-        let scan = try SpotsFolder(url: spots, core: core, enabled: ["apps"]).scan()
+        let scan = try SpotsFolder(url: spots, core: core).scan()
         let shared = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
-        let review = try ReviewSpot(spot: shared, folder: spots, canAdd: false)
+        let review = try ReviewSpot(spot: shared, folder: spots)
         let sheet = try review.answer(["show"])
 
         XCTAssertFalse(sheet.contains("text=install"))

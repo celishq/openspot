@@ -5,6 +5,7 @@ public struct AttachmentChip: Equatable, Sendable {
         case file(FileIcon)
         case symbol(String)
         case glyph(String)
+        case color(String)
 
         init(_ icon: Icon) {
             switch icon {
@@ -12,6 +13,7 @@ public struct AttachmentChip: Equatable, Sendable {
             case .image(let path): self = .file(.image(path))
             case .file(let path): self = .file(FileIcon(path: path))
             case .glyph(let text): self = .glyph(text)
+            case .color(let hex): self = .color(hex)
             }
         }
 
@@ -34,7 +36,10 @@ public struct AttachmentChip: Equatable, Sendable {
     public let app: String?
     public let appName: String?
     public let look: Look
-    public internal(set) var state: State
+    public internal(set) var state: State {
+        didSet { details = Self.details(of: self) }
+    }
+    public private(set) var details: AttachmentDetails?
     public internal(set) var showsKind = false
 
     public init(source: String, app: String?, appName: String? = nil, look: Look, state: State) {
@@ -43,6 +48,11 @@ public struct AttachmentChip: Equatable, Sendable {
         self.appName = appName
         self.look = look
         self.state = state
+        details = Self.details(of: self)
+    }
+
+    private static func details(of chip: AttachmentChip) -> AttachmentDetails? {
+        chip.value.map { AttachmentDetails($0) } ?? AttachmentDetails(state: chip)
     }
 
     public var value: AttachmentValue? {

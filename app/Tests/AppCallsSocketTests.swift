@@ -93,11 +93,10 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertFalse(exists(far))
     }
 
-    func testCarefulModeRunsAPersonsSpotRunInItsUsesAndLeavesASpotsRunToItsOwnSandbox() async throws {
+    func testAPersonsSpotRunRunsInItsUsesAndASpotsRunIsLeftToItsOwnSandbox() async throws {
         try spot("writer", toml: "uses = ['files']", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
         try spot("reader", toml: "uses = ['spots']", "echo")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
         let reader = try XCTUnwrap(SpotsFolder(url: spots).scan().scripts.first { $0.id == "reader" })
         let channel = try XCTUnwrap(runs.callers.channel(for: runs.callers.issue(for: reader)))
@@ -112,11 +111,10 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertEqual((spot.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
-    func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInCarefulMode() async throws {
+    func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInTheSandbox() async throws {
         let leak = outside.appendingPathComponent("leak")
         try spot("leaky", toml: "", "echo a > '\(leak.path)'; printf 'frame=\\ntitle=Leaky\\n'")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
 
         let answer = try ask(["check", "spots", "spots"], cwd: config)
@@ -126,13 +124,12 @@ final class AppCallsSocketTests: XCTestCase {
         XCTAssertFalse(exists(leak))
     }
 
-    func testTheReadsOfACheckInCarefulModeAreKnownAsTheirSpots() async throws {
+    func testTheReadsOfACheckAreKnownAsTheirSpots() async throws {
         let token = folder.appendingPathComponent("token")
         let go = folder.appendingPathComponent("go")
         let client = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try spot("reader", toml: "", "'\(client.path)' setting get tone > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'frame=\\ntitle=Reader\\n'")
         let runs = await SpotRuns()
-        await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
         XCTAssertEqual(try ask(["setting", "set", "--spot", "reader", "tone", "mine"]).code, 0)
         let connection = connect()
@@ -180,6 +177,6 @@ final class AppCallsSocketTests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0)
         let opened = await app.opened
-        XCTAssertEqual(opened, ["playground \(outside.appendingPathComponent("sheet.txt").path) careful=false"])
+        XCTAssertEqual(opened, ["playground \(outside.appendingPathComponent("sheet.txt").path)"])
     }
 }

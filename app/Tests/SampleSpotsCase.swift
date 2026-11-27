@@ -30,7 +30,7 @@ class SampleSpotsCase: XCTestCase {
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("spots")
             var scan = try SpotsFolder(url: folder).scan()
-            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")), secrets: SecretStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/secrets.json")))
+            scan.addSettings(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan
         }
     }
@@ -130,6 +130,17 @@ class SampleSpotsCase: XCTestCase {
             echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -D > "$out"
             printf 'image/png'
             ;;
+          https://vector.test/)
+            echo '<head><link rel="icon" href="/a.png" sizes="16x16"><link rel="icon" type="image/svg+xml" href="/b.svg" data-base-href="/b"></head>'
+            ;;
+          https://vector.test/a.png)
+            echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -D > "$out"
+            printf 'image/png'
+            ;;
+          https://vector.test/b.svg)
+            echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="8"/></svg>' > "$out"
+            printf 'image/svg+xml'
+            ;;
           *)
             exit 22
             ;;
@@ -147,7 +158,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func answer(of spot: Spot, _ handler: String, input: String) async throws -> Frame {
-        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, handler, input: input, limit: 30))
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: spot, handler, input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -208,7 +219,7 @@ class SampleSpotsCase: XCTestCase {
         var panel = try XCTUnwrap(SheetParts(output: last))
         for step in steps {
             if let value = step.value { panel.set(value, of: step.handler) }
-            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -231,7 +242,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         let options: () -> Int = {

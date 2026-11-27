@@ -1,7 +1,6 @@
 import Foundation
 
 public enum CardAct: String, Equatable, Sendable, CaseIterable {
-    case settings
     case edit
     case prompt
     case share

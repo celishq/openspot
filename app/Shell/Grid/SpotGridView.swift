@@ -42,6 +42,7 @@ struct SpotGridView: View {
                 GridSlots(cells: model.freeCells)
                 landing(of: drag, in: placements)
                     .frame(width: frame.width, height: height)
+                PinLanding(model: model)
             }
             ForEach(Array(zip(placements, cards)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -60,7 +61,7 @@ struct SpotGridView: View {
                     model: model,
                     id: entry.id,
                     size: card.size,
-                    turnsOff: model.isEditing && !card.isLifted && model.turnsOff(entry),
+                    takesOffGrid: model.isEditing && !card.isLifted && model.takesOffGrid(entry),
                     sizes: model.isEditing && !card.isLifted ? model.sizes(of: entry) : [],
                     isResizing: model.resize?.id == entry.id,
                     isDragging: drag != nil
@@ -119,6 +120,18 @@ struct SpotGridView: View {
     }
 }
 
+private struct PinLanding: View {
+    let model: SpotsModel
+
+    var body: some View {
+        if let rect = model.pin?.landing {
+            SpotSurfaceShape(rect: rect, radius: SurfaceEdge(card: model.pin?.target?.size ?? .small).radius)
+                .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+                .allowsHitTesting(false)
+        }
+    }
+}
+
 private struct GridSlots: View, Equatable {
     let cells: [GridCell]
 
@@ -130,9 +143,9 @@ private struct GridSlots: View, Equatable {
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
                     .frame(width: rect.width, height: rect.height)
+                    .allowsHitTesting(false)
                     .offset(x: rect.minX, y: rect.minY)
             }
         }
-        .allowsHitTesting(false)
     }
 }

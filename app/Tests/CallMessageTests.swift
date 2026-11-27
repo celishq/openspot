@@ -34,7 +34,7 @@ final class CallMessageTests: SpotRunsCase {
         try store.keep("k1", key: "token", of: "script")
         runs.secrets = store
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         runs.panelOpened()
         sheet.open {}
         try await wait("the sheet") { sheet.panel != nil && sheet.list.all.count == 1 && !sheet.isShowing }
@@ -77,7 +77,7 @@ final class CallMessageTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
-        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+        runs.take(settings: [KeptSetting(spot: "script", key: "city", value: "Paris")])
         runs.panelOpened()
 
         sheet.open {}

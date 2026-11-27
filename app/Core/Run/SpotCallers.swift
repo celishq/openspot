@@ -3,7 +3,6 @@ import Foundation
 public final class SpotCallers: @unchecked Sendable {
     private let lock = NSLock()
     private var groups: [pid_t: SpotCaller] = [:]
-    private var careful = false
     private weak var api: CommandAPI?
 
     private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
@@ -29,11 +28,6 @@ public final class SpotCallers: @unchecked Sendable {
 
     func channel(for caller: SpotCaller) -> RunChannel? {
         lock.withLock { api }.flatMap { caller.channel(serving: $0) }
-    }
-
-    public var isCareful: Bool {
-        get { lock.withLock { careful } }
-        set { lock.withLock { careful = newValue } }
     }
 
     func attach(_ process: ScriptProcess, to caller: SpotCaller) {
@@ -66,7 +60,7 @@ public final class SpotCallers: @unchecked Sendable {
     public func caller(of peer: pid_t) -> SpotCaller? {
         let group = getpgid(peer)
         guard group > 0 else { return nil }
-        let known: SpotCaller? = lock.withLock {
+        return lock.withLock {
             guard let caller = groups[group] else { return nil }
             guard kill(group, 0) != 0 || Self.start(of: group) == caller.group?.start else {
                 groups[group] = nil
@@ -74,9 +68,6 @@ public final class SpotCallers: @unchecked Sendable {
             }
             return caller
         }
-        if let known { return known }
-        guard isCareful, Self.isSandboxed(peer) else { return nil }
-        return SpotCaller.sandboxed
     }
 
     private static func start(of id: pid_t) -> UInt64 {

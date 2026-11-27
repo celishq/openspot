@@ -32,7 +32,7 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     func testAConfigWithNoSpotsIsNotAFirstLaunch() throws {
-        try file.begin(enabling: [])
+        try file.begin(naming: [])
 
         XCTAssertFalse(isFirst)
     }
@@ -44,18 +44,18 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertFalse(isFirst)
     }
 
-    func testBeginWritesTheStartingSpotsAndKeepsAnOldFile() throws {
-        try file.begin(enabling: ["apps", "files"])
+    func testBeginNamesTheStartingSpotsAndKeepsAnOldFile() throws {
+        try file.begin(naming: ["apps", "files"])
         XCTAssertEqual(file.read().faults, [])
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
+        XCTAssertEqual(file.read().arrangement.choices.map(\.id), ["apps", "files"])
 
         try file.set("panel-key", to: "option+space")
-        try file.begin(enabling: ["links"])
+        try file.begin(naming: ["links"])
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
+        XCTAssertEqual(file.read().arrangement.choices.map(\.id), ["apps", "files"])
     }
 
-    func testOnlyQuietRepoSpotsStartOn() throws {
+    func testTheStartingSpotsAndEveryRepoSpotAreQuiet() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let place = SpotsFolder(url: spots, core: repo.appendingPathComponent("spots"))
 
@@ -63,7 +63,7 @@ final class FirstLaunchTests: XCTestCase {
 
         XCTAssertFalse(starting.isEmpty)
         XCTAssertTrue(starting.contains("settings"))
-        let scan = try SpotsFolder(url: spots, core: place.core, enabled: Set(starting)).scan()
+        let scan = try SpotsFolder(url: spots, core: place.core).scan()
         XCTAssertEqual(scan.refused, [])
         XCTAssertFalse(scan.scripts.contains { $0.triggers.every != nil })
     }

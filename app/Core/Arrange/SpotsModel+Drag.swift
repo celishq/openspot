@@ -17,7 +17,7 @@ extension SpotsModel {
         }
         pointerMove = translation
         guard let drag else { return }
-        let moved = drag.capped(translation, within: windowInGrid)
+        let moved = drag.capped(translation, within: isArranging ? .infinite : windowInGrid)
         if lift.offset != moved { lift.offset = moved }
         let corner = inPanel(drag.homeRect.offsetBy(dx: moved.width, dy: moved.height).origin)
         if lift.origin != corner { lift.origin = corner }
@@ -27,24 +27,36 @@ extension SpotsModel {
 
     private func follow(_ target: GridCell, of drag: SpotDrag) {
         guard target != drag.cell else { return stopDragWait() }
-        guard target != dragTarget else { return }
+        afterRest(at: target) { self.land(at: target) }
+    }
+
+    func afterRest(at cell: GridCell, _ land: @escaping @MainActor () -> Void) {
+        guard cell != dragTarget else { return }
         stopDragWait()
-        dragTarget = target
-        guard dragRest > .zero else { return land(at: target) }
+        guard dragRest > .zero else { return land() }
+        dragTarget = cell
         let rest = dragRest
         dragWait = Task { [weak self] in
             try? await Task.sleep(for: rest)
-            guard !Task.isCancelled, let self, self.dragTarget == target else { return }
-            self.land(at: target)
+            guard !Task.isCancelled, let self, self.dragTarget == cell else { return }
+            self.dragWait = nil
+            self.dragTarget = nil
+            land()
         }
     }
 
     public func dropSpot(by translation: CGSize) {
         asOnePress {
             guard let drag else { return }
-            if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), turnsOff(entry) {
-                cancelDrag()
-                return turnOff(entry.id)
+            let isOut = host.isPointerOverWindow || (isArranging && !drag.holds(movedBy: translation))
+            if isOut, let entry = visible.first(where: { $0.id == drag.id }), takesOffGrid(entry) {
+                let corner = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+                let slot = shelf.slot(at: CGPoint(x: corner.x + drag.homeRect.minX + translation.width, y: corner.y + drag.homeRect.minY + translation.height), size: entry.size)
+                stopDragWait()
+                pointerMove = nil
+                gesture = nil
+                if landing != nil { landing = nil }
+                return takeOffGrid(entry.id, to: slot)
             }
             let target = drag.holds(movedBy: translation) ? drag.cell(movedBy: drag.capped(translation, within: windowInGrid)) : drag.home
             guard let landed = drag.moved(to: target), target != drag.home else { return cancelDrag() }
@@ -76,7 +88,15 @@ extension SpotsModel {
         carry?.isLanding = true
     }
 
-    private func endLanding(of id: String) {
+    func carryToShelf() {
+        guard let id = carry?.entry.id, let origin = shelf.origin(of: id) else { return }
+        lift.origin = origin
+        if let size = shelf.size(of: id), carry?.size != size { carry?.size = size }
+        carry?.isLanding = true
+        landing = id
+    }
+
+    func endLanding(of id: String) {
         if landing == id { landing = nil }
         if drag == nil, carry?.entry.id == id { carry = nil }
         if drag == nil, lift.offset != .zero { lift.offset = .zero }

@@ -5,27 +5,31 @@ final class ActionsSpotTests: BuiltInCase {
     func testEachCommandFitsTheCardsOfItsOriginAndHasNoCard() throws {
         let actions = try spot("actions")
 
-        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Rearrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Delete", "Turn off"])
-        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [], [.mine], [.core]])
-        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫", "⌘⌫"])
-        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, nil, "hasIcon", nil, nil])
+        XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Arrange", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Remove"])
+        XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine], [], [], [], [], [], [.mine]])
+        XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "", "⌘⌫"])
+        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, nil, "hasIcon", nil])
         XCTAssertNil(actions.offeredActions[8].action.confirm)
         XCTAssertFalse(actions.isFound)
     }
 
-    func testEachCommandAsksTheAPIAndTurnOffTurnsTheSpotOff() async throws {
+    func testArrangeKeepsThePanelOpenFromTheCardMenuAndFromTheSpotsSpot() throws {
         let actions = try spot("actions")
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"), toml: "title = 'Caffeinate'")
+        let spots = try spot("spots")
 
-        for act in ["settings", "edit", "share", "delete", "rearrange"] {
+        XCTAssertEqual(actions.offeredActions.first { $0.action.title == "Arrange" }?.action.after, .stay)
+        XCTAssertEqual(spots.commands.first { $0.title == "Arrange" }?.closes, false)
+    }
+
+    func testEachCommandAsksTheAPI() async throws {
+        let actions = try spot("actions")
+
+        for act in ["settings", "edit", "share", "delete", "arrange"] {
             try await actions.perform(act, input: "input.item=weather\n", timeout: 60)
         }
-        try await actions.perform("off", input: "input.item=caffeinate\n", timeout: 60)
 
         let opened = await app.opened
-        let changes = await app.changeList
-        XCTAssertEqual(opened, ["settings weather", "edit weather", "share weather", "delete weather", "grid"])
-        XCTAssertEqual(changes.last, .spots(["caffeinate"]))
+        XCTAssertEqual(opened, ["settings at spot/weather", "edit weather", "share weather", "delete weather", "grid"])
     }
 
     func testChangeIconHandsEachChoiceToTheIconSpotAndResetShowsOnlyOnACardWithItsOwnIcon() async throws {

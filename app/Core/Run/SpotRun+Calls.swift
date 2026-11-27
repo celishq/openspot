@@ -170,10 +170,12 @@ extension SpotRun {
             typed = nil
             list.stopLoading()
             if !call.hasAnswer {
+                let event = eventAgain
                 waiter = nil
                 showsAgain = false
                 sheetAgain = false
                 eventAgain = nil
+                if let event, spot.hearsEventsHidden { show(need: .clock, event: event) }
             }
         case (.ask(let ask), .failed(let error)):
             take(error, of: ask)

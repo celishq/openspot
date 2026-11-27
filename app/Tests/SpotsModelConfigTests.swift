@@ -23,6 +23,21 @@ final class SpotsModelConfigTests: PanelCase {
         await model.reload()
     }
 
+    func testAnAllowedUseReachesTheLoadedSpot() async throws {
+        let lock = model.files.lock
+        try FileManager.default.createDirectory(at: lock.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try #"[{"source":"/x/a","paths":["a.spot"],"uses":[],"canDo":[]}]"#.write(to: lock.url, atomically: true, encoding: .utf8)
+        takeCalls()
+        let api = try XCTUnwrap(model.runs.api)
+        let arguments = ["spot", "allow", "a", "clipboard"]
+        let request = CommandRequest.test(arguments, in: model.files.environment)
+
+        let answer = await api.work(for: request, input: { "" })?()
+
+        XCTAssertEqual(answer?.code, 0, answer?.errors ?? "")
+        XCTAssertEqual(model.runs.sheets["a"]?.spot.uses, [.clipboard])
+    }
+
     func testASectionThatAChangeDoesNotNameIsNotLost() async throws {
         try model.files.config.change { $0.set(columns: 6) }
 
@@ -38,7 +53,6 @@ final class SpotsModelConfigTests: PanelCase {
         let reads = disk.reads
 
         model.configChanged(.keys, to: next)
-        model.configChanged(.careful, to: next)
         model.configChanged(.value(spot: "a", caller: nil), to: next)
         model.configChanged(.spots(["a"]), to: next)
 
@@ -46,12 +60,11 @@ final class SpotsModelConfigTests: PanelCase {
         XCTAssertEqual(model.config, next.config)
     }
 
-    func testAKeyOfTheAppACarefulModeAndAPanelBuildNoGrid() async throws {
+    func testAKeyOfTheAppAndAPanelBuildNoGrid() async throws {
         let builds = model.gridBuilds
         let key = try XCTUnwrap(Shortcut(text: "option+space"))
 
         model.configChanged(.keys, to: try model.files.config.change { $0.set(key, for: "panel-key") })
-        model.configChanged(.careful, to: try model.files.config.change { $0.set(isCareful: true) })
         model.set(columns: 6)
         await model.spotsChanged()
 
@@ -71,7 +84,9 @@ final class SpotsModelConfigTests: PanelCase {
     }
 
     func testAnEditKeyReadsNoConfigFromTheDisk() throws {
-        model.beginEditing()
+        model.hold([.command])
+        model.point(at: .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY)))
+        XCTAssertEqual(model.editing, .held)
         let reads = disk.reads
         var writes = disk.writes
         let wrote = { () -> Bool in
@@ -88,7 +103,7 @@ final class SpotsModelConfigTests: PanelCase {
         model.set(columns: 6)
         XCTAssertTrue(wrote())
         model.prefer(.large, for: "b")
-        model.turnOff("c")
+        model.takeOffGrid("c")
 
         XCTAssertEqual(disk.reads, reads)
         XCTAssertEqual(host.notes, [])
@@ -118,8 +133,8 @@ final class SpotsModelConfigTests: PanelCase {
         model.beginEditing()
         let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
         let early = try model.files.config.change { $0.assign(trigger, to: "a", act: .float) }
-        let first = try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "x") }
-        let second = try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "y") }
+        let first = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "x") }
+        let second = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "y") }
         model.configChanged(.spots(["y"]), to: second)
         model.prefer(.small, for: "a")
         let config = model.config
@@ -133,7 +148,7 @@ final class SpotsModelConfigTests: PanelCase {
         let written = Config(text: disk.text ?? "")
         XCTAssertEqual(written.arrangement.size(of: "a"), .small)
         XCTAssertEqual(written.arrangement.size(of: "b"), .small)
-        XCTAssertEqual(written.arrangement.enabled, ["x", "y"])
+        XCTAssertEqual(written.arrangement.pinned, ["x", "y"])
         XCTAssertEqual(written.keys.map(\.trigger), [trigger])
     }
 
@@ -142,14 +157,14 @@ final class SpotsModelConfigTests: PanelCase {
         try model.files.config.change { $0.arrangement.set(isInMenuBar: true, of: "z") }
 
         model.prefer(.small, for: "a")
-        try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "y") }
+        try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "y") }
         model.moveSpot("b", to: GridCell(row: 5, column: 0))
-        try model.files.config.change { $0.arrangement.set(isEnabled: true, of: "w") }
+        try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "w") }
         model.moveSpot("c", to: GridCell(row: 6, column: 0))
 
         let written = Config(text: disk.text ?? "")
         XCTAssertEqual(written.arrangement.menuBar, ["z"])
-        XCTAssertEqual(written.arrangement.enabled, ["y", "w"])
+        XCTAssertEqual(written.arrangement.pinned, ["y", "w"])
         XCTAssertEqual(written.arrangement.size(of: "a"), .small)
         XCTAssertEqual(written.arrangement.cells(of: "b"), [4: GridCell(row: 5, column: 0)])
         XCTAssertEqual(written.arrangement.cells(of: "c"), [4: GridCell(row: 6, column: 0)])

@@ -83,7 +83,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private var offInConfig: [String] {
-        (try? model.files.config.read().arrangement.choices.filter { $0.isEnabled == false }.map(\.id).sorted()) ?? []
+        (try? model.files.config.read().arrangement.choices.filter { $0.isOnGrid == false }.map(\.id).sorted()) ?? []
     }
 
     private func savedCells() async -> [String: GridCell] {
@@ -208,7 +208,14 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
+    private func holdEditing() {
+        model.endEditing()
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+    }
+
     func testADraggedCardStaysAPaddingInsideTheWindow() {
+        holdEditing()
         let rect = model.placements[0].rect
         let inset = SpotTokens.padding
 
@@ -223,6 +230,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testEditSpotsOffersNoHideKey() {
+        holdEditing()
         XCTAssertEqual(model.hint, "S Size   ⇧ Arrows Move   Esc Done")
     }
 
@@ -248,6 +256,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testAReleaseOffTheGridPutsTheCardsBack() async {
+        holdEditing()
         model.dragSpot("d", by: move("d", to: row0))
 
         model.dropSpot(by: CGSize(width: -3 * SpotTokens.gridWidth, height: 0))
@@ -477,7 +486,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 0))
     }
 
-    func testEditingOpenedByRearrangeStaysWhenCommandIsReleased() {
+    func testArrangeStaysWhenCommandIsReleased() {
         model.endEditing()
         model.editGrid()
 
@@ -579,155 +588,28 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.resize)
     }
 
-    private var store: URL {
-        folder.appendingPathComponent("config/store", isDirectory: true)
-    }
-
-    private func publication(of id: String) -> SpotPublication? {
-        let scan = (try? SpotsFolder(url: spots).scan()) ?? ScanResult(files: [], refused: [])
-        return SpotCatalog.publications(of: scan, in: store)[id]
-    }
-
-    func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        _ = try model.files.account.keyMadeOnce()
-        XCTAssertNil(publication(of: "a"))
-
-        let first = await model.publish("a")
-        XCTAssertEqual(first, .published)
-        let log = try ReleaseLog(text: String(contentsOf: store.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8))
-        XCTAssertEqual(log.last?.version, 1)
-        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("a.spot/releases.jsonl"), encoding: .utf8), log.text)
-        XCTAssertEqual(try String(contentsOf: store.appendingPathComponent("a.spot/readme.md"), encoding: .utf8), "Does a.")
-        XCTAssertEqual(publication(of: "a"), .current)
-        let again = await model.publish("a")
-        XCTAssertEqual(again, .unchanged)
-
-        let script = try FileHandle(forWritingTo: spots.appendingPathComponent("a.spot/a.sh"))
-        try script.seekToEnd()
-        try script.write(contentsOf: Data("echo changed\n".utf8))
-        try script.close()
-        await model.spotsChanged()
-        XCTAssertEqual(publication(of: "a"), .changed)
-        let third = await model.publish("a")
-        XCTAssertEqual(third, .published)
-        XCTAssertEqual(publication(of: "a"), .current)
-    }
-
-    func testAPublishSignsOnlyAfterTouchID() async throws {
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        _ = try model.files.account.keyMadeOnce()
-        host.allowsActs = false
-
-        let denied = await model.publish("a")
-
-        XCTAssertEqual(denied, .failed)
-        XCTAssertNil(publication(of: "a"))
-        XCTAssertEqual(host.asked, ["sign your spot"])
-        XCTAssertEqual(host.notes.last, "A was not published. Touch ID didn't pass, so Openspot signed nothing.")
-    }
-
-    func testAPublishWithNoAccountOpensAccountAndWaitsForTheKey() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-
-        let result = await model.publish("a")
-
-        XCTAssertEqual(result, .failed)
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: AccountSheet.id))
-        XCTAssertEqual(host.notes, [])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-
-        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-    }
-
-    func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\nprintf 'text=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "")
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        model.endEditing(moving: false)
-        model.isShown = true
-        model.panelWillShow()
-        XCTAssertTrue(model.open("b"))
-        try await wait("the sheet of b") { self.model.openSheetID == "b" }
-
-        _ = await model.publish("a")
-        try await wait("the account") { self.model.openSheetID == AccountSheet.id }
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=handle\ninput.handle=tony\n", limit: 60)
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-        try await wait("the sheet behind") { self.model.flow.current == FlowSheet(spot: "b") }
-    }
-
-    func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-
-        model.push(FlowSheet(spot: AccountSheet.id, route: "publish:a"))
-        _ = try await model.runs.answer(of: model.account.spot, "new", input: "route=publish:a\n", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=publish:a\ninput.handle=tony\n", limit: 60)
-
-        XCTAssertNotNil(try model.files.account.key())
-        XCTAssertNotEqual(model.flow.current?.route, "publish:a")
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-        XCTAssertEqual(host.asked, [])
-    }
-
-    func testAPublishThatWaitsIsForgottenWhenItsSheetsClose() async throws {
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        await model.reload()
-        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        _ = await model.publish("a")
-
-        model.open(AccountSheet.id)
-        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
-
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-    }
-
-    func testASpotWithNoReadmeAsksForOneAndIsNotPublished() async {
-        let result = await model.publish("a")
-
-        XCTAssertEqual(result, .needsReadme)
-        XCTAssertEqual(host.notes, ["Write a readme for A, then publish it again."])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-    }
-
-    func testACoreSpotIsNotPublished() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        await model.reload()
-
-        let result = await model.publish("timer")
-        XCTAssertEqual(result, .notOwn)
-    }
-
-    func testTheMinusTurnsASpotOfTheSpotsFolderOffAndItStaysOff() async {
-        model.turnOff("a")
+    func testTheMinusTakesASpotOfTheSpotsFolderOffTheGridAndKeepsItOn() async {
+        model.takeOffGrid("a")
 
         XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(offInConfig, ["a"])
+        XCTAssertTrue(model.entries.contains { $0.id == "a" })
         let shown = await savedCells()
         XCTAssertEqual(shown.keys.sorted(), ["b", "c", "d"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
     }
 
-    func testACoreSpotTurnedOnByTheConfigTurnsOffByTheMinus() async throws {
+    func testTheMinusTakesACoreSpotOffTheGridAndKeepsItOn() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        try model.files.config.turn("timer", on: true)
+        try model.files.config.pin("timer", on: true)
         await model.reload()
         XCTAssertTrue(order.contains("timer"))
 
-        model.turnOff("timer")
+        model.takeOffGrid("timer")
 
         XCTAssertFalse(order.contains("timer"))
-        XCTAssertFalse(try model.files.config.read().arrangement.enabled.contains("timer"))
+        XCTAssertEqual(try model.files.config.read().arrangement.isOnGrid(of: "timer"), false)
+        XCTAssertTrue(model.entries.contains { $0.id == "timer" })
     }
 
     func testACardReleasedOverTheStoresWindowTurnsItsSpotOff() {
@@ -739,19 +621,6 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertFalse(order.contains("a"))
         XCTAssertEqual(offInConfig, ["a"])
-    }
-
-    func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
-        let friends = folder.appendingPathComponent("friends", isDirectory: true)
-        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"), toml: "title = 'Shared'")
-        _ = try ConfigFile(url: folder.appendingPathComponent("config/config.toml")).change { $0.add(store: Store(url: friends)) }
-        await model.reload()
-
-        XCTAssertEqual(model.storeEntry("a")?.id, "a")
-        XCTAssertEqual(model.storeEntry("timer")?.spot.subtitle, "Counts down")
-        XCTAssertEqual(model.storeEntry("shared")?.spot.name, "Shared")
-        XCTAssertNil(model.storeEntry("missing"))
     }
 
     func testNoCardLiftsOutsideEditSpots() {

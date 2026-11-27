@@ -10,22 +10,21 @@ extension SpotsModel {
     struct SearchAsk {
         let query: SearchQuery
         let lists: [ItemList]
-        let search: MainSearch
+        let search: PanelSearch
         let limit: Int
         let answers: [Entry]
         let sources: [Spot]
         let isWhole: Bool
 
-        func found() -> (matches: [(list: Int, item: SpotItem)], search: MainSearch) {
+        func found() -> (matches: [(list: Int, item: SpotItem)], search: PanelSearch) {
             SearchRanks.meter?.add()
             var search = search
             return (search.matching(query, in: lists, unpickedLimit: SpotsModel.unpickedRows, limit: limit), search)
         }
     }
 
-    public func updateVisible(holding motion: PanelMotion? = .edit) {
-        hold(shownPreview(of: query), motion: motion)
-        showVisible()
+    public func updateVisible() {
+        showDetails(shownDetails(of: query), with: showVisible)
     }
 
     func showVisible() {
@@ -65,11 +64,11 @@ extension SpotsModel {
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),
-            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
-            search: mainSearch,
+            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() } + [settingsBook.searchRows],
+            search: panelSearch,
             limit: Self.searchLimit - answers.count,
             answers: Array(answers),
-            sources: sources.map(\.spot),
+            sources: sources.map(\.spot) + [SettingsBook.searchSpot],
             isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
         takeFound(ask)
@@ -89,7 +88,7 @@ extension SpotsModel {
 
     private func takeFound(_ ask: SearchAsk) {
         let found = ask.found()
-        mainSearch = found.search
+        panelSearch = found.search
         let ids = Set(ask.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         foundSpots = found.matches.compactMap { match in
@@ -110,7 +109,7 @@ extension SpotsModel {
         holdsRows = false
         let isFixed = content.isFixed
         if isGridFixed != isFixed { isGridFixed = isFixed }
-        let top = fieldRoom
+        let top = detailsRoom
         if isFixed, let gesture {
             let shown = Set(visible.map(\.id))
             if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
@@ -129,6 +128,7 @@ extension SpotsModel {
             let left = Set(next.map(\.id)).subtracting(placed)
             if left != leftOut { leftOut = left }
             runs.take(grid: placed)
+            takeOffGridSpots(placed: placed)
         }
         lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
     }
@@ -147,6 +147,11 @@ extension SpotsModel {
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }
 
+    func searchRowsChanged() {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty, content == .search else { return }
+        showVisible()
+    }
+
     func noteMiss() {
         guard let search = missedSearch.take() else { return }
         runs.usage.missed(search, at: runs.now())
@@ -154,7 +159,7 @@ extension SpotsModel {
 
     func takeQuery(_ text: String) {
         hideAttachments(for: text)
-        hold(shownPreview(of: text), motion: .edit)
+        showDetails(shownDetails(of: text))
         query = text
     }
 
@@ -183,7 +188,7 @@ extension SpotsModel {
             } else if let file = SpotPackage.file(in: text) {
                 takeQuery("")
                 openSheet?.search("")
-                DispatchQueue.main.async { self.review([file]) }
+                DispatchQueue.main.async { self.openInStore([file]) }
             } else if let openSheet {
                 openSheet.search(text)
             } else {

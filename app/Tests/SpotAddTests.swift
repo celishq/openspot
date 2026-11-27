@@ -35,6 +35,53 @@ final class SpotAddTests: XCTestCase {
         try SpotsFolder(url: spots).scan().spots.map(\.id)
     }
 
+    private func tea() async throws {
+        let folder = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tea.sh"))
+        let added = try await answer(["spot", "add", "sources/tea"])
+        XCTAssertEqual(added.code, 0, added.errors)
+    }
+
+    func testAllowRecordsTheUseInSpotsLockAndTheScanGivesItToTheSpot() async throws {
+        try await tea()
+
+        let answer = try await answer(["spot", "allow", "tea", "clipboard"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "Allowed tea to use clipboard.\n")
+        let entries = try SpotLock.standard(environment: environment).entries()
+        XCTAssertEqual(entries.map(\.uses), [[.clipboard]])
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().allowing(entries).scripts.map(\.uses), [[.clipboard]])
+    }
+
+    func testAnUpdateKeepsAnAllowedUseOutOfWhatItAdds() async throws {
+        try await tea()
+        _ = try await answer(["spot", "allow", "tea", "clipboard"])
+        try "uses = ['clipboard']\n".write(to: root.appendingPathComponent("sources/tea/spot.toml"), atomically: true, encoding: .utf8)
+
+        let update = try await answer(["spot", "add", "sources/tea"])
+
+        XCTAssertEqual(update.code, 0, update.errors)
+    }
+
+    func testAllowOfASpotThatSpotAddDidNotAddSaysToDeclareTheUse() async throws {
+        let answer = try await answer(["spot", "allow", "mint", "clipboard"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.errors, "`openspot spot add` did not add mint, so spots.lock holds no record of it. Add `clipboard` to `uses` in its spot.toml.\n")
+    }
+
+    func testAllowNamesAnUnknownUseAndAGrantNeedsTheApp() async throws {
+        let unknown = try await answer(["spot", "allow", "tea", "camera"])
+        let none = try await answer(["access", "grant", "tea"])
+
+        XCTAssertEqual(unknown.code, 1)
+        XCTAssertEqual(unknown.errors, "tea has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer, attachment, read or timeline\n")
+        XCTAssertEqual(none.code, 3)
+        XCTAssertTrue(none.errors.hasPrefix("`openspot access grant tea` needs the Openspot app"), none.errors)
+    }
+
     func testAGitRepositoryIsClonedIntoAFolderOfItsOwnWithNoGitFolder() async throws {
         let repo = try repo()
 
@@ -268,7 +315,7 @@ final class SpotAddTests: XCTestCase {
         let first = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(first.code, 1)
-        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nCoffee: every 60 seconds\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nEvery 60 seconds\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
@@ -422,7 +469,7 @@ final class SpotAddTests: XCTestCase {
         let first = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(first.code, 1)
-        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nFiles\ncoffee.spot/README.md\ncoffee.spot/coffee.sh\ncoffee.spot/spot.toml\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
         XCTAssertEqual(confirmed.code, 0, confirmed.errors)
         try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }\nmail = { spot = 'mailer' }"])
@@ -459,7 +506,7 @@ final class SpotAddTests: XCTestCase {
         let refused = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(refused.code, 1)
-        XCTAssertEqual(refused.errors, "This version can do more.\nCan also: Delete files with rm\nRuns by itself: Coffee: every 60 seconds\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        XCTAssertEqual(refused.errors, "This version can do more.\nCan also: Delete files with rm\nRuns by itself: Every 60 seconds\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
         XCTAssertEqual(try files(in: spots), before)
     }
 

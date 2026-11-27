@@ -62,7 +62,7 @@ final class SpotsFolderTests: XCTestCase {
             try make()
             XCTAssertNotEqual(kept.load(spots).stamp, before, change)
         }
-        XCTAssertEqual(kept.load(SpotsFolder(url: folder, core: folder, enabled: ["a"])).stamp, kept.load(SpotsFolder(url: folder, core: folder)).stamp)
+        XCTAssertEqual(kept.load(SpotsFolder(url: folder, core: folder)).stamp, kept.load(SpotsFolder(url: folder, core: folder)).stamp)
     }
 
     func testAScanSeesANewFile() throws {
@@ -221,9 +221,9 @@ final class SpotsFolderTests: XCTestCase {
         _ = try write("core/apps.spot/apps.sh")
         let place = SpotsFolder(url: folder.appendingPathComponent("mine"), core: core)
 
-        let spot = try XCTUnwrap(try place.scan().spots.first)
+        let spot = try XCTUnwrap(try place.scan().spots.first { $0.id == "openspot/spots" })
 
-        XCTAssertEqual(try place.scan().spots.map(\.id), ["openspot/spots"])
+        XCTAssertEqual(try place.scan().spots.map(\.id), ["apps", "openspot/spots"])
         XCTAssertTrue(spot.isBuiltIn)
         XCTAssertFalse(place.isCore(spot))
         XCTAssertEqual(place.coreChoices().map(\.id), ["apps"])
@@ -379,7 +379,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
     }
 
-    func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
+    func testThePanelSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", toml: "[on]\n\"panel.open\" = true\nsearch = true")
         try write("c.sh", toml: "[on]\nevery = 30\nsearch = true")
 

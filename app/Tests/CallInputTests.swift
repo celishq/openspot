@@ -31,10 +31,10 @@ final class CallInputTests: SpotRunsCase {
         try script("other", toml: "[settings]\nfolder = 'text'", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
-            SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
-            SpotSetting(spot: "script", key: "api-key", value: "k1"),
-            SpotSetting(spot: "script", key: "kept", value: "not declared"),
-            SpotSetting(spot: "other", key: "folder", value: "/tmp/other")
+            KeptSetting(spot: "script", key: "folder", value: "/tmp/repos"),
+            KeptSetting(spot: "script", key: "api-key", value: "k1"),
+            KeptSetting(spot: "script", key: "kept", value: "not declared"),
+            KeptSetting(spot: "other", key: "folder", value: "/tmp/other")
         ])
 
         sheet.show(need: .change)
@@ -139,43 +139,32 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertFalse(text("input").contains(marker))
     }
 
-    private func settingsSheet(fields: [Manifest.Setting], config: String = "") throws -> String {
+    private func settingRows(fields: [Manifest.Setting], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
-        let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [])
-        return try settings.answer(["show"])
+        let settings = SpotRows(spot: "script", fields: fields, showsInMenuBar: false, keys: [], isWindowByDefault: false, name: "")
+        return try PrintForm.frame.text(of: settings.rows(in: file.read(), secrets: try secrets(["token": marker]).read()["script"] ?? [:]))
     }
 
     private func field(_ key: String, secret: Bool) throws -> Manifest.Setting {
         try XCTUnwrap(Manifest(text: "[settings]\n\(key) = '\(secret ? "secret" : "text")'", folder: "/spots").settings.first)
     }
 
-    func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {
-        let sheet = try settingsSheet(fields: [field("token", secret: true)])
+    func testTheRowsOfSettingsShowThatASecretIsSetAndNotItsValue() throws {
+        let rows = try settingRows(fields: [field("token", secret: true)])
 
-        XCTAssertFalse(sheet.contains(marker))
-        XCTAssertTrue(sheet.contains("detail=Set, and hidden"))
+        XCTAssertFalse(rows.contains(marker))
+        XCTAssertTrue(rows.contains("value=set"))
     }
 
     func testASecretShowsNeitherInAPlainFieldOfItsKeyNorAsAKeptValue() throws {
-        let plain = try settingsSheet(fields: [field("token", secret: false)])
-        let dropped = try settingsSheet(fields: [], config: "[[settings]]\nspot = \"script\"\nkey = \"city\"\nvalue = \"Paris\"\n")
+        let plain = try settingRows(fields: [field("token", secret: false)])
+        let dropped = try settingRows(fields: [], config: "[[settings]]\nspot = \"script\"\nkey = \"city\"\nvalue = \"Paris\"\n")
 
         XCTAssertFalse(plain.contains(marker))
-        XCTAssertTrue(plain.contains("detail=Not set"))
+        XCTAssertFalse(plain.contains("value="))
         XCTAssertFalse(dropped.contains(marker))
         XCTAssertFalse(dropped.contains("token"))
-        XCTAssertTrue(dropped.contains("detail=Paris"))
-    }
-
-    func testRemoveOnTheRowOfASecretDropsItFromTheStore() throws {
-        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let store = try secrets(["token": marker])
-        let settings = try SpotSettings(file: file, secrets: store, spot: "script", fields: [field("token", secret: true)], showsInMenuBar: false, keys: [])
-
-        _ = try settings.answer(["clear"], input: "input.item=setting:script:token\n")
-
-        XCTAssertEqual(try SecretStore(file: store.file).read(), [:])
-        XCTAssertNil(file.read().setting("token", of: "script"))
+        XCTAssertTrue(dropped.contains("value=Paris"))
     }
 }

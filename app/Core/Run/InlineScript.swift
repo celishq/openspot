@@ -46,7 +46,7 @@ final class InlineScript: @unchecked Sendable {
     private let api: CommandAPI?
     private let callers: SpotCallers?
     private let caller: SpotCaller?
-    private let sandbox: Sandbox?
+    private let sandbox: Sandbox
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
@@ -65,8 +65,8 @@ final class InlineScript: @unchecked Sendable {
     private var context: JSContext?
     private var thrown: JSValue?
 
-    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, env: SpotEnv? = nil, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
-        self.sandbox = careful.map(Sandbox.init)
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, env: SpotEnv? = nil, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+        sandbox = Sandbox(uses: spot.uses)
         url = spot.url
         name = spot.id
         self.spot = spot
@@ -78,7 +78,7 @@ final class InlineScript: @unchecked Sendable {
         self.limit = limit
         self.idle = idle
         self.spent = spent
-        self.env = env ?? SpotEnv(spot: spot, cache: .standard(environment: base), isCareful: careful != nil)
+        self.env = env ?? SpotEnv(spot: spot, cache: .standard(environment: base))
         self.callers = callers
         caller = callers?.issue(for: spot)
     }
@@ -411,7 +411,7 @@ final class InlineScript: @unchecked Sendable {
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             return work
         }
-        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: sandbox?.uses, base: base)
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, sandbox: sandbox.uses, base: base)
         child.channel = caller.flatMap { callers?.channel(for: $0) }
         return { await Self.answer(of: child) }
     }

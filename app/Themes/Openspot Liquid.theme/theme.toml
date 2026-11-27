@@ -5,6 +5,7 @@ accent = "accent"
 highlight = "#FFFFFF"
 glyph-on-solid = "accent"
 glass-tint = "#2C2C2E73"
+menu-dim = 0.1
 confirm = "#C72924"
 
 [light]
@@ -14,6 +15,7 @@ accent = "accent"
 highlight = "#1C1C1C"
 solid = "#1F1F1F"
 glass-tint = "#C4C4C473"
+menu-dim = 0.1
 confirm = "#C72924"
 
 [look]

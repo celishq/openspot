@@ -28,6 +28,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     private static let dragSourceFocusDelay: TimeInterval = 0.2
+    private static let startWait: TimeInterval = 5
     static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?
@@ -57,6 +58,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var isLaunched = false
     private var showsAtLaunch = false
     private var openedAtLaunch: [URL] = []
+    private var startsAgain = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make(toasts: model.toasts)
@@ -69,7 +71,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         if !theme.faults.isEmpty { model.toast(.failure(theme.faults.joined(separator: "\n"))) }
         let item = OpenspotItem(
             model: model, target: self, action: #selector(pressItem),
-            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
+            onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.openInStore($0) }
         )
         self.item = item
         toast?.item = item
@@ -120,7 +122,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         spotsWatch = SpotsWatch(folder: spots, config: model.files.config.url) { [weak self] in
             Task { await self?.model.spotsChanged() }
         }
-        try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: spots)
+        try? AgentNote(command: SpotPrompt.command()).write(in: spots)
         showListener = SpotShowLink.listen { [weak self] id in await self?.model.reveal(id) ?? false }
         let isFirstLaunch = await Self.isFirstLaunch(model.folder, config: model.files.config)
         model.runs.launched()
@@ -136,8 +138,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if showsAtLaunch { showPanel() }
-        if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
+        if !openedAtLaunch.isEmpty { model.openInStore(openedAtLaunch) }
         model.runs.listen(to: mac)
+        await model.resumeGrant()
     }
 
     @concurrent
@@ -147,7 +150,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         if isLaunched {
-            model.review(urls)
+            model.openInStore(urls)
         } else {
             openedAtLaunch = urls
         }
@@ -157,6 +160,21 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         spotsWatch?.stop()
         commandSocket?.close()
         model.quit()
+        if startsAgain { Self.startAgain() }
+    }
+
+    func restart(after pause: TimeInterval) {
+        startsAgain = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { NSApp.terminate(nil) }
+    }
+
+    private static func startAgain() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        configuration.activates = false
+        let started = DispatchSemaphore(value: 0)
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in started.signal() }
+        _ = started.wait(timeout: .now() + startWait)
     }
 
     @objc private func pressItem() {

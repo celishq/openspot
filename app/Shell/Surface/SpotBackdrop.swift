@@ -8,7 +8,7 @@ struct SpotBackdrop: View {
     @Environment(\.spotIsShown) private var isShown
 
     var body: some View {
-        if drawsGlass, SpotTokens.backdrop.reach == .tiles {
+        if drawsGlass, SpotTokens.backdrop.reach == .tiles, !model.isArranging {
             BackdropShape(rect: model.backdrop, foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
                 .modifier(PanelSpan(grid: model.grid))
                 .modifier(SpotShownFade(isShown: isShown))

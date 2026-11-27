@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")/.."
 state=.temp/openspot
 [ -d "$state/spots" ] || make dev-state >/dev/null
-for source in selection browser-tab fresh-copy; do
+for source in selection browser-tab clipboard; do
   rm -rf "$state/spots/$source.spot"
   cp -R "spots/$source.spot" "$state/spots/"
 done
@@ -36,6 +36,12 @@ demo demo-files "Demo Files" "folder" "file=$files/Invoice.txt file=$files/Contr
 demo demo-picture "Demo Picture" "photo" "file=$files/Picture.png app=com.apple.finder"
 demo demo-gif "Demo GIF" "photo.stack" "\"file=$files/Screen Recording of the quarterly planning review, part two.gif\" app=com.apple.finder"
 demo demo-voice "Demo Voice" "waveform" "file=$files/Voice.aiff app=com.apple.finder"
+folder="$state/spots/demo-face.spot"
+rm -rf "$folder"
+mkdir -p "$folder"
+printf 'title = "Demo Face"\nicon = "chart.bar"\nuses = ["attachment"]\n\n[on]\n"panel.open" = true\n' > "$folder/spot.toml"
+printf '#!/bin/sh\ncase "$1" in\n  show) printf "url=https://example.com/sales\\\\ntitle=Sales\\\\n\\\\nframe=\\\\nclass=flex-row gap-part\\\\n\\\\nnumber=week\\\\ntitle=This week\\\\nvalue=42\\\\nunit=k\\\\n\\\\nseries=days\\\\nvalue=3,5,4,8,6,9,7\\\\ngrow=true\\\\n" | openspot attachment add ;;\nesac\n' > "$folder/demo-face.sh"
+chmod +x "$folder/demo-face.sh"
 folder="$state/spots/show-me.spot"
 rm -rf "$folder"
 mkdir -p "$folder"

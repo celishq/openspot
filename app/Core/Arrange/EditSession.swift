@@ -1,6 +1,6 @@
 import Foundation
 
 public enum EditSession: Equatable, Sendable {
-    case open
+    case arrange
     case held
 }
