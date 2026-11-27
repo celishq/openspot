@@ -24,6 +24,7 @@ extension String {
                 try handle?.close()
                 chmod(claim, 0o755)
                 guard rename(claim, url.path) == 0 else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+                try FileManager.default.setAttributes([.creationDate: Date()], ofItemAtPath: url.path)
                 return
             }
             try Self.addFile(to: shared)
