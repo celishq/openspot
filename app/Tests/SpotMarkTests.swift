@@ -18,7 +18,16 @@ final class SpotMarkTests: PanelCase {
     }
 
     private var shown: [String] {
-        model.visible.map(\.id)
+        model.visible.map(\.id).filter { $0 != "maker" }
+    }
+
+    private func build(_ id: String) async throws -> URL {
+        let done = folder.appendingPathComponent("built-\(id)")
+        try script("maker", toml: "title = 'Maker'", "printf 'frame=\\nbackground=true\\nbuilds=\(id)\\n---\\n'\nwhile [ ! -e '\(done.path)' ]; do sleep 0.02; done")
+        await model.reload()
+        try XCTUnwrap(model.runs.sheets["maker"]).pressCard()
+        try await wait("the build of \(id)") { self.model.runs.buildingIDs.contains(id) }
+        return done
     }
 
     private func mark(_ id: String, _ word: String) async throws {
@@ -32,7 +41,7 @@ final class SpotMarkTests: PanelCase {
         await model.reload()
         XCTAssertEqual(model.menuBarMarks.map(\.id), ["coffee"])
 
-        try await mark("coffee", "building")
+        _ = try await build("coffee")
 
         XCTAssertEqual(shown, ["tea"])
         XCTAssertEqual(model.menuBarMarks.map(\.id), [])
@@ -43,13 +52,15 @@ final class SpotMarkTests: PanelCase {
         XCTAssertTrue(run.output.contains("title=A"), run.output)
     }
 
-    func testNoneShowsABuildingSpotAgainInItsPlace() async throws {
+    func testASpotShowsAgainInItsPlaceWhenItsBuildEnds() async throws {
         try await drinks()
         let before = shown
-        try await mark("coffee", "building")
+        let done = try await build("coffee")
+        XCTAssertFalse(shown.contains("coffee"))
 
-        try await mark("coffee", "none")
+        FileManager.default.createFile(atPath: done.path, contents: nil)
 
+        try await wait("the end of the build") { self.model.runs.buildingIDs.isEmpty }
         XCTAssertEqual(shown, before)
         XCTAssertEqual(model.files.config.read().arrangement.choices.map(\.id), [])
     }
@@ -81,7 +92,7 @@ final class SpotMarkTests: PanelCase {
 
         try await wait("the spot back in its place") { self.shown == before }
         XCTAssertEqual(model.visible.map(\.isNew), [false, false])
-        XCTAssertNil(model.files.config.read().arrangement.mark(of: before[1]))
+        XCTAssertFalse(model.files.config.read().arrangement.isNew(before[1]))
     }
 
     func testAMarkKeepsAcrossALoadOfTheConfig() async throws {
@@ -112,10 +123,9 @@ final class SpotMarkTests: PanelCase {
         try await mark("tea", "new")
         try FileManager.default.removeItem(at: spots.spotFile("tea").deletingLastPathComponent())
 
-        try await mark("coffee", "building")
+        try await mark("coffee", "new")
 
-        XCTAssertNil(model.files.config.read().arrangement.mark(of: "tea"))
-        XCTAssertEqual(model.files.config.read().arrangement.mark(of: "coffee"), .building)
+        XCTAssertEqual(model.files.config.read().arrangement.newIDs, ["coffee"])
     }
 
     func testASelectedNewSpotNamesEditInTheFooter() async throws {
@@ -130,19 +140,9 @@ final class SpotMarkTests: PanelCase {
         XCTAssertFalse(model.hint.contains("⌘E Edit"), model.hint)
     }
 
-    func testASpotNotMadeYetCanBeMarkedBuildingButNotNew() async throws {
+    func testASpotThatABuildNamesBeforeItsFolderIsMadeStaysHidden() async throws {
         try await drinks()
-
-        try await mark("cocoa", "building")
-        let new = try await call(["spot", "mark", "milk", "new"])
-
-        XCTAssertEqual(model.files.config.read().arrangement.mark(of: "cocoa"), .building)
-        XCTAssertEqual(new.code, 1)
-    }
-
-    func testASpotMarkedBuildingBeforeItsFolderIsMadeStaysHidden() async throws {
-        try await drinks()
-        try await mark("cocoa", "building")
+        _ = try await build("cocoa")
 
         try script("cocoa", toml: "title = 'Cocoa'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
@@ -154,7 +154,7 @@ final class SpotMarkTests: PanelCase {
 
     func testASpotThatIsBuildingDoesNotOpen() async throws {
         try await drinks()
-        try await mark("coffee", "building")
+        _ = try await build("coffee")
 
         let answer = try await call(["spot", "open", "coffee"])
 

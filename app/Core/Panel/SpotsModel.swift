@@ -355,6 +355,7 @@ public final class SpotsModel {
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
+        self.runs.onBuilding = { [weak self] in self?.rebuildEntries() }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
@@ -447,7 +448,7 @@ public final class SpotsModel {
         let unreviewed = scan.spots.filter { spot in
             !spot.triggers.schedule.isEmpty && spot.host == nil && !spot.isBuiltIn && !folder.isCore(spot) && !allowed.contains { $0.holds(spot.id) }
         }
-        runs.take(scan, menuBar: config.arrangement.menuBar.filter { config.arrangement.mark(of: $0) != .building }, stamps: stamps, unreviewed: Set(unreviewed.map(\.id)))
+        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps, unreviewed: Set(unreviewed.map(\.id)))
         lastScan = scan
         loaded = (load.stamp, hosted, allowed)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
@@ -556,9 +557,9 @@ public final class SpotsModel {
 
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        let marks = arrangement.marks
-        let placed = arrangement.ordered(defaultArrangement.ordered(sorted)).filter { marks[$0.id] != .building }
-        return marks.isEmpty ? placed : placed.filter { marks[$0.id] == .new } + placed.filter { marks[$0.id] != .new }
+        let new = arrangement.newIDs
+        let placed = arrangement.ordered(defaultArrangement.ordered(sorted)).filter { !runs.buildingIDs.contains($0.id) }
+        return new.isEmpty ? placed : placed.filter { new.contains($0.id) } + placed.filter { !new.contains($0.id) }
     }
 
     public func panelWillShow() {

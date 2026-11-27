@@ -132,7 +132,7 @@ extension SpotsModel {
 
     func present(_ id: String, moving: Bool) {
         if let shown = openSheetID, shown != id { stopRecording() }
-        if arrangement.mark(of: id) == .new { teachesEdit = id }
+        if arrangement.isNew(id) { teachesEdit = id }
         unmarkNew(id)
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }

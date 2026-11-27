@@ -4,7 +4,7 @@ import Observation
 extension SpotsModel {
     private var editHint: String? {
         if let id = openSheetID { return id == teachesEdit ? "⌘E Edit" : nil }
-        guard let target, target.item == nil, arrangement.mark(of: target.entry.id) == .new else { return nil }
+        guard let target, target.item == nil, arrangement.isNew(target.entry.id) else { return nil }
         return "⌘E Edit"
     }
 

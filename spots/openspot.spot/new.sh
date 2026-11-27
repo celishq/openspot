@@ -498,18 +498,20 @@ progress() {
   fi
   printf 'frame=\nbackground=true\n'
   openspot_kv title "$work"
+  [ -n "$was" ] || openspot_kv builds "$(get "$building" spot)"
   printf 'progress=%s\n\n---\n' "$1"
 }
 
-# Runs the agent $3 with no window for the build $1, with the prompt $4. Each step goes to the build's files and tells
-# the sheet. The run itself prints only its title and progress, so Openspot shows no working card for it.
-# Marks the spot that the build $1 made, if any, so that Openspot hides it while it is built and shows it first once it is.
-mark() {
+# Marks the spot of the new build $1 New, so that it shows first on the grid until people open it.
+mark_new() {
   made=$(get "$1" spot)
   [ -n "$made" ] && [ -z "$was" ] || return 0
-  said=$(openspot spot mark "$made" "$2" 2>&1) || printf '%s %s %s: %s\n' "$(date +%T)" "$made" "$2" "$said" >> "$builds/$1/marks"
+  said=$(openspot spot mark "$made" new 2>&1) || printf '%s %s: %s\n' "$(date +%T)" "$made" "$said" >> "$builds/$1/marks"
 }
 
+# Runs the agent $3 with no window for the build $1, with the prompt $4. Each step goes to the build's files and tells
+# the sheet. The run itself prints only its title, its progress and the spot it builds, which Openspot hides while the
+# run lasts, so Openspot shows no working card for it.
 run() {
   building=$1
   bin=$(agent_bin "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
@@ -519,8 +521,7 @@ run() {
   if [ -n "$(get "$1" change)" ]; then work="Changing $name…"; else work='Building a spot…'; fi
   put "$1" pid "$$"
   put "$1" state running
-  mark "$1" building
-  trap 'mark "$building" none; put "$building" state stopped; moved "$building"; exit 0' TERM INT
+  trap 'put "$building" state stopped; moved "$building"; exit 0' TERM INT
   put "$1" step 'Starting the agent…'
   put "$1" said ''
   put "$1" end ''
@@ -542,8 +543,6 @@ run() {
               say) put "$1" said "$(printf '%s' "$one" | cut -c 1-160)" ;;
               tool)
                 put "$1" step "$(step "$one" "$two")"
-                # Each step marks the spot again, so that it stays hidden whatever took the mark off.
-                mark "$1" building
                 ;;
               end) put "$1" end "$(printf '%s\t%s\t%s' "$one" "$two" "$three")"; continue ;;
             esac
@@ -564,7 +563,6 @@ END
   if [ -z "$failed" ] || [ "$failed" = true ] || [ ! -d "$folder/$name.spot" ]; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
     [ -d "$folder/$name.spot" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
-    mark "$1" none
     [ -d "$folder/$name.spot" ] || rm -f "$builds/$1/spot" "$builds/$1/fresh"
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
@@ -578,7 +576,7 @@ END
   rm -f "$builds/$1/fresh"
   put "$1" state ready
   moved "$1"
-  mark "$1" new
+  mark_new "$1"
   shown "$1" "$name"
   [ -z "${OPENSPOT_EDIT-}" ] || sheet ''
 }

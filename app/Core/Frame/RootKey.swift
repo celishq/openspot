@@ -1,5 +1,5 @@
 public enum RootKey: String, CaseIterable, Sendable {
-    case frame, title, detail, active, recents, shown, progress, value, type, background
+    case frame, title, detail, active, recents, shown, progress, value, type, background, builds
     case end, call, error
     case classes = "class"
 
@@ -8,7 +8,7 @@ public enum RootKey: String, CaseIterable, Sendable {
 
     private static let names = Set(allCases.map(\.rawValue))
     static let marks: Set<String> = [end.rawValue, call.rawValue]
-    static let appKeys: Set<String> = [shown.rawValue]
+    static let appKeys: Set<String> = [shown.rawValue, builds.rawValue]
 
     static func isKey(_ key: String, isApp: Bool) -> Bool {
         names.contains(key) && (isApp || !appKeys.contains(key)) || key.hasPrefix(outputPrefix)

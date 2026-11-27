@@ -184,6 +184,10 @@ public struct Frame: Equatable, Sendable {
         root?.flag(RootKey.background) == true
     }
 
+    public var builds: String? {
+        root?.value(RootKey.builds)
+    }
+
     public var isForm: Bool {
         root?.value(RootKey.type) == RootKey.form
     }

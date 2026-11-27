@@ -54,6 +54,8 @@ public final class SpotRuns {
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
     public private(set) var acts: [Work] = []
     public private(set) var workingIDs: Set<String> = []
+    public private(set) var buildingIDs: Set<String> = []
+    @ObservationIgnored public var onBuilding: () -> Void = {}
     public private(set) var unseenWork: [Work] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
@@ -310,7 +312,7 @@ public final class SpotRuns {
     }
 
     private func isInMenuBar(_ spot: Spot) -> Bool {
-        menuBar.contains(spot.id) && spot.canShowInMenuBar
+        menuBar.contains(spot.id) && spot.canShowInMenuBar && !buildingIDs.contains(spot.id)
     }
 
     func showActs() {
@@ -326,6 +328,14 @@ public final class SpotRuns {
         if summary != runningSummary { runningSummary = summary }
         if next.first?.spot != actSpot { actSpot = next.first?.spot }
         showWork()
+    }
+
+    func showBuilding() {
+        let ids = Set(sheets.values.flatMap { sheet in sheet.calls.compactMap { $0.isStopped ? nil : $0.builds } })
+        guard ids != buildingIDs else { return }
+        buildingIDs = ids
+        showMarks()
+        onBuilding()
     }
 
     private func showWork() {

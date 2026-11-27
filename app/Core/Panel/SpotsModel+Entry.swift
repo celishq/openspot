@@ -26,7 +26,7 @@ extension SpotsModel {
 
         public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices(), isCore: Bool = false) {
             id = spot.id
-            isNew = choice.mark(of: spot.id) == .new
+            isNew = choice.isNew(spot.id)
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? (isCore && !choice.names(spot.id) ? false : defaults.isOnGrid(of: spot.id))

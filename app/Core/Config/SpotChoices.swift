@@ -12,7 +12,7 @@ public struct SpotChoices: Equatable, Sendable {
         public var key: ActionKey?
         public var cells: [Int: GridCell]?
         public var commands: [String: String]?
-        public var mark: SpotMark?
+        public var isNew: Bool?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
             self.id = id
@@ -79,12 +79,12 @@ public struct SpotChoices: Equatable, Sendable {
         Set(choices.filter { $0.isInMenuBar == true }.map(\.id))
     }
 
-    public func mark(of id: String) -> SpotMark? {
-        choice(of: id)?.mark
+    public func isNew(_ id: String) -> Bool {
+        choice(of: id)?.isNew == true
     }
 
-    public var marks: [String: SpotMark] {
-        Dictionary(choices.compactMap { choice in choice.mark.map { (choice.id, $0) } }, uniquingKeysWith: { first, _ in first })
+    public var newIDs: Set<String> {
+        Set(choices.filter { $0.isNew == true }.map(\.id))
     }
 
     public func names(_ id: String) -> Bool {
@@ -126,14 +126,14 @@ public struct SpotChoices: Equatable, Sendable {
         change(id) { $0.isWindow = isWindow }
     }
 
-    public mutating func set(mark: SpotMark?, of id: String) {
-        guard mark != nil || places[id] != nil else { return }
-        change(id) { $0.mark = mark }
+    public mutating func set(isNew: Bool, of id: String) {
+        guard isNew || places[id] != nil else { return }
+        change(id) { $0.isNew = isNew ? true : nil }
         choices.removeAll { $0.id == id && $0 == Choice(id: id) }
     }
 
-    public mutating func dropMarks(keeping ids: Set<String>) {
-        for choice in choices where choice.mark == .new && !ids.contains(choice.id) { set(mark: nil, of: choice.id) }
+    public mutating func dropNew(keeping ids: Set<String>) {
+        for choice in choices where choice.isNew == true && !ids.contains(choice.id) { set(isNew: false, of: choice.id) }
     }
 
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
@@ -154,7 +154,7 @@ public struct SpotChoices: Equatable, Sendable {
                 ("key", (choice.key?.text).map { .string($0) }),
                 ("places", choice.cells.map { cells in .table(Dictionary(uniqueKeysWithValues: cells.map { (String($0.key), .string("\($0.value.row) \($0.value.column)")) })) }),
                 ("commands", choice.commands.map { .table($0.mapValues { .string($0) }) }),
-                ("mark", (choice.mark?.rawValue).map { .string($0) })
+                ("new", choice.isNew.map { .boolean($0) })
             ])
         }
     }

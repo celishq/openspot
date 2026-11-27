@@ -251,11 +251,8 @@ public struct Config: Equatable, Sendable {
         case nil: break
         default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
         }
-        if case .string(let word)? = table["mark"] {
-            choice.mark = SpotMark(rawValue: word)
-            if choice.mark == nil { faults.append("config.toml: \(id) cannot use the mark \(word). Use building or new.") }
-        }
-        for key in table.keys.sorted() where !ReservedSetting.choiceKeys.union(["id", "size", "window", "letter", "key", "side", "places", "commands", "mark"]).contains(key) {
+        if case .boolean(let isNew)? = table["new"] { choice.isNew = isNew }
+        for key in table.keys.sorted() where !ReservedSetting.choiceKeys.union(["id", "size", "window", "letter", "key", "side", "places", "commands", "new"]).contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

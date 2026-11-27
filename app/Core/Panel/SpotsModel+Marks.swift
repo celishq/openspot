@@ -2,7 +2,7 @@ import Foundation
 
 extension SpotsModel {
     func unmarkNew(_ id: String) {
-        guard arrangement.mark(of: id) == .new, unmarking.insert(id).inserted else { return }
+        guard arrangement.isNew(id), unmarking.insert(id).inserted else { return }
         let config = files.config
         Task { [weak self] in
             let next: Result<KeptConfig, Error> = await Self.unmark(id, in: config)
@@ -17,6 +17,6 @@ extension SpotsModel {
 
     @concurrent
     private nonisolated static func unmark(_ id: String, in config: ConfigFile) async -> Result<KeptConfig, Error> {
-        Result { try config.change { $0.arrangement.set(mark: nil, of: id) } }
+        Result { try config.change { $0.arrangement.set(isNew: false, of: id) } }
     }
 }
