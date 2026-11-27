@@ -65,11 +65,13 @@ final class NewSpotTests: BuiltInCase {
         let app = try fakeApp("ChatGPT", id: "com.openai.codex")
         try "#!/bin/sh\nexit 0\n".writeScript(to: app.appendingPathComponent("Contents/Resources/codex-cli/bin/codex"))
         try fake("mdfind", "echo '\(app.path)'")
+        try fake("defaults", "echo Dark")
         try forgetWays()
 
         let output = try await newSpot().answer("describe", input: "setting.agent=codex\n", timeout: 60)
 
         XCTAssertEqual(options(of: "agent", in: output.parts).map(\.title), ["Claude Code", "Codex"])
+        XCTAssertEqual(options(of: "agent", in: output.parts).map { $0.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") } }, ["white/claude.png", "white/openai.png"])
         let places = options(of: "place", in: output.parts)
         XCTAssertEqual(places.first?.title, "Openspot")
         XCTAssertEqual(places.first { $0.id == "app-codex" }?.title, "ChatGPT", "\(places)")

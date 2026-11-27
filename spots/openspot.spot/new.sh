@@ -270,11 +270,17 @@ next_key() {
   if [ -n "$build" ]; then printf 'change-%s-%s' "$build" "$count"; else printf 'make-%s' "$count"; fi
 }
 
-# Prints an option of the agent choice for each agent on this Mac.
+# Prints an option of the agent choice for each agent on this Mac, with the logo of the agent it runs as in the ink of
+# the appearance of macOS, since a menu draws a picture as it is.
 agent_options() {
+  case $(defaults read -g AppleInterfaceStyle 2>/dev/null) in Dark) ink=white ;; *) ink=black ;; esac
   printf '%s\n' "$all_ways" | awk -F '|' '!seen[$1]++ { print $1 "|" $2 }' | while IFS='|' read -r key name; do
     printf '\noption=%s\n' "$key"
     openspot_kv title "$name"
+    case $(way_of "$key" '' kind) in
+      claude) openspot_kv icon "${0%/*}/logos/$ink/claude.png" ;;
+      codex) openspot_kv icon "${0%/*}/logos/$ink/openai.png" ;;
+    esac
   done
 }
 
@@ -284,7 +290,7 @@ place_options() {
     printf '\noption=%s\n' "$id"
     openspot_kv title "$name"
     case $id in
-      openspot) icon=${OPENSPOT_CORE%%.app/*}.app ;;
+      openspot) icon=$(command -v openspot) && icon=${icon%%.app/*}.app ;;
       term-*) icon=$(app_path "$opens") ;;
       *) icon=$opens ;;
     esac

@@ -31,6 +31,10 @@ enum SpotChoiceMenu {
                 NSGraphicsContext.current?.cgContext.draw(picture, in: frame)
                 return true
             }
+        case .image(let path):
+            guard let picture = SpotIconStore.shared.cached(.image(path)) else { return nil }
+            let side = SpotTokens.choiceMenuIcon
+            return NSImage(cgImage: picture, size: NSSize(width: side, height: side))
         case .symbol(let name):
             return NSImage(systemSymbolName: name, accessibilityDescription: nil)
         default:
