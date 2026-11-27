@@ -17,11 +17,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     private func refuseSafari() throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
-        let app = core.appendingPathComponent("openspot.spot")
-        try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
-        try "[scripts.attachments]\ntitle = 'Attachments'\nedits = 'attachments'\n\n[scripts.attachments.on]\n\"sheet.open\" = true\n"
-            .write(to: app.appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
-        try "#!/bin/sh\nprintf 'item=a\\ntitle=Browser Tab\\n'\n".writeScript(to: app.appendingPathComponent("attachments.sh"))
+        try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
@@ -215,16 +211,30 @@ final class AttachmentReadTests: AttachmentCase {
         try await wait("the end of the second read") { self.log("done") == ["0"] }
     }
 
-    func testARefusedReadOffersAllowAndReturnOpensAttachments() async throws {
+    func testARefusedReadOffersAllowAndReturnOpensTheSettingsOfItsSource() async throws {
         try await refuse()
 
         XCTAssertEqual(model.details?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
-        XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   Esc Leave")
+        XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   ⌘⏎ Settings   Esc Leave")
         XCTAssertEqual(shown, [])
         XCTAssertEqual(host.notes, [])
         model.runSelected()
 
-        try await wait("the Attachments sheet") { self.model.openSheetID == "openspot/attachments" }
+        XCTAssertEqual(host.settingsOpens, 1)
+        XCTAssertEqual(model.settingsBook.page, .spotOf("tab"))
+        XCTAssertNil(model.openSheetID)
+    }
+
+    func testCommandReturnOnAChipOpensTheSettingsOfItsSourceAndCommandKDoesNot() async throws {
+        try await refuse()
+
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        XCTAssertEqual(host.settingsOpens, 0)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+
+        XCTAssertEqual(host.settingsOpens, 1)
+        XCTAssertEqual(model.settingsBook.page, .spotOf("tab"))
+        XCTAssertNil(model.menu)
     }
 
     func testASlashWordWhileAChipReadsCompletesItsCommandAndTheChipStillFills() async throws {
@@ -326,7 +336,7 @@ final class AttachmentReadTests: AttachmentCase {
         try await wait("the end of the read") { self.log("done") == ["0"] }
     }
 
-    func testReturnOnAFailedChipWithNoRowsOpensAttachments() async throws {
+    func testReturnOnAFailedChipWithNoRowsOpensTheSettingsOfItsSource() async throws {
         try refuseSafari()
         try pickSource(runs: "echo 'The tab is gone.' >&2; exit 1")
         await open()
@@ -335,6 +345,7 @@ final class AttachmentReadTests: AttachmentCase {
 
         model.runSelected()
 
-        try await wait("the Attachments sheet") { self.model.openSheetID == "openspot/attachments" }
+        XCTAssertEqual(model.settingsBook.page, .spotOf("tab"))
+        XCTAssertNil(model.openSheetID)
     }
 }

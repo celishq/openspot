@@ -12,6 +12,7 @@ Every spot answers the same keys, so you learn them once.
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
 | `⌘Y`       | Opens the History of a spot whose Return runs its action.                     |
+| `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
@@ -77,7 +78,7 @@ Its sidebar holds seven sections:
 - The panel's search finds each row too. Return on one opens Settings at the row.
 - `openspot app settings --at <where>` opens Settings at a place, such as `access/screen`, `spot/notes` or `keys`.
 - `openspot setting list` prints each row, and `openspot setting set` changes the same values: `menubar`, `window`,
-  `open`, `float` and `key.<action>` of a spot, and `attachment`, which [the Attachments spot](#hand-what-you-work-on-to-a-spot) sets.
+  `open`, `float` and `key.<action>` of a spot, and `attachment`, which [Show beside the search field](#hand-what-you-work-on-to-a-spot) sets.
 
 ## Let a spot use what it needs
 
@@ -119,9 +120,10 @@ free slot, as `openspot grid pin <id>` does.
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Selection, Browser Tab or Clipboard to hide or show its card in the field.
-`⌘` Return opens the Settings of one. Its last row, Access, opens Settings at Access, which shows whether
-macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
+When you open the panel, what Selection, Browser Tab and Clipboard read, such as the files you selected in Finder, shows
+as a small stack of cards on the right of the field. On the Settings page of each, the Search Field switch in Where It
+Shows hides or shows its card, and Access shows whether macOS lets Openspot read what it needs. `⌘` Return on a card
+opens that page, and so does Return on a card that Openspot may not read yet. Nothing else
 changes until you press Tab.
 
 | Key        | Does                                                                                  |

@@ -158,6 +158,7 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |
+| `sheet.more`       | itself  | none                             | When people scroll your sheet's list near its end, with the last row's id as `after`. |
 | `clipboard.change` | itself  | none                             | When the clipboard changes.                               |
 | `app.front`        | itself  | its bundle ID                    | When another app comes to the front.                      |
 | `app.update`       | itself  | its version                      | When Openspot has downloaded an update.                   |

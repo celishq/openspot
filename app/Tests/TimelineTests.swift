@@ -208,7 +208,7 @@ final class TimelineTests: PanelCase {
         _ = try timeline.add(Timeline.Draft(kind: .text, values: ["12345678"]), of: "notes", at: now)
         _ = try timeline.add(Timeline.Draft(kind: .text, values: ["abcdefgh"]), of: "notes", at: now.addingTimeInterval(1))
 
-        let entries = timeline.list(Timeline.Query(), at: now.addingTimeInterval(2))
+        let entries = timeline.list(Timeline.Query(), at: now.addingTimeInterval(2)) ?? []
 
         XCTAssertEqual(entries.map(\.value), ["abcdefgh"])
     }
@@ -219,8 +219,8 @@ final class TimelineTests: PanelCase {
         _ = try timeline.add(Timeline.Draft(kind: .text, values: ["agenda"], title: "Meeting Notes"), of: "notes", at: now)
         _ = try timeline.add(Timeline.Draft(kind: .text, values: ["the meeting moved"], title: "Mail"), of: "notes", at: now.addingTimeInterval(1))
 
-        let found = timeline.list(Timeline.Query(text: "meeting"), at: now.addingTimeInterval(2))
-        let reversed = timeline.list(Timeline.Query(text: "notes meeting"), at: now.addingTimeInterval(2))
+        let found = timeline.list(Timeline.Query(text: "meeting"), at: now.addingTimeInterval(2)) ?? []
+        let reversed = timeline.list(Timeline.Query(text: "notes meeting"), at: now.addingTimeInterval(2)) ?? []
 
         XCTAssertEqual(found.map(\.title), ["Meeting Notes", "Mail"])
         XCTAssertEqual(reversed.map(\.title), ["Meeting Notes"])
@@ -230,7 +230,7 @@ final class TimelineTests: PanelCase {
         let now = Date()
         _ = try Timeline(folder: store).add(Timeline.Draft(kind: .text, values: ["kept"]), of: "notes", at: now)
 
-        let entries = Timeline(folder: store).list(Timeline.Query(), at: now)
+        let entries = Timeline(folder: store).list(Timeline.Query(), at: now) ?? []
 
         XCTAssertEqual(entries.map(\.value), ["kept"])
     }
@@ -242,11 +242,47 @@ final class TimelineTests: PanelCase {
         clock.advance(by: 1)
         _ = try await add(["text=cafe latte"])
 
-        let found = try await listed(["--text", "CAFE"])
+        let found = try await listed(["--search", "CAFE"])
         let limited = try await listed(["--limit", "1"])
 
         XCTAssertEqual(found.map { $0.value("text") }, ["cafe latte", "Café au lait"])
         XCTAssertEqual(limited.map { $0.value("text") }, ["cafe latte"])
+    }
+
+    func testAfterListsTheEntriesThatFollowOneInTheSameOrder() async throws {
+        var ids: [String] = []
+        for word in ["tea one", "coffee", "tea two", "tea three"] {
+            ids.append(try await add(["text=\(word)"]))
+            clock.advance(by: 1)
+        }
+
+        let page = try await listed(["--after", ids[2], "--limit", "1"])
+        let searched = try await listed(["--search", "tea", "--after", ids[3]])
+        let gone = try await call(["list", "--after", "nothing"])
+
+        XCTAssertEqual(page.map { $0.value("text") }, ["coffee"])
+        XCTAssertEqual(searched.map { $0.value("text") }, ["tea two", "tea one"])
+        XCTAssertEqual(gone.code, 1)
+        XCTAssertEqual(gone.errors, "The timeline has no entry `nothing` to list after. Start again with no --after.\n")
+    }
+
+    func testGetPrintsTheWholeValueOfAnEntry() async throws {
+        let long = "first\n" + String(repeating: "a", count: Timeline.heldText + 10)
+        let text = try await add(["text=\(long)"])
+        let link = try await add(["url=https://a.com"])
+        let files = try await add(["file=/tmp/one.txt", "file=/tmp/two.txt"])
+
+        let got = try await call(["get", text])
+        let url = try await call(["get", link])
+        let paths = try await call(["get", files])
+        let missing = try await call(["get", "nothing"])
+
+        XCTAssertEqual(got.code, 0, got.errors)
+        XCTAssertEqual(got.output, long)
+        XCTAssertEqual(url.output, "https://a.com")
+        XCTAssertEqual(paths.output, "/tmp/one.txt\n/tmp/two.txt")
+        XCTAssertEqual(missing.code, 1)
+        XCTAssertEqual(missing.errors, "The timeline has no entry `nothing` that this spot can reach. `openspot timeline list` prints its entries.\n")
     }
 
     func testASpotReadsOnlyItsOwnTimelineAndAnotherNeedsRead() async throws {

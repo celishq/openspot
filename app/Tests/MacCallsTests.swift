@@ -110,12 +110,16 @@ final class MacCallsTests: XCTestCase {
         let read = try run(["clipboard", "read"])
         let copied = try run(["clipboard", "copy"], input: "hello")
         let words = board.text()
+        let text = try run(["clipboard", "copy", "--text", "rgb(255 0 0)"])
+        let given = board.text()
         let file = try run(["clipboard", "copy", "list.txt"], in: place)
         let pasted = try run(["clipboard", "paste"])
 
         XCTAssertEqual([copied.code, file.code, read.code, pasted.code], [0, 0, 0, 0], copied.output + file.output + pasted.output)
         XCTAssertEqual(read.output, "kept text")
         XCTAssertEqual(words, "hello")
+        XCTAssertEqual(text.code, 0, text.output)
+        XCTAssertEqual(given, "rgb(255 0 0)")
         XCTAssertEqual(board.text(), URL(fileURLWithPath: "\(place.path)/list.txt").absoluteString)
         XCTAssertEqual(board.pasteCount, 1)
     }

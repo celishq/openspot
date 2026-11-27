@@ -39,6 +39,11 @@ instead of showing twice.
 once for each file. With `title=`, `detail=`, the line under the title, `app=`, the bundle ID of the app it came from, and `icon=` it says how the entry
 shows. With no words, it takes the same lines on stdin, and adds nothing when they hold no value.
 
+A [peek](../show/peek.md) on stdin after the value, a `peek=` block and the blocks under it, is kept with the entry, so
+`⌘P` shows it in the Timeline after your spot is gone. Openspot keeps a copy of each picture in it and drops each button
+with no `action=`, which would need your spot. A peek of more than 8 KB fails, and the entry is kept without it. `timeline list`
+prints the kept peek right after its entry.
+
 `key=` names the entry. An add with the key of an entry the spot kept moves that entry to the top with the new value.
 
 `at=` sets the time, as ISO 8601, such as `2026-11-20T08:00:00+01:00`, for an entry of the past. Without it, the entry
@@ -56,7 +61,7 @@ text=good
 key=2026-11-26-good
 ```
 
-`--within 1d` keeps the entries of the last day, `--text cafe` the ones that hold each word, and `--limit 5` the first
+`--within 1d` keeps the entries of the last day, `--search cafe` the ones that hold each word, best match first, `--after <id>` the ones after that entry, for a next page, and `--limit 5` the first
 five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole text sits in the file of
 `text.file=`.
 

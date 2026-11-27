@@ -8,10 +8,10 @@ extension SpotsModel {
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { !$0.spot.chipActions.isEmpty }
-        let unread = feeds ? entries.filter { $0.spot.isSource && !$0.spot.isSourceHidden && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
+        let unread = feeds ? entries.filter { $0.spot.isAttachmentSource && !$0.spot.isAttachmentHidden && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
         endSpread()
         var next = attachments
-        next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
+        next.open(over: front, unread: unread.map { ($0.id, $0.spot.attachmentLook) })
         if next != attachments { attachments = next }
         hideAttachments()
         if wasOn { updateVisible() }
@@ -45,17 +45,24 @@ extension SpotsModel {
         settle(held.reduce(attachments) { filled($0, with: $1.value, of: $1.id) }, motion: .fade)
     }
 
+    func failAttachment(_ text: String, of id: String) {
+        guard entry(id)?.spot.isAttachmentHidden != true else { return }
+        var next = attachments
+        next.fail(id, text, look: entry(id)?.spot.attachmentLook)
+        settle(next, motion: .fade)
+    }
+
     private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
         var next = stack
-        if entry(id)?.spot.isSourceHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
+        if entry(id)?.spot.isAttachmentHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id)?.spot.attachmentLook) } else { next.remove(id) }
         return next
     }
 
     func endAttachment(of id: String, _ end: ScriptCall.End) {
         guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
         switch end {
-        case .failed(SpotError.timedOut): mark(id, .failed(chip.appName.map { "\($0) didn't answer" } ?? "No answer"))
-        case .failed: mark(id, .failed(sheets[id]?.failure ?? ""))
+        case .failed(SpotError.timedOut): failAttachment(chip.appName.map { "\($0) didn't answer" } ?? "No answer", of: id)
+        case .failed: failAttachment(sheets[id]?.failure ?? "", of: id)
         case .ended: mark(id, .empty(chip.appName.map { "Nothing to attach from \($0)" } ?? "Nothing to attach"))
         case .stopped: break
         }
@@ -67,7 +74,7 @@ extension SpotsModel {
         var next = attachments
         next.spread()
         next.turn(by: step)
-        let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
+        let read = next.selectedChip.flatMap { !$0.isRead && entry($0.source)?.spot.triggers.pick != nil ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
         guard let read else { return }
@@ -84,14 +91,14 @@ extension SpotsModel {
         reading.forEach(runs.stopAttach)
     }
 
-    func allowAttachment() {
-        guard let id = allowSpot else { return }
-        pushFirst(id, moving: true)
+    @discardableResult
+    func openSourceSettings() -> Bool {
+        guard attachments.isOn, openSheetID == nil, let source = attachments.selectedChip?.source else { return false }
+        return openSettings(at: .spotOf(source))
     }
 
-    private var allowSpot: String? {
-        guard case .failed = attachments.selectedChip?.state else { return nil }
-        return entries.first { $0.spot.edits == .attachments && $0.spot.isBuiltIn }?.id
+    var isChipRefused: Bool {
+        if case .failed = attachments.selectedChip?.state { true } else { false }
     }
 
     private func mark(_ id: String, _ state: AttachmentChip.State) {
@@ -105,10 +112,6 @@ extension SpotsModel {
             guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return }
             turnAttachment(by: 1)
         }
-    }
-
-    private static func look(of spot: Spot) -> AttachmentChip.Look? {
-        spot.fileIcon.map(AttachmentChip.Look.file) ?? (spot.symbol.isEmpty ? nil : .symbol(spot.symbol))
     }
 
     private func settle(_ stack: AttachmentStack, motion: PanelMotion?) {
@@ -178,7 +181,7 @@ extension SpotsModel {
         guard let id = openSheetID, !isEditing, let value = openItems?.selectedItem.flatMap(AttachmentValue.init(row:)), cards.contains(where: { $0.spot.offers(value) }) else { return false }
         closeSheet(moving: true)
         var next = attachments
-        next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) })
+        next.fill(id, with: value, look: entry(id)?.spot.attachmentLook)
         next.select(id)
         next.spread()
         settle(next, motion: .edit)
@@ -188,8 +191,8 @@ extension SpotsModel {
     var attachmentHint: String? {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
         guard attachments.isOn else { return attachments.layout.isQuiet ? "⇥ Attach" : nil }
-        let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" } ?? allowSpot.map { _ in "⏎ Allow" }
-        return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
+        let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" } ?? (isChipRefused ? "⏎ Allow" : nil)
+        return [run, "⇥ Next", "⌘⏎ Settings", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
     func hideAttachments() {

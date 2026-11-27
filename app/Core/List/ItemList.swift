@@ -15,6 +15,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var perLine = 1
     public private(set) var isWaiting = false
+    public private(set) var isWhole = false
+    private var narrowsWhileWaiting = true
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
     public private(set) var isFinding = false
@@ -69,13 +71,18 @@ public struct ItemList: Equatable, Sendable {
         shown.indices.contains(index) ? shown[index].run : nil
     }
 
+    public var lastRun: String? {
+        all.last?.run
+    }
+
     public var selectedItem: SpotItem? {
         shown.indices.contains(selected) ? shown[selected] : nil
     }
 
     @discardableResult
-    public mutating func search(_ text: String) -> Bool {
+    public mutating func search(_ text: String, narrows: Bool = true) -> Bool {
         guard text != query, search != .off else { return false }
+        narrowsWhileWaiting = narrows
         begin(text)
         return true
     }
@@ -200,6 +207,16 @@ public struct ItemList: Equatable, Sendable {
         return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items.map(\.searchText)))
     }
 
+    public mutating func append(_ items: [SpotItem]) {
+        let held = Set(all.map(\.run))
+        let new = items.filter { !held.contains($0.run) }
+        guard !new.isEmpty else {
+            isWhole = true
+            return
+        }
+        replace(all + new)
+    }
+
     public mutating func replace(_ items: [SpotItem]) {
         replace(ready(items, search: search))
     }
@@ -207,6 +224,7 @@ public struct ItemList: Equatable, Sendable {
     public mutating func replace(_ rows: Rows) {
         guard rows.base == all, rows.search == search else { return replace(ready(rows.items, search: search)) }
         let run = selectedItem?.run
+        isWhole = false
         isLoading = false
         loadingWords = nil
         hasFailed = false
@@ -323,6 +341,7 @@ public struct ItemList: Equatable, Sendable {
 
     private func onHand() -> [Int]? {
         guard search == .script, isWaiting, !query.isEmpty else { return Array(all.indices) }
+        guard narrowsWhileWaiting else { return nil }
         let matches = SearchQuery(text: query).ranking(searchIndex, among: Array(all.indices)) { weights.weight(of: all[$0].run) }.sorted()
         return matches.isEmpty && !shown.isEmpty ? nil : matches
     }

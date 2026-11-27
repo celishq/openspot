@@ -2,7 +2,7 @@ import Foundation
 
 extension SpotsModel {
     public func arranges(_ entry: Entry) -> Bool {
-        takesOffGrid(entry) && !entry.spot.isSource
+        takesOffGrid(entry) && !entry.spot.isAttachmentSource
     }
 
     public func searchShelf(_ text: String) {

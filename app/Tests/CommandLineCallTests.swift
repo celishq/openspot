@@ -23,13 +23,15 @@ final class CommandLineCallTests: XCTestCase {
 
     func testTimelineAddsListsForgetsAndRestores() {
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "add", "text=a"])?.value as? TimelineCall, .add(["text=a"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list"])?.value as? TimelineCall, .list(spot: nil, all: false, within: nil, text: nil, limit: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list"])?.value as? TimelineCall, .list(spot: nil, all: false, within: nil, search: nil, after: nil, limit: nil))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["timeline", "list", "--all", "--within", "1d", "--text", "cafe", "--limit", "5"])?.value as? TimelineCall,
-            .list(spot: nil, all: true, within: 86_400, text: "cafe", limit: 5)
+            CommandLineCall(arguments: ["timeline", "list", "--all", "--within", "1d", "--search", "cafe", "--after", "ab12", "--limit", "5"])?.value as? TimelineCall,
+            .list(spot: nil, all: true, within: 86_400, search: "cafe", after: "ab12", limit: 5)
         )
-        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, text: nil, limit: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, search: nil, after: nil, limit: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--limit", "0"])?.value as? CallFault, .unknown(["timeline", "list", "--limit", "0"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--text", "cafe"])?.value as? CallFault, .unknown(["timeline", "list", "--text", "cafe"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "get", "ab12"])?.value as? TimelineCall, .get("ab12"))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "forget", "ab12"])?.value as? TimelineCall, .forget("ab12"))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "restore", "ab12"])?.value as? TimelineCall, .restore("ab12"))
     }
@@ -163,6 +165,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"])?.value as? ClipboardCall, .copy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"])?.value as? ClipboardCall, .paste)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy"])?.value as? ClipboardCall, .copy(nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "--text", "rgb(255 0 0)"])?.value as? ClipboardCall, .text("rgb(255 0 0)"))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "--text", "a", "b.txt"])?.value as? CallFault, .unknown(["clipboard", "copy", "--text", "a", "b.txt"]))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"])?.value as? ClipboardCall, .read(within: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "languages"])?.value as? TranslateCall, .languages)
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "text"])?.value as? TranslateCall, .text(from: nil, to: nil))

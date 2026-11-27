@@ -36,6 +36,41 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertFalse(sheet.isAnswering)
     }
 
+    private func searching(after busy: Int = 0) throws -> SpotRun {
+        try inline(toml: "[on]\n\"sheet.open\" = true\n\"sheet.text\" = true", """
+        export default {
+          show() { return "item=a\\ntitle=Alpha\\n\\nitem=b\\ntitle=Beta\\n" },
+          "sheet.text"({ value }) {
+            const end = Date.now() + \(busy); while (Date.now() < end) {}
+            return `item=found\\ntitle=Found ${value}\\n`
+          },
+        }
+        """)
+        return try sheet()
+    }
+
+    func testAnInlineSheetSearchLandsInTheTurnOfTheTextWithNoPause() async throws {
+        runs(frameWait: .seconds(10))
+        let sheet = try searching()
+        sheet.show(event: .sheet)
+        try await wait("the rows") { sheet.list.shown.map(\.run) == ["a", "b"] }
+
+        sheet.search("zz")
+
+        XCTAssertEqual(sheet.list.shown.map(\.title), ["Found zz"])
+    }
+
+    func testASlowInlineSheetSearchKeepsTheRowsUntilItsAnswerAndNarrowsNothing() async throws {
+        let sheet = try searching(after: 300)
+        sheet.show(event: .sheet)
+        try await wait("the rows") { sheet.list.shown.map(\.run) == ["a", "b"] }
+
+        sheet.search("Be")
+
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["a", "b"])
+        try await wait("the answer") { sheet.list.shown.map(\.title) == ["Found Be"] }
+    }
+
     private func slowAnswering(_ names: [String]) throws -> [SpotRun] {
         let body = """
         export default {

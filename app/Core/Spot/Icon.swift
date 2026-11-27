@@ -8,12 +8,13 @@ public enum Icon: Equatable, Sendable {
     case color(String)
 
     private static let pictures: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tif", "tiff", "webp", "bmp", "pdf", "icns", "svg"]
+    public static let videos: Set<String> = ["mov", "mp4", "m4v"]
 
     public init?(text: String?) {
         guard let text, !text.isEmpty else { return nil }
         if let hex = Self.hex(of: text) {
             self = .color(hex)
-        } else if WebPictures.isWeb(text) || Self.pictures.contains((text as NSString).pathExtension.lowercased()) {
+        } else if WebPictures.isWeb(text) || Self.pictures.union(Self.videos).contains((text as NSString).pathExtension.lowercased()) {
             self = .image(text)
         } else if text.contains("/") || text.hasPrefix("~") {
             self = .file(text)

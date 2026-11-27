@@ -180,7 +180,7 @@ extension SpotRuns {
 
     private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
         for sheet in sheets.values where sheet.spot.runsOnOpen(over: front, feedsAttachment: feedsAttachment) {
-            if sheet.spot.isSource {
+            if sheet.spot.isAttachmentSource {
                 sheet.show(need: .change, event: .panel)
             } else if toEnd {
                 sheet.showToEnd(event: .panel)

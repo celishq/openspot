@@ -77,6 +77,16 @@ final class SourceSpotTests: AttachmentCase {
         XCTAssertEqual(state(of: "selection"), .ready(AttachmentValue(text: "two words", title: "Selected text", app: "com.apple.Safari")))
     }
 
+    func testSelectionShowsAFailedChipWhenOpenspotMayNotReadTheSelectedText() async throws {
+        try copy("selection")
+        reads.set(front: "com.apple.Safari", trust: .unasked, selected: "two words")
+
+        await open()
+
+        try await wait("the refusal") { self.state(of: "selection") == .failed("Openspot can't read the selected text. Allow it in Openspot's settings.") }
+        XCTAssertEqual(host.notes, [])
+    }
+
     func testSelectionAddsNothingWhenNothingIsSelectedInFinder() async throws {
         try await addsNothing(over: "com.apple.finder")
     }
@@ -142,7 +152,7 @@ final class SourceSpotTests: AttachmentCase {
     }
 
     private func kept() -> [String] {
-        model.runs.timeline.list(Timeline.Query(spots: ["clipboard"]), at: Date()).map(\.value)
+        (model.runs.timeline.list(Timeline.Query(spots: ["clipboard"]), at: Date()) ?? []).map(\.value)
     }
 
     func testClipboardKeepsEachCopyInTheTimelineWhileThePanelIsClosed() async throws {

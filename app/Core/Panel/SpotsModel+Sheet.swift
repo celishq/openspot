@@ -329,6 +329,10 @@ extension SpotsModel {
         }
     }
 
+    public func moreRows(in id: String) {
+        sheets[id]?.more()
+    }
+
     public func runItem(_ item: SpotItem) {
         guard let entry = openEntry else { return }
         pick(item, of: entry)

@@ -41,9 +41,14 @@ public struct SettingRows: Equatable, Sendable {
         all.filter { $0.spot == ReservedSetting.appSpot && $0.section == section }
     }
 
+    public static let placesGroup = "Where It Shows"
+
     public func groups(of spot: String) -> [Group] {
-        let rows = rows(of: spot)
-        let kinds: [(String, Set<SettingRow.Kind>)] = [("Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where It Shows", [.toggle])]
-        return kinds.map { title, kinds in Group(id: title, rows: rows.filter { kinds.contains($0.kind) }) }.filter { !$0.rows.isEmpty }
+        let all = rows(of: spot)
+        let rows = all.filter { SpotPlace(rawValue: $0.key) == nil }
+        let places = SpotPlace.allCases.compactMap { place in all.first { $0.key == place.key } }
+        let kinds: [(String, Set<SettingRow.Kind>)] = [("Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice, .toggle])]
+        let groups = kinds.map { title, kinds in Group(id: title, rows: rows.filter { kinds.contains($0.kind) }) }
+        return (groups + [Group(id: Self.placesGroup, rows: places)]).filter { !$0.rows.isEmpty }
     }
 }

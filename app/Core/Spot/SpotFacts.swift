@@ -10,8 +10,8 @@ public struct SpotFacts: Equatable, Sendable {
     public let subtitle: String?
     public let hasSheet: Bool
     public let isFound: Bool
-    public let isSource: Bool
-    public internal(set) var isSourceHidden = false
+    public let isAttachmentSource: Bool
+    public internal(set) var isAttachmentHidden = false
     public internal(set) var order: Int
     public let host: HostSheet?
     public let growsFromField: Bool
@@ -33,7 +33,7 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var isBuiltIn = false
     public let keywords: [String]
     public let sample: URL?
-    public let edits: SpotEdits?
+    public let editsSpots: Bool
     public let starts: SpotStart?
     public internal(set) var editedFile: URL?
 
@@ -41,7 +41,4 @@ public struct SpotFacts: Equatable, Sendable {
         BlockKind.kinds(views: views)
     }
 
-    public var editsSpots: Bool {
-        edits == .spots
-    }
 }

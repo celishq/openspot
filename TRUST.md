@@ -47,6 +47,9 @@ it declares.
   known by the process group that Openspot started it in, but only the link lets it run another spot with
   `openspot run` or tell other spots with `openspot emit`. A call that runs in a process of its own, such as one that
   the running app hands back, runs with the rights of the spot's process and nothing more.
+- Each `action=` of a button of a [peek](docs/show/peek.md) is one `openspot` command, which runs in Openspot under the
+  uses of the spot whose sheet shows it, and starts no shell. A peek that the Timeline keeps shows the words its spot
+  wrote after that spot is gone, and keeps no button that would run the spot.
 - Only your own processes can reach the API.
 - No other spot and no Terminal reads a secret setting. `setting get` prints `•••` for it, and `setting list` prints
   `set`. `setting set` of it fails. Only its own spot reads it, with `setting get`, and only its row in Settings changes it.

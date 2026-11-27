@@ -35,12 +35,12 @@ export default {
       .filter((row) => row.item && row.item !== "empty")
       .map(({ parent, ...row }) => ({ ...row, detail: `Timeline · ${row.detail}` }))
   },
-  async press(input, env) {
-    await env.timeline.copy({
-      kind: input["item.kind"],
-      text: input["item.text"],
-      url: input["item.url"],
-      file: input["item.file"],
-    })
+  press(input) {
+    if (input["item.kind"] === "file") {
+      openspot.call(["clipboard", "copy", input["item.file"]])
+    } else {
+      openspot.call(["clipboard", "copy"], openspot.call(["timeline", "get", input.item]).stdout)
+    }
+    openspot.call(["toast", "Copied."])
   },
 }

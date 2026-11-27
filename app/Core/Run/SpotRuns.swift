@@ -274,7 +274,7 @@ public final class SpotRuns {
     public func panelClosed() {
         isPanelOpen = false
         sheets.values.forEach { $0.leftPlace() }
-        sheets.values.filter(\.spot.isSource).forEach { $0.stopShows() }
+        sheets.values.filter(\.spot.isAttachmentSource).forEach { $0.stopShows() }
         updateClock()
     }
 

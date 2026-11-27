@@ -47,7 +47,7 @@ fail in `show`. `toast` works anywhere.
 
 | Command                                     | Does                                                      | `uses`      |
 | ------------------------------------------- | --------------------------------------------------------- | ----------- |
-| `openspot clipboard copy`, `paste`, `read`  | Copies stdin or a file, pastes into the front app, reads text. | `clipboard` |
+| `openspot clipboard copy`, `paste`, `read`  | Copies stdin, the text of `--text` or a file, pastes into the front app, reads text. | `clipboard` |
 | `openspot toast <words>`, `--remove <id>`   | Shows a short message, even when the panel is closed, or takes it away. [A toast](../reference/commands.md#a-toast) has its options. | none        |
 | `openspot window frame`, `move <frame>`     | Reads or moves the front window.                          | `screen`    |
 | `openspot screen shot`, `record start`      | Takes a picture or a recording of the screen.             | `screen`    |

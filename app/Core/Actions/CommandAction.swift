@@ -14,12 +14,32 @@ public struct CommandAction: Equatable, Sendable {
         case command(String)
         case word(String)
         case history
+        case peek
+        case act(PeekAct, name: String)
+        case group(String)
+        case playback
         case open
         case secret(String)
         case option(String)
     }
 
     public static let history = CommandAction(kind: .history, title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
+
+    public static let peek = CommandAction(kind: .peek, title: "Peek", key: ActionKey(text: "cmd+p"), scope: .item, after: .stay)
+
+    public static let playback = CommandAction(kind: .playback, title: "Pause", scope: .item, after: .stay)
+
+    static func playback(isPlaying: Bool) -> CommandAction {
+        CommandAction(kind: .playback, title: isPlaying ? "Pause" : "Play", scope: .item, after: .stay)
+    }
+
+    static func act(_ act: PeekAct, name: String, title: String) -> CommandAction {
+        CommandAction(kind: .act(act, name: name), title: title, scope: .item, after: .close)
+    }
+
+    static func group(_ name: String, title: String) -> CommandAction {
+        CommandAction(kind: .group(name), title: title, scope: .item, after: .stay)
+    }
 
     public static let open = CommandAction(kind: .open, title: "Open", scope: .spot, after: .stay)
 
@@ -83,6 +103,9 @@ public struct CommandAction: Equatable, Sendable {
         case .command(let id): "openspot.command." + id
         case .word(let name): "openspot.word." + name
         case .history: "openspot.history"
+        case .peek: "openspot.peek"
+        case .act(_, let name), .group(let name): "openspot.act." + name
+        case .playback: "openspot.playback"
         case .open: "openspot.open"
         case .secret(let key): "openspot.secret." + key
         case .option(let key): "openspot.option." + key

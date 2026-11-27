@@ -18,6 +18,9 @@ public protocol SpotsHost: AnyObject {
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
     func showSubmenu(beside row: CGRect, of menu: CGRect)
     func hideSubmenu()
+    func hasRoomRight(of sheet: CGRect, for width: CGFloat) -> Bool
+    func reach(_ rect: CGRect?)
+    func readAhead(_ looks: [Peek.Look])
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool)
     func land(_ id: String)
     func window(_ entry: SpotsModel.Entry)
@@ -71,4 +74,6 @@ extension SpotsHost {
     }
 
     public func openStore(file: URL) {}
+
+    public func readAhead(_ looks: [Peek.Look]) {}
 }

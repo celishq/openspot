@@ -69,12 +69,13 @@ A block's first line is its kind and its id, such as `item=4120`.
 | `item`    | A row of the list. A press runs `press`. | See [Items](#items).                                                |
 | `items`   | The list itself, in a frame with a layout. | none                                                             |
 | `box`     | A box that lays out the blocks whose `parent` names it. | none                                                |
+| `peek`    | The [peek](../show/peek.md) of the row its `parent` names, drawn from the blocks whose `parent` names it. | none |
 | `text`    | Words.                                 | `value`, the value on a card; `color`, a `#rrggbb` bar at its edge.  |
 | `number`  | One value.                             | `value`; `max`, a full ring or bar; `unit`, as in `84%`; `display`, words in place of the value; `type`, `ring` or `bar`. |
 | `series`  | Points over time, a bar each.          | `value`, points split by commas, `-` for a gap; `add`, points after the last; `keep`, the most it holds, 60 by default and 600 at most; `max`, `unit`, `display`. |
 | `icon`    | An icon alone.                         | `value`, the icon.                                                   |
 | `picture` | An image that fills its room.          | `icon`, the image.                                                   |
-| `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press. |
+| `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press; in a peek, `action`, an `openspot` command, once for each one it runs in order. |
 | `field`   | A text people type.                    | `value`; `type`, `multiline`, `slider`, `search` or `hotkey`; `placeholder`; `required`; `readonly`; `min` and `max` of a slider, 0 and 100 by default; `recording`, while a `hotkey` records. |
 | `switch`  | On or off.                             | `value`, `true` or `false`; `type`, `tick` for a round tick.         |
 | `choice`  | A menu of the `option` blocks after it. | `value`, the chosen id; `type`, `list`, `swatches` or `multiple`; `color`, one colour of `swatches`. |
@@ -141,6 +142,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `drop`               | When people drop files on your card, or hand it files with Tab. | `file`, once for each file.                          |
 | `<event>`            | When an event of `[on]` comes.                     | `value`, the event's value.                          |
 | `sheet.text`         | At each change of your sheet's search field.       | `value`, the text; `alt`.                            |
+| `sheet.more`         | When the list of your sheet is scrolled near its end. Print the next rows, or nothing at the end. | `after`, the id of the last row; `value`, the search text. |
 | `<binding>.<event>`  | When a spot you bind sends the event.              | The event's values.                                  |
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |

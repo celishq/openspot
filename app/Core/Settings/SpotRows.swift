@@ -7,10 +7,6 @@ public struct SpotRows: Equatable, Sendable {
         let icon: String
     }
 
-    static let menuBarKey = "menubar"
-    static let windowKey = "window"
-    static let menuBarIcon = "menubar.rectangle"
-    static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
 
     public let spot: String
@@ -19,6 +15,7 @@ public struct SpotRows: Equatable, Sendable {
     let keys: [Key]
     let isWindowByDefault: Bool
     let name: String
+    let isAttachmentSource: Bool
 
     private func kept(in config: Config) -> [KeptSetting] {
         config.settings.filter { value in
@@ -40,15 +37,25 @@ public struct SpotRows: Equatable, Sendable {
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
-        let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
-        let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
-        let placeRows = showsInMenuBar ? [menuBarRow, windowRow] : []
+        let placeRows = places.map { place in row(place.key, place.title, String(isShown(in: place, config)), .toggle, place.icon) }
         return keyRows + fieldRows + keptRows + placeRows
     }
 
     private static func kind(of field: Manifest.Setting) -> SettingRow.Kind {
         if !field.options.isEmpty || field.parameter.type.kind == .choice { return .choice }
         return field.parameter.type.kind == .bool ? .toggle : .field
+    }
+
+    private var places: [SpotPlace] {
+        SpotPlace.allCases.filter { $0 == .searchField ? isAttachmentSource : showsInMenuBar }
+    }
+
+    private func isShown(in place: SpotPlace, _ config: Config) -> Bool {
+        switch place {
+        case .searchField: !config.hidesAttachment(of: spot)
+        case .menuBar: config.arrangement.menuBar.contains(spot)
+        case .window: isWindow(in: config)
+        }
     }
 
     private func isWindow(in config: Config) -> Bool {

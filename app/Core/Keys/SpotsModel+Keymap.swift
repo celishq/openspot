@@ -185,7 +185,7 @@ extension SpotsModel {
     var settingsRow: KeyRow {
         let shows = target.map { openSheetID == nil && $0.item == nil && hasSettings($0.entry) } ?? false
         return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
-            openSelectedSettings() ? true : nil
+            openSourceSettings() || openSelectedSettings() ? true : nil
         }
     }
 
@@ -238,6 +238,7 @@ extension SpotsModel {
                 leaveAttachment()
                 return true
             },
+            peekEscapeRow,
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }
@@ -246,6 +247,7 @@ extension SpotsModel {
                 return menu != nil
             },
             .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
+            peekRow,
             .any { [self] key in openSheet(on: key) ? true : nil },
         ]
         return rows

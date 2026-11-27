@@ -54,18 +54,18 @@ public struct Spot: Equatable, Sendable {
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
         sample: URL? = nil,
-        edits: SpotEdits? = nil,
+        editsSpots: Bool = false,
         starts: SpotStart? = nil
     ) {
-        let isSource = uses.contains(.attachment)
+        let isAttachmentSource = uses.contains(.attachment)
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
             hasSheet: triggers.shows || triggers.search == nil && commands.isEmpty && offeredActions.isEmpty,
-            isFound: isFound && !isSource, isSource: isSource, order: order,
+            isFound: isFound && !isAttachmentSource, isAttachmentSource: isAttachmentSource, order: order,
             host: host, growsFromField: growsFromField, mode: mode,
-            dataName: dataName, isOnGrid: isOnGrid && !isSource, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid && !isAttachmentSource, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
             commands: commands, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
-            edits: edits, starts: starts
+            editsSpots: editsSpots, starts: starts
         ))
         self.kind = kind
         self.pick = pick
@@ -188,7 +188,8 @@ public struct Spot: Equatable, Sendable {
             showsInMenuBar: canShowInMenuBar,
             keys: settingKeys,
             isWindowByDefault: isWindow,
-            name: self.name
+            name: self.name,
+            isAttachmentSource: self.isAttachmentSource
         )
         if !self.hasSheet, !self.commands.isEmpty {
             spot.opensToKeys = true
@@ -231,10 +232,10 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    func hidingSource(_ isHidden: Bool) -> Spot {
-        guard isHidden, self.isSource else { return self }
+    func hidingAttachment(_ isHidden: Bool) -> Spot {
+        guard isHidden, self.isAttachmentSource else { return self }
         var spot = self
-        spot.isSourceHidden = true
+        spot.isAttachmentHidden = true
         return spot
     }
 
@@ -299,7 +300,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
-        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment && !self.isSourceHidden)
+        self.triggers.opens(over: front) && (!self.isAttachmentSource || feedsAttachment && !self.isAttachmentHidden)
     }
 
     public func takes(_ value: AttachmentValue) -> Bool {
@@ -308,6 +309,10 @@ public struct Spot: Equatable, Sendable {
 
     var chipActions: [ChipAction] {
         header.chipActions
+    }
+
+    public var attachmentLook: AttachmentChip.Look? {
+        fileIcon.map(AttachmentChip.Look.file) ?? (symbol.isEmpty ? nil : .symbol(symbol))
     }
 
     func offers(_ value: AttachmentValue) -> Bool {

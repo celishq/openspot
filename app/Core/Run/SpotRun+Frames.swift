@@ -53,11 +53,14 @@ extension SpotRun {
             changeReading { $0.markStale() }
             answerArrived()
             if reports { fail(error, tells: tells) }
+            if reports, spot.isAttachmentSource, let failure { onReport(.attachmentFailed(failure)) }
         case .answer(let query):
             takeAnswers([], to: query)
         case .search(let query):
             list.stopWaiting(for: query)
             answerArrived()
+            if error as? SpotError != .timedOut { fail(error) }
+        case .more:
             if error as? SpotError != .timedOut { fail(error) }
         }
     }
@@ -75,6 +78,22 @@ extension SpotRun {
 
     static func search(of lines: Frame, in spot: Spot) -> ItemSearch {
         spot.triggers.searchesSheet ? .script : lines.search
+    }
+
+    func takes(search text: String, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) -> Bool {
+        let lines = Frame(text: text, kinds: spot.kinds)
+        guard lines.root?.value(RootKey.error.rawValue) == nil, lines.errors.isEmpty else { return false }
+        call.hasAnswer = true
+        if query == list.query {
+            changeList {
+                $0.take(search: Self.search(of: lines, in: spot))
+                $0.take(perLine: lines.columns)
+                $0.answer(lines.items, to: query)
+            }
+            Task { await prepare(firstScreen(of: lines.items), []) }
+        }
+        finish(call, end, errors: errors)
+        return true
     }
 
     func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
@@ -112,6 +131,10 @@ extension SpotRun {
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
         case .answer:
             return
+        case .more(let after, let query):
+            guard query == list.query, after == list.lastRun else { return }
+            changeList { $0.append(lines.items) }
+            await prepare(firstScreen(of: lines.items), [])
         case .search(let query):
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }

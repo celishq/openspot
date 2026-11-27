@@ -103,7 +103,7 @@ final class CommandHelpTests: XCTestCase {
         let copy = entries.first { $0["command"] as? String == "openspot clipboard copy" }
         let show = entries.first { $0["command"] as? String == "openspot spot open" }
 
-        XCTAssertEqual(copy?["form"] as? String, "[file]")
+        XCTAssertEqual(copy?["form"] as? String, "[file] [--text text]")
         XCTAssertEqual(copy?["group"] as? String, "Ask the Mac")
         XCTAssertEqual(copy?["effect"] as? String, "changes")
         XCTAssertEqual(show?["needsApp"] as? Bool, true)

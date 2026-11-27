@@ -17,6 +17,7 @@ public final class SpotRun {
         case refused(String?)
         case done
         case attachment(AttachmentValue)
+        case attachmentFailed(String)
     }
 
     public enum ShowNeed: Sendable {
@@ -29,6 +30,7 @@ public final class SpotRun {
         case show(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
         case answer(String)
+        case more(after: String, query: String)
 
         var isAnswer: Bool {
             if case .answer = self { return true }
@@ -82,6 +84,7 @@ public final class SpotRun {
     static let waitingLimit = 8
     static let showKey = "show"
     static let searchKey = "search"
+    static let moreKey = "more"
     static let answerKey = "answer"
     static let cardKey = "card"
     static let levelKey = "level"

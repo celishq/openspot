@@ -9,11 +9,15 @@ extension SettingsView {
                 self.banner(standing, banner.title, banner.line)
             }
             ForEach(book.rows.groups(of: standing.id)) { rows in
-                group(rows.id) { lines(rows.rows) { settingLine($0) } }
+                if rows.id == SettingRows.placesGroup {
+                    placesGroup(standing, rows)
+                } else {
+                    group(rows.id) { lines(rows.rows) { settingLine($0) } }
+                }
             }
-            if !standing.uses.isEmpty {
+            if !standing.accesses.isEmpty {
                 group("Access") {
-                    lines(standing.uses) { useLine($0) }
+                    lines(standing.accesses.compactMap(book.access.access)) { accessLine($0) }
                 }
             }
         }
@@ -31,28 +35,6 @@ extension SettingsView {
                 fix(standing)
             }
         }
-    }
-
-    private func useLine(_ use: SpotStanding.UseNeeds) -> some View {
-        let accesses = use.needs.compactMap(book.access.access)
-        let first = accesses.first
-        return HStack(spacing: SpotTokens.settingsRowGap) {
-            SettingsTile(use: use.id, access: use.needs.first, side: SpotTokens.settingsRowTile)
-            Text(use.id.title)
-                .lineLimit(1)
-            Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if let first {
-                Text(first.id.title).foregroundStyle(.secondary)
-                if !first.isAllowed {
-                    Text(first.status.word).foregroundStyle(SpotTheme.settings(first.status))
-                }
-                chevron
-            }
-        }
-        .help([use.id.purpose, use.needsLine].compactMap { $0 }.joined(separator: " "))
-        .contentShape(Rectangle())
-        .onTapGesture { if let first { book.go(.accessOf(first.id)) } }
-        .accessibilityAddTraits(first == nil ? [] : .isButton)
     }
 
     func spotLine(_ standing: SpotStanding, line: String = "") -> some View {
