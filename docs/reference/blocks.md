@@ -122,7 +122,6 @@ footer.
 | `route`         | The page a press opens, with no run of `press`.                           |
 | `route.title`   | The title of that page, the row's title by default.                       |
 | `route.replace` | `true` replaces the sheet that shows.                                     |
-| `peek.file`     | A file that holds the row's [peek](../show/peek.md), as `.frame` blocks. Openspot reads it ahead, in the background. |
 
 Any other key, such as `path=`, is the row's own, and comes back as `input.item.path=` when people press it.
 

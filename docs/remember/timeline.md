@@ -41,8 +41,8 @@ shows. With no words, it takes the same lines on stdin, and adds nothing when th
 
 A [peek](../show/peek.md) on stdin after the value, a `peek=` block and the blocks under it, is kept with the entry, so
 `⌘P` shows it in the Timeline after your spot is gone. Openspot keeps a copy of each picture in it and drops each button
-with no `action=`, which would need your spot. A peek of more than 64 KB fails, and the entry is kept without it. `timeline list`
-names the kept peek in `peek.file=`.
+with no `action=`, which would need your spot. A peek of more than 8 KB fails, and the entry is kept without it. `timeline list`
+prints the kept peek right after its entry.
 
 `key=` names the entry. An add with the key of an entry the spot kept moves that entry to the top with the new value.
 

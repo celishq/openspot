@@ -6,7 +6,7 @@ final class Timeline: Sendable {
     static let byteLimit: Int64 = 2 << 30
     static let entryLimit: Int64 = 25 << 20
     static let heldText = 16 << 10
-    static let peekLimit = 64 << 10
+    static let peekLimit = 8 << 10
     static let forgottenAge: TimeInterval = 600
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

@@ -9,23 +9,32 @@ const heldText = 2000
 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-/** The blocks that `openspot timeline list` printed, each as its keys with their values still escaped, and its files. */
+/** The entries that `openspot timeline list` printed, each as its keys with their values still escaped, its files, and
+ * the blocks of its kept peek, which follow it as they are. */
 function entries(text) {
-  return text
-    .split("\n\n")
-    .filter((block) => block.trim() !== "")
-    .map((block) => {
-      const entry = { files: [] }
-      for (const line of block.split("\n")) {
-        const at = line.indexOf("=")
-        if (at <= 0) continue
-        const key = line.slice(0, at)
-        const value = line.slice(at + 1)
-        if (key === "file") entry.files.push(value)
-        if (!(key in entry)) entry[key] = value
-      }
-      return entry
-    })
+  const listed = []
+  for (const block of text.split("\n\n").filter((block) => block.trim() !== "")) {
+    if (!block.startsWith("item=")) {
+      if (listed.length) listed[listed.length - 1].peek.push(block)
+      continue
+    }
+    listed.push(entry(block))
+  }
+  return listed
+}
+
+/** One entry block, as its keys, its files and room for its peek. */
+function entry(block) {
+  const entry = { files: [], peek: [] }
+  for (const line of block.split("\n")) {
+    const at = line.indexOf("=")
+    if (at <= 0) continue
+    const key = line.slice(0, at)
+    const value = line.slice(at + 1)
+    if (key === "file") entry.files.push(value)
+    if (!(key in entry)) entry[key] = value
+  }
+  return entry
 }
 
 /** The date of a day, such as `2026-11-26`, in the Mac's time zone. */
@@ -88,7 +97,6 @@ function row(entry, day) {
   if (kind === "text" || kind === "url") lines.push(`keywords=${value.slice(0, 200)}`)
   if (kind === "file") lines.push(`file=${value}`)
   lines.push("open.title=Copy")
-  if (entry["peek.file"]) lines.push(`peek.file=${entry["peek.file"]}`)
   return lines.join("\n")
 }
 
@@ -100,7 +108,7 @@ function list(words, count, after) {
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
   let last = ""
-  for (const entry of entries(listed).filter((entry) => entry.item)) {
+  for (const entry of entries(listed)) {
     if (blocks.length === 1) {
       blocks[0] += "\ntitle=Timeline"
       blocks.push("button=press\ntitle=Copy\nscope=item")
@@ -113,7 +121,7 @@ function list(words, count, after) {
       blocks.push(`box=day-${day}\nparent=list\ntitle=${dayTitle(day, now)}`)
       last = day
     }
-    blocks.push(row(entry, day))
+    blocks.push(row(entry, day), ...entry.peek)
   }
   if (!last && after) return ""
   if (!last) {

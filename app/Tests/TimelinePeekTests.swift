@@ -52,36 +52,37 @@ final class TimelinePeekTests: PanelCase {
         return TextBlock.blocks(in: answer.output)
     }
 
-    private func peek(of block: TextBlock?) throws -> [TextBlock] {
-        let file = try XCTUnwrap(block?.value("peek.file"), "no peek.file")
-        return TextBlock.blocks(in: try String(contentsOfFile: file, encoding: .utf8))
+    private func peek(after blocks: [TextBlock]) -> [TextBlock] {
+        Array(blocks.dropFirst().prefix { $0.fields.first?.key != "item" })
     }
 
-    func testThePeekAfterTheValueIsKeptAsAFrameOfTheEntryWithNoCallBack() async throws {
+    private var frames: [String] {
+        FileManager.default.enumerator(atPath: store.path)?.compactMap { $0 as? String }.filter { $0.hasSuffix(".frame") } ?? []
+    }
+
+    func testThePeekAfterTheValueIsListedAfterItsEntryWithNoCallBack() async throws {
         let added = try await call(["add"], input: red)
         XCTAssertEqual(added.code, 0, added.errors)
         let id = added.output.trimmingCharacters(in: .newlines)
 
-        let entry = try await listed().first
-        let peek = try peek(of: entry)
+        let blocks = try await listed()
+        let peek = peek(after: blocks)
 
-        XCTAssertEqual(entry?.value("text"), "#ff0000")
-        XCTAssertTrue(try XCTUnwrap(entry?.value("peek.file")).hasSuffix(".frame"))
+        XCTAssertEqual(blocks.first?.value("text"), "#ff0000")
+        XCTAssertNil(blocks.first?.value("peek.file"))
         XCTAssertEqual(peek.map(\.firstLine), ["peek=peek-\(id)", "text=hex", "button=rgb"])
         XCTAssertEqual(peek.first?.value("parent"), id)
         XCTAssertEqual(peek.first?.value("class"), "gap-part")
         XCTAssertEqual(peek.dropFirst().map { $0.value("parent") }, ["peek-\(id)", "peek-\(id)"])
     }
 
-    func testThePeekOfAListedEntryIsThePeekOfItsRow() async throws {
+    func testTheListedEntryAndItsPeekAreARowWithItsPeek() async throws {
         _ = try await call(["add"], input: red)
-        let first = try await listed().first
-        let entry = try XCTUnwrap(first)
-        let text = try String(contentsOfFile: try XCTUnwrap(entry.value("peek.file")), encoding: .utf8)
+        let output = try await call(["list"]).output
 
-        let row = Frame(text: "item=\(entry.value("item") ?? "")\ntitle=Red\ntext=#ff0000\n\n" + text).items.first
+        let row = Frame(text: output).items.first
 
-        guard case .blocks(let tree) = row.flatMap { Peek(item: $0) }?.look else { return XCTFail("no blocks") }
+        guard case .blocks(let tree) = row.flatMap({ Peek(item: $0) })?.look else { return XCTFail("no blocks") }
         XCTAssertEqual(tree.node("hex")?.block.value("title"), "#FF0000")
         XCTAssertEqual(row.map { PeekAct.actions(of: $0.peek).map(\.title) }, ["Copy RGB"])
     }
@@ -92,10 +93,10 @@ final class TimelinePeekTests: PanelCase {
         let added = try await call(["add"], input: "text=big\n\npeek=p\n\ntext=t\nparent=p\ntitle=\(long)\n")
 
         XCTAssertEqual(added.code, 1)
-        XCTAssertEqual(added.errors, "The peek is over 64 KB, so the timeline keeps the entry without it.\n")
-        let entry = try await listed().first
-        XCTAssertEqual(entry?.value("text"), "big")
-        XCTAssertNil(entry?.value("peek.file"))
+        XCTAssertEqual(added.errors, "The peek is over 8 KB, so the timeline keeps the entry without it.\n")
+        let blocks = try await listed()
+        XCTAssertEqual(blocks.first?.value("text"), "big")
+        XCTAssertEqual(peek(after: blocks), [])
     }
 
     func testAPictureOfThePeekIsKeptAsACopyThatOutlivesItsOriginal() async throws {
@@ -105,20 +106,19 @@ final class TimelinePeekTests: PanelCase {
         _ = try await call(["add"], input: "text=#ff0000\n\npeek=p\n\npicture=shot\nparent=p\nicon=\(original.path)\n")
         try FileManager.default.removeItem(at: original)
 
-        let first = try await listed().first
-        let kept = try XCTUnwrap(try peek(of: first).last?.value("icon"))
+        let blocks = try await listed()
+        let kept = try XCTUnwrap(peek(after: blocks).last?.value("icon"))
         XCTAssertNotEqual(kept, original.path)
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept))
     }
 
     func testAForgottenEntryTakesItsPeekWithIt() async throws {
         let id = try await call(["add"], input: red).output.trimmingCharacters(in: .newlines)
-        let first = try await listed().first
-        let file = try XCTUnwrap(first?.value("peek.file"))
+        XCTAssertEqual(frames.count, 1)
 
         _ = model.runs.timeline.forget(id, at: Date().addingTimeInterval(-Timeline.forgottenAge - 5))
         _ = model.runs.timeline.cut(at: Date())
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: file))
+        XCTAssertEqual(frames, [])
     }
 }

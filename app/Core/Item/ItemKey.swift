@@ -4,5 +4,4 @@ public enum ItemKey: String, CaseIterable, Sendable {
     case route
     case routeTitle = "route.title"
     case routeReplace = "route.replace"
-    case peekFile = "peek.file"
 }
