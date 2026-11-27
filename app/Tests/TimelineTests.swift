@@ -266,6 +266,27 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(gone.errors, "The timeline has no entry `nothing` to list after. Start again with no --after.\n")
     }
 
+    func testCopyPutsTheWholeEntryOnTheClipboard() async throws {
+        let board = FakeClipboard()
+        model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
+        try script("copier", toml: "title = 'Copier'\nuses = ['timeline', 'clipboard']", "printf 'item=c\\ntitle=C\\n'")
+        await model.reload()
+        let long = String(repeating: "a", count: Timeline.heldText + 10)
+        let text = try await add(["text=\(long)"], of: "copier")
+        let link = try await add(["url=https://a.com"], of: "copier")
+
+        let copied = try await call(["copy", text], of: "copier")
+        let whole = board.text()
+        _ = try await call(["copy", link], of: "copier")
+        let missing = try await call(["copy", "nothing"], of: "copier")
+
+        XCTAssertEqual(copied.code, 0, copied.errors)
+        XCTAssertEqual(whole, long)
+        XCTAssertEqual(board.text(), "https://a.com")
+        XCTAssertEqual(missing.code, 1)
+        XCTAssertEqual(missing.errors, "The timeline has no entry `nothing` that this spot can reach. `openspot timeline list` prints its entries.\n")
+    }
+
     func testASpotReadsOnlyItsOwnTimelineAndAnotherNeedsRead() async throws {
         _ = try await add(["text=mine"])
         _ = try await add(["text=theirs"], of: "other")

@@ -25,6 +25,7 @@ final class TimelineSpotTests: BuiltInCase {
         try fake("openspot", """
         case "$1 $2" in
           "clipboard copy") printf 'clipboard copy %s|%s\\n' "$3" "$(cat)" >> '\(log.path)'; exit 0 ;;
+          "timeline copy") echo "$*" >> '\(log.path)'; exit 0 ;;
           "clipboard paste" | "toast "* | "spot open") echo "$*" >> '\(log.path)'; exit 0 ;;
         esac
         exec '\(real.path)' "$@"
@@ -70,7 +71,7 @@ final class TimelineSpotTests: BuiltInCase {
         let rows = try await rows()
 
         XCTAssertEqual(Set(rows.compactMap(\.section)).count, 4)
-        XCTAssertEqual(((try? String(contentsOf: calls, encoding: .utf8)) ?? "").split(separator: "\n").count, 2)
+        XCTAssertEqual(((try? String(contentsOf: calls, encoding: .utf8)) ?? "").split(separator: "\n").count, 0)
     }
 
     func testAFileOfAPictureShowsAsAnImageWithItselfAsItsIcon() async throws {
@@ -164,19 +165,34 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(found.map(\.title), ["needle"])
     }
 
+    func testAWordThatNoEntryHoldsSaysSo() async throws {
+        try add(.text, "hello")
+
+        let found = try await timeline.answer("sheet.text", input: "input.value=zebra\n", timeout: 60).items
+
+        XCTAssertEqual(found.map(\.title), ["Nothing you copied holds “zebra”."])
+    }
+
+    func testARowHoldsOnlyTheStartOfALongText() async throws {
+        try add(.text, String(repeating: "a", count: 5_000))
+
+        let row = try await rows().first
+
+        XCTAssertEqual(row?.fields.first { $0.key == "text" }?.value.count, 2_000)
+    }
+
     func testReturnCopiesAnEntryOfEachKind() async throws {
         try await timeline.perform("press", input: "input.item=a\ninput.item.kind=text\ninput.item.text=two\\nlines\n", timeout: 60)
-        try await timeline.perform("press", input: "input.item=b\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
-        try await timeline.perform("press", input: "input.item=c\ninput.item.kind=file\ninput.item.file=/tmp/kept.txt\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=empty\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |two", "lines", "toast Copied.", "clipboard copy |https://a.com", "toast Copied.", "clipboard copy /tmp/kept.txt|", "toast Copied."])
+        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
     }
 
     func testCommandReturnPastesAnEntryAndALinkToo() async throws {
-        try await timeline.perform("paste", input: "input.item=a\ninput.item.kind=text\ninput.item.text=hello\n", timeout: 60)
-        try await timeline.perform("paste", input: "input.item=b\ninput.item.kind=url\ninput.item.url=https://a.com\n", timeout: 60)
+        try await timeline.perform("paste", input: "input.item=a\n", timeout: 60)
+        try await timeline.perform("paste", input: "input.item=b\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |hello", "clipboard paste", "clipboard copy |https://a.com", "clipboard paste"])
+        XCTAssertEqual(effects, ["timeline copy a", "clipboard paste", "timeline copy b", "clipboard paste"])
     }
 
     func testTheSheetSaysCopyOnReturnAndOffersPasteOnCommandReturnAndATextShowsAa() async throws {
@@ -299,14 +315,14 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     func testReturnOnARowOfTheSearchCopiesItsEntry() async throws {
-        try await finder.perform("press", input: "input.item.kind=text\ninput.item.text=hello\n", timeout: 60)
+        try await finder.perform("press", input: "input.item=a\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |hello", "toast Copied."])
+        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
     }
 
     func testCopyCopiesAsReturnInTheSheetDoes() async throws {
-        try await timeline.perform("copy", input: "input.kind=text\ninput.text=hello\n", timeout: 60)
+        try await timeline.perform("copy", input: "input.item=a\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["clipboard copy |hello", "toast Copied."])
+        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
     }
 }

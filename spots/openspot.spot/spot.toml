@@ -218,10 +218,7 @@ title = "Resume Timeline"
 [scripts.timeline.actions.restore]
 
 [scripts.timeline.actions.copy]
-inputs.kind = { type = "text", required = true, description = "text, url or file" }
-inputs.text = "text"
-inputs.url = "text"
-inputs.file = "text"
+inputs.item = { type = "text", required = true, description = "the id of the entry" }
 
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }

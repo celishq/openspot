@@ -36,11 +36,6 @@ export default {
       .map(({ parent, ...row }) => ({ ...row, detail: `Timeline · ${row.detail}` }))
   },
   async press(input, env) {
-    await env.timeline.copy({
-      kind: input["item.kind"],
-      text: input["item.text"],
-      url: input["item.url"],
-      file: input["item.file"],
-    })
+    await env.timeline.copy({ item: input.item })
   },
 }
