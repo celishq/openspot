@@ -6,12 +6,13 @@ struct SpotEditHeader: View {
 
     var body: some View {
         let rect = SpotFieldView.rect
+        let columns = model.grid.columns
         HStack {
             Text(model.isArranging ? "Arranging spots" : "Edit Spots")
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
+            Picker("Columns", selection: Binding(get: { columns }, set: { model.set(columns: $0) })) {
                 ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
             }
             .pickerStyle(.segmented)

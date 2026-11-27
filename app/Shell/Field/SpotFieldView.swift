@@ -140,8 +140,8 @@ struct SpotFieldView: View {
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .onKeyPress(keys: [.return, Self.enter]) { press in
-                    guard press.modifiers.isEmpty, !Self.isComposing else { return .ignored }
-                    return model.handleSearchKey(ActionKey(name: "return")) ? .handled : .ignored
+                    guard press.modifiers.isDisjoint(with: [.command, .option, .control]), !Self.isComposing else { return .ignored }
+                    return model.handleSearchKey(ActionKey(name: "return", isShift: press.modifiers.contains(.shift))) ? .handled : .ignored
                 }
                 .onKeyPress(keys: [.downArrow, .upArrow, .leftArrow, .rightArrow]) { press in
                     if Self.isComposing { return .ignored }
