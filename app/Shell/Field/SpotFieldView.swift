@@ -77,9 +77,9 @@ struct SpotFieldView: View {
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotAttachmentStack(model: model)
                         .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.cell, alignment: .trailing)
-                        .offset(x: Self.attachmentLeft, y: SpotTokens.halo)
+                        .offset(x: Self.attachmentLeft, y: top)
                 }
-                .morph(progress, offset: attachmentRise, opacity: { SheetMorph.cardOpacity(at: $0) })
+                .morph(progress, opacity: { SheetMorph.cardOpacity(at: $0) })
                 .allowsHitTesting(!isInSheet)
             }
             .morph(progress, opacity: crossing)
@@ -192,12 +192,6 @@ struct SpotFieldView: View {
 
     private var progress: Double {
         isOpen ? 1 : 0
-    }
-
-    private var attachmentRise: (Double) -> CGSize {
-        guard !isOpen, sheet != nil else { return { _ in .zero } }
-        let drop = model.fieldTop.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
-        return { CGSize(width: 0, height: drop * CGFloat($0)) }
     }
 
     private var crossing: (Double) -> Double {
