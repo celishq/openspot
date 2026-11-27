@@ -337,9 +337,7 @@ public final class SpotsModel {
     }
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
-    @ObservationIgnored var usedIDs: Set<String> = []
     @ObservationIgnored var workToasts: [String: String] = [:]
-    var teachesEdit: String?
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
@@ -421,7 +419,6 @@ public final class SpotsModel {
             await previous?.value
             let start = kept
             let (next, load, read, allowed) = await Self.read(config, folder, secrets, sheets, lock)
-            usedIDs.formUnion(await Self.readUsed(runs.usage, at: runs.now()))
             if let read { runs.keptSheets.take(read) }
             self.load = load
             self.allowed = allowed
@@ -545,7 +542,7 @@ public final class SpotsModel {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {
-            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore(spot), isNew: isNew(spot)), at: min(index, next.count))
+            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore(spot)), at: min(index, next.count))
         }
         if next != entries { entries = next }
     }
@@ -560,7 +557,7 @@ public final class SpotsModel {
     public func rebuildEntries() {
         gridBuilds += 1
         let folder = folder
-        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore($0), isNew: isNew($0)) }
+        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, isCore: folder.isCore($0)) }
         let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
         if next != entries { entries = next }

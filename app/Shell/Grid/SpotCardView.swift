@@ -34,7 +34,6 @@ struct SpotCardView: View, @MainActor Equatable {
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .overlay(alignment: .topTrailing) { WaitingMark(model: model, entry: entry, size: size) }
-            .overlay(alignment: .topLeading) { if entry.isNew { SpotCornerMark(face: .word("New"), corner: .leading, size: size).accessibilityLabel("New spot") } }
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)

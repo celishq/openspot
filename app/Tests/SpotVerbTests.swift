@@ -138,9 +138,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String = "", _ body: String = "echo") throws {
-        let file = spots.spotFile(name)
-        try TestSpot(toml: toml, body: "\(body)").write(to: file)
-        try FileManager.default.setAttributes([.creationDate: Date().addingTimeInterval(-30 * 86_400)], ofItemAtPath: file.path)
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func saved(_ name: String) -> String? {

@@ -222,7 +222,6 @@ public struct Spot: Equatable, Sendable {
     func added(at date: Date) -> Spot {
         var spot = self
         spot.order = -Int(date.timeIntervalSince1970)
-        spot.addedDate = date
         return spot
     }
 

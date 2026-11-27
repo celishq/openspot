@@ -32,7 +32,6 @@ public struct SpotFacts: Equatable, Sendable {
     public let settings: [Manifest.Setting]
     public internal(set) var isBuiltIn = false
     public internal(set) var isDraft = false
-    public internal(set) var addedDate: Date?
     public let keywords: [String]
     public let sample: URL?
     public let editsSpots: Bool

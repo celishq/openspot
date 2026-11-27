@@ -94,8 +94,7 @@ extension SpotsModel {
         foundSpots = found.matches.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: ask.sources[match.list - 1], item: match.item)
         }
-        let spotsFound = foundSpots.filter { !ids.contains($0.id) }
-        let next = spotsFound.filter(\.isNew) + Self.placed(ask.answers, around: spotsFound.filter { !$0.isNew })
+        let next = Self.placed(ask.answers, around: foundSpots.filter { !ids.contains($0.id) })
         if next.isEmpty, !ask.isWhole, !visible.isEmpty {
             holdsRows = true
             return

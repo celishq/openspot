@@ -2,12 +2,6 @@ import Foundation
 import Observation
 
 extension SpotsModel {
-    private var editHint: String? {
-        if let id = openSheetID { return id == teachesEdit ? "⌘E Edit" : nil }
-        guard let target, target.item == nil, target.entry.isNew else { return nil }
-        return "⌘E Edit"
-    }
-
     public var hint: String {
         if recording != nil { return KeyRow.hint(of: keyRows(of: .recording)) }
         if isArranging { return arrangeHint }
@@ -16,8 +10,7 @@ extension SpotsModel {
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            let keys = parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
-            return editHint.map { "\($0)   \(keys)" } ?? keys
+            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
         if content != .attachment, let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
@@ -26,7 +19,7 @@ extension SpotsModel {
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
-                second: [peekRow.hint, settingsRow.hint, editHint].compactMap { $0 }
+                second: [peekRow.hint, settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
         let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
