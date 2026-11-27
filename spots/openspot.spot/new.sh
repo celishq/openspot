@@ -45,12 +45,6 @@ if [ "$1" = step ]; then
   exit 0
 fi
 
-# Prints the name of the build $1: its spot, or the first words sent.
-name_of() {
-  name=$(title_of "$1" | cut -c 1-40)
-  printf '%s' "${name:-New spot}"
-}
-
 # Says whether the spot $1 is a draft: its folder is there and its spot.toml says state = "draft". A draft is a spot
 # that a build began and has not made yet.
 is_draft() {
@@ -58,12 +52,12 @@ is_draft() {
 }
 
 # Prints the name a build goes by: the title of its spot once the agent has chosen it, so that people meet the spot by
-# its name while it is built, or else the words sent, or else its id.
+# its name while it is built, or else the words sent, or else its id, cut to 40 letters.
 title_of() {
   made=$(get "$1" spot)
   words=$(short "$(get "$1" asked)")
   title=$(sed -n 's/^title *= *"\(.*\)" *$/\1/p' "$folder/$made.spot/spot.toml" 2>/dev/null | head -n 1)
-  printf '%s' "${title:-${words:-$made}}"
+  printf '%s' "${title:-${words:-${made:-New spot}}}" | cut -c 1-40
 }
 
 # Prints a short name of the words $1: their first three words that say what, such as Log run distance for "spot to log
@@ -451,7 +445,7 @@ builds_page() {
       *) icon=checkmark.circle words=Ready tone=good ;;
     esac
     printf '\nitem=%s\nicon=%s\nroute=build/%s\n' "$id" "$icon" "$id"
-    openspot_kv title "$(name_of "$id")"
+    openspot_kv title "$(title_of "$id")"
     openspot_kv detail "$words"
     [ -z "$tone" ] || printf 'tone=%s\n' "$tone"
     [ -n "$(get "$id" spot)" ] && [ "$state" = ready ] || printf 'hides=open-spot\n'
