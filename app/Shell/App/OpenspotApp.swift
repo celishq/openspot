@@ -131,7 +131,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }
-            SpotSheetWarmth.draw()
             update?.start()
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSettles) { malloc_zone_pressure_relief(nil, 0) }
             if isFirstLaunch {
