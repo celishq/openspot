@@ -17,7 +17,7 @@ final class AppWordsTests: XCTestCase {
         let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
 
         XCTAssertEqual(scan.spots.map(\.id), ["openspot/change"])
-        XCTAssertEqual(scan.spots.first?.edits, .spots)
+        XCTAssertEqual(scan.spots.first?.editsSpots, true)
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in its spot.toml: edits"])
     }
 

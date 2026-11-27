@@ -20,7 +20,7 @@ public struct SpotRows: Equatable, Sendable {
     let keys: [Key]
     let isWindowByDefault: Bool
     let name: String
-    let isSource: Bool
+    let isAttachmentSource: Bool
 
     private func kept(in config: Config) -> [KeptSetting] {
         config.settings.filter { value in
@@ -42,8 +42,8 @@ public struct SpotRows: Equatable, Sendable {
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
-        let attachmentRow = row(ReservedSetting.attachment, "Show as attachment", String(config.setting(ReservedSetting.attachment, of: spot) != "false"), .toggle, Self.attachmentIcon)
-        let sourceRows = isSource ? [attachmentRow] : []
+        let attachmentRow = row(ReservedSetting.attachment, "Show as attachment", String(!config.hidesAttachment(of: spot)), .toggle, Self.attachmentIcon)
+        let sourceRows = isAttachmentSource ? [attachmentRow] : []
         let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
         let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
         let placeRows = showsInMenuBar ? [menuBarRow, windowRow] : []

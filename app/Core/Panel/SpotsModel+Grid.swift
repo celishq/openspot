@@ -109,7 +109,7 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else {
-            if content == .attachment { allowAttachment() }
+            if content == .attachment, isChipRefused { openSourceSettings() }
             return
         }
         runShown(entry)
