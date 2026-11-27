@@ -1,6 +1,7 @@
 import AppKit
 import OpenspotCore
 import os
+import SwiftUI
 
 @main
 @MainActor
@@ -35,6 +36,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
     let frame = NextFrame()
+    var lastChange = Transaction()
     private(set) var toast: ToastPanel?
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(

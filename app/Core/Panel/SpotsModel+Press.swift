@@ -7,7 +7,7 @@ extension SpotsModel {
             pressDepth -= 1
             if pressDepth == 0, hintIsStale { takeHint() }
             if pressDepth == 0, isPeeking { takePeek() }
-            if pressDepth == 0 { pressCuts = false }
+            if pressDepth == 0 { pressJoins = false }
         }
         return work()
     }

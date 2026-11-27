@@ -231,13 +231,16 @@ final class FakeHost: SpotsHost {
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }
+        lastMotion = motion
     }
 
-    private(set) var snaps = 0
+    private(set) var joinedHints: [PanelMotion?] = []
+    private var lastMotion: PanelMotion?
 
-    func snap(_ body: () -> Void) {
-        snaps += 1
-        change(nil, body, completion: {})
+    func join(_ body: () -> Void) {
+        let hint = model.map { ($0.gridHint, $0.sheetHint) }
+        body()
+        if let model, let hint, hint != (model.gridHint, model.sheetHint) { joinedHints.append(lastMotion) }
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {

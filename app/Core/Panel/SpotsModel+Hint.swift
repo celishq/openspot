@@ -67,7 +67,7 @@ extension SpotsModel {
         let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
         hintIsForEdit = isEditing
         let write = { [self] in if onSheet { sheetHint = words } else { gridHint = words } }
-        if let motion { change(motion, write) } else if pressCuts { snap(write) } else { write() }
+        if let motion { change(motion, write) } else if pressJoins { host.join(write) } else { write() }
     }
 
     var selectedGlyphTitle: String? {

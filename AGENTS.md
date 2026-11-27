@@ -121,8 +121,9 @@ below is one a reviewer can check in a diff.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
 - SwiftUI applies the pending update at once when a write comes in a transaction of another kind, and a transaction with a
-  completion is of a kind of its own. So a cut (`snap`) carries no completion, and the hint of a press that cut is written in a
-  cut too, so the press stays one update.
+  completion is of a kind of its own. So a cut (`snap`) carries no completion, and the hint of a press that made a change is
+  written in that change's own transaction (`SpotsHost.join`), since only the same transaction value joins it, so the press stays
+  one update. The hint then crossfades on the press's motion.
 - Each entry point of a person's act runs in `asOnePress`. A source of the hint only marks it stale. The outermost press works the
   hint out once and writes it as its last change, so no setter writes the hint, and the observation's hop works it out only for a
   change that no press made. A setter must not write through `change`, since `withTransaction` can flush the pending update, and

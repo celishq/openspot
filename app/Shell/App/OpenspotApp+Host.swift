@@ -150,13 +150,19 @@ extension OpenspotApp: SpotsHost {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil
         transaction.addAnimationCompletion(criteria: .logicallyComplete) { MainActor.assumeIsolated { completion() } }
+        lastChange = transaction
         withTransaction(transaction, body)
     }
 
     func snap(_ body: () -> Void) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
+        lastChange = transaction
         withTransaction(transaction, body)
+    }
+
+    func join(_ body: () -> Void) {
+        withTransaction(lastChange, body)
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
@@ -164,6 +170,7 @@ extension OpenspotApp: SpotsHost {
         transaction.disablesAnimations = motion == nil
         transaction.addAnimationCompletion(criteria: .logicallyComplete) { MainActor.assumeIsolated { completion() } }
         transaction.addAnimationCompletion(criteria: .removed) { MainActor.assumeIsolated { removal() } }
+        lastChange = transaction
         withTransaction(transaction, body)
     }
 }
