@@ -45,6 +45,13 @@ extension SpotsModel {
         settle(held.reduce(attachments) { filled($0, with: $1.value, of: $1.id) }, motion: .fade)
     }
 
+    func failAttachment(_ text: String, of id: String) {
+        guard entry(id)?.spot.isAttachmentHidden != true else { return }
+        var next = attachments
+        next.fail(id, text, look: entry(id).flatMap { Self.look(of: $0.spot) })
+        settle(next, motion: .fade)
+    }
+
     private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
         var next = stack
         if entry(id)?.spot.isAttachmentHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
@@ -67,7 +74,7 @@ extension SpotsModel {
         var next = attachments
         next.spread()
         next.turn(by: step)
-        let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
+        let read = next.selectedChip.flatMap { !$0.isRead && entry($0.source)?.spot.triggers.pick != nil ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
         guard let read else { return }

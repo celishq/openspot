@@ -6,7 +6,7 @@ case "$1" in
   show)
     app=$(openspot front app | sed -n 's/^app=//p')
     [ -n "$app" ] || exit 0
-    picked=$(openspot selection read "$app")
+    picked=$(openspot selection read "$app") || exit 1
     [ -n "$picked" ] || exit 0
     case "$picked" in
       text=*) printf '%s\ntitle=Selected text\n' "$picked" ;;

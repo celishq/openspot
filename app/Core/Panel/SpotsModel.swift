@@ -640,6 +640,8 @@ public final class SpotsModel {
             if isShown { host.dismiss() }
         case .attachment(let value):
             takeAttachment(value, of: id)
+        case .attachmentFailed(let text):
+            failAttachment(text, of: id)
         }
     }
 

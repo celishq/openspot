@@ -166,6 +166,7 @@ esac
 - While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`. When it fails, or gives no answer in 3 seconds, the field shows why, such as `Openspot can't read Safari. Allow it in Openspot's settings.`
   when `openspot browser tab` fails since Openspot may not read it yet. The footer then offers `⏎ Allow`, and Return opens Settings at the source's page, where people allow it, and the next Tab reads again.
+- When `show` of a `panel.open` source fails, its chip shows why, and Return opens its page in Settings.
 - A chip shows only when a spot has a row for it. A source runs only when some spot has a row for some
   kind.
 - A source stays off the grid and out of the search. Its page in Settings holds a Show as attachment row, which hides or
