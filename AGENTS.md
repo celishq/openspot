@@ -192,8 +192,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   corner, and the system draws it once. A glass of any other shape, such as a path built by `subtracting`, is drawn again on each
   frame of a motion.
 - An animatable modifier's output is constant while its view is hidden, since each frame that moves a glass works out its whole
-  subtree again, and `visualEffect` does not spare that. A pushed grid card holds still once its fade has hidden it
-  (`SheetPush.pose`), and takes no click.
+  subtree again, and `visualEffect` does not spare that. A pushed grid card composites before its fade and scale, so its glass sees no
+  opacity change, holds still once its fade has hidden it (`SheetPush.pose`), and takes no click.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
   [Drawing](#drawing)).

@@ -22,6 +22,7 @@ struct SpotPushedCard: ViewModifier, @preconcurrency Animatable {
         let faded = SheetPush.fade(of: placement, in: push, movedBy: moved, share: share)
         let pose = push?.pose(of: placement, movedBy: moved) ?? moved
         return content
+            .compositingGroup()
             .scaleEffect(1 - (1 - MotionTokens.pushedScale) * faded, anchor: anchor)
             .opacity(1 - (1 - MotionTokens.hiddenOpacity) * faded)
             .offset(x: base.width + pose.width, y: base.height + pose.height)
