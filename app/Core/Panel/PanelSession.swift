@@ -5,8 +5,6 @@ public struct PanelSession: Equatable, Sendable {
     public static let lookTime: TimeInterval = 2
 
     public struct Parked: Equatable, Sendable {
-        public let flow: Flow
-        public let sheetQuery: String
         public let at: Date
     }
 
@@ -26,10 +24,10 @@ public struct PanelSession: Equatable, Sendable {
     var parked: Parked?
     var visit: Visit?
 
-    mutating func hide(flow: Flow, sheetQuery: String, at now: Date) {
+    mutating func hide(at now: Date) {
         isEnded = ends
         ends = false
-        parked = isEnded ? nil : Parked(flow: flow, sheetQuery: sheetQuery, at: now)
+        parked = isEnded ? nil : Parked(at: now)
     }
 
     func startsClean(at now: Date, within restoreTime: TimeInterval = Self.restoreTime) -> Bool {

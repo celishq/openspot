@@ -245,6 +245,7 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: Frame?
+    @ObservationIgnored var isParked = false
     @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var shownEvent: ShowEvent?
     @ObservationIgnored var finishesShow = false

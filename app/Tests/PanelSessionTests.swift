@@ -39,16 +39,22 @@ final class PanelSessionTests: PanelCase {
         model.panelWillShow()
     }
 
-    func testAClickOutsideAndAReopenSoonBringBackTheSheetOfParts() async throws {
+    func testAClickOutsideKeepsTheSheetOfPartsAndAReopenShowsItWithNoMotion() async throws {
         try await openParts()
 
         clickOutside()
-        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(model.openSheetID, "parts")
+        XCTAssertNil(model.runs.openID)
+        XCTAssertNotNil(model.openParts)
         clock.advance(by: 30)
+        host.motions = []
         reopen()
 
-        try await wait("the parts again") { self.model.openSheetID == "parts" && self.model.openParts != nil }
-        XCTAssertEqual(model.flow.current?.spot, "parts")
+        XCTAssertEqual(model.openSheetID, "parts")
+        XCTAssertNotNil(model.openParts)
+        XCTAssertEqual(model.runs.openID, "parts")
+        XCTAssertEqual(model.transition.phase, .open)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
     }
 
     func testAReopenSelectsTheTextThatCameBack() async throws {
@@ -215,20 +221,51 @@ final class PanelSessionTests: PanelCase {
         XCTAssertEqual(model.searchText, "")
     }
 
-    func testAStayingSheetComesBackOnAReopenThatShowsThePanelOnTheNextFrame() async throws {
+    func testAStayingSheetKeepsItsLastAnswerThroughAParkAndIsAskedAgainOnShow() async throws {
+        let asks = folder.appendingPathComponent("asks").path
         try script("stays", toml: "title = 'Stays'\nstay = true", """
         . "$OPENSPOT_SH"
-        main() { printf 'item=s\\ntitle=Stays\\n'; }
+        main() { echo "$1" >> '\(asks)'; printf 'item=s\\ntitle=Stays\\n'; }
         openspot_serve main "$@"
         """)
         await model.reload()
         model.pushFirst("stays", moving: true)
-        try await wait("the open stays") { self.model.openSheetID == "stays" && self.model.transition.phase == .open }
+        try await wait("the open stays") { self.model.openSheetID == "stays" && self.model.transition.phase == .open && self.titles == ["Stays"] }
+        let first = ((try? String(contentsOfFile: asks, encoding: .utf8)) ?? "").split(separator: "\n").count
 
         clickOutside()
-        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(model.openSheetID, "stays")
+        XCTAssertEqual(titles, ["Stays"])
+        host.motions = []
         model.panelWillShow()
 
-        try await wait("the stays sheet again") { self.model.isShown && self.model.openSheetID == "stays" && self.model.transition.phase == .open }
+        XCTAssertEqual(model.openSheetID, "stays")
+        XCTAssertEqual(titles, ["Stays"])
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+        try await wait("the ask on show") { ((try? String(contentsOfFile: asks, encoding: .utf8)) ?? "").split(separator: "\n").count > first }
+        XCTAssertEqual(titles, ["Stays"])
+    }
+
+    func testCommandWOnAStayingSheetDropsItsAnswerAndTheNextOpenIsEmpty() async throws {
+        try await openParts()
+
+        XCTAssertTrue(model.handleKey(close))
+        XCTAssertNil(model.openSheetID)
+        reopen()
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertNil(model.flow.current)
+    }
+
+    func testAParkThatRunsPastTheRestoreTimeDropsTheKeptAnswer() async throws {
+        try await openParts()
+        clickOutside()
+        XCTAssertNotNil(model.sheets["parts"]?.panel)
+
+        clock.advance(by: PanelSession.restoreTime + 1)
+        reopen()
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(model.sheets["parts"]?.isParked, false)
     }
 }

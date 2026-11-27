@@ -742,7 +742,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
+    func testAPanelThatEndsItsSessionCutsASheetOfPartsAndItsRun() async throws {
         try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
@@ -751,8 +751,7 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
 
         host.motions = []
-        model.panelWillHide()
-        model.panelDidHide()
+        model.endSession()
 
         XCTAssertNil(model.openSheetID)
         XCTAssertNil(model.runs.openID)

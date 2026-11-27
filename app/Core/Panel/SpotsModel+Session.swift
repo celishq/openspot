@@ -14,7 +14,8 @@ extension SpotsModel {
     }
 
     func parkSession() {
-        session.hide(flow: flow, sheetQuery: openSheet?.query ?? "", at: runs.clock.now())
+        session.hide(at: runs.clock.now())
+        commitVisit()
     }
 
     func leaveParkedSession() {
@@ -27,22 +28,14 @@ extension SpotsModel {
         let kept = session
         session = PanelSession(visit: kept.visit)
         guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
-        guard let parked = kept.parked else { return }
-        if openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) { restoring = parked }
-        if !searchText.isEmpty || !parked.sheetQuery.isEmpty { textSelections += 1 }
-    }
-
-    func restoreParked() {
-        guard let parked = restoring else { return }
-        restoring = nil
-        guard isShown, openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) else { return }
-        asOnePress {
+        guard kept.parked != nil else { return }
+        if let id = openSheetID, let run = sheets[id], !run.isOpen { run.open {} }
+        if !flow.pages.isEmpty {
             isRestoringVisit = true
-            flow = parked.flow
+            startVisit()
             isRestoringVisit = false
-            show(page, moving: false)
-            if !parked.sheetQuery.isEmpty { sheets[page.spot]?.search(parked.sheetQuery) }
         }
+        if !searchText.isEmpty { textSelections += 1 }
     }
 
     private func startClean() {
@@ -81,7 +74,7 @@ extension SpotsModel {
         sheets[page.spot] != nil && place(ofSheet: page.spot) == .panel && !runs.floating.contains(page.spot)
     }
 
-    private func startVisit() {
+    func startVisit() {
         session.visit = PanelSession.Visit(place: SessionTrail.Place(flow: flow, query: query), since: runs.clock.now(), isRestored: isRestoringVisit)
     }
 
