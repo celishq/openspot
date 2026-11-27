@@ -17,6 +17,16 @@ final class SheetTransitionTests: XCTestCase {
         XCTAssertTrue(still.isSettled("a"))
     }
 
+    func testASheetWhoseCloseCutsItsOpenShortNeverSettles() {
+        var transition = SheetTransition()
+        transition.show("a", moves: true)
+        transition.start()
+        transition.hide(moves: true)
+        XCTAssertFalse(transition.isSettled("a"))
+        transition.finish(transition.motion)
+        XCTAssertTrue(transition.isSettled("a"))
+    }
+
     func testAMovingOpenLiesOnItsCardFirstThenOpens() {
         var transition = SheetTransition()
         transition.show("a", moves: true)

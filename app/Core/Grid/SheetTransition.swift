@@ -30,7 +30,7 @@ public struct SheetTransition: Equatable, Sendable {
     }
 
     public func isSettled(_ sheet: String) -> Bool {
-        id != sheet || phase != .ready && phase != .opening
+        id != sheet || phase == .open
     }
 
     public mutating func show(_ id: String, moves: Bool, page: FlowSheet? = nil) {
