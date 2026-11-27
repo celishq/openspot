@@ -200,9 +200,10 @@ extension SpotsModel {
     }
 
     func hideAttachments(for query: String) {
-        let isHidden = attachments.layout.isQuiet && !query.isEmpty
+        let isHidden = attachments.selected == nil && !query.isEmpty
         guard isAttachmentHidden != isHidden else { return }
-        change(isShown ? .fade : nil) { isAttachmentHidden = isHidden }
+        guard isShown, !attachments.chips.isEmpty else { return isAttachmentHidden = isHidden }
+        change(.fade) { isAttachmentHidden = isHidden }
     }
 
     func showsAttachment(of query: String, in stack: AttachmentStack? = nil) -> Bool {
