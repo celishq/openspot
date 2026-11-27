@@ -27,7 +27,7 @@ struct ModelApp: RunningApp {
     func editGrid() async {}
     func gridSpots() async -> [ArrangedSpot] { await model.gridSpots() }
     func pin(_ id: String) async -> GridPin { await model.pin(id) }
-    func push(_ id: String) async -> GridPin { await model.push(id) }
+    func push(_ id: String) async -> GridPush { await model.push(id) }
     func reveal(_ id: String) async -> Bool { false }
     func playground(_ file: URL?) async {}
     func changeSetting(_ key: String, of spot: String) async -> Bool { false }

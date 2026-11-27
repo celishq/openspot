@@ -40,7 +40,7 @@ enum GridCall: NounCall {
             return CommandAnswer.work {
                 let name = await app.gridSpots().first { $0.id == id }?.name ?? id
                 switch await app.pin(id) {
-                case .pinned, .pushed: return "\(name) is on the grid.\n"
+                case .pinned: return "\(name) is on the grid.\n"
                 case .onGrid: throw SpotError.failed(1, "\(name) is on the grid already.")
                 case .full: throw SpotError.failed(1, "The grid has no free slot for \(name). Take a spot off it in Arrange first.")
                 case .unknown: throw SpotError.failed(1, "You have no spot `\(id)` to pin. Run `openspot grid list` to see each one.")
@@ -52,9 +52,9 @@ enum GridCall: NounCall {
                 await app.spotsChanged()
                 let name = await app.gridSpots().first { $0.id == id }?.name ?? id
                 switch await app.push(id) {
-                case .pushed(let off) where !off.isEmpty: return "\(name) is at the top of the grid. Moved \(off.joined(separator: ", ")) off the grid.\n"
-                case .pinned, .pushed, .onGrid: return "\(name) is at the top of the grid.\n"
-                case .full: throw SpotError.failed(1, "\(name) is larger than the grid.")
+                case .pushed(let off) where off.isEmpty: return "\(name) is at the top of the grid.\n"
+                case .pushed(let off): return "\(name) is at the top of the grid. Moved \(off.joined(separator: ", ")) off the grid.\n"
+                case .tooLarge: throw SpotError.failed(1, "\(name) is larger than the grid.")
                 case .unknown: throw SpotError.failed(1, "You have no spot `\(id)` to push. Run `openspot grid list` to see each one.")
                 }
             }

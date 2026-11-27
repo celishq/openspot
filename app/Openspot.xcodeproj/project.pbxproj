@@ -742,6 +742,7 @@
 		9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD8983A5D718934384188E9 /* FocusLoss.swift */; };
 		969C4AAB8DA20D2375A8C639 /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D42A800C4CAF73DD0F643D7 /* ItemPick.swift */; };
 		96E4F3DA79F94D30E4253FBB /* PreviousAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21BFE08731F6CD652D67FACF /* PreviousAppTests.swift */; };
+		96F6D715578FAEEECDF92288 /* GridPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F0AA9A7E59CCE56557D1CB /* GridPush.swift */; };
 		9716F9922B0E813EEC9DDEF0 /* SettingListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E15721B2494CD9D6218281D /* SettingListTests.swift */; };
 		9718F14C073BFC8B14270277 /* SearchPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */; };
 		974562228140C1D4B679D269 /* UnlockPass.swift in Sources */ = {isa = PBXBuildFile; fileRef = B28CE13F0735729688959D76 /* UnlockPass.swift */; };
@@ -1812,6 +1813,7 @@
 		52DD271085F7DD9A6EAFEE11 /* CommandFormTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandFormTests.swift; sourceTree = "<group>"; };
 		53132FB51D492167918A25DD /* SpotSpring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSpring.swift; sourceTree = "<group>"; };
 		53A176CC744CDD2C84801FB9 /* Manifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Manifest.swift; sourceTree = "<group>"; };
+		53F0AA9A7E59CCE56557D1CB /* GridPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPush.swift; sourceTree = "<group>"; };
 		543D5468269D31A816BBADA7 /* SpotsWindowPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsWindowPlace.swift; sourceTree = "<group>"; };
 		54721534E4A59D8BE9117831 /* BigPasteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BigPasteTests.swift; sourceTree = "<group>"; };
 		5486A364CFD0B7D7CB647AE1 /* PowerSampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSampleTests.swift; sourceTree = "<group>"; };
@@ -2950,6 +2952,7 @@
 				BD5330859B3A63E91199D476 /* CommandHold.swift */,
 				709A569EA8D729029D25E9B4 /* EditSession.swift */,
 				B2413E444660F83A81D7A6E4 /* GridPin.swift */,
+				53F0AA9A7E59CCE56557D1CB /* GridPush.swift */,
 				75CF3427600E17CB9525AB80 /* PanelScene.swift */,
 				1A37FF3FA284C0352311A9E2 /* Shelf.swift */,
 				B24BB3333F7E603FFC264B05 /* ShelfLayout.swift */,
@@ -5415,6 +5418,7 @@
 				2A9C14B335915C2622FE0C7A /* GridContent.swift in Sources */,
 				AD6A5C8925972D94D4027435 /* GridLayout.swift in Sources */,
 				A186241A2ACFF98B00AF44E0 /* GridPin.swift in Sources */,
+				96F6D715578FAEEECDF92288 /* GridPush.swift in Sources */,
 				6032F37899249BBB6B0BE6AA /* GridShade.swift in Sources */,
 				EF09D0A14A4E6168385DDE1F /* GridSpot.swift in Sources */,
 				665C12F01D06F1F2842D24A5 /* Guide.swift in Sources */,
