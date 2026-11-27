@@ -15,7 +15,6 @@ public final class ScriptCall: Identifiable {
     public let started: Date
     public private(set) var status: TextBlock?
     public private(set) var isStopped = false
-    public private(set) var progress: WorkFill
     @ObservationIgnored let key: String
     @ObservationIgnored var halt: () -> Void = {}
     @ObservationIgnored private(set) var heard = 0
@@ -27,7 +26,6 @@ public final class ScriptCall: Identifiable {
         self.isAct = isAct
         self.key = key
         self.started = started
-        progress = WorkFill(base: 0, since: started)
     }
 
     nonisolated deinit {}
@@ -44,12 +42,10 @@ public final class ScriptCall: Identifiable {
         status?.value("detail")
     }
 
-    func take(_ output: Frame, at now: Date) {
+    func take(_ output: Frame) {
         heard += 1
         guard !output.isPicture else { return }
-        let reported = fill
         status = output.root
-        if let fill, fill != reported { progress = progress.taking(fill, at: now) }
     }
 
     func stop() {

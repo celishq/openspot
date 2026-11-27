@@ -29,11 +29,6 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
-    public func origin(ofWorkCard size: CGSize, pointer: CGPoint) -> CGPoint? {
-        guard let area = screen(window: nil, pointer: pointer)?.area else { return nil }
-        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.midY - size.height / 2).rounded(.down))
-    }
-
     public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?, window: CGRect?, pointer: CGPoint) -> CGPoint? {
         guard let anchor = toastAnchor(inset: inset, under: item, window: window, pointer: pointer) else { return nil }
         let x = item == nil ? anchor.midX - size.width / 2 : min(max(anchor.midX - size.width / 2, anchor.area.minX), anchor.area.maxX - size.width)

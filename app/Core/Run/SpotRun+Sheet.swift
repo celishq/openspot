@@ -98,8 +98,7 @@ extension SpotRun {
             if wasOpen { onReport(.closed) }
         } else if !isInView, !isOpen, panel?.parts.contains(where: \.isEditable) == true {
             panel = nil
-            lastAnswer = keptSheet
-            answered = keptSheet == nil ? nil : .distantPast
+            answered = nil
         }
         stopUnwantedShow()
         link.settle()

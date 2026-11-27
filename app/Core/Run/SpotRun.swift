@@ -246,7 +246,6 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: Frame?
-    @ObservationIgnored var keptSheet: Frame?
     @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var shownEvent: ShowEvent?
     @ObservationIgnored var finishesShow = false
@@ -280,11 +279,6 @@ public final class SpotRun {
         keptState = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
         isOn = spot.headerState.active == true
-        if spot.keepsSheet, let kept = runs.keptSheets.frame(of: spot.id) {
-            keptSheet = kept
-            lastAnswer = keptSheet
-            answered = .distantPast
-        }
         settle()
         link.run = self
     }

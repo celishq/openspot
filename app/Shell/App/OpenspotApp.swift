@@ -44,7 +44,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     )
     private(set) lazy var windows = DetachedWindows(model: model)
     private var menuBar: SpotMenuBar?
-    private var workCard: WorkCardPanel?
     private var fileChooser: SpotFileChooser?
     private var submenu: SpotSubmenuWindow?
     #if OPENSPOT_TOOLS
@@ -90,7 +89,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
         menuBar = SpotMenuBar(model: model, openspotItem: item)
-        workCard = WorkCardPanel.make(model: model)
         #if OPENSPOT_TOOLS
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe

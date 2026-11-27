@@ -59,7 +59,6 @@ enum SpotType {
     static let strong = Font.system(size: 13, weight: .semibold)
     static let rowIcon = Font.system(size: 14)
     static let glyph = Font.system(size: 17, weight: .semibold)
-    static let workGlyph = Font.system(size: 30, weight: .semibold)
     static let mark = Font.system(size: 9, weight: .semibold)
     static let attachmentBadge = Font.system(size: SpotTokens.attachmentBadgeGlyph, weight: .medium)
     static let attachmentTile = Font.system(size: SpotTokens.attachmentSymbol, weight: .medium)

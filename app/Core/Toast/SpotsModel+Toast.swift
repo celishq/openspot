@@ -1,8 +1,6 @@
 import Foundation
 
 extension SpotsModel {
-    static let workToast = "work"
-
     public func toast(_ note: ToastNote, of spot: String = "") {
         toasts.add(note, spot: spot, press: press(fixing: note, of: spot), fixKey: note.fix == nil ? nil : config.fixKey)
         host.toast(note, of: spot)
@@ -27,16 +25,6 @@ extension SpotsModel {
         } else {
             _ = open(spot)
         }
-    }
-
-    func toastWork(_ works: [Work]) {
-        var next: [String: String] = [:]
-        for work in works where next[work.spot] == nil { next[work.spot] = work.words }
-        for spot in workToasts.keys where next[spot] == nil { toasts.drop(Self.workToast, of: spot) }
-        for (spot, words) in next where workToasts[spot] != words {
-            toasts.add(.work(words, id: Self.workToast), spot: spot, press: { [weak self] in _ = self?.open(spot) })
-        }
-        workToasts = next
     }
 
     func askSchedule(of id: String) {

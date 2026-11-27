@@ -7,10 +7,6 @@ final class EditSheetTests: PanelCase {
         folder.appendingPathComponent("release")
     }
 
-    private var hold: URL {
-        folder.appendingPathComponent("hold")
-    }
-
     override func setUp() async throws {
         try await super.setUp()
         let core = folder.appendingPathComponent("core", isDirectory: true)
@@ -20,7 +16,7 @@ final class EditSheetTests: PanelCase {
         try """
         #!/bin/sh
         case "$1" in
-          show) if [ -f '\(hold.path)' ]; then while [ ! -f '\(release.path)' ]; do sleep 0.01; done; fi; printf 'frame=\\nclass=gap-part\\n\\nfield=describe\\nvalue=\\n\\nbutton=done\\ntitle=Done\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nfield=describe\\nvalue=\\n\\nbutton=done\\ntitle=Done\\n' ;;
           done) while [ ! -f '\(release.path)' ]; do sleep 0.01; done ;;
         esac
         """.writeScript(to: app.appendingPathComponent("new.sh"))
@@ -52,25 +48,5 @@ final class EditSheetTests: PanelCase {
         FileManager.default.createFile(atPath: release.path, contents: Data())
 
         try await wait("the close") { self.host.dismissals == 1 }
-    }
-
-    func testNewSpotOpensAgainWithItsFormBeforeItsScriptAnswers() async throws {
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.presentSheet(of: "openspot/new")
-        try await wait("the form") { self.model.sheets["openspot/new"]?.panel?.parts.contains { $0.id == "describe" } == true }
-        model.closeSheet(moving: false)
-        model.isShown = false
-        model.panelDidHide()
-        try await wait("the form dropped") { self.model.sheets["openspot/new"]?.panel == nil }
-        FileManager.default.createFile(atPath: hold.path, contents: Data())
-
-        model.isShown = true
-        model.panelWillShow()
-        model.presentSheet(of: "openspot/new")
-
-        XCTAssertEqual(model.sheets["openspot/new"]?.panel?.parts.contains { $0.id == "describe" }, true)
-        FileManager.default.createFile(atPath: release.path, contents: Data())
     }
 }

@@ -228,10 +228,6 @@ extension SpotsModel {
         runs.runningSummary
     }
 
-    public var workCard: Work? {
-        runs.workCard
-    }
-
     public func openAct() -> Bool {
         guard let id = runs.actSpot else { return false }
         let spot = { self.visible.firstIndex { $0.id == id } }

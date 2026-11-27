@@ -337,7 +337,6 @@ public final class SpotsModel {
     }
     @ObservationIgnored private(set) var gridBuilds = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
-    @ObservationIgnored var workToasts: [String: String] = [:]
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
@@ -353,7 +352,6 @@ public final class SpotsModel {
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
             stats: files.stats,
-            sheets: files.sheets,
             timers: files.timers,
             schedule: files.schedule,
             timeline: files.timeline
@@ -363,7 +361,6 @@ public final class SpotsModel {
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
-        self.runs.onToasted = { [weak self] works in self?.toastWork(works) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
@@ -413,13 +410,11 @@ public final class SpotsModel {
         let config = files.config
         let folder = folder
         let secrets = files.secrets
-        let sheets = runs.keptSheets.isRead ? nil : files.sheets
         let lock = files.lock
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load, read, allowed) = await Self.read(config, folder, secrets, sheets, lock)
-            if let read { runs.keptSheets.take(read) }
+            let (next, load, allowed) = await Self.read(config, folder, secrets, lock)
             self.load = load
             self.allowed = allowed
             let id = selectedEntry?.id
@@ -432,9 +427,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ sheets: URL?, _ lock: SpotLock) async -> (KeptConfig, SpotLoad, [String: String]?, [SpotLock.Entry]) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock) async -> (KeptConfig, SpotLoad, [SpotLock.Entry]) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder), sheets.map { KeptSheets.read($0) }, (try? lock.entries()) ?? [])
+        return (config.readKept(), KeptScan.shared.load(folder), (try? lock.entries()) ?? [])
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -538,7 +533,7 @@ public final class SpotsModel {
         return true
     }
 
-    func patchEntries(_ ids: Set<String>) {
+    private func patchEntries(_ ids: Set<String>) {
         let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotsFolder.coreID(of: $0)) }
         var next = entries.filter { !named($0.spot) }
         for (index, spot) in ordered().enumerated() where named(spot) {

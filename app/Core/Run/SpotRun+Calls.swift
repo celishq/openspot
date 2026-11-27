@@ -53,9 +53,7 @@ extension SpotRun {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         if call.refusal == nil { call.refusal = refusal(of: lines, in: call) }
         if !lines.outputs.isEmpty || lines.root?.value(RootKey.error) != nil { runs.answerPushed(lines, from: spot.id) }
-        let words = call.made.title
-        call.made.take(lines, at: runs.now())
-        if call.made.title != words { runs.workMoved(call.made) }
+        call.made.take(lines)
         switch call.request.purpose {
         case .ask(let ask):
             if lines.isPicture {

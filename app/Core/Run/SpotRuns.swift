@@ -6,18 +6,10 @@ import Observation
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
     public internal(set) var isPanelOpen = false {
-        didSet {
-            guard isPanelOpen != oldValue else { return }
-            usage.panel(shown: isPanelOpen)
-            showWork()
-        }
+        didSet { if isPanelOpen != oldValue { usage.panel(shown: isPanelOpen) } }
     }
-    public private(set) var openID: String? {
-        didSet { if openID != oldValue { showWork() } }
-    }
-    public private(set) var floating: Set<String> = [] {
-        didSet { if floating != oldValue { showWork() } }
-    }
+    public private(set) var openID: String?
+    public private(set) var floating: Set<String> = []
     @ObservationIgnored public private(set) var appearance = Style.Variant.dark
     @ObservationIgnored private var windows: Set<String> = []
     public var dragged = FileKinds() {
@@ -30,8 +22,6 @@ public final class SpotRuns {
     private var dragTakers: Set<String> = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
-    @ObservationIgnored public let keptSheets: KeptSheets
-    public static let cardHold: TimeInterval = 5
     @ObservationIgnored public var layoutMoves: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
@@ -61,10 +51,7 @@ public final class SpotRuns {
     @ObservationIgnored private var grid: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
-    public private(set) var acts: [Work] = []
-    public private(set) var toasted: [Work] = []
-    @ObservationIgnored public var onToasted: ([Work]) -> Void = { _ in }
-    @ObservationIgnored private var holding: Task<Void, Never>?
+    @ObservationIgnored public private(set) var acts: [(id: String, call: ScriptCall)] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
@@ -81,8 +68,6 @@ public final class SpotRuns {
     @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
-    private var finished: Work?
-    @ObservationIgnored private var finishing: Task<Void, Never>?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -129,7 +114,6 @@ public final class SpotRuns {
         frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
-        sheets: URL? = nil,
         timers: URL? = nil,
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
@@ -144,7 +128,6 @@ public final class SpotRuns {
         self.log = log
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
-        keptSheets = KeptSheets(folder: sheets)
         self.timers = SpotTimers(file: timers)
         self.schedule = SpotSchedule(file: schedule)
         self.inlineIdle = inlineIdle
@@ -288,7 +271,6 @@ public final class SpotRuns {
 
     public func quit() {
         hasQuit = true
-        finishing?.cancel()
         clockWatch.stop()
         timerWatch.stop()
         scheduleWatch.stop()
@@ -324,76 +306,13 @@ public final class SpotRuns {
     }
 
     func showActs() {
-        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { Work(spot: id, name: sheets[id]?.spot.name ?? id, call: $0) } }.sorted { $0.call.started < $1.call.started }
-        guard next != acts else { return }
-        let leaving = shownAct
+        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+        guard !next.elementsEqual(acts, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
         acts = next
-        if let leaving, !leaving.call.isStopped, !next.contains(where: { $0.call === leaving.call }) {
-            finish(leaving.done())
-        }
-        let name = next.first?.name
+        let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
         let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
         if summary != runningSummary { runningSummary = summary }
-        if next.first?.spot != actSpot { actSpot = next.first?.spot }
-        showWork()
-    }
-
-    private func showWork() {
-        guard !acts.isEmpty || !toasted.isEmpty else { return }
-        let time = now()
-        let next = acts.filter { !shows($0.spot) && time.timeIntervalSince($0.call.started) >= Self.cardHold }
-        if next != toasted {
-            toasted = next
-            onToasted(next)
-        }
-        holdWork(at: time)
-    }
-
-    func workMoved(_ call: ScriptCall) {
-        guard toasted.contains(where: { $0.call === call }) else { return }
-        onToasted(toasted)
-    }
-
-    private func holdWork(at time: Date) {
-        holding?.cancel()
-        guard let due = acts.map({ $0.call.started.addingTimeInterval(Self.cardHold) }).filter({ $0 > time }).min() else { return }
-        holding = Task { [weak self, sleep = clock.sleep] in
-            var left = due.timeIntervalSince(time)
-            while left > 0 {
-                try? await sleep(.seconds(left), .seconds(left / 10))
-                guard !Task.isCancelled, let self else { return }
-                left = due.timeIntervalSince(now())
-            }
-            self?.showWork()
-        }
-    }
-
-    public var workCard: Work? {
-        if let finished, !shows(finished.spot) { return finished }
-        return shownAct
-    }
-
-    private var shownAct: Work? {
-        acts.first { !shows($0.spot) && !toasted.contains($0) }
-    }
-
-    private func finish(_ card: Work) {
-        finished = card
-        let start = now()
-        finishing?.cancel()
-        finishing = Task { [weak self, sleep = clock.sleep] in
-            var left = MotionTokens.workFinish
-            while left > 0 {
-                try? await sleep(.seconds(left), .seconds(left / 10))
-                guard !Task.isCancelled, let self else { return }
-                left = MotionTokens.workFinish - now().timeIntervalSince(start)
-            }
-            self?.finished = nil
-        }
-    }
-
-    private func shows(_ id: String) -> Bool {
-        floating.contains(id) || isPanelOpen && (openID == nil || openID == id)
+        if next.first?.id != actSpot { actSpot = next.first?.id }
     }
 
     public func takesDrag(_ id: String) -> Bool {
@@ -417,7 +336,6 @@ public final class SpotRuns {
     public func take(grid next: Set<String>) {
         guard next != grid else { return }
         grid = next
-        showWork()
         guard isPanelOpen else { return }
         sheets.values.forEach { $0.settleScript() }
         updateClock()

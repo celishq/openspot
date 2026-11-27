@@ -40,10 +40,6 @@ public enum MotionTokens {
 
     public static let cardShare = 0.5
 
-    public static let workCreep = 4.0
-    public static let workCeiling = 0.9
-    public static var workTick: Double { 0.5 * slow }
-    public static var workFinish: Double { 0.6 * slow }
     public static var shine: Double { 1.6 * slow }
     public static let shineStart = -0.5
     public static let shineEnd = 1.5

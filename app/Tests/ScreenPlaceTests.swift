@@ -22,13 +22,6 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(place.origin(of: float, under: CGPoint(x: -2550, y: -280)), CGPoint(x: -2560, y: -288))
     }
 
-    func testAWorkCardSitsInTheMiddleOfTheScreenWithThePointer() {
-        let card = CGSize(width: 300, height: 100)
-
-        XCTAssertEqual(place.origin(ofWorkCard: card, pointer: CGPoint(x: 700, y: 500)), CGPoint(x: 598, y: 462))
-        XCTAssertEqual(place.origin(ofWorkCard: card, pointer: CGPoint(x: -100, y: 0)), CGPoint(x: -1430, y: 367))
-    }
-
     func testAToastHangsCentredUnderTheMenuBarItemAsHighAsTheSystemHUD() {
         XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: item, window: nil, pointer: pointer), CGPoint(x: 916, y: 876))
     }

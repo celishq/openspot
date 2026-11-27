@@ -105,10 +105,6 @@ extension SpotRun {
         switch ask {
         case .show(let generation, _, let query, _):
             if answers { answered = runs.now() }
-            if spot.keepsSheet, route == nil, !frame.isEmpty, !lines.parts.isEmpty {
-                keptSheet = lines
-                runs.keptSheets.keep(frame, frame: lines, of: spot.id)
-            }
             if spot.showsState { takeState(lines) }
             takeValue(lines)
             let kept = selecting

@@ -44,8 +44,6 @@ enum SpotMotion {
         Animation(SpotSpring(duration: duration, bounce: bounce))
     }
 
-    static let creep = Animation.linear(duration: MotionTokens.workTick)
-
     static let shine = Animation.linear(duration: MotionTokens.shine).repeatForever(autoreverses: false)
 
     static func animation(_ motion: PanelMotion) -> Animation {

@@ -134,10 +134,6 @@ public struct Spot: Equatable, Sendable {
         SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
 
-    public var keepsSheet: Bool {
-        self.isBuiltIn && !self.reachesAccountKey
-    }
-
     public var fault: FaultSpot? {
         if case .fault(let fault)? = self.host { fault } else { nil }
     }
