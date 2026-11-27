@@ -3,6 +3,7 @@ import Foundation
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
         asOnePress {
+            leaveParkedSession()
             if confirming == key, runConfirmed() { return }
             if confirmWords(of: key) != nil, showCard(key.spot) {
                 confirming = key
@@ -235,6 +236,7 @@ extension SpotsModel {
             host.dismiss()
             return true
         }
+        leaveParkedSession()
         closeSheet(moving: isShown)
         host.show()
         if let spot = spot() { selected = spot }

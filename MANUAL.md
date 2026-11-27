@@ -30,6 +30,20 @@ Every spot answers the same keys, so you learn them once.
 - A card with a lock can't run yet. A press of it opens Settings at the spot; see
   [Let a spot use what it needs](#let-a-spot-use-what-it-needs).
 
+## Come back to where you were
+
+The panel keeps your place when you click outside it. Open it again within 90 seconds, and you're back on the same
+page of the same spot, with your text selected so you can type over it. After 90 seconds it opens on an empty search.
+
+| Key        | Does                                                                          |
+| ---------- | ----------------------------------------------------------------------------- |
+| Esc        | Goes back one level: clears the text, then the page before, then the grid. On an empty grid it closes the panel. |
+| `⌘W`       | Closes the panel from anywhere. The next open starts on an empty search.      |
+
+- An Esc that closes the panel, or `⌘W`, ends what you were doing, so the next open is clean.
+- A click outside, the panel's key, and an action that closes the panel, such as a paste, keep your place.
+- Opening a spot by its own key starts on that spot, not on the place you left.
+
 ## Get spots in the Store
 
 The Store is the window that shows which spots you have and where they come from. Open it with the Store card,

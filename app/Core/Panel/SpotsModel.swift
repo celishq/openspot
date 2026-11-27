@@ -146,6 +146,8 @@ public final class SpotsModel {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
         }
     }
+    @ObservationIgnored var session = PanelSession()
+    public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
     public internal(set) var closingSheet: ClosingSheet?
     @ObservationIgnored var edgeStep = 0
@@ -564,6 +566,7 @@ public final class SpotsModel {
             readWaiting()
             settingsBook.readRows()
             finishPick()
+            resumeSession()
             selected = 0
             openAttachment()
             askAnswers()
@@ -576,6 +579,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
+            parkSession()
             dropPeekNow()
             holdCommand(false)
             endSpread()
