@@ -233,6 +233,13 @@ final class FakeHost: SpotsHost {
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }
     }
 
+    private(set) var snaps = 0
+
+    func snap(_ body: () -> Void) {
+        snaps += 1
+        change(nil, body, completion: {})
+    }
+
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
         change(motion, body) { [weak self] in
             completion()

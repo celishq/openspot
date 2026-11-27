@@ -153,6 +153,12 @@ extension OpenspotApp: SpotsHost {
         withTransaction(transaction, body)
     }
 
+    func snap(_ body: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, body)
+    }
+
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil
