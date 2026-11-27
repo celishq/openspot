@@ -4,7 +4,14 @@ import SwiftUI
 extension SettingsView {
     func attachmentGroup(_ standing: SpotStanding, _ rows: SettingRows.Group) -> some View {
         group(rows.id) {
-            lines(rows.rows) { settingLine($0) }
+            lines(rows.rows) { row in
+                HStack(spacing: SpotTokens.settingsRowGap) {
+                    if let chip = standing.attachmentChip {
+                        SettingsAttachmentPreview(chip: chip, isOn: book.value(of: row).isOn)
+                    }
+                    settingLine(row)
+                }
+            }
             lines(standing.attachmentNeeds.compactMap(book.access.access)) { accessLine($0) }
         }
     }

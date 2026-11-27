@@ -17,6 +17,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     public let readiness: SpotReadiness
     public let uses: [UseNeeds]
     public let attachmentNeeds: [MacAccess]
+    public let attachmentChip: AttachmentChip?
     public let accessUses: [UseNeeds]
     public let missing: [MacAccess]
     public let refused: [SpotUse]
@@ -46,6 +47,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         let isSource = spot.isAttachmentSource
         let read = Set(uses.filter { $0.id == .read }.flatMap { $0.needs + $0.maybe })
         attachmentNeeds = isSource ? MacAccess.allCases.filter(read.contains) : []
+        attachmentChip = isSource ? AttachmentChip(source: spot.id, app: nil, look: spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol), state: .unread) : nil
         accessUses = isSource ? uses.filter { ![.attachment, .read].contains($0.id) } : uses
         let missing = Self.missing(needs, statuses: statuses)
         let undeclared = Self.undeclared(by: spot, refused: refused)

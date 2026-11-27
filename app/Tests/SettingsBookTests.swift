@@ -52,6 +52,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(standing.accessUses.map(\.id), [.clipboard])
         XCTAssertEqual(try row("tab/attachment").title, "Show beside the search field")
         XCTAssertEqual(try row("tab/attachment").detail, "Tab hands it to a spot.")
+        XCTAssertEqual(standing.attachmentChip?.look, .symbol("safari"))
     }
 
     func testTheFactsHoldEveryAccessSpotRowThemeAndTheAccount() async throws {
