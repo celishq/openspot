@@ -247,10 +247,19 @@ final class PanelSessionTests: PanelCase {
     }
 
     func testCommandWOnAStayingSheetDropsItsAnswerAndTheNextOpenIsEmpty() async throws {
-        try await openParts()
+        try script("stays", toml: "title = 'Stays'\nstay = true", """
+        . "$OPENSPOT_SH"
+        main() { printf 'item=s\\ntitle=Stays\\n'; }
+        openspot_serve main "$@"
+        """)
+        await model.reload()
+        model.pushFirst("stays", moving: true)
+        try await wait("the open stays") { self.model.openSheetID == "stays" && self.model.transition.phase == .open && self.titles == ["Stays"] }
 
         XCTAssertTrue(model.handleKey(close))
         XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(model.sheets["stays"]?.isParked, false)
+        XCTAssertNil(model.sheets["stays"]?.answered)
         reopen()
 
         XCTAssertNil(model.openSheetID)

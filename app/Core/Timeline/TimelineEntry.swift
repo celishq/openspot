@@ -32,10 +32,10 @@ struct TimelineEntry: Codable, Equatable, Sendable {
         if let icon { fields.append(.init(key: "icon", value: icon)) }
         if let detail { fields.append(.init(key: "detail", value: detail)) }
         if let key { fields.append(.init(key: "key", value: key)) }
-        if let session, let page = session.flow.current {
+        if let session {
             fields.append(.init(key: "session", value: id))
-            fields.append(.init(key: "session.spot", value: page.spot))
-            if let route = page.route { fields.append(.init(key: "session.route", value: route)) }
+            if let page = session.flow.current { fields.append(.init(key: "session.spot", value: page.spot)) }
+            if let route = session.flow.current?.route { fields.append(.init(key: "session.route", value: route)) }
             fields.append(.init(key: "session.steps", value: String(session.flow.pages.count)))
             if !session.query.isEmpty { fields.append(.init(key: "session.text", value: session.query)) }
         }

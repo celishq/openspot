@@ -64,12 +64,12 @@ public struct SessionWindow: Equatable, Sendable {
         guard !isWalking else { return }
         let unread = stops.filter { stop in read.first.map { stop.at > $0.at } ?? true }
         stops = Array((unread + read).prefix(Self.size))
-        isWhole = whole && stops.count <= Self.size
+        isWhole = whole && unread.count + read.count <= Self.size
     }
 
-    mutating func take(older read: [Stop], isWhole whole: Bool) {
-        let oldest = oldest
-        stops += read.filter { stop in oldest.map { stop.at < $0 } ?? true }
+    mutating func take(older read: [Stop], before: Date?, isWhole whole: Bool) {
+        guard oldest == before else { return }
+        stops += read.filter { stop in before.map { stop.at < $0 } ?? true }
         isWhole = whole
     }
 }

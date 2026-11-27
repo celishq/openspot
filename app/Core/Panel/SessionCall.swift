@@ -23,7 +23,7 @@ enum SessionCall: NounCall {
         return switch self {
         case .open(let id):
             CommandAnswer.work {
-                guard await app.openSession(id) else { throw SpotError.failed(1, "The timeline has no session `\(id)`. Run `openspot timeline list --spot openspot` to see each one.") }
+                guard await app.openSession(id) else { throw SpotError.failed(1, "Openspot cannot open the session `\(id)`: the timeline has no such session, or its spot opens in a window. Run `openspot timeline list --spot openspot` to see each one.") }
                 return ""
             }
         case .step(let steps):

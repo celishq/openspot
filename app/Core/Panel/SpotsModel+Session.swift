@@ -14,6 +14,7 @@ extension SpotsModel {
     }
 
     func parkSession() {
+        waitsBack = false
         session.hide(at: runs.clock.now())
         commitVisit()
     }
@@ -63,7 +64,7 @@ extension SpotsModel {
         }
         commitVisit()
         startVisit()
-        if !isRestoringVisit { window.stopWalking() }
+        if !isRestoringVisit { stopWalking() }
     }
 
     func noteQuery() {
@@ -88,9 +89,12 @@ extension SpotsModel {
     }
 
     private func keepInTimeline(_ place: SessionPlace) {
-        guard let page = place.flow.current, let spot = sheets[page.spot]?.spot else { return }
-        let title = title(of: page)
-        var draft = Timeline.Draft(kind: .text, values: [title], title: title, icon: spot.picture, key: "visit:\(page.spot)/\(page.route ?? "")")
+        let page = place.flow.current
+        guard page != nil || !place.query.isEmpty else { return }
+        let title = page.map { title(of: $0) } ?? place.query
+        let icon = page.flatMap { sheets[$0.spot]?.spot.picture } ?? "magnifyingglass"
+        let key = page.map { "session:\($0.spot)/\($0.route ?? "")" } ?? "session:text/\(place.query)"
+        var draft = Timeline.Draft(kind: .text, values: [title], title: title, icon: icon, key: key)
         draft.session = place
         let runs = runs
         let timeline = runs.timeline
@@ -104,10 +108,10 @@ extension SpotsModel {
 
     public func openSession(_ id: String) async -> Bool {
         let timeline = runs.timeline
-        guard let place = await Task.detached(operation: { timeline.entry(id)?.session }).value, let page = place.flow.current, restores(page) else { return false }
+        guard let place = await Task.detached(operation: { timeline.entry(id)?.session }).value, place.flow.current.map(restores) ?? true else { return false }
         asOnePress {
             leaveParkedSession()
-            window.stopWalking()
+            stopWalking()
             afterShowing({ host.show() }) { [weak self] in self?.restore(place) }
         }
         return true
@@ -141,7 +145,7 @@ extension SpotsModel {
         }
         guard let stop = window.back() else {
             guard !window.isWhole else { return false }
-            waitingBacks += 1
+            waitsBack = true
             readSessions(older: true)
             return true
         }
@@ -171,11 +175,16 @@ extension SpotsModel {
             guard let self else { return }
             isReadingSessions = false
             let stops = read.compactMap { entry in entry.session.map { SessionWindow.Stop(place: $0, at: entry.at) } }
-            if older { window.take(older: stops, isWhole: read.count < size) } else { window.take(newest: stops, isWhole: read.count < size) }
-            guard waitingBacks > 0 else { return }
-            waitingBacks -= 1
-            _ = asOnePress { backVisit() }
+            if older { window.take(older: stops, before: before, isWhole: read.count < size) } else { window.take(newest: stops, isWhole: read.count < size) }
+            guard waitsBack else { return }
+            waitsBack = false
+            if isShown, window.isWalking { _ = asOnePress { backVisit() } }
         }
+    }
+
+    func stopWalking() {
+        waitsBack = false
+        window.stopWalking()
     }
 
     func restore(_ place: SessionPlace) {

@@ -233,4 +233,37 @@ final class SessionTrailTests: PanelCase {
 
         try await walk(back, to: "parts")
     }
+
+    func testPressesPastTheWindowWaitForOneReadAndLeaveNoBackForALaterRead() async throws {
+        try keep(["other", "parts", "other", "parts", "other", "parts", "other", "parts"])
+        model.readSessions(older: false)
+        try await waitForSessions()
+
+        for _ in 0..<8 { XCTAssertTrue(model.handleKey(back)) }
+        try await waitForSessions()
+        XCTAssertEqual(model.window.index, 5)
+
+        model.window.stopWalking()
+        model.readSessions(older: false)
+        try await waitForSessions()
+        XCTAssertNil(model.window.index)
+    }
+
+    func testATextSessionOnTheGridIsKeptInTheTimelineAndComesBackAfterAShow() async throws {
+        model.search("2+2")
+        model.noteRun()
+        try await visit("other")
+        try await wait("the sessions on disk") { self.visits.count == 2 }
+        model.panelWillHide()
+        model.panelDidHide()
+        model.isShown = true
+        model.panelWillShow()
+        try await waitForSessions()
+
+        XCTAssertTrue(model.handleKey(back))
+        try await wait("other") { self.model.openSheetID == "other" }
+        XCTAssertTrue(model.handleKey(back))
+
+        try await wait("the text session") { self.model.openSheetID == nil && self.model.searchText == "2+2" }
+    }
 }
