@@ -127,10 +127,17 @@ person_shell() {
   case ${SHELL-} in */zsh | */bash) printf '%s' "$SHELL" ;; *) printf /bin/zsh ;; esac
 }
 
-# Prints an agent, in the form of known_agents and then its alias, for each alias of the person's shell that runs
-# Claude Code or Codex, such as claude-personal for another account.
+# Prints what the person's shell knows, as a terminal of theirs does: each of its aliases, and has <command> for each
+# command of known_agents that it runs.
+shell_look() {
+  commands=$(printf '%s\n' "$known_agents" | cut -d '|' -f 3 | tr '\n' ' ')
+  "$(person_shell)" -ic "alias; for c in $commands; do command -v \"\$c\" > /dev/null 2>&1 && echo \"has \$c\"; done" < /dev/null 2> /dev/null
+}
+
+# Prints an agent, in the form of known_agents and then its alias, for each alias in the look $1 that runs Claude Code
+# or Codex, such as claude-personal for another account.
 aliased() {
-  "$(person_shell)" -ic alias < /dev/null 2> /dev/null | sed 's/^alias //' | while IFS='=' read -r word line; do
+  printf '%s\n' "$1" | sed 's/^alias //' | while IFS='=' read -r word line; do
     case $word in '' | claude | codex | *[!A-Za-z0-9_.-]*) continue ;; esac
     for kind in claude codex; do
       printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$kind " || continue
@@ -174,16 +181,12 @@ app_of() {
   printf '%s\n' "${apps:-$(installed_apps)}" | awk -F '\t' -v name="$1" '$1 == name { print $2; found = 1; exit } END { exit !found }'
 }
 
-# Prints the path of the command $1 of an agent: on the PATH, which Openspot gives the folders where installers put it,
-# or inside the app that ships it, as Codex does.
-agent_bin() {
-  command -v "$1" 2>/dev/null && return
-  case $1 in
-    codex)
-      ships=$(app_of Codex) && [ -x "$ships/Contents/Resources/codex-cli/bin/codex" ] &&
-        { printf '%s' "$ships/Contents/Resources/codex-cli/bin/codex"; return; }
-      ;;
-  esac
+# Prints the word that runs the command $1 of an agent in the person's shell, as the look $2 found it: the command
+# itself, or the path of the one inside the app that ships it, as Codex does. Fails when there is none.
+agent_word() {
+  printf '%s\n' "$2" | grep -qxF "has $1" && { printf '%s' "$1"; return; }
+  [ "$1" = codex ] && ships=$(app_of Codex) && [ -x "$ships/Contents/Resources/codex-cli/bin/codex" ] &&
+    { quote "$ships/Contents/Resources/codex-cli/bin/codex"; return; }
   return 1
 }
 
@@ -211,14 +214,12 @@ slug() {
 # Each line also names the agent it runs as and, for an alias, the alias.
 ways() {
   apps=$(installed_apps)
-  printf '%s\n%s\n' "$known_agents" "$(aliased)" | while IFS='|' read -r key name bin app here kind word; do
+  look=$(shell_look)
+  printf '%s\n%s\n' "$known_agents" "$(aliased "$look")" | while IFS='|' read -r key name bin app here kind word; do
     [ -n "$key" ] || continue
     has_bin=
-    if [ -n "$word" ]; then
-      has_bin=1
-    elif [ -n "$bin" ] && agent_bin "$bin" > /dev/null; then
-      has_bin=1
-    fi
+    [ -n "$word" ] || [ -z "$bin" ] || word=$(agent_word "$bin" "$look") || word=
+    [ -z "$word" ] || has_bin=1
     own=
     [ -z "$app" ] || own=$(app_of "$app") || own=
     [ -n "$has_bin" ] || [ -n "$own" ] || continue
@@ -273,12 +274,12 @@ kind_of() {
   printf '%s\n%s\n' "$known_agents" "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $6 != "" { print $6; exit }'
 }
 
-# Prints the command word of the agent $1 for the person's shell: its alias, or else the path of its command, quoted.
+# Prints the word that runs the agent $1 in the person's shell, which ways found: its alias, its command, or the path
+# of the one its app ships.
 command_of() {
   word=$(printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $7 != "" { print $7; exit }')
-  [ -z "$word" ] || { printf '%s' "$word"; return; }
-  path=$(agent_bin "$(printf '%s\n' "$known_agents" | awk -F '|' -v a="$1" '$1 == a { print $3; exit }')") || return 1
-  quote "$path"
+  [ -n "$word" ] || return 1
+  printf '%s' "$word"
 }
 
 # Prints the words of the button that sends to the agent. They are the same for a new spot and a change, and for every

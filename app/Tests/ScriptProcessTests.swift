@@ -91,16 +91,10 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertEqual(environment["PATH"], "/A/Openspot.app/Contents/Helpers:/given:/usr/bin:/bin:/usr/sbin:/sbin")
     }
 
-    func testTheLaunchAddsTheFoldersWhereInstallersPutACommandAfterThePathItWasGiven() throws {
-        try FileManager.default.createDirectory(at: folder.appendingPathComponent(".nvm/versions/node/v22.1.0/bin"), withIntermediateDirectories: true)
+    func testTheLaunchAddsTheFoldersWhereInstallersPutACommandAfterThePathItWasGiven() {
+        let path = SearchPath.adding(SearchPath.installs, to: "/usr/local/bin:/usr/bin")
 
-        let path = SearchPath.adding(SearchPath.readInstalls(home: folder), to: "/usr/local/bin:/usr/bin")
-
-        let home = folder.path
-        XCTAssertEqual(path.split(separator: ":").map(String.init), [
-            "/usr/local/bin", "/usr/bin", "/opt/homebrew/bin", "\(home)/.local/bin", "\(home)/.claude/local", "\(home)/.npm-global/bin",
-            "\(home)/.bun/bin", "\(home)/.volta/bin", "\(home)/.nvm/versions/node/v22.1.0/bin"
-        ])
+        XCTAssertEqual(path, "/usr/local/bin:/usr/bin:/opt/homebrew/bin")
     }
 
     func testTheDataFolderIsInTheHomeOfTheRunWithNoConfigPath() {
