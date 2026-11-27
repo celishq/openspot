@@ -77,7 +77,7 @@ Its sidebar holds seven sections:
 - The panel's search finds each row too. Return on one opens Settings at the row.
 - `openspot app settings --at <where>` opens Settings at a place, such as `access/screen`, `spot/notes` or `keys`.
 - `openspot setting list` prints each row, and `openspot setting set` changes the same values: `menubar`, `window`,
-  `open`, `float` and `key.<action>` of a spot, and `attachment`, which [Show as attachment](#hand-what-you-work-on-to-a-spot) sets.
+  `open`, `float` and `key.<action>` of a spot, and `attachment`, which [Show beside the search field](#hand-what-you-work-on-to-a-spot) sets.
 
 ## Let a spot use what it needs
 
@@ -119,8 +119,8 @@ free slot, as `openspot grid pin <id>` does.
 
 ## Hand what you work on to a spot
 
-The Settings page of Selection, Browser Tab and Clipboard has an Attachment group. Its Show as attachment row hides or
-shows the card in the field, and the rows under it show whether macOS lets Openspot read what it needs. `⌘` Return on a
+The Settings page of Selection, Browser Tab and Clipboard has an In the Panel group. Its Show beside the search field row
+hides or shows the card in the field, and the rows under it show whether macOS lets Openspot read what it needs. `⌘` Return on a
 card in the field opens that page, and so does Return on a card that Openspot may not read yet. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 

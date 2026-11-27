@@ -106,7 +106,7 @@ final class SpotRowsTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("tab"), toml: "title = 'Browser Tab'\nuses = ['attachment']")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"), toml: "title = 'Notes'")
 
-        XCTAssertEqual(try rows(of: "tab").first { $0.key == "attachment" }.map { [$0.title, $0.value, $0.kind.rawValue, $0.icon] }, ["Show as attachment", "true", "toggle", "paperclip"])
+        XCTAssertEqual(try rows(of: "tab").first { $0.key == "attachment" }.map { [$0.title, $0.value, $0.kind.rawValue, $0.icon] }, ["Show beside the search field", "true", "toggle", "paperclip"])
         XCTAssertNil(try rows(of: "notes").first { $0.key == "attachment" })
 
         try file.set(setting: "attachment", of: "tab", to: "false")

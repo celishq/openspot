@@ -3,23 +3,25 @@ import SwiftUI
 
 extension SettingsView {
     func attachmentGroup(_ standing: SpotStanding, _ rows: SettingRows.Group) -> some View {
-        Section {
-            if let chip = standing.attachmentChip {
-                SettingsAttachmentPicture(chip: chip)
-            }
+        group(rows.id) {
             lines(rows.rows) { settingLine($0) }
-            lines(standing.attachmentAccess) { useLine($0) }
-        } header: {
-            Text(rows.id)
-                .font(SpotType.settingsGroup)
-                .foregroundStyle(.primary)
-        } footer: {
-            if let line = standing.attachmentLine {
-                Text(line)
-                    .font(SpotType.settingsLine)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            lines(standing.attachmentNeeds.compactMap(book.access.access)) { accessLine($0) }
+        }
+    }
+
+    private func accessLine(_ access: AccessList.Entry) -> some View {
+        row(open: .accessOf(access.id)) {
+            SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
+            Text(access.id.title)
+                .lineLimit(1)
+            Spacer(minLength: SpotTokens.settingsTrailingGap)
+            if access.isAllowed {
+                Text(access.status.word).foregroundStyle(.secondary)
+            } else {
+                Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
+                Button("Allow") { act { await $0.allow(access: access.id) } }
             }
+            chevron
         }
     }
 }

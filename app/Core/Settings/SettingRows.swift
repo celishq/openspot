@@ -41,7 +41,7 @@ public struct SettingRows: Equatable, Sendable {
         all.filter { $0.spot == ReservedSetting.appSpot && $0.section == section }
     }
 
-    public static let attachmentGroup = "Attachment"
+    public static let attachmentGroup = "In the Panel"
 
     public func groups(of spot: String) -> [Group] {
         let all = rows(of: spot)

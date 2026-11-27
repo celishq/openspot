@@ -13,6 +13,8 @@ public struct SpotRows: Equatable, Sendable {
     static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
     static let attachmentIcon = "paperclip"
+    static let attachmentTitle = "Show beside the search field"
+    static let attachmentLine = "Tab hands it to a spot."
 
     public let spot: String
     let fields: [Manifest.Setting]
@@ -42,7 +44,7 @@ public struct SpotRows: Equatable, Sendable {
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
-        let attachmentRow = row(ReservedSetting.attachment, "Show as attachment", String(!config.hidesAttachment(of: spot)), .toggle, Self.attachmentIcon)
+        let attachmentRow = SettingRow(spot: spot, name: name, key: ReservedSetting.attachment, title: Self.attachmentTitle, value: String(!config.hidesAttachment(of: spot)), kind: .toggle, section: nil, icon: Self.attachmentIcon, detail: Self.attachmentLine)
         let sourceRows = isAttachmentSource ? [attachmentRow] : []
         let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
         let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)

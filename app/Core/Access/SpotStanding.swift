@@ -16,10 +16,8 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     public let spot: Spot
     public let readiness: SpotReadiness
     public let uses: [UseNeeds]
-    public let attachmentAccess: [UseNeeds]
+    public let attachmentNeeds: [MacAccess]
     public let accessUses: [UseNeeds]
-    public let attachmentLine: String?
-    public let attachmentChip: AttachmentChip?
     public let missing: [MacAccess]
     public let refused: [SpotUse]
     let needs: Set<MacAccess>
@@ -46,10 +44,9 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         let uses = declared.map { use in byUse.first { $0.id == use } ?? UseNeeds(id: use, needs: [], maybe: []) }
         self.uses = uses
         let isSource = spot.isAttachmentSource
-        attachmentAccess = isSource ? uses.filter { $0.id == .read } : []
+        let read = Set(uses.filter { $0.id == .read }.flatMap { $0.needs + $0.maybe })
+        attachmentNeeds = isSource ? MacAccess.allCases.filter(read.contains) : []
         accessUses = isSource ? uses.filter { ![.attachment, .read].contains($0.id) } : uses
-        attachmentLine = isSource ? Self.attachmentPlace : nil
-        attachmentChip = isSource ? AttachmentChip(source: spot.id, app: nil, look: spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol), state: .unread) : nil
         let missing = Self.missing(needs, statuses: statuses)
         let undeclared = Self.undeclared(by: spot, refused: refused)
         readiness = !undeclared.isEmpty ? .review : missing.isEmpty ? .ready : .access
@@ -62,8 +59,6 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         }
         self.last = times
     }
-
-    private static let attachmentPlace = "It shows on the right of the field when the panel opens. Tab hands it to a spot that takes it."
 
     static func lacks(_ spot: Spot, written: [[String]], statuses: [MacAccess: AccessStatus], last: [String: Date], refused: [SpotUse: Date]) -> Bool {
         let needs = rules(of: spot, written: written, last: last).reduce(Set<MacAccess>()) { $0.union($1.needs) }
