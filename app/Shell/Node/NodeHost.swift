@@ -25,6 +25,7 @@ protocol NodeHost {
     var selection: (() -> Int)? { get }
     var rows: [[String]] { get }
     var answers: Int { get }
+    var isSettled: Bool { get }
     func isSame(as other: any NodeHost) -> Bool
 }
 
@@ -51,6 +52,7 @@ extension NodeHost {
     var selection: (() -> Int)? { nil }
     var rows: [[String]] { [] }
     var answers: Int { 0 }
+    var isSettled: Bool { true }
     func isSame(as other: any NodeHost) -> Bool { false }
 }
 

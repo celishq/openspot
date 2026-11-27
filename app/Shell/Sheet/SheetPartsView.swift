@@ -12,6 +12,9 @@ struct SheetPartsView: View {
         .onAppear(perform: focusSelectedField)
         .modifier(FocusOnShow(focus: focusSelectedField))
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
+        .onChange(of: host.isSettled) { _, isSettled in
+            if isSettled { focusSelectedField() }
+        }
         .onChange(of: focus) { _, id in
             if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { host.focus(part) }
         }
@@ -38,7 +41,7 @@ struct SheetPartsView: View {
     }
 
     private func focusSelectedField() {
-        guard !isHeld, !panel.showsRows else { return }
+        guard !isHeld, !panel.showsRows, host.isSettled else { return }
         let id = selectedID()
         DispatchQueue.main.async { focus = panel.parts.first { $0.id == id && $0.isEditable }?.id }
     }

@@ -11,6 +11,10 @@ struct SheetHost: NodeHost, @MainActor Equatable {
         one.model === other.model && one.id == other.id && !one.isHeld && !other.isHeld
     }
 
+    var isSettled: Bool {
+        isHeld || model.transition.isSettled(id)
+    }
+
     private var panel: SheetParts? {
         isHeld ? content.panel : model.sheets[id]?.panel
     }
