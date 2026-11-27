@@ -15,6 +15,7 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var perLine = 1
     public private(set) var isWaiting = false
+    public private(set) var isWhole = false
     private var narrowsWhileWaiting = true
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
@@ -68,6 +69,10 @@ public struct ItemList: Equatable, Sendable {
 
     public func run(at index: Int) -> String? {
         shown.indices.contains(index) ? shown[index].run : nil
+    }
+
+    public var lastRun: String? {
+        all.last?.run
     }
 
     public var selectedItem: SpotItem? {
@@ -202,6 +207,16 @@ public struct ItemList: Equatable, Sendable {
         return Rows(items: items, base: all, search: search, index: search == .off ? SearchIndex() : SearchIndex(items.map(\.searchText)))
     }
 
+    public mutating func append(_ items: [SpotItem]) {
+        let held = Set(all.map(\.run))
+        let new = items.filter { !held.contains($0.run) }
+        guard !new.isEmpty else {
+            isWhole = true
+            return
+        }
+        replace(all + new)
+    }
+
     public mutating func replace(_ items: [SpotItem]) {
         replace(ready(items, search: search))
     }
@@ -209,6 +224,7 @@ public struct ItemList: Equatable, Sendable {
     public mutating func replace(_ rows: Rows) {
         guard rows.base == all, rows.search == search else { return replace(ready(rows.items, search: search)) }
         let run = selectedItem?.run
+        isWhole = false
         isLoading = false
         loadingWords = nil
         hasFailed = false

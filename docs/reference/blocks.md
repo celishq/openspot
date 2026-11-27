@@ -143,6 +143,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `drop`               | When people drop files on your card, or hand it files with Tab. | `file`, once for each file.                          |
 | `<event>`            | When an event of `[on]` comes.                     | `value`, the event's value.                          |
 | `sheet.text`         | At each change of your sheet's search field.       | `value`, the text; `alt`.                            |
+| `sheet.more`         | When the list of your sheet is scrolled near its end. Print the next rows, or nothing at the end. | `after`, the id of the last row; `value`, the search text. |
 | `<binding>.<event>`  | When a spot you bind sends the event.              | The event's values.                                  |
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |

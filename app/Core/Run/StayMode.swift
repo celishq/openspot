@@ -108,6 +108,8 @@ final class StayMode: ScriptMode {
         case .ask(.search):
             stop { if case .search = $0 { true } else { false } }
             post(call, isTimed: true)
+        case .ask(.more):
+            post(call, isTimed: true)
         case .ask(.answer(let text)):
             stop(\.isAnswer)
             if !post(call, isTimed: true) { run?.takeAnswers([], to: text) }

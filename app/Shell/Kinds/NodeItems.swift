@@ -9,7 +9,7 @@ struct NodeItems: View {
         GeometryReader { room in
             if let list = context.host.list {
                 let host = context.host
-                SpotItemsView(list: list, onRun: { host.run($0) }, selection: host.selection, onDragOut: { host.dragOut($0) }, room: room.size.height)
+                SpotItemsView(list: list, onRun: { host.run($0) }, selection: host.selection, onDragOut: { host.dragOut($0) }, onNearEnd: { host.nearsEnd() }, room: room.size.height)
                     .mask(alignment: .top) { Rectangle().frame(height: room.size.height + SpotTokens.padding) }
             }
         }

@@ -14,6 +14,7 @@ struct SpotItemsView: View {
     var failure: (String) -> String? = { _ in nil }
     var tips: SpotsModel?
     var shakes: (String) -> Int = { _ in 0 }
+    var onNearEnd: () -> Void = {}
     var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
@@ -118,7 +119,8 @@ struct SpotItemsView: View {
     }
 
     private var lines: some View {
-        LazyVStack(spacing: SpotTokens.listRowGap) {
+        let nearEnd = list.scrolling.dropLast(SpotTokens.firstScreen(perLine: 1)).last?.run ?? list.scrolling.first?.run
+        return LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(list.scrolling, id: \.run) { item in
                 if let section = list.sectionStarts[item.run] {
                     Text(section)
@@ -134,6 +136,7 @@ struct SpotItemsView: View {
                 }
                 .buttonStyle(.plain)
                 .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
+                .onAppear { [onNearEnd] in if item.run == nearEnd { onNearEnd() } }
             }
         }
         .modifier(SpotPointerMove(at: { [list, onPoint] in if let item = $0.flatMap({ list.lineItem(at: $0.y) }) { onPoint(item) } }))

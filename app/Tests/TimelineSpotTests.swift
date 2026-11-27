@@ -152,17 +152,29 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.title), ["Copy something, and it shows here."])
     }
 
-    func testATypedWordFindsAnEntryOlderThanTheNewestFiveHundred() async throws {
+    func testTheSheetShowsAPageAndATypedWordFindsAnEntryPastIt() async throws {
         let now = Date()
         try add(.text, "needle", at: now.addingTimeInterval(-3_600))
-        for index in 0..<500 { try add(.text, "filler \(index)", at: now.addingTimeInterval(Double(index))) }
+        for index in 0..<70 { try add(.text, "filler \(index)", at: now.addingTimeInterval(Double(index))) }
 
         let shown = try await rows()
         let found = try await timeline.answer("sheet.text", input: "input.value=needle\n", timeout: 60).items
 
-        XCTAssertEqual(shown.count, 500)
+        XCTAssertEqual(shown.count, 60)
         XCTAssertFalse(shown.contains { $0.title == "needle" })
         XCTAssertEqual(found.map(\.title), ["needle"])
+    }
+
+    func testMoreGivesThePageAfterTheLastRowAndNothingPastTheEnd() async throws {
+        let now = Date()
+        for index in 0..<70 { try add(.text, "filler \(index)", at: now.addingTimeInterval(Double(index))) }
+        let shown = try await rows()
+
+        let next = try await timeline.answer("sheet.more", input: "input.after=\(shown.last?.run ?? "")\n", timeout: 60).items
+        let past = try await timeline.answer("sheet.more", input: "input.after=\(next.last?.run ?? "")\n", timeout: 60).items
+
+        XCTAssertEqual(next.map(\.title), (0..<10).reversed().map { "filler \($0)" })
+        XCTAssertEqual(past, [])
     }
 
     func testAWordThatNoEntryHoldsSaysSo() async throws {

@@ -56,6 +56,18 @@ extension SpotRun {
         list = next
     }
 
+    public func more() {
+        guard spot.triggers.pages, !list.isWhole, !list.isWaiting, !link.isAsking, running(Self.moreKey) == nil, let last = list.lastRun else { return }
+        let query = list.query
+        send(Call(
+            message: ScriptEntry.sheetMore.message([last], query.isEmpty ? [] : [query], after: showsSheet ? panel?.inputs ?? [] : []),
+            key: Self.moreKey,
+            limit: runs.showLimit,
+            event: .event(EventName.sheetMore, value: nil),
+            purpose: .ask(.more(after: last, query: query))
+        ))
+    }
+
     func ask() {
         let query = list.query
         if let older = running(Self.searchKey) { stop(older) }

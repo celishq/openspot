@@ -245,6 +245,7 @@
 		2CDB660E401427CCC3ECA174 /* AccountHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D6B763F8EEBA98A98B8C9E /* AccountHandle.swift */; };
 		2D068C8371A3A8D865220678 /* PeekAct.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF507D44612EDA486F50665 /* PeekAct.swift */; };
 		2D0710D8EED8AB3AD0ABBD71 /* CommandHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5330859B3A63E91199D476 /* CommandHold.swift */; };
+		2D188AB0A543BC042AA198AF /* SheetMoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A278843119C7BD2D49C5C6 /* SheetMoreTests.swift */; };
 		2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D37D4729D1CBB46B75278F /* OpenspotItem.swift */; };
 		2D6F6E09E97F7B1A842E73A6 /* ScriptProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */; };
 		2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C534CF8DF32EE7ABB64624F6 /* ConfigFile.swift */; };
@@ -1971,6 +1972,7 @@
 		77181720001574265473306A /* SheetContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetContent.swift; sourceTree = "<group>"; };
 		7718E04D2F516B25C5A9B7EE /* FileIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileIcon.swift; sourceTree = "<group>"; };
 		773DCE4301A6063239652B19 /* XCTestCase+Wait.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCTestCase+Wait.swift"; sourceTree = "<group>"; };
+		77A278843119C7BD2D49C5C6 /* SheetMoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetMoreTests.swift; sourceTree = "<group>"; };
 		77CA1A1F50C44D2C91139D8A /* TextBlockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockTests.swift; sourceTree = "<group>"; };
 		785FF3F1BFAA45B0EFB3E7DA /* SampleSpotsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSpotsTests.swift; sourceTree = "<group>"; };
 		789C1AC9722537908C180AB9 /* MissedSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissedSearch.swift; sourceTree = "<group>"; };
@@ -3708,6 +3710,7 @@
 				0676E63CFC663B7DD2E89342 /* SheetHeaderTests.swift */,
 				0A21B348084B35252A42BE92 /* SheetHeldAnswerTests.swift */,
 				48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */,
+				77A278843119C7BD2D49C5C6 /* SheetMoreTests.swift */,
 				9074750AD2F96E35B990B7AD /* SheetMorphTests.swift */,
 				FA99E56FFB09C7C78777AC69 /* SheetOpeningTests.swift */,
 				65C89E358A2AD5432AA14FE2 /* SheetPartsTests.swift */,
@@ -6362,6 +6365,7 @@
 				E9BCB5D1165772DDF1840A6D /* SheetHeaderTests.swift in Sources */,
 				8BAA53E067E1CE098FF86180 /* SheetHeldAnswerTests.swift in Sources */,
 				1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */,
+				2D188AB0A543BC042AA198AF /* SheetMoreTests.swift in Sources */,
 				D1212CFF23662E4C0E9A1BE0 /* SheetMorphTests.swift in Sources */,
 				8EEB2508C2D52B5FB533CAAC /* SheetOpeningTests.swift in Sources */,
 				C1DC44744C9205C67A885C1C /* SheetPartsTests.swift in Sources */,

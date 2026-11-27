@@ -14,13 +14,14 @@ public struct ScriptEntry: Equatable, Sendable {
     static let drop = ScriptEntry(name: "drop", inputs: [.init(name: "file", type: ValueType(.file, isList: true))])
     static let drag = ScriptEntry(name: "drag", inputs: [.init(name: "item", type: ValueType(.text, isList: true))])
     static let sheetText = ScriptEntry(name: EventName.sheetText, inputs: [value, alt])
+    static let sheetMore = ScriptEntry(name: EventName.sheetMore, inputs: [.init(name: "after", type: text), value])
     static let all = [show, press, command, search, every, schedule, drop, drag]
 
     public let name: String
     let inputs: [Manifest.Parameter]
 
     static func event(_ name: String) -> ScriptEntry {
-        name == sheetText.name ? sheetText : ScriptEntry(name: name, inputs: [value])
+        name == sheetText.name ? sheetText : name == sheetMore.name ? sheetMore : ScriptEntry(name: name, inputs: [value])
     }
 
     func message(_ values: [String]..., after given: [TextBlock.Field] = [], then carried: [TextBlock.Field] = []) -> Message {

@@ -1,9 +1,9 @@
-/** The timeline of every spot, newest first, under a heading for each day: the newest 500 entries, or the 500 best
- * that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, ⌘Return pastes it
+/** The timeline of every spot, newest first, under a heading for each day, a page of 60 entries at a time: the newest
+ * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, ⌘Return pastes it
  * into the front app, ⌘⌫ forgets it, with a toast that puts it back, and Tab hands it to a spot that takes it. A row
  * holds at most the start of a long text, and the whole entry is copied by its id. */
 
-const limit = 500
+const limit = 60
 const heldText = 2000
 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -91,10 +91,11 @@ function row(entry, day) {
   return lines.join("\n")
 }
 
-/** The frame of the entries that hold the words, or the newest ones. */
-function list(words, count) {
+/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page. */
+function list(words, count, after) {
   const search = words ? ["--search", words] : []
-  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...search])
+  const next = after ? ["--after", after] : []
+  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...search, ...next])
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
   let last = ""
@@ -113,6 +114,7 @@ function list(words, count) {
     }
     blocks.push(row(entry, day))
   }
+  if (!last && after) return ""
   if (!last) {
     blocks.push(words ? `item=empty\ntitle=Nothing you copied holds “${words}”.\nicon=magnifyingglass\nhides=copy\nhides=forget` : "item=empty\ntitle=Copy something, and it shows here.\nicon=doc.on.clipboard\nhides=copy\nhides=forget")
   }
@@ -134,6 +136,9 @@ export default {
   },
   "sheet.text"({ value = "", limit: count }) {
     return list(value, count)
+  },
+  "sheet.more"({ after, value = "" }) {
+    return list(value, limit, after)
   },
   command() {
     run(["spot", "open", "openspot/timeline"])

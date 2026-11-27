@@ -19,6 +19,11 @@ struct SheetHost: NodeHost, @MainActor Equatable {
         isHeld ? node.part : model.sheets[id]?[part: node.id] ?? node.part
     }
 
+    func nearsEnd() {
+        guard !isHeld else { return }
+        model.moreRows(in: id)
+    }
+
     func set(_ part: SpotPart, to value: String) {
         model.setPart(part, to: value)
     }

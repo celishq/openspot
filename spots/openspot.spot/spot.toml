@@ -207,6 +207,7 @@ uses = ["timeline", "read", "clipboard"]
 [scripts.timeline.on]
 "sheet.open" = true
 "sheet.text" = true
+"sheet.more" = true
 command = ["timeline"]
 
 [scripts.timeline.actions.pause]

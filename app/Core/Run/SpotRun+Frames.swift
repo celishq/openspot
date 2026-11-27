@@ -58,6 +58,8 @@ extension SpotRun {
             list.stopWaiting(for: query)
             answerArrived()
             if error as? SpotError != .timedOut { fail(error) }
+        case .more:
+            if error as? SpotError != .timedOut { fail(error) }
         }
     }
 
@@ -123,6 +125,10 @@ extension SpotRun {
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
         case .answer:
             return
+        case .more(let after, let query):
+            guard query == list.query, after == list.lastRun else { return }
+            changeList { $0.append(lines.items) }
+            await prepare(firstScreen(of: lines.items), [])
         case .search(let query):
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }
