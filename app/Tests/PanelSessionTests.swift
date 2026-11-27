@@ -214,4 +214,21 @@ final class PanelSessionTests: PanelCase {
 
         XCTAssertEqual(model.searchText, "")
     }
+
+    func testAStayingSheetComesBackOnAReopenThatShowsThePanelOnTheNextFrame() async throws {
+        try script("stays", toml: "title = 'Stays'\nstay = true", """
+        . "$OPENSPOT_SH"
+        main() { printf 'item=s\\ntitle=Stays\\n'; }
+        openspot_serve main "$@"
+        """)
+        await model.reload()
+        model.pushFirst("stays", moving: true)
+        try await wait("the open stays") { self.model.openSheetID == "stays" && self.model.transition.phase == .open }
+
+        clickOutside()
+        XCTAssertNil(model.openSheetID)
+        model.panelWillShow()
+
+        try await wait("the stays sheet again") { self.model.isShown && self.model.openSheetID == "stays" && self.model.transition.phase == .open }
+    }
 }

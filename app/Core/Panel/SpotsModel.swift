@@ -151,7 +151,7 @@ public final class SpotsModel {
     @ObservationIgnored var session = PanelSession()
     @ObservationIgnored var trail = SessionTrail()
     @ObservationIgnored var restoreTime = PanelSession.restoreTime
-    @ObservationIgnored var holdsVisit = false
+    @ObservationIgnored var restoring: PanelSession.Parked?
     @ObservationIgnored var isRestoringVisit = false
     public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
@@ -580,6 +580,7 @@ public final class SpotsModel {
             askAnswers()
             host.nextFrame { [weak self] in
                 self?.isShown = true
+                self?.restoreParked()
                 self?.recordAskedField()
             }
         }

@@ -28,14 +28,21 @@ extension SpotsModel {
         session = PanelSession(visit: kept.visit)
         guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
         guard let parked = kept.parked else { return }
-        if openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) {
-            holdsVisit = true
+        if openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) { restoring = parked }
+        if !searchText.isEmpty || !parked.sheetQuery.isEmpty { textSelections += 1 }
+    }
+
+    func restoreParked() {
+        guard let parked = restoring else { return }
+        restoring = nil
+        guard isShown, openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) else { return }
+        asOnePress {
+            isRestoringVisit = true
             flow = parked.flow
-            holdsVisit = false
+            isRestoringVisit = false
             show(page, moving: false)
             if !parked.sheetQuery.isEmpty { sheets[page.spot]?.search(parked.sheetQuery) }
         }
-        if !searchText.isEmpty { textSelections += 1 }
     }
 
     private func startClean() {
@@ -52,7 +59,6 @@ extension SpotsModel {
     }
 
     func noteFlow(from old: Flow) {
-        guard !holdsVisit else { return }
         guard !flow.pages.isEmpty else {
             if !old.pages.isEmpty { commitVisit() }
             return
@@ -67,7 +73,7 @@ extension SpotsModel {
     }
 
     func noteQuery() {
-        guard !holdsVisit, !query.isEmpty, flow.pages.isEmpty, session.visit?.place.start == nil else { return }
+        guard !query.isEmpty, flow.pages.isEmpty, session.visit?.place.start == nil else { return }
         if session.visit == nil { startVisit() } else { session.visit?.place.query = query }
     }
 
