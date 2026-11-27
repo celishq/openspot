@@ -10,6 +10,7 @@ enum SpotChoiceMenu {
         for option in options {
             cell.addItem(withTitle: option.title)
             cell.lastItem?.representedObject = option.id
+            cell.lastItem?.image = image(of: option.icon)
         }
         let chosen = options.firstIndex { $0.id == value } ?? 0
         cell.selectItem(at: chosen)
@@ -17,5 +18,23 @@ enum SpotChoiceMenu {
         cell.performClick(withFrame: frame, in: content)
         guard cell.indexOfSelectedItem != chosen, let id = cell.selectedItem?.representedObject as? String else { return }
         choose(id)
+    }
+
+    private static func image(of icon: Icon?) -> NSImage? {
+        switch icon {
+        case .file(let path):
+            guard let picture = SpotIconStore.shared.cachedNative(path, pixels: SpotTokens.choiceMenuPixels) else { return nil }
+            let side = SpotTokens.choiceMenuIcon
+            let whole = side / IconBody.share
+            let frame = CGRect(x: 0, y: 0, width: side, height: side).insetBy(dx: (side - whole) / 2, dy: (side - whole) / 2)
+            return NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
+                NSGraphicsContext.current?.cgContext.draw(picture, in: frame)
+                return true
+            }
+        case .symbol(let name):
+            return NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        default:
+            return nil
+        }
     }
 }

@@ -110,7 +110,6 @@ known_apps='com.anthropic.claudefordesktop	Claude
 com.openai.codex	Codex
 com.todesktop.230313mzl4w4u92	Cursor
 com.exafunction.windsurf	Windsurf
-dev.zed.Zed	Zed
 com.microsoft.VSCode	VS Code'
 
 # The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, and the
@@ -279,11 +278,17 @@ agent_options() {
   done
 }
 
-# Prints an option of the place choice for each place of the agent $1.
+# Prints an option of the place choice for each place of the agent $1, with the icon of the app it opens.
 place_options() {
-  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a { print $3 "|" $4 }' | while IFS='|' read -r id name; do
+  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a { print $3 "|" $4 "|" $5 }' | while IFS='|' read -r id name opens; do
     printf '\noption=%s\n' "$id"
     openspot_kv title "$name"
+    case $id in
+      openspot) icon=${OPENSPOT_CORE%%.app/*}.app ;;
+      term-*) icon=$(app_path "$opens") ;;
+      *) icon=$opens ;;
+    esac
+    [ ! -d "$icon" ] || openspot_kv icon "$icon"
   done
 }
 

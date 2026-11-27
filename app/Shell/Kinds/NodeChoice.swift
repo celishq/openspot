@@ -91,16 +91,29 @@ private struct ChoiceDrawing: View {
     }
 
     private func menu(_ options: [SpotPart.Option], value: String?) -> some View {
-        HStack(spacing: SpotTokens.choiceChevronGap) {
-            Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
-                .font(SpotType.detail)
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(1)
-            Image(systemName: "chevron.up.chevron.down")
-                .font(SpotType.mark)
-                .modifier(SpotSecondaryText())
+        let chosen = options.first { $0.id == value } ?? options.first
+        return HStack(spacing: SpotTokens.partLineGap) {
+            if let icon = chosen?.icon {
+                SpotAttachmentCard(chip: AttachmentChip(source: part.id, app: nil, look: AttachmentChip.Look(icon), state: .unread), showsBadge: false, isQuiet: false)
+                    .scaleEffect(SpotTokens.choiceCardScale)
+                    .frame(width: SpotTokens.choiceCard, height: SpotTokens.choiceCard)
+            }
+            HStack(spacing: SpotTokens.choiceChevronGap) {
+                Text(chosen?.title ?? "")
+                    .font(SpotType.detail)
+                    .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(SpotType.mark)
+                    .modifier(SpotSecondaryText())
+            }
         }
         .fixedSize()
+        .task(id: options) {
+            for case .file(let path)? in options.map(\.icon) {
+                _ = await SpotIconStore.shared.native(path, pixels: SpotTokens.choiceMenuPixels)
+            }
+        }
         .accessibilityHidden(true)
         .overlay {
             GeometryReader { room in

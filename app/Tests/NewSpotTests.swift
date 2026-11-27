@@ -73,6 +73,7 @@ final class NewSpotTests: BuiltInCase {
         let places = options(of: "place", in: output.parts)
         XCTAssertEqual(places.first?.title, "Openspot")
         XCTAssertEqual(places.first { $0.id == "app-codex" }?.title, "ChatGPT", "\(places)")
+        XCTAssertEqual(places.first { $0.id == "app-codex" }?.icon, .file(app.path))
     }
 
     func testAnEditorWithClaudeCodeIsAnAppThatTheNextOpenFindsWhileTheSheetShowsTheKeptList() async throws {

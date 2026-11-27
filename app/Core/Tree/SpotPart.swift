@@ -4,12 +4,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public struct Option: Equatable, Sendable {
         public let id: String
         public let title: String
-        public let icon: String?
+        public let icon: Icon?
 
         public init(id: String, title: String, icon: String? = nil) {
             self.id = id
             self.title = title
-            self.icon = icon
+            self.icon = Icon(text: icon)
         }
     }
 
