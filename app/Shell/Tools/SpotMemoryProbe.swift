@@ -5,7 +5,7 @@ import OpenspotCore
 @MainActor
 final class SpotMemoryProbe {
     private static let action = "memory"
-    private static let settle: Duration = .seconds(8)
+    private static let settle: Duration = .seconds(15)
     private static let pause: Duration = .seconds(4)
     private static let megabyte = 1_048_576.0
 

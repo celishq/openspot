@@ -55,6 +55,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var appearanceWatch: NSKeyValueObservation?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
+    private static let launchSettles: TimeInterval = 10
     private var isLaunched = false
     private var showsAtLaunch = false
     private var openedAtLaunch: [URL] = []
@@ -132,6 +133,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             guard let self else { return }
             SpotSheetWarmth.draw()
             update?.start()
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSettles) { malloc_zone_pressure_relief(nil, 0) }
             if isFirstLaunch {
                 Task { await self.model.beginFirstLaunch() }
             } else {
