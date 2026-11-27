@@ -27,6 +27,8 @@ final class SpotMemoryProbe {
             await measure("settings") { _ = self.model.openSettings() }
             await measure("store") { Task { _ = await StoreWindow.show(model: self.model, id: nil, search: nil) } }
             await measure("playground") { Task { await SpotPlayground.show(path: nil) } }
+            await measure("settings again") { _ = self.model.openSettings() }
+            await measure("store again") { Task { _ = await StoreWindow.show(model: self.model, id: nil, search: nil) } }
             FileManager.default.createFile(atPath: output, contents: Data((lines.joined(separator: "\n") + "\n").utf8))
             exit(0)
         }

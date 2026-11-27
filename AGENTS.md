@@ -300,7 +300,7 @@ interaction.
 make verify                # the checks in scripts/check-*.sh, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
-make memory N=3           # reads the footprint of a Release app at idle, and with Settings, the Store and the Playground open and closed, 3 runs; fails when the last close is over BUDGET MB (100)
+make memory N=3           # reads the footprint of a Release app at idle, and with Settings, the Store and the Playground open and closed, 3 runs; fails when the last close is over BUDGET MB (85)
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before

@@ -7,6 +7,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var id = ""
     private var isPresent = false
     var takesEscape: () -> Bool = { false }
+    var closed: () -> Void = {}
     private var declared: CGSize?
     private var book: SettingsBook?
     private var sidebar: CGFloat?
@@ -83,6 +84,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         AppPresence.close()
         book?.closed()
         if model?.runs.floating.contains(id) == true { model?.land(id) }
+        closed()
     }
 
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {

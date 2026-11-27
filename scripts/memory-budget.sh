@@ -16,5 +16,5 @@ for run in $(seq "${1:-1}"); do
 done
 for run in "$out"/runs/*.txt; do awk -F '\t' '{ printf "%-18s %7s MB\n", $1, $2 }' "$run"; done
 closed=$(for run in "$out"/runs/*.txt; do tail -1 "$run" | cut -f2; done | sort -n | awk '{ v[NR] = $1 } END { print v[int((NR + 1) / 2)] }')
-echo "after the last close $closed MB, budget ${BUDGET:-100} MB"
-awk -v closed="$closed" -v budget="${BUDGET:-100}" 'BEGIN { exit !(closed <= budget) }'
+echo "after the last close $closed MB, budget ${BUDGET:-85} MB"
+awk -v closed="$closed" -v budget="${BUDGET:-85}" 'BEGIN { exit !(closed <= budget) }'
