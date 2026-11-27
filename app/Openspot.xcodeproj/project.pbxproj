@@ -825,6 +825,7 @@
 		A9C97B0DA510DF11D6919F62 /* ThemeFolderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9941B37470A6A9A7FF6C0E3C /* ThemeFolderTests.swift */; };
 		A9F5582B88F7FEA8BE8F0308 /* SpotWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFA6717BC498DBE732137A5 /* SpotWindow.swift */; };
 		A9F92063144FB9AD42AD87AC /* ToastFix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57E0A35CA5EE202ED05736C1 /* ToastFix.swift */; };
+		AA09FFAC6F6FBBBF7DCECC5C /* SpotPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2779A2431723347DEE5EB1D1 /* SpotPlace.swift */; };
 		AA0BB273067D625C24342E67 /* SpotShakeWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD6B476248666E82D089A11 /* SpotShakeWatch.swift */; };
 		AA50A8225AB66EFA68C0B5C6 /* SpotArrangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28967D3DD023A8C8DBA1E85 /* SpotArrangeView.swift */; };
 		AA7FD8F4717C6F8C2AD8039A /* NodeLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21C778F5CE80AD4C32647F56 /* NodeLook.swift */; };
@@ -1554,6 +1555,7 @@
 		26873FF3438F703F6D50E357 /* SheetPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetPage.swift; sourceTree = "<group>"; };
 		26F10F9EEBA011739F695FDE /* KeyWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyWidth.swift; sourceTree = "<group>"; };
 		273FB2EF365B1DEA1351117D /* SpotVerbTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotVerbTests.swift; sourceTree = "<group>"; };
+		2779A2431723347DEE5EB1D1 /* SpotPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlace.swift; sourceTree = "<group>"; };
 		2783D4EFCAFAC78D4EFF7F8B /* ThemeColor+AppKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ThemeColor+AppKit.swift"; sourceTree = "<group>"; };
 		28C2AEB01DA943B7F8FEB27E /* BoxLayout+Grid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BoxLayout+Grid.swift"; sourceTree = "<group>"; };
 		2906D300745D42A5031C864A /* Mac+Guide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mac+Guide.swift"; sourceTree = "<group>"; };
@@ -3999,6 +4001,7 @@
 				4D72C872686AE22245283CC7 /* SettingsPlace.swift */,
 				823A34F7F0F2D72AF91C0EF8 /* SettingsStop.swift */,
 				85457306A1B1B75E9C196118 /* SettingValue.swift */,
+				2779A2431723347DEE5EB1D1 /* SpotPlace.swift */,
 				D45B1119621517187A646E37 /* SpotRows.swift */,
 				B6A5C60FCC3E77BF84221036 /* SpotStandings.swift */,
 			);
@@ -5569,6 +5572,7 @@
 				8E3D22DBF0EFCCAC1AC7A984 /* SpotPackage.swift in Sources */,
 				E74ACEE267FABBD488685DF8 /* SpotPart.swift in Sources */,
 				2553BFC17CDD06E0551C27EE /* SpotPin.swift in Sources */,
+				AA09FFAC6F6FBBBF7DCECC5C /* SpotPlace.swift in Sources */,
 				2128D97AE61D28977C35A9C1 /* SpotPlacement.swift in Sources */,
 				B1BF941FFCAC264EAC75BF93 /* SpotPrompt.swift in Sources */,
 				CA4202C09A421EEC002550F3 /* SpotReadiness.swift in Sources */,

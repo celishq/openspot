@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SettingsPlacePicture: View {
-    let place: String
+    let place: SpotPlace
     let spot: Spot
     let chip: AttachmentChip?
     let isOn: Bool
@@ -11,9 +11,9 @@ struct SettingsPlacePicture: View {
         ZStack {
             SpotTheme.highlight.opacity(SpotTheme.fill)
             switch place {
-            case SpotRows.menuBarKey: menuBar
-            case SpotRows.windowKey: window
-            default: field
+            case .searchField: field
+            case .menuBar: menuBar
+            case .window: window
             }
         }
         .frame(width: SpotTokens.settingsPlaceWidth, height: SpotTokens.settingsPlaceHeight)

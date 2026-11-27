@@ -7,24 +7,7 @@ public struct SpotRows: Equatable, Sendable {
         let icon: String
     }
 
-    public static let menuBarKey = "menubar"
-    public static let windowKey = "window"
-    static let menuBarIcon = "menubar.rectangle"
-    static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
-    static let attachmentIcon = "paperclip"
-    static let attachmentTitle = "Show beside the search field"
-    static let attachmentLine = "When the panel opens, what this spot reads shows on the right of the search field. Press Tab to hand it to a spot."
-    static let placeKeys = [ReservedSetting.attachment, menuBarKey, windowKey]
-
-    public static func placeName(of key: String) -> String? {
-        switch key {
-        case ReservedSetting.attachment: "Search Field"
-        case menuBarKey: "Menu Bar"
-        case windowKey: "Window"
-        default: nil
-        }
-    }
 
     public let spot: String
     let fields: [Manifest.Setting]
@@ -54,17 +37,25 @@ public struct SpotRows: Equatable, Sendable {
                 )
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
-        let attachmentRow = SettingRow(spot: spot, name: name, key: ReservedSetting.attachment, title: Self.attachmentTitle, value: String(!config.hidesAttachment(of: spot)), kind: .toggle, section: nil, icon: Self.attachmentIcon, detail: Self.attachmentLine)
-        let sourceRows = isAttachmentSource ? [attachmentRow] : []
-        let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
-        let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
-        let placeRows = showsInMenuBar ? [menuBarRow, windowRow] : []
-        return keyRows + fieldRows + keptRows + sourceRows + placeRows
+        let placeRows = places.map { place in row(place.key, place.title, String(isShown(in: place, config)), .toggle, place.icon) }
+        return keyRows + fieldRows + keptRows + placeRows
     }
 
     private static func kind(of field: Manifest.Setting) -> SettingRow.Kind {
         if !field.options.isEmpty || field.parameter.type.kind == .choice { return .choice }
         return field.parameter.type.kind == .bool ? .toggle : .field
+    }
+
+    private var places: [SpotPlace] {
+        SpotPlace.allCases.filter { $0 == .searchField ? isAttachmentSource : showsInMenuBar }
+    }
+
+    private func isShown(in place: SpotPlace, _ config: Config) -> Bool {
+        switch place {
+        case .searchField: !config.hidesAttachment(of: spot)
+        case .menuBar: config.arrangement.menuBar.contains(spot)
+        case .window: isWindow(in: config)
+        }
     }
 
     private func isWindow(in config: Config) -> Bool {
