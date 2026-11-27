@@ -1,23 +1,49 @@
 import Foundation
 
 public struct SpotItem: Equatable, Sendable {
+    private final class Extras: Equatable, Sendable {
+        let hides: [String]?
+        let shortcut: String?
+        let file: String?
+        let fields: [TextBlock.Field]
+        let card: SpotState?
+        let openTitle: String?
+        let move: FlowMove?
+        let peek: [TextBlock]
+        let number: NumberReading?
+
+        init?(hides: [String]?, shortcut: String?, file: String?, fields: [TextBlock.Field], card: SpotState?, openTitle: String?, move: FlowMove?, peek: [TextBlock], number: NumberReading?) {
+            guard hides != nil || shortcut != nil || file != nil || !fields.isEmpty || card != nil || openTitle != nil || move != nil || !peek.isEmpty || number != nil else { return nil }
+            self.hides = hides
+            self.shortcut = shortcut
+            self.file = file
+            self.fields = fields
+            self.card = card
+            self.openTitle = openTitle
+            self.move = move
+            self.peek = peek
+            self.number = number
+        }
+
+        static func == (left: Extras, right: Extras) -> Bool {
+            left === right || left.hides == right.hides && left.shortcut == right.shortcut && left.file == right.file && left.fields == right.fields
+                && left.card == right.card && left.openTitle == right.openTitle && left.move == right.move && left.peek == right.peek && left.number == right.number
+        }
+    }
+
     public let title: String
     public let subtitle: String?
     public let run: String
     public let picture: Icon?
     public let place: String?
-    public let hides: [String]?
     public let keywords: [String]
-    public let shortcut: String?
     public let records: Bool
     public let takesShake: Bool
     public let isOn: Bool
     public let isToggle: Bool
     public let tone: MetricValue.Tone?
-    public let file: String?
-    public let fields: [TextBlock.Field]
-    public let card: SpotState?
     public let pin: Pin?
+    private let extras: Extras?
 
     public enum Pin: String, Sendable {
         case top, bottom
@@ -26,13 +52,19 @@ public struct SpotItem: Equatable, Sendable {
     public var isPinned: Bool {
         pin != nil
     }
-    public let openTitle: String?
     public let staysOnPick: Bool
-    public let move: FlowMove?
     public let section: String?
-    public let peek: [TextBlock]
-    public let number: NumberReading?
     public let showsWords: Bool
+
+    public var hides: [String]? { extras?.hides }
+    public var shortcut: String? { extras?.shortcut }
+    public var file: String? { extras?.file }
+    public var fields: [TextBlock.Field] { extras?.fields ?? [] }
+    public var card: SpotState? { extras?.card }
+    public var openTitle: String? { extras?.openTitle }
+    public var move: FlowMove? { extras?.move }
+    public var peek: [TextBlock] { extras?.peek ?? [] }
+    public var number: NumberReading? { extras?.number }
 
     public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true, peek: [TextBlock] = []) {
         self.title = title
@@ -40,25 +72,17 @@ public struct SpotItem: Equatable, Sendable {
         self.run = run
         self.picture = picture
         self.place = place
-        self.hides = hides
         self.keywords = keywords
-        self.shortcut = shortcut
         self.records = records
         self.takesShake = takesShake
         self.isOn = isOn
         self.isToggle = isToggle
         self.tone = tone
-        self.file = file
-        self.fields = fields
-        self.card = card
         self.pin = pin
-        self.openTitle = openTitle
         self.staysOnPick = staysOnPick
-        self.move = move
         self.section = section
-        self.peek = peek
-        self.number = number
         self.showsWords = showsWords
+        extras = Extras(hides: hides, shortcut: shortcut, file: file, fields: fields, card: card, openTitle: openTitle, move: move, peek: peek, number: number)
     }
 
     var carried: [TextBlock.Field] {
