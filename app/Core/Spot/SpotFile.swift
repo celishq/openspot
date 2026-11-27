@@ -2,6 +2,7 @@ import Foundation
 
 public struct SpotFile: Equatable, Sendable {
     public static let inlineExtension = "js"
+    static let editsSpots = "spots"
 
     public let id: String
     public let spots: [Spot]
@@ -71,8 +72,7 @@ public struct SpotFile: Equatable, Sendable {
         if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
             throw SpotError.fault("\(name) has `source = [\"\(source)\"]`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source = [\"model\"]`.")
         }
-        let edits = manifest.edits.flatMap(SpotEdits.init(rawValue:))
-        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\" or edits = \"attachments\".") }
+        guard manifest.edits == nil || manifest.edits == Self.editsSpots else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\".") }
         let starts = manifest.starts.flatMap(SpotStart.init(rawValue:))
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
@@ -100,7 +100,7 @@ public struct SpotFile: Equatable, Sendable {
             uses: uses,
             keywords: manifest.keywords,
             sample: Self.sample(beside: url),
-            edits: edits,
+            editsSpots: manifest.edits == Self.editsSpots,
             starts: starts
         )
         command.actions = manifest.actions

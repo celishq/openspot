@@ -17,6 +17,7 @@ public final class SpotRun {
         case refused(String?)
         case done
         case attachment(AttachmentValue)
+        case attachmentFailed(String)
     }
 
     public enum ShowNeed: Sendable {

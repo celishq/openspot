@@ -49,6 +49,12 @@ public struct AttachmentStack: Equatable, Sendable {
         settle()
     }
 
+    mutating func fail(_ source: String, _ text: String, look own: AttachmentChip.Look?) {
+        guard !chips.contains(where: { $0.source == source }) else { return mark(source, .failed(text)) }
+        chips.append(AttachmentChip(source: source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: own), state: .failed(text)))
+        settle()
+    }
+
     mutating func mark(_ source: String, _ state: AttachmentChip.State) {
         guard let index = chips.firstIndex(where: { $0.source == source }), chips[index].state != state else { return }
         chips[index].state = state

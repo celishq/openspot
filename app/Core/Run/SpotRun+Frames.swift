@@ -52,6 +52,7 @@ extension SpotRun {
             changeReading { $0.markStale() }
             answerArrived()
             if reports { fail(error, tells: tells) }
+            if reports, spot.isAttachmentSource, let failure { onReport(.attachmentFailed(failure)) }
         case .answer(let query):
             takeAnswers([], to: query)
         case .search(let query):

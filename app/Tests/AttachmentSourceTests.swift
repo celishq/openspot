@@ -228,4 +228,23 @@ final class AttachmentSourceTests: AttachmentCase {
 
         XCTAssertEqual(log("finder-log"), [])
     }
+
+    func testASourceWhoseReadFailsAtTheOpenShowsAFailedChipThatOpensItsSettings() async throws {
+        let refusal = "Openspot can't read the selected text. Allow it in Openspot's settings."
+        try taker(takes: "'text'")
+        try script("copy", toml: "title = 'copy'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = true", """
+        case "$1" in
+          show) echo "\(refusal)" >&2; exit 1 ;;
+        esac
+        """)
+
+        await open()
+
+        try await wait("the failed chip") { self.chips.map(\.state) == [.failed(refusal)] }
+        XCTAssertEqual(host.notes, [])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
+        model.runSelected()
+
+        XCTAssertEqual(model.settingsBook.page, .spotOf("copy"))
+    }
 }
