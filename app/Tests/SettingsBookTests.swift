@@ -49,12 +49,11 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.rows.groups(of: "tab").first { $0.id == SettingRows.placesGroup }?.rows.first?.key, "attachment")
         XCTAssertEqual(SpotPlace(rawValue: "attachment"), .searchField)
         XCTAssertEqual(SpotPlace.searchField.name, "Search Field")
-        XCTAssertEqual(standing.attachmentNeeds, [.accessibility, .automation])
-        XCTAssertEqual(standing.accessUses.map(\.id), [.clipboard])
+        XCTAssertEqual(standing.accesses, [.accessibility, .automation])
         XCTAssertEqual(try row("tab/attachment").title, "Show beside the search field")
         XCTAssertNil(try row("tab/attachment").detail)
         XCTAssertEqual(SpotPlace.searchField.info, "When the panel opens, what this spot reads shows on the right of the search field. Press Tab to hand it to a spot.")
-        XCTAssertEqual(standing.attachmentChip?.look, .symbol("safari"))
+        XCTAssertEqual(standing.spot.attachmentLook, .symbol("safari"))
     }
 
     func testTheFactsHoldEveryAccessSpotRowThemeAndTheAccount() async throws {
@@ -69,6 +68,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.spots.standing("cups")?.readiness, .access)
         XCTAssertEqual(book.spots.standing("cups")?.missing, [.screen])
         XCTAssertEqual(book.spots.standing("cups")?.uses.first { $0.id == .screen }?.needs, [.screen])
+        XCTAssertEqual(book.spots.standing("cups")?.accesses, [.screen])
         XCTAssertFalse(book.spots.all.contains { $0.id.hasPrefix("openspot/") })
         XCTAssertEqual(try row("openspot/panel-key").kind, .key)
         XCTAssertEqual(try row("openspot/panel-key").value, "ctrl+space")

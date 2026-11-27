@@ -307,7 +307,7 @@ public struct Spot: Equatable, Sendable {
         header.chipActions
     }
 
-    var attachmentLook: AttachmentChip.Look? {
+    public var attachmentLook: AttachmentChip.Look? {
         fileIcon.map(AttachmentChip.Look.file) ?? (symbol.isEmpty ? nil : .symbol(symbol))
     }
 

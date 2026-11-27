@@ -14,26 +14,10 @@ extension SettingsView {
         }
     }
 
-    func accessLine(_ access: AccessList.Entry) -> some View {
-        row(open: .accessOf(access.id)) {
-            SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
-            Text(access.id.title)
-                .lineLimit(1)
-            Spacer(minLength: SpotTokens.settingsTrailingGap)
-            if access.isAllowed {
-                Text(access.status.word).foregroundStyle(.secondary)
-            } else {
-                Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
-                Button("Allow") { act { await $0.allow(access: access.id) } }
-            }
-            chevron
-        }
-    }
-
     private func placeTile(_ row: SettingRow, _ place: SpotPlace, of standing: SpotStanding) -> some View {
         let isOn = book.value(of: row).isOn
         return VStack(spacing: SpotTokens.settingsLookWords) {
-            SettingsPlacePicture(place: place, spot: standing.spot, chip: standing.attachmentChip, isOn: isOn)
+            SettingsPlacePicture(place: place, spot: standing.spot, isOn: isOn)
                 .clipShape(SpotRoundShape(radius: SpotTokens.settingsPlaceRadius))
                 .contentShape(Rectangle())
                 .onTapGesture { act { await $0.set(row, on: !isOn) } }

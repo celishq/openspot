@@ -16,9 +16,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     public let spot: Spot
     public let readiness: SpotReadiness
     public let uses: [UseNeeds]
-    public let attachmentNeeds: [MacAccess]
-    public let attachmentChip: AttachmentChip?
-    public let accessUses: [UseNeeds]
+    public let accesses: [MacAccess]
     public let missing: [MacAccess]
     public let refused: [SpotUse]
     let needs: Set<MacAccess>
@@ -44,11 +42,7 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
         self.byUse = byUse.sorted { $0.id.rawValue < $1.id.rawValue }
         let uses = declared.map { use in byUse.first { $0.id == use } ?? UseNeeds(id: use, needs: [], maybe: []) }
         self.uses = uses
-        let isSource = spot.isAttachmentSource
-        let read = Set(uses.filter { $0.id == .read }.flatMap { $0.needs + $0.maybe })
-        attachmentNeeds = isSource ? MacAccess.allCases.filter(read.contains) : []
-        attachmentChip = isSource ? AttachmentChip(source: spot.id, app: nil, look: spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol), state: .unread) : nil
-        accessUses = isSource ? uses.filter { ![.attachment, .read].contains($0.id) } : uses
+        accesses = MacAccess.allCases.filter(needs.union(maybe).contains)
         let missing = Self.missing(needs, statuses: statuses)
         let undeclared = Self.undeclared(by: spot, refused: refused)
         readiness = !undeclared.isEmpty ? .review : missing.isEmpty ? .ready : .access

@@ -4,7 +4,6 @@ import SwiftUI
 struct SettingsPlacePicture: View {
     let place: SpotPlace
     let spot: Spot
-    let chip: AttachmentChip?
     let isOn: Bool
 
     var body: some View {
@@ -19,6 +18,10 @@ struct SettingsPlacePicture: View {
         .frame(width: SpotTokens.settingsPlaceWidth, height: SpotTokens.settingsPlaceHeight)
     }
 
+    private var chip: AttachmentChip {
+        AttachmentChip(source: spot.id, app: nil, look: spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol), state: .unread)
+    }
+
     private var shown: Double {
         isOn ? 1 : MotionTokens.hiddenOpacity
     }
@@ -27,10 +30,8 @@ struct SettingsPlacePicture: View {
         HStack(spacing: 0) {
             SpotFieldPrompt.glyph
             Spacer(minLength: 0)
-            if let chip {
-                SpotAttachmentCard(chip: chip, showsBadge: false, isQuiet: false)
-                    .opacity(shown)
-            }
+            SpotAttachmentCard(chip: chip, showsBadge: false, isQuiet: false)
+                .opacity(shown)
         }
         .padding(.horizontal, SpotTokens.attachmentReach)
         .frame(width: SpotTokens.settingsPlaceFieldWidth, height: SpotTokens.layout.fieldHeight)

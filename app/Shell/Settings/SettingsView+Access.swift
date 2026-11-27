@@ -78,4 +78,20 @@ extension SettingsView {
             Button("Allow…") { act { await $0.allow(standing.id) } }
         }
     }
+
+    func accessLine(_ access: AccessList.Entry) -> some View {
+        row(open: .accessOf(access.id)) {
+            SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
+            Text(access.id.title)
+                .lineLimit(1)
+            Spacer(minLength: SpotTokens.settingsTrailingGap)
+            if access.isAllowed {
+                Text(access.status.word).foregroundStyle(.secondary)
+            } else {
+                Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
+                Button("Allow") { act { await $0.allow(access: access.id) } }
+            }
+            chevron
+        }
+    }
 }
