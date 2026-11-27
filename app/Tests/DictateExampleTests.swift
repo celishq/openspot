@@ -92,18 +92,18 @@ final class DictateExampleTests: SampleSpotsCase {
         let script = try await staying(in: folder)
         defer { script.stop() }
         try Data().write(to: folder.appendingPathComponent("data/\(Self.model)"))
-        try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: folder.appendingPathComponent("data/history"), atomically: true, encoding: .utf8)
+        try "item=b\ntitle=Second\nspot=dictate\nat=2026-11-27T10:00:00+01:00\nkind=text\ntext=Second, with a back\\\\slash\n\nitem=a\ntitle=First words\nspot=dictate\nat=2026-11-27T09:00:00+01:00\nkind=text\ntext=First words\n".write(to: folder.appendingPathComponent("timeline"), atomically: true, encoding: .utf8)
 
-        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=1000\n\ncall=3\narg=delete\ninput.item=2000\n\n", until: ["1", "2", "3"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=a\n\ncall=3\narg=delete\ninput.item=b\n\n", until: ["1", "2", "3"])
 
         let first = Array(frames.prefix { FrameRoot(text: $0).end != "1" })
-        XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
+        XCTAssertEqual(rows(first).map(\.run), ["b", "a"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
         XCTAssertEqual(first.map { Frame(text: $0) }.last { !$0.items.isEmpty }?.openTitle, "Copy")
-        XCTAssertEqual(rows(frames).map(\.run), ["1000"])
+        XCTAssertEqual(rows(frames).map(\.run), ["a"])
         XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
-        XCTAssertEqual(try read("data/history", in: folder), "1000\tFirst words\n")
+        XCTAssertEqual(try read("forgotten", in: folder), "b\n")
     }
 
     func testWithNoModelTheSheetOffersTheDownloadWhichLandsWholeWithItsProgressOnTheCard() async throws {
@@ -347,19 +347,5 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(corner, "top 0.9900 842 660 150 32 | top 0.9900 842 660 150 32\n")
         XCTAssertEqual(middle, "left 0.5000 8 275 32 150 | top 0.6000 525 660 150 32\n")
         XCTAssertEqual(old, "bottom 0.5000 425 8 150 32 | bottom 0.5000 425 8 150 32\n")
-    }
-
-    func testTheHistoryKeepsTheLastTenTexts() async throws {
-        let folder = try temporaryFolder()
-        let file = folder.appendingPathComponent("history")
-
-        for index in 0..<13 {
-            _ = try await helper(["remember", file.path, String(1_000 + index), "Text \(index)"])
-        }
-        let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
-
-        XCTAssertEqual(lines.count, 10)
-        XCTAssertEqual(lines.first, "1003000\tText 3")
-        XCTAssertEqual(lines.last, "1012000\tText 12")
     }
 }

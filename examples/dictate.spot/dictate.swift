@@ -3,7 +3,8 @@
 // Openspot builds this file with the Swift files of `dictate/`, and keeps one process while the sheet shows, while the
 // menu bar shows Dictate, or while a dictation or the download of the speech model runs. Each of those two is one call
 // that stays open until it ends. A second press of the Dictate key finishes a dictation, and a second press of the card
-// or of the download item stops it. The texts, the model and the place of the pill stay in the data folder.
+// or of the download item stops it. The texts stay in the timeline, and the model and the place of the pill in the
+// data folder.
 //
 // The speech model loads with the first dictation and stays loaded only while the process runs. Put Dictate in the menu
 // bar to keep it loaded, so that each dictation starts at once.
@@ -11,25 +12,35 @@ import AppKit
 
 let data = URL(fileURLWithPath: ProcessInfo.processInfo.environment["OPENSPOT_DATA"] ?? FileManager.default.currentDirectoryPath)
 let model = data.appendingPathComponent("ggml-large-v3-turbo.bin")
-let history = data.appendingPathComponent("history")
 let whisper = Whisper(model: model.path)
 var dictation: Dictation?
 var download: Download?
 /// The call that holds the dictation or the download that runs.
 var held: String?
+/// The last texts that the timeline holds, newest first.
+var past: [Past] = []
+/// Whether Keep history is on, as the newest call said.
+var keeps = true
 
-/// The past texts, newest first, as `(stamp, text)`.
-func texts() -> [(String, String)] {
-    let lines = ((try? String(contentsOf: history, encoding: .utf8)) ?? "").split(separator: "\n")
-    return lines.reversed().prefix(History.limit).compactMap { line in
-        guard let tab = line.firstIndex(of: "\t") else { return nil }
-        return (String(line[..<tab]), String(line[line.index(after: tab)...]))
+/// Reads the last texts from the timeline.
+func readPast() {
+    if let listed = Tool.output(of: ["openspot", "timeline", "list", "--limit", String(Past.limit)]) { past = Past.entries(in: listed) }
+}
+
+/// Keeps a text that the person dictated in the timeline, and shows it at the top of the sheet at once.
+func remember(_ text: String) {
+    guard keeps else { return }
+    let new = Past(id: "new-\(Int(Date().timeIntervalSince1970 * 1000))", text: Link.value(text), at: Date())
+    past = Array(([new] + past).prefix(Past.limit))
+    Tool.run(["openspot", "timeline", "add", "text=\(text)"]) { code, id, _ in
+        let kept = id.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard code == 0, !kept.isEmpty, let index = past.firstIndex(where: { $0.id == new.id }) else { return }
+        past[index] = Past(id: kept, text: new.text, at: new.at)
     }
 }
 
-/// How long ago a stamp in milliseconds was, such as `5 min ago` or `3 Nov`.
-func age(_ stamp: String) -> String {
-    let date = Date(timeIntervalSince1970: (Double(stamp) ?? 0) / 1000)
+/// How long ago a time was, such as `5 min ago` or `3 Nov`.
+func age(_ date: Date) -> String {
     let seconds = Int(Date().timeIntervalSince(date))
     if seconds < 60 { return "Just now" }
     if seconds < 3600 { return "\(seconds / 60) min ago" }
@@ -51,7 +62,6 @@ func sheet(downloading share: Double? = nil) -> String {
     if let share {
         root.append("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
     }
-    let past = texts()
     var blocks = past.isEmpty ? ["items=items"] : []
     let place = past.isEmpty ? "parent=items\n" : ""
     if !FileManager.default.fileExists(atPath: model.path) {
@@ -66,7 +76,7 @@ func sheet(downloading share: Double? = nil) -> String {
     } else {
         blocks.append("button=press\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
-        blocks += past.map { "item=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+        blocks += past.map { "item=\($0.id)\ntitle=\($0.text)\ndetail=\(age($0.at))" }
     }
     return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }
@@ -122,7 +132,7 @@ func dictate(_ id: String) {
         guard let download else { return fetch(in: id, saying: "Dictate is downloading its speech model of 1.6 GB.") }
         return toast("Dictate is downloading its speech model: \(Int(download.share * 100))%.") { answer(id) }
     }
-    if dictation == nil { dictation = Dictation(whisper: whisper, folder: data, ended: release) }
+    if dictation == nil { dictation = Dictation(whisper: whisper, folder: data, heard: remember, ended: release) }
     held = id
     Link.start(id)
     dictation?.start()
@@ -136,23 +146,26 @@ func answer(_ id: String, _ frame: String? = nil) {
 }
 
 /// Copies a past text.
-func copy(_ stamp: String, in id: String) {
-    guard let text = texts().first(where: { $0.0 == stamp })?.1 else { return answer(id) }
-    Tool.run(["openspot", "clipboard", "copy"], input: text) { code, _, fault in
+func copy(_ item: String, in id: String) {
+    guard let text = past.first(where: { $0.id == item })?.text else { return answer(id) }
+    Tool.run(["openspot", "clipboard", "copy"], input: Link.plain(text)) { code, _, fault in
         toast(code == 0 ? "Copied" : fault.trimmingCharacters(in: .whitespacesAndNewlines)) { answer(id) }
     }
 }
 
-func delete(_ stamp: String) {
-    let lines = ((try? String(contentsOf: history, encoding: .utf8)) ?? "").split(separator: "\n").filter { !$0.hasPrefix("\(stamp)\t") }
-    try? (lines.map { $0 + "\n" }.joined()).write(to: history, atomically: true, encoding: .utf8)
+/// Takes a past text out of the timeline.
+func delete(_ item: String) {
+    past.removeAll { $0.id == item }
+    _ = Tool.output(of: ["openspot", "timeline", "forget", item])
 }
 
 func serve() {
     Link.listen { call in
         let row = call.value("input.item") ?? ""
+        if let setting = call.value("setting.history") { keeps = setting != "false" }
         switch call.arguments.first {
         case "show":
+            readPast()
             answer(call.id, sheet())
         case "dictate":
             dictate(call.id)
@@ -201,9 +214,6 @@ case "place":
     let dropped = PillPlace(pointer: CGPoint(x: x, y: y), in: area)
     func words(_ frame: CGRect) -> String { "\(Int(frame.minX)) \(Int(frame.minY)) \(Int(frame.width)) \(Int(frame.height))" }
     print("\(kept.text) \(words(kept.frame(long: 150, short: 32, in: area))) | \(dropped.text) \(words(dropped.frame(long: 150, short: 32, in: area)))")
-case "remember":
-    guard arguments.count == 5, let time = Double(arguments[3]) else { exit(2) }
-    History(file: URL(fileURLWithPath: arguments[2])).add(arguments[4], at: Date(timeIntervalSince1970: time))
 case "wave":
     let samples = arguments.dropFirst(2).compactMap(Float.init)
     FileHandle.standardOutput.write(Wave(samples: samples, rate: Recording.rate).data)
