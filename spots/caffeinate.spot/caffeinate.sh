@@ -125,7 +125,7 @@ sheet() {
   awake && printf 'item=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'item=custom\ntitle=Custom…\n\n'
+  printf 'item=custom\ntitle=Custom…\nroute=custom\n\n'
   duration 0 'Until turned off'; echo
   printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
@@ -212,13 +212,14 @@ serve() {
   lid_on
   display_on
   item=$(given input.item)
+  [ -n "$item" ] || item=$(given input.route)
   case "$1 $item" in
     'press off')
       release
       openspot toast 'Caffeinate is off'
       printf '%scall=%s\n---\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
-    start* | 'press custom')
+    start* | 'press custom' | 'show custom')
       minutes=$(given input.minutes)
       case $minutes in
         '')

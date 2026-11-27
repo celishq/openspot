@@ -167,16 +167,20 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertNil(sheet.list.all.first { $0.title == "30 minutes" }?.subtitle)
     }
 
-    func testTheCustomRowAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
+    func testTheCustomRowOpensAPageThatAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
         let sheet = try sheet()
+        var forms: [ItemForm] = []
+        sheet.onReport = { if case .form(let form) = $0 { forms.append(form) } }
         try await wait("the custom row") { self.row("custom", in: sheet) != nil }
         let item = try XCTUnwrap(row("custom", in: sheet))
+        guard case .push(_, let route?, _, _)? = item.move else { return XCTFail("Custom… opens no page") }
 
-        guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("Custom… asked with no form") }
-        try await wait("the end of the call that asked") { sheet.calls.isEmpty }
-        var draft = FormDraft(form: form)
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
+        try await wait("the form of the page") { !forms.isEmpty }
+        XCTAssertEqual(forms.first?.fields.map(\.label), ["Minutes"])
+        var draft = FormDraft(form: try XCTUnwrap(forms.first))
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(CommandAction(id: ScriptEntry.press.name, title: item.title), item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: ScriptEntry.press.name, title: item.title), item: nil, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])

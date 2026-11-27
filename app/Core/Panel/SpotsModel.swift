@@ -11,6 +11,7 @@ public final class SpotsModel {
         public let action: CommandAction
         public let item: SpotItem?
         public let openedSheet: Bool
+        public var route: String? = nil
     }
 
     public typealias Target = (entry: Entry, item: SpotItem?)
@@ -660,6 +661,8 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
+        case .form(let form):
+            showPageForm(form, of: id)
         case .attachment(let value):
             takeAttachment(value, of: id)
         case .attachmentFailed(let text):
