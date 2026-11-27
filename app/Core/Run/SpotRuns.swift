@@ -52,9 +52,9 @@ public final class SpotRuns {
     @ObservationIgnored private var grid: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
-    public private(set) var acts: [(id: String, call: ScriptCall)] = []
+    public private(set) var acts: [Work] = []
     public private(set) var workingIDs: Set<String> = []
-    public private(set) var unseenWork: [(id: String, call: ScriptCall)] = []
+    public private(set) var unseenWork: [Work] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
@@ -71,7 +71,7 @@ public final class SpotRuns {
     @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
-    private var finished: WorkCard?
+    private var finished: Work?
     @ObservationIgnored private var finishing: Task<Void, Never>?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
@@ -314,42 +314,38 @@ public final class SpotRuns {
     }
 
     func showActs() {
-        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
-        guard !next.elementsEqual(acts, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
+        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { Work(spot: id, name: sheets[id]?.spot.name ?? id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+        guard next != acts else { return }
         let leaving = shownAct
         acts = next
         if let leaving, !leaving.call.isStopped, !next.contains(where: { $0.call === leaving.call }) {
-            finish(WorkCard(spot: leaving.id, words: words(of: leaving), fill: .full))
+            finish(leaving.done())
         }
-        let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
+        let name = next.first?.name
         let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
         if summary != runningSummary { runningSummary = summary }
-        if next.first?.id != actSpot { actSpot = next.first?.id }
+        if next.first?.spot != actSpot { actSpot = next.first?.spot }
         showWork()
     }
 
     private func showWork() {
         let work = acts.filter { $0.call.isBackground }
-        let ids = Set(work.map(\.id))
+        let ids = Set(work.map(\.spot))
         if ids != workingIDs { workingIDs = ids }
-        let unseen = work.filter { !grid.contains($0.id) }
-        if !unseen.elementsEqual(unseenWork, by: { $0.id == $1.id && $0.call === $1.call }) { unseenWork = unseen }
+        let unseen = work.filter { !grid.contains($0.spot) }
+        if unseen != unseenWork { unseenWork = unseen }
     }
 
-    public var workCard: WorkCard? {
+    public var workCard: Work? {
         if let finished, !shows(finished.spot) { return finished }
-        return shownAct.map { WorkCard(spot: $0.id, words: words(of: $0), fill: $0.call.progress) }
+        return shownAct
     }
 
-    private var shownAct: (id: String, call: ScriptCall)? {
-        acts.first { !shows($0.id) && !$0.call.isBackground }
+    private var shownAct: Work? {
+        acts.first { !shows($0.spot) && !$0.call.isBackground }
     }
 
-    private func words(of act: (id: String, call: ScriptCall)) -> String {
-        act.call.title ?? "Setting up \(sheets[act.id]?.spot.name ?? act.id)"
-    }
-
-    private func finish(_ card: WorkCard) {
+    private func finish(_ card: Work) {
         finished = card
         let start = now()
         finishing?.cancel()

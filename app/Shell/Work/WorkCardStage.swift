@@ -4,6 +4,6 @@ import OpenspotCore
 @MainActor
 @Observable
 final class WorkCardStage {
-    var card: WorkCard?
+    var card: Work?
     var isShown = false
 }

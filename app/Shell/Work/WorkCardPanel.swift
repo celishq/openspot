@@ -19,7 +19,7 @@ final class WorkCardPanel: NSPanel {
         if let card { show(card) } else { hide() }
     }
 
-    private func show(_ card: WorkCard) {
+    private func show(_ card: Work) {
         stage.card = card
         guard !stage.isShown else { return }
         shows += 1

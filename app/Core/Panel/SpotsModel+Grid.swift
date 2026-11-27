@@ -229,11 +229,11 @@ extension SpotsModel {
         runs.runningSummary
     }
 
-    public var workCard: WorkCard? {
+    public var workCard: Work? {
         runs.workCard
     }
 
-    public var unseenWork: [(id: String, call: ScriptCall)] {
+    public var unseenWork: [Work] {
         runs.unseenWork
     }
 
