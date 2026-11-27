@@ -2,6 +2,20 @@ import XCTest
 @testable import OpenspotCore
 
 final class ViewTreeTests: XCTestCase {
+    func testAListRowIsARowAndNoNodeOfTheTree() {
+        let plain = Frame(text: "item=a\ntitle=A\n\nitem=b\ntitle=B\n")
+        XCTAssertEqual(plain.items.map(\.run), ["a", "b"])
+        XCTAssertNil(plain.tree.node("a"))
+
+        let written = Frame(text: "frame=\n\nitems=list\n\nbox=recent\nparent=list\ntitle=Recent\n\nitem=a\nparent=recent\ntitle=A\n\nitem=b\nparent=list\ntitle=B\n")
+        XCTAssertEqual(written.items.map(\.run), ["a", "b"])
+        XCTAssertEqual(written.items.map(\.section), ["Recent", nil])
+        XCTAssertEqual(written.tree.listed, ["recent", "a", "b"])
+        XCTAssertNil(written.tree.node("a"))
+        XCTAssertNil(written.tree.node("b"))
+        XCTAssertNotNil(written.tree.node("recent"))
+    }
+
     private let wifi = """
     frame=
     class=gap-3 p-3
