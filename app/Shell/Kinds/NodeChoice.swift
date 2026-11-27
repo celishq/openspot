@@ -62,6 +62,11 @@ private struct ChoiceDrawing: View {
         case .list(let items, let value):
             list(items, value: value)
                 .overlay(alignment: .topTrailing) { mark.padding(SpotTokens.controlPadding) }
+        case .menu(let options, _) where options.isEmpty:
+            NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
+                SpotWorkMark(call: nil, side: SpotTokens.workMark)
+            }
+            .modifier(NodeTile(isOn: look == .tile))
         case .menu(let options, let value):
             NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
                 menu(options, value: value)

@@ -331,31 +331,34 @@ place_options() {
 }
 
 # Prints the field with the words $1, then the agent and where it works, then Copy prompt with the words $2 and the
-# button that sends.
+# button that sends. While it looks for the agents, the choices hold no option, so they spin, and the buttons are dimmed.
 form() {
   me=$(chosen_agent)
   at=$(chosen_place "$me")
   printf '\nbox=form\nclass=flex-col gap-4 grow\n'
-  printf '\nbox=top\nparent=form\nclass=flex-col gap-1 grow min-h-44\n'
-  printf '\nfield=describe\nparent=top\ntype=multiline\nclass=grow\n'
+  printf '\nbox=top\nparent=form\nclass=flex-col gap-1\n'
+  printf '\nfield=describe\nparent=top\ntype=multiline\nclass=h-32\n'
   openspot_kv placeholder "$placeholder"
   openspot_kv value "$1"
-  if [ -n "${looking-}" ]; then
-    printf '\ntext=looking\nparent=top\nclass=text-secondary\ntitle=Finding agents…\n'
-  elif [ -n "$at" ]; then
+  if [ -n "${looking-}" ] || [ -n "$at" ]; then
+    dim=
+    [ -z "${looking-}" ] || dim=' opacity-40'
     printf '\nbox=with\nparent=top\nclass=flex-col gap-0\n'
     printf '\nchoice=agent\nparent=with\nclass=h-8\ntitle=Agent\nicon=sparkles\nvalue=%s\n' "$me"
-    agent_options
+    [ -n "${looking-}" ] || agent_options
     printf '\nchoice=place\nparent=with\nclass=h-8\ntitle=App\nicon=macwindow\nvalue=%s\n' "$at"
-    place_options "$me"
+    [ -n "${looking-}" ] || place_options "$me"
     [ -z "${live-}" ] || builds_section
+    printf '\nbox=space\nparent=form\nclass=grow\n'
     printf '\nbox=go\nparent=form\nclass=flex-col gap-2 shrink-0\n'
     # A build in Openspot keeps the panel, which shows its progress. One in an app or a terminal hides it, since the work
     # goes on there.
-    printf '\nbutton=%s\nparent=go\ntitle=Build\nclass=bg-accent\nshortcut=cmd+return\n' "$(next_key)"
-    [ "$at" != openspot ] || printf 'close=false\n'
+    printf '\nbutton=%s\nparent=go\ntitle=Build\nclass=bg-accent%s\nshortcut=cmd+return\n' "$(next_key)" "$dim"
+    [ "$at" != openspot ] && [ -z "${looking-}" ] || printf 'close=false\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nshortcut=cmd+shift+return\nclose=false\n' "${2:-Copy prompt}"
+    [ -z "$dim" ] || printf 'class=%s\n' "${dim# }"
   else
+    printf '\nbox=space\nparent=form\nclass=grow\n'
     printf '\nbox=go\nparent=form\nclass=flex-row gap-2\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nclass=grow bg-accent\nshortcut=cmd+return\nclose=false\n' "${2:-Copy prompt}"
   fi

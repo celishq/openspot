@@ -285,6 +285,29 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(try saved("account"), "personal\n")
     }
 
+    func testWhileTheFirstOpenFindsTheAgentsTheWholeFormShowsWithItsChoicesLoading() async throws {
+        let go = root.appendingPathComponent("go")
+        try fake("mdfind", "while [ ! -e '\(go.path)' ]; do sleep 0.05; done")
+        try forgetWays()
+
+        try await TestEnvironment.with([:]) {
+            let runs = SpotRuns(environment: TestEnvironment.values)
+            defer { runs.quit() }
+            runs.panelOpened()
+            let sheet = runs.sheet(for: try newSpot())
+            sheet.open {}
+            let parts = { sheet.panel?.parts ?? [] }
+
+            try await wait("the form while it looks") { parts().contains { $0.id == "agent" } }
+            XCTAssertEqual(parts().map(\.id), ["describe", "agent", "place", "make-0", "copy"])
+            XCTAssertEqual(options(of: "agent", in: parts()), [])
+            XCTAssertEqual(options(of: "place", in: parts()), [])
+
+            FileManager.default.createFile(atPath: go.path, contents: Data())
+            try await wait("the agents") { !self.options(of: "agent", in: parts()).isEmpty }
+        }
+    }
+
     func testAnAgentBeyondClaudeAndCodexShowsWithItsMarkWhenTheShellRunsIt() async throws {
         try fake("pi", "exit 0")
         try fake("defaults", "exit 1")
