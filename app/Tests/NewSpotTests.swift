@@ -194,6 +194,8 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertFalse(toml.contains("state"), toml)
         let calls = try saved("calls")
         XCTAssertTrue(calls.contains("grid push log-run-distance"), calls)
+        XCTAssertTrue(calls.contains("toast --id build-"), calls)
+        XCTAssertTrue(calls.contains("toast --remove build-"), calls)
     }
 
     func testBuildingAgainFromAFailedNewBuildNamesTheSameFolder() async throws {

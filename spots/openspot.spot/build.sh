@@ -28,7 +28,8 @@ moved() {
   openspot emit step build="$1" > /dev/null 2>&1 || true
 }
 
-# Prints a frame that says how far the run is and its step, which the card of New spot shows.
+# Prints a frame that says how far the run is and its step, which the card of New spot shows, and shows the step in
+# the build's toast, which stays until the build ends.
 progress() {
   # The Edit sheet of a spot hears no step of New spot, so its own run draws it again at each step.
   if [ -n "${OPENSPOT_EDIT-}" ]; then
@@ -36,9 +37,11 @@ progress() {
     printf -- '---\n'
     return
   fi
+  step=$(get "$building" step)
+  openspot toast --id "build-$building" "$work ${step:-}" > /dev/null 2>&1 || true
   printf 'frame=\n'
   openspot_kv title "$work"
-  openspot_kv detail "$(get "$building" step)"
+  openspot_kv detail "$step"
   printf 'progress=%s\n\n---\n' "$1"
 }
 
@@ -66,7 +69,7 @@ run() {
   if [ -n "$(get "$1" change)" ]; then work="Changing $name…"; else work='Building a spot…'; fi
   put "$1" pid "$$"
   put "$1" state running
-  trap 'put "$building" state stopped; moved "$building"; exit 0' TERM INT
+  trap 'openspot toast --remove "build-$building" > /dev/null 2>&1; put "$building" state stopped; moved "$building"; exit 0' TERM INT
   put "$1" step 'Starting the agent…'
   put "$1" said ''
   put "$1" end ''
@@ -108,6 +111,7 @@ END
   if [ -z "$failed" ] || [ "$failed" = true ] || ! has_script "$name"; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
     has_script "$name" || [ "$failed" = true ] || said='The agent is done, but made no spot.'
+    openspot toast --remove "build-$1" > /dev/null 2>&1 || true
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
     moved "$1"
@@ -128,6 +132,7 @@ END
 # Says that the spot $2 of the build $1 is ready. It waits at the top of the grid, marked New, and opens only when people
 # open it, so that nothing takes the panel.
 shown() {
+  openspot toast --remove "build-$1" > /dev/null 2>&1 || true
   openspot toast "$2 is ready." > /dev/null 2>&1 || true
 }
 
