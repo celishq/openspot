@@ -68,8 +68,8 @@ run() {
   if is_draft "$name"; then work='Building a spot…'; else work="Changing $name…"; fi
   put "$1" pid "$$"
   put "$1" state running
-  agent=
-  trap '[ -z "$agent" ] || { pkill -TERM -P "$agent"; kill -TERM "$agent"; } 2>/dev/null; openspot toast --remove "build-$build" > /dev/null 2>&1; put "$build" state stopped; moved "$build"; exit 0' TERM INT
+  agent_pid=
+  trap '[ -z "$agent_pid" ] || { pkill -TERM -P "$agent_pid"; kill -TERM "$agent_pid"; } 2>/dev/null; openspot toast --remove "build-$build" > /dev/null 2>&1; put "$build" state stopped; moved "$build"; exit 0' TERM INT
   start='Starting the agent…'
   put "$1" step "$start"
   put "$1" said ''
@@ -95,11 +95,11 @@ run() {
     *) echo "Openspot cannot run $3 with no window." >&2; exit 1 ;;
   esac
   printf '%s' "$words" | in_shell "$line" "$@" > "$log" 2>&1 &
-  agent=$!
+  agent_pid=$!
   began=$(date +%s)
   shown=$start
   fill=3
-  while kill -0 "$agent" 2>/dev/null; do
+  while kill -0 "$agent_pid" 2>/dev/null; do
     sleep 1
     now=$(get "$build" step)
     if [ "$now" = "$start" ] || [ "${now#Working for }" != "$now" ]; then
@@ -112,9 +112,9 @@ run() {
     progress "0.$(printf '%02d' "$fill")"
     moved "$build"
   done
-  wait "$agent"
+  wait "$agent_pid"
   code=$?
-  agent=
+  agent_pid=
   if [ "$code" -ne 0 ] || ! has_script "$name"; then
     if [ "$code" -ne 0 ]; then
       said=$(awk 'NF { last = $0 } END { print last }' "$log" | cut -c 1-160)

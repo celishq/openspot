@@ -488,6 +488,16 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(try saved("opened"), "-t \(spots.spotFile("weather").path)\n")
     }
 
+    func testAChangeOnTheEditSheetKeepsTheChosenAgentWhenItsSheetDrawsAgain() async throws {
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
+        try fake("codex", "cat > /dev/null")
+        try forgetWays()
+
+        let output = Frame(text: try await edit(try editSheet(of: "weather"), "change-0", input: "input.describe=Add a refresh button\nsetting.agent=codex\nsetting.place=openspot\n"))
+
+        XCTAssertEqual(output.parts.first { $0.id == "agent" }?.value, "codex")
+    }
+
     func testCopyPromptOnAnEditSheetCopiesTheChangeOfTheSpotsFileToTheEnd() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
