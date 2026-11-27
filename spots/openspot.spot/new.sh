@@ -88,7 +88,7 @@ spot=
 [ -z "$job" ] || spot=$(get "$job" spot)
 # A spot is made once its folder is there and its spot.toml no longer says it is a draft.
 if [ -n "$spot" ] && [ -z "${OPENSPOT_EDIT-}" ]; then
-  if [ ! -d "$folder/$spot.spot" ] || grep -q '^state *= *"draft"' "$folder/$spot.spot/spot.toml" 2>/dev/null; then spot=; fi
+  if [ ! -d "$folder/$spot.spot" ] || grep -qE "^state *= *[\"']draft[\"']" "$folder/$spot.spot/spot.toml" 2>/dev/null; then spot=; fi
 fi
 
 if [ -n "$job" ]; then

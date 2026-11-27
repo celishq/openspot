@@ -16,7 +16,7 @@ extension SpotsModel {
 
     @concurrent
     nonisolated static func readUsed(_ usage: StatsLog, at date: Date) async -> Set<String> {
-        let days = usage.days(Int(newAge / 86_400), at: date)
+        let days = usage.days(Int(newAge / 86_400) + 1, at: date)
         return Set(days.flatMap { day in day.spots.filter { $0.value.acts > 0 }.keys })
     }
 }

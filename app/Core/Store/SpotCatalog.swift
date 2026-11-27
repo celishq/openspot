@@ -50,7 +50,7 @@ public struct SpotCatalog: Sendable {
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: true, isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { spot in
+            file.spots.first.flatMap { $0.isDraft ? nil : $0 }.map { spot in
                 let copy = lock.flatMap { lock in entries.first { $0.holds(file.id) }.flatMap { SpotUpdate.state(of: $0, in: folder.url, lock: lock) } }
                 return item(spot, id: file.id, isAdded: true, version: copy?.version, copy: copy?.state)
             }

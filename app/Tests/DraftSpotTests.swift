@@ -13,7 +13,7 @@ final class DraftSpotTests: PanelCase {
 
     private func cocoa(state: String = "draft") async throws {
         try script("tea", toml: "title = 'Tea'", "printf 'item=a\\ntitle=A\\n'")
-        try script("cocoa", toml: "title = 'Cocoa'\nstate = \"\(state)\"\n\n[on]\nschedule = [\"0 9 * * *\"]", "printf 'item=a\\ntitle=A\\n'")
+        try script("cocoa", toml: "title = 'Cocoa'\nstate = \"\(state)\"\n\n[on]\nschedule = [\"0 9 * * *\"]\n\n[actions.save]\ntitle = \"Save to Cocoa\"\ninputs.text = { type = \"text\", required = true }", "printf 'item=a\\ntitle=A\\n'")
         takeCalls()
         await model.reload()
     }
@@ -67,5 +67,16 @@ final class DraftSpotTests: PanelCase {
 
         XCTAssertEqual(model.gridSpots().map(\.id), ["tea"])
         XCTAssertEqual(model.pin("cocoa"), .unknown)
+    }
+
+    func testADraftOffersNoActionAndIsNotListedAsYours() async throws {
+        try await cocoa()
+
+        let spot = try XCTUnwrap(model.entries.first { $0.id == "cocoa" }?.spot)
+        XCTAssertTrue(spot.chipActions.isEmpty)
+        XCTAssertTrue(spot.bindings.isEmpty)
+        let revealed = await model.reveal("cocoa")
+        XCTAssertFalse(revealed)
+        XCTAssertFalse(SpotCatalog(folder: model.files.spots, arrangement: SpotChoices(), stores: [], lock: nil).items.contains { $0.id == "cocoa" })
     }
 }

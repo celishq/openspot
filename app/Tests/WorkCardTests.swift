@@ -143,4 +143,17 @@ final class WorkCardTests: SpotRunsCase {
         XCTAssertNil(runs.workCard)
         XCTAssertEqual(told.last?.isEmpty, true)
     }
+
+    func testNoToastShowsForTheSpotThePanelShowsPastItsHold() async throws {
+        try script(body: "printf 'frame=\\ntitle=Building\\n---\\n'\nsleep 30")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.status != nil }
+
+        time += 1 + SpotRuns.cardHold
+
+        try await wait("the act") { !self.runs.acts.isEmpty }
+        XCTAssertTrue(runs.toasted.isEmpty)
+    }
 }

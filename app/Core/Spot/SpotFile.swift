@@ -108,8 +108,8 @@ public struct SpotFile: Equatable, Sendable {
             editsSpots: manifest.edits == Self.editsSpots,
             starts: starts
         )
-        command.actions = manifest.actions
-        command.bindings = manifest.bindings
+        command.actions = isDraft ? [] : manifest.actions
+        command.bindings = isDraft ? [] : manifest.bindings
         command.events = manifest.events
         command.isDraft = isDraft
         self.init(id: id, spots: [command])

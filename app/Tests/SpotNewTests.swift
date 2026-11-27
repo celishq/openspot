@@ -36,6 +36,15 @@ final class SpotNewTests: PanelCase {
         XCTAssertEqual(isNew("tea"), false)
     }
 
+    func testARunThatNoOneOpenedLeavesASpotUnused() async throws {
+        try await drinks()
+
+        try XCTUnwrap(model.runs.sheets["tea"]).trigger(Message("press"), key: "test")
+
+        let used = await SpotsModel.readUsed(model.runs.usage, at: model.runs.now())
+        XCTAssertFalse(used.contains("tea"))
+    }
+
     func testASpotAddedOverAWeekAgoIsNotNew() async throws {
         try await drinks(addedDaysAgo: ["coffee": 8])
 

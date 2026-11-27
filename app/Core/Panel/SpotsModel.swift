@@ -421,7 +421,7 @@ public final class SpotsModel {
             await previous?.value
             let start = kept
             let (next, load, read, allowed) = await Self.read(config, folder, secrets, sheets, lock)
-            usedIDs = await Self.readUsed(runs.usage, at: runs.now())
+            usedIDs.formUnion(await Self.readUsed(runs.usage, at: runs.now()))
             if let read { runs.keptSheets.take(read) }
             self.load = load
             self.allowed = allowed
@@ -493,7 +493,7 @@ public final class SpotsModel {
     }
 
     func showCard(_ id: String) -> Bool {
-        guard let entry = card(id: id) else { return false }
+        guard let entry = card(id: id), !entry.spot.isDraft else { return false }
         closeMenu()
         form = nil
         endEditing(moving: false)

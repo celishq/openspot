@@ -6,10 +6,18 @@ import Observation
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
     public internal(set) var isPanelOpen = false {
-        didSet { if isPanelOpen != oldValue { usage.panel(shown: isPanelOpen) } }
+        didSet {
+            guard isPanelOpen != oldValue else { return }
+            usage.panel(shown: isPanelOpen)
+            showWork()
+        }
     }
-    public private(set) var openID: String?
-    public private(set) var floating: Set<String> = []
+    public private(set) var openID: String? {
+        didSet { if openID != oldValue { showWork() } }
+    }
+    public private(set) var floating: Set<String> = [] {
+        didSet { if floating != oldValue { showWork() } }
+    }
     @ObservationIgnored public private(set) var appearance = Style.Variant.dark
     @ObservationIgnored private var windows: Set<String> = []
     public var dragged = FileKinds() {
@@ -331,8 +339,9 @@ public final class SpotRuns {
     }
 
     private func showWork() {
+        guard !acts.isEmpty || !toasted.isEmpty else { return }
         let time = now()
-        let next = acts.filter { time.timeIntervalSince($0.call.started) >= Self.cardHold }
+        let next = acts.filter { !shows($0.spot) && time.timeIntervalSince($0.call.started) >= Self.cardHold }
         if next != toasted {
             toasted = next
             onToasted(next)

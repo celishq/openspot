@@ -13,7 +13,7 @@ extension SpotRun {
                     return true
                 }
             }
-            acted()
+            if call.isPressed { acted() }
         }
         return link.send(OpenCall(call, started: runs.now()))
     }

@@ -42,16 +42,16 @@ progress() {
   printf 'progress=%s\n\n---\n' "$1"
 }
 
-# Says whether the folder of the spot $1 holds more than its spot.toml.
+# Says whether the folder of the spot $1 holds a script: a file that runs, or a .js file.
 has_script() {
-  ls "$folder/$1.spot" 2>/dev/null | grep -qv '^spot.toml$'
+  find "$folder/$1.spot" -maxdepth 1 -type f \( -perm -u+x -o -name '*.js' \) 2>/dev/null | grep -q .
 }
 
 # Takes the draft off the spot of the new build $1, and puts the spot at the top of the grid.
 publish() {
   [ -z "$was" ] || return 0
   made=$(get "$1" spot)
-  sed -i '' '/^state *= *"draft" *$/d' "$folder/$made.spot/spot.toml"
+  sed -i '' -E "/^state *= *[\"']draft[\"']/d" "$folder/$made.spot/spot.toml"
   openspot grid push "$made" > /dev/null 2>&1 || true
 }
 
