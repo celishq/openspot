@@ -51,9 +51,7 @@ struct SpotsView: View {
                 .modifier(SpotShownFade(isShown: model.isShown))
                 .id(model.grid.columns)
             field(card: card, motion: motion, isGlass: true)
-            if sheetOpen, sheetID != nil {
-                SpotFlowEdges(model: model, rect: sheetRect)
-            }
+            SpotFlowEdges(model: model, rect: sheetRect, isOn: sheetOpen && sheetID != nil)
             if let entry = model.sheetEntry(sheetID) {
                 SpotSheetLayer(
                     model: model,
