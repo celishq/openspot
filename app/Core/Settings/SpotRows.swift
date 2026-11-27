@@ -7,14 +7,24 @@ public struct SpotRows: Equatable, Sendable {
         let icon: String
     }
 
-    static let menuBarKey = "menubar"
-    static let windowKey = "window"
+    public static let menuBarKey = "menubar"
+    public static let windowKey = "window"
     static let menuBarIcon = "menubar.rectangle"
     static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
     static let attachmentIcon = "paperclip"
     static let attachmentTitle = "Show beside the search field"
-    static let attachmentLine = "Tab hands it to a spot."
+    static let attachmentLine = "Tab hands what shows beside the search field to a spot."
+    static let placeKeys = [ReservedSetting.attachment, menuBarKey, windowKey]
+
+    public static func placeName(of key: String) -> String? {
+        switch key {
+        case ReservedSetting.attachment: "Search Field"
+        case menuBarKey: "Menu Bar"
+        case windowKey: "Window"
+        default: nil
+        }
+    }
 
     public let spot: String
     let fields: [Manifest.Setting]

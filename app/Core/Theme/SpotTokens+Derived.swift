@@ -18,12 +18,6 @@ extension SpotTokens {
 
     public static var toastWidest: CGFloat { toastMaxWidth - 2 * toastRoom }
 
-    public static var settingsPreviewCropHeight: CGFloat { CGFloat(layout.fieldHeight) + padding }
-
-    public static var settingsPreviewScale: CGFloat { settingsPreviewHeight / settingsPreviewCropHeight }
-
-    public static var settingsPreviewCrop: CGFloat { settingsPreviewWidth / settingsPreviewScale }
-
     public static var panelWidth: CGFloat { layout.panelWidth }
     public static var panelFrame: CGRect { CGRect(x: 0, y: 0, width: panelWidth, height: panelHeight) }
 

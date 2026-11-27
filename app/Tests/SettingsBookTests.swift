@@ -40,18 +40,18 @@ final class SettingsBookTests: PanelCase {
         try XCTUnwrap(book.rows.row(item), "no row \(item)")
     }
 
-    func testASourceHasAGroupInThePanelThatNamesWhatYouGetAndTheAccessItsReadNeeds() async throws {
+    func testASourceShowsBesideTheSearchFieldAmongItsPlacesAndNamesTheAccessItsReadNeeds() async throws {
         try script("tab", toml: "title = 'Tab'\nicon = 'safari'\ndetail = 'Hand the front tab to a spot'\nuses = ['attachment', 'read', 'clipboard']\n\n[on]\n\"panel.open\" = true", "openspot selection read com.apple.Safari")
 
         await read()
 
         let standing = try XCTUnwrap(book.spots.standing("tab"))
-        XCTAssertEqual(book.rows.groups(of: "tab").first { $0.id == SettingRows.attachmentGroup }?.rows.map(\.key), ["attachment"])
-        XCTAssertFalse(book.rows.groups(of: "tab").contains { $0.id != SettingRows.attachmentGroup && $0.rows.contains { $0.key == "attachment" } })
+        XCTAssertEqual(book.rows.groups(of: "tab").first { $0.id == SettingRows.placesGroup }?.rows.first?.key, "attachment")
+        XCTAssertEqual(SpotRows.placeName(of: "attachment"), "Search Field")
         XCTAssertEqual(standing.attachmentNeeds, [.accessibility, .automation])
         XCTAssertEqual(standing.accessUses.map(\.id), [.clipboard])
         XCTAssertEqual(try row("tab/attachment").title, "Show beside the search field")
-        XCTAssertEqual(try row("tab/attachment").detail, "Tab hands it to a spot.")
+        XCTAssertEqual(try row("tab/attachment").detail, "Tab hands what shows beside the search field to a spot.")
         XCTAssertEqual(standing.attachmentChip?.look, .symbol("safari"))
     }
 
@@ -432,13 +432,14 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testTheFactsSayWhatAPageShowsSoTheWindowOnlyDrawsIt() async throws {
-        try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'\n[settings]\ncity = 'text'", "openspot screen shot")
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'\n[settings]\ncity = 'text'\nkeep = { type = 'bool', title = 'Keep' }", "openspot screen shot")
         accesses.set(.screen, to: .denied)
         await read()
         let cups = try XCTUnwrap(book.spots.standing("cups"))
 
         XCTAssertEqual(book.rows.groups(of: "cups").map(\.id), ["Shortcuts", "Settings", "Where It Shows"])
-        XCTAssertEqual(book.rows.groups(of: "cups")[1].rows.map(\.key), ["city"])
+        XCTAssertEqual(book.rows.groups(of: "cups")[1].rows.map(\.key), ["city", "keep"])
+        XCTAssertEqual(book.rows.groups(of: "cups")[2].rows.map(\.key), ["menubar", "window"])
         XCTAssertEqual(cups.banner?.title, "Cups can’t run yet")
         XCTAssertEqual(cups.banner?.line, "It needs Screen Recording from macOS.")
         XCTAssertEqual(cups.lack, "Needs Screen Recording")

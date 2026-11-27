@@ -9,14 +9,15 @@ extension SettingsView {
                 self.banner(standing, banner.title, banner.line)
             }
             ForEach(book.rows.groups(of: standing.id)) { rows in
-                if rows.id == SettingRows.attachmentGroup {
-                    attachmentGroup(standing, rows)
+                if rows.id == SettingRows.placesGroup {
+                    placesGroup(standing, rows)
                 } else {
                     group(rows.id) { lines(rows.rows) { settingLine($0) } }
                 }
             }
-            if !standing.accessUses.isEmpty {
+            if !standing.accessUses.isEmpty || !standing.attachmentNeeds.isEmpty {
                 group("Access") {
+                    lines(standing.attachmentNeeds.compactMap(book.access.access)) { accessLine($0) }
                     lines(standing.accessUses) { useLine($0) }
                 }
             }
