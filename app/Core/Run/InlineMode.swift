@@ -82,6 +82,9 @@ final class InlineMode: ScriptMode {
         if case .ask(.answer(let query)) = call.request.purpose {
             return run.take(answers: text, to: query, of: call, end, errors: errors)
         }
+        if case .ask(.search(let query)) = call.request.purpose, let text, run.takes(search: text, to: query, of: call, end, errors: errors) {
+            return
+        }
         let first = end
         Task { [weak run, runs, asking] in
             var end = first

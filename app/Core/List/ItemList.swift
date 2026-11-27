@@ -15,6 +15,7 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var perLine = 1
     public private(set) var isWaiting = false
+    private var narrowsWhileWaiting = true
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
     public private(set) var isFinding = false
@@ -74,8 +75,9 @@ public struct ItemList: Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func search(_ text: String) -> Bool {
+    public mutating func search(_ text: String, narrows: Bool = true) -> Bool {
         guard text != query, search != .off else { return false }
+        narrowsWhileWaiting = narrows
         begin(text)
         return true
     }
@@ -323,6 +325,7 @@ public struct ItemList: Equatable, Sendable {
 
     private func onHand() -> [Int]? {
         guard search == .script, isWaiting, !query.isEmpty else { return Array(all.indices) }
+        guard narrowsWhileWaiting else { return nil }
         let matches = SearchQuery(text: query).ranking(searchIndex, among: Array(all.indices)) { weights.weight(of: all[$0].run) }.sorted()
         return matches.isEmpty && !shown.isEmpty ? nil : matches
     }

@@ -76,6 +76,22 @@ extension SpotRun {
         spot.triggers.searchesSheet ? .script : lines.search
     }
 
+    func takes(search text: String, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) -> Bool {
+        let lines = Frame(text: text, kinds: spot.kinds)
+        guard lines.root?.value(RootKey.error.rawValue) == nil, lines.errors.isEmpty else { return false }
+        call.hasAnswer = true
+        if query == list.query {
+            changeList {
+                $0.take(search: Self.search(of: lines, in: spot))
+                $0.take(perLine: lines.columns)
+                $0.answer(lines.items, to: query)
+            }
+            Task { await prepare(firstScreen(of: lines.items), []) }
+        }
+        finish(call, end, errors: errors)
+        return true
+    }
+
     func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers(asCard: spot.triggers.search?.isCard == true), to: query) }
         if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel?.holdsParts != true, !list.hasFailed { return takeRepeat(lines, answers: answers) }

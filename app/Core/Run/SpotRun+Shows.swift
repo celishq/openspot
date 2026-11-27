@@ -42,8 +42,10 @@ extension SpotRun {
     public func search(_ text: String) {
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         if list.search == .local { return find(text) }
-        guard list.search(text), list.search == .script else { return }
+        let isInline = spot.mode == .inline
+        guard list.search(text, narrows: !isInline), list.search == .script else { return }
         if let older = running(Self.searchKey) { stop(older) }
+        if isInline { return ask() }
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
     }
 
