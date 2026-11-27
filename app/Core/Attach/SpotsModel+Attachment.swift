@@ -11,7 +11,7 @@ extension SpotsModel {
         let unread = feeds ? entries.filter { $0.spot.isAttachmentSource && !$0.spot.isAttachmentHidden && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
         endSpread()
         var next = attachments
-        next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
+        next.open(over: front, unread: unread.map { ($0.id, $0.spot.attachmentLook) })
         if next != attachments { attachments = next }
         hideAttachments()
         if wasOn { updateVisible() }
@@ -48,13 +48,13 @@ extension SpotsModel {
     func failAttachment(_ text: String, of id: String) {
         guard entry(id)?.spot.isAttachmentHidden != true else { return }
         var next = attachments
-        next.fail(id, text, look: entry(id).flatMap { Self.look(of: $0.spot) })
+        next.fail(id, text, look: entry(id)?.spot.attachmentLook)
         settle(next, motion: .fade)
     }
 
     private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
         var next = stack
-        if entry(id)?.spot.isAttachmentHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
+        if entry(id)?.spot.isAttachmentHidden != true, cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id)?.spot.attachmentLook) } else { next.remove(id) }
         return next
     }
 
@@ -112,10 +112,6 @@ extension SpotsModel {
             guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return }
             turnAttachment(by: 1)
         }
-    }
-
-    private static func look(of spot: Spot) -> AttachmentChip.Look? {
-        spot.fileIcon.map(AttachmentChip.Look.file) ?? (spot.symbol.isEmpty ? nil : .symbol(spot.symbol))
     }
 
     private func settle(_ stack: AttachmentStack, motion: PanelMotion?) {
@@ -185,7 +181,7 @@ extension SpotsModel {
         guard let id = openSheetID, !isEditing, let value = openItems?.selectedItem.flatMap(AttachmentValue.init(row:)), cards.contains(where: { $0.spot.offers(value) }) else { return false }
         closeSheet(moving: true)
         var next = attachments
-        next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) })
+        next.fill(id, with: value, look: entry(id)?.spot.attachmentLook)
         next.select(id)
         next.spread()
         settle(next, motion: .edit)

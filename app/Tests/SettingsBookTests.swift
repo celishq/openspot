@@ -40,6 +40,20 @@ final class SettingsBookTests: PanelCase {
         try XCTUnwrap(book.rows.row(item), "no row \(item)")
     }
 
+    func testASourceOfAttachmentsHasAnAttachmentGroupWithItsSwitchItsAccessAndWhereItShows() async throws {
+        try script("tab", toml: "title = 'Tab'\nicon = 'safari'\ndetail = 'Hand the front tab to a spot'\nuses = ['attachment', 'read', 'clipboard']\n\n[on]\n\"panel.open\" = true", "openspot selection read com.apple.Safari")
+
+        await read()
+
+        let standing = try XCTUnwrap(book.spots.standing("tab"))
+        XCTAssertEqual(book.rows.groups(of: "tab").first { $0.id == SettingRows.attachmentGroup }?.rows.map(\.key), ["attachment"])
+        XCTAssertFalse(book.rows.groups(of: "tab").contains { $0.id != SettingRows.attachmentGroup && $0.rows.contains { $0.key == "attachment" } })
+        XCTAssertEqual(standing.attachmentAccess.map(\.id), [.read])
+        XCTAssertEqual(standing.accessUses.map(\.id), [.clipboard])
+        XCTAssertEqual(standing.attachmentLine, "It shows on the right of the field when the panel opens. Tab hands it to a spot that takes it.")
+        XCTAssertEqual(standing.attachmentChip?.look, .symbol("safari"))
+    }
+
     func testTheFactsHoldEveryAccessSpotRowThemeAndTheAccount() async throws {
         try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'", "openspot screen shot")
         accesses.set(.screen, to: .denied)

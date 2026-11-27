@@ -41,9 +41,14 @@ public struct SettingRows: Equatable, Sendable {
         all.filter { $0.spot == ReservedSetting.appSpot && $0.section == section }
     }
 
+    public static let attachmentGroup = "Attachment"
+
     public func groups(of spot: String) -> [Group] {
-        let rows = rows(of: spot)
+        let all = rows(of: spot)
+        let attachment = all.filter { $0.key == ReservedSetting.attachment }
+        let rows = all.filter { $0.key != ReservedSetting.attachment }
         let kinds: [(String, Set<SettingRow.Kind>)] = [("Shortcuts", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where It Shows", [.toggle])]
-        return kinds.map { title, kinds in Group(id: title, rows: rows.filter { kinds.contains($0.kind) }) }.filter { !$0.rows.isEmpty }
+        let groups = kinds.map { title, kinds in Group(id: title, rows: rows.filter { kinds.contains($0.kind) }) }
+        return (groups.prefix(1) + [Group(id: Self.attachmentGroup, rows: attachment)] + groups.dropFirst()).filter { !$0.rows.isEmpty }
     }
 }

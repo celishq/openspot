@@ -230,6 +230,7 @@
 		2AB5B6ED966E845D105D361E /* SpotKeyLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA755C8339AB71444925D63 /* SpotKeyLabel.swift */; };
 		2AEBACA463B4CC37D315B94F /* SpotGridDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79DBF3C095A5C2291D9BA03 /* SpotGridDrop.swift */; };
 		2B962C72E61AED17A18D0A60 /* SpotMotionProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FD5E0A2962D925FF02807B /* SpotMotionProbe.swift */; };
+		2BB539DF5301BD2B01339AC3 /* SettingsView+Attachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6618BE188F86DEA7C01BA09 /* SettingsView+Attachment.swift */; };
 		2C2D71376A29A2B49325AB64 /* ScreenCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73F0CFFF6AFC5B9FC56E6574 /* ScreenCaptureTests.swift */; };
 		2C3259497C7461769A6DF03E /* SpotsModel+Standing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A08EA883A347777106423583 /* SpotsModel+Standing.swift */; };
 		2C7306A4301DDC6CA3F60060 /* KeyLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1377603669BA574194C49CA /* KeyLayout.swift */; };
@@ -689,6 +690,7 @@
 		8FC13DAF21465DD5525981D3 /* RunningApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 959B3A8D1390DA4B2F9426D0 /* RunningApp.swift */; };
 		9053273B32FBAD1CDA2C3F8F /* BoxLayout+Grid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C2AEB01DA943B7F8FEB27E /* BoxLayout+Grid.swift */; };
 		906D15BF0B131D0E9D8A73C2 /* ReleaseLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AADBC2B4DBBB3B10D5794 /* ReleaseLog.swift */; };
+		906FF15B08793B2C8A0D1F8D /* SettingsAttachmentPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62883653B29FC8335D312E3B /* SettingsAttachmentPicture.swift */; };
 		909E5189C590961B2C78EE8E /* AccountMarkerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F3F386D9AC82BE8ADF20DB /* AccountMarkerTests.swift */; };
 		90C59F8DF1E217B0FE286D59 /* SlashCommandPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA6367A07B6E3C16A2D890E /* SlashCommandPanelTests.swift */; };
 		90F71976C9E5D087664EAD85 /* PanelMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A617B8D4D83BCF7BC67EABCE /* PanelMotion.swift */; };
@@ -1833,6 +1835,7 @@
 		61A7DE8B0D7A6C8385032724 /* TimelineSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSpotTests.swift; sourceTree = "<group>"; };
 		61D78D44AC947ADB6300778B /* SpotSheetPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPreview.swift; sourceTree = "<group>"; };
 		625B2CFC4C6A745F9456F2D4 /* SpotPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPrompt.swift; sourceTree = "<group>"; };
+		62883653B29FC8335D312E3B /* SettingsAttachmentPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAttachmentPicture.swift; sourceTree = "<group>"; };
 		62B24D36B429CBB0F07FEC1E /* SpotRuns+Timers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Timers.swift"; sourceTree = "<group>"; };
 		62C7BFB5BD886B5504BBD14A /* PageLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLink.swift; sourceTree = "<group>"; };
 		62DE1B0770D13E317B53F6BC /* SymbolsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolsCall.swift; sourceTree = "<group>"; };
@@ -2515,6 +2518,7 @@
 		E63C8158E402FCAD2460BDD2 /* SocketPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketPath.swift; sourceTree = "<group>"; };
 		E63DBCAD07A724225167B899 /* CommandLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLinkTests.swift; sourceTree = "<group>"; };
 		E6574796DA8EE0FC71F50F15 /* SpotSearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSearchText.swift; sourceTree = "<group>"; };
+		E6618BE188F86DEA7C01BA09 /* SettingsView+Attachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView+Attachment.swift"; sourceTree = "<group>"; };
 		E67E13CFE4B49E14BA385775 /* ScreenInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenInput.swift; sourceTree = "<group>"; };
 		E688C02C9D5208381EF35A4B /* OpenspotPower */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotPower; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6EB4FB47A69A5F97F09B75B /* AccessStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessStatus.swift; sourceTree = "<group>"; };
@@ -2857,6 +2861,7 @@
 				2624051E9020D789A5570801 /* LookSpot.swift */,
 				C8A03764FA3752B3375BBB8D /* PublisherCard.swift */,
 				B73F2A6CEF772A766327013C /* SettingsAccountSheet.swift */,
+				62883653B29FC8335D312E3B /* SettingsAttachmentPicture.swift */,
 				ED2436A203F907739FE0AA19 /* SettingsAvatar.swift */,
 				0BC23603E16AABA6127DB9ED /* SettingsExplainer.swift */,
 				41B45A99ABD0FAD9D147AF16 /* SettingsGrantSheet.swift */,
@@ -2865,6 +2870,7 @@
 				E9902008B7FAA8CE1C13F3C4 /* SettingsView.swift */,
 				FF401138B433137556437DED /* SettingsView+Access.swift */,
 				F3FD7A2B72F7B538917567A0 /* SettingsView+Account.swift */,
+				E6618BE188F86DEA7C01BA09 /* SettingsView+Attachment.swift */,
 				D44B9B0F4AEF09FE626F3DE5 /* SettingsView+Look.swift */,
 				069343D360E7E805A8FBCF10 /* SettingsView+Parts.swift */,
 				C7DAB1CCB7D1278AF21F1AA2 /* SettingsView+Rows.swift */,
@@ -5837,6 +5843,7 @@
 				B746176829FA234939E3EB95 /* SampleHost.swift in Sources */,
 				0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */,
 				E5EECE33AF4E21EEC65EA7B0 /* SettingsAccountSheet.swift in Sources */,
+				906FF15B08793B2C8A0D1F8D /* SettingsAttachmentPicture.swift in Sources */,
 				9E5A03F3F3E95182E93C19CC /* SettingsAvatar.swift in Sources */,
 				3EB659B453E791C2E19BA8E9 /* SettingsExplainer.swift in Sources */,
 				F040669722CDCB1A5D768AD7 /* SettingsGrantSheet.swift in Sources */,
@@ -5845,6 +5852,7 @@
 				99F2F9D1B50D5FF9AF8D0479 /* SettingsTile.swift in Sources */,
 				56EF5117F5469B1B91FEF83F /* SettingsView+Access.swift in Sources */,
 				63936CBDA5568B8177BAB763 /* SettingsView+Account.swift in Sources */,
+				2BB539DF5301BD2B01339AC3 /* SettingsView+Attachment.swift in Sources */,
 				A63335466C0096BF7DAB971F /* SettingsView+Look.swift in Sources */,
 				A02FC05CC124EBF46DE64971 /* SettingsView+Parts.swift in Sources */,
 				46D78D063BD3C8B95D3E2934 /* SettingsView+Rows.swift in Sources */,

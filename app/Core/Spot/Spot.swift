@@ -307,6 +307,10 @@ public struct Spot: Equatable, Sendable {
         header.chipActions
     }
 
+    var attachmentLook: AttachmentChip.Look? {
+        fileIcon.map(AttachmentChip.Look.file) ?? (symbol.isEmpty ? nil : .symbol(symbol))
+    }
+
     func offers(_ value: AttachmentValue) -> Bool {
         self.chipActions.contains { $0.fits(value) }
     }

@@ -9,11 +9,15 @@ extension SettingsView {
                 self.banner(standing, banner.title, banner.line)
             }
             ForEach(book.rows.groups(of: standing.id)) { rows in
-                group(rows.id) { lines(rows.rows) { settingLine($0) } }
+                if rows.id == SettingRows.attachmentGroup {
+                    attachmentGroup(standing, rows)
+                } else {
+                    group(rows.id) { lines(rows.rows) { settingLine($0) } }
+                }
             }
-            if !standing.uses.isEmpty {
+            if !standing.accessUses.isEmpty {
                 group("Access") {
-                    lines(standing.uses) { useLine($0) }
+                    lines(standing.accessUses) { useLine($0) }
                 }
             }
         }
@@ -33,7 +37,7 @@ extension SettingsView {
         }
     }
 
-    private func useLine(_ use: SpotStanding.UseNeeds) -> some View {
+    func useLine(_ use: SpotStanding.UseNeeds) -> some View {
         let accesses = use.needs.compactMap(book.access.access)
         let first = accesses.first
         return HStack(spacing: SpotTokens.settingsRowGap) {
