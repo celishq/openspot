@@ -119,9 +119,10 @@ free slot, as `openspot grid pin <id>` does.
 
 ## Hand what you work on to a spot
 
-The Settings page of Selection, Browser Tab and Clipboard has a Search Field tile in Where It
-Shows, which hides or shows the card in the field, and its Access rows show whether macOS lets Openspot read what it needs. `⌘` Return on a
-card in the field opens that page, and so does Return on a card that Openspot may not read yet. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
+When you open the panel, what Selection, Browser Tab and Clipboard read, such as the files you selected in Finder, shows
+as a small stack of cards on the right of the field. On the Settings page of each, the Search Field switch in Where It
+Shows hides or shows its card, and Access shows whether macOS lets Openspot read what it needs. `⌘` Return on a card
+opens that page, and so does Return on a card that Openspot may not read yet. Nothing else
 changes until you press Tab.
 
 | Key        | Does                                                                                  |

@@ -169,8 +169,9 @@ esac
 - When `show` of a `panel.open` source fails, its chip shows why, and Return opens its page in Settings.
 - A chip shows only when a spot has a row for it. A source runs only when some spot has a row for some
   kind.
-- A source stays off the grid and out of the search. The Search Field tile in Where It Shows, on its page in Settings, which hides or shows its chip, and `⌘` Return on its chip opens that page. A hidden source runs no `attachment.pick` and no `show` at the open
-  of the panel, and gives no chip. Its spot stays on. `openspot setting set --spot <id> attachment false` hides it, and
+- A source stays off the grid and out of the search. People hide or show its chip on its page in Settings, as
+  [Hand what you work on to a spot](../../MANUAL.md#hand-what-you-work-on-to-a-spot) says. A hidden source runs no
+  `attachment.pick` and no `show` at the open of the panel, and gives no chip. Its spot stays on. `openspot setting set --spot <id> attachment false` hides it, and
   `openspot setting set --spot <id> attachment true` shows it again.
 
 ## Hand on a row

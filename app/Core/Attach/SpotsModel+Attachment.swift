@@ -61,8 +61,8 @@ extension SpotsModel {
     func endAttachment(of id: String, _ end: ScriptCall.End) {
         guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
         switch end {
-        case .failed(SpotError.timedOut): mark(id, .failed(chip.appName.map { "\($0) didn't answer" } ?? "No answer"))
-        case .failed: mark(id, .failed(sheets[id]?.failure ?? ""))
+        case .failed(SpotError.timedOut): failAttachment(chip.appName.map { "\($0) didn't answer" } ?? "No answer", of: id)
+        case .failed: failAttachment(sheets[id]?.failure ?? "", of: id)
         case .ended: mark(id, .empty(chip.appName.map { "Nothing to attach from \($0)" } ?? "Nothing to attach"))
         case .stopped: break
         }
