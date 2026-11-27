@@ -198,45 +198,99 @@ release() {
   held=
 }
 
-# Prints a section for each terminal, with a row for each program that its shell started, oldest first. A row shows the
-# program and how long it has run, over its command, cut in the middle to keep its start and its end.
+# Reads the processes of the Mac, with lines `place<tab>id<tab>folder<tab>branch` before them, and prints, as `mode`
+# asks, the ids of the rows, or a section for each terminal app with a row for each program that one of its shells
+# started. A row shows the program and how long it has run, over its folder and its branch, or over its command, cut in
+# the middle to keep its start and its end.
+process_awk='
+function base(path) { sub(/ .*/, "", path); sub(/.*\//, "", path); sub(/^-/, "", path); return path }
+function shell(name) { return name ~ /^(zsh|bash|sh|fish|dash|ksh|tcsh|login|tmux|screen)$/ }
+function app(args) { return match(args, /\/[^\/]+\.app\//) ? substr(args, RSTART + 1, RLENGTH - 6) : "" }
+function terminal(p,  steps) {
+  while ((p in command) && steps++ < 64) {
+    if (tty[p] == "??") return app(command[p]) != "" ? app(command[p]) : name[p]
+    p = parent[p]
+  }
+  return ""
+}
+function since(time,  days, parts, n, h, m, s) {
+  days = 0
+  if (index(time, "-")) { days = substr(time, 1, index(time, "-") - 1) + 0; time = substr(time, index(time, "-") + 1) }
+  n = split(time, parts, ":")
+  h = n == 3 ? parts[1] + 0 : 0; m = parts[n - 1] + 0; s = parts[n] + 0
+  if (days) return days "d " h "h"
+  if (h) return h "h " m "m"
+  if (m) return m "m"
+  return s "s"
+}
+function middle(text,  head) {
+  if (length(text) <= width) return text
+  head = int((width - 1) / 2)
+  return substr(text, 1, head) "…" substr(text, length(text) - (width - 1 - head) + 1)
+}
+function place(p,  where, flat) {
+  where = folder[p] == ENVIRON["HOME"] ? "~" : folder[p]
+  sub(/.*\//, "", where)
+  flat = branch[p]
+  gsub(/\//, "-", flat)
+  return flat == "" || flat == where ? where : where " · " branch[p]
+}
+function shown(p) {
+  return owner[p] == me && tty[p] != "??" && !shell(name[p]) && name[p] != "ps" && name[p] != "caffeinate" && shell(name[parent[p]])
+}
+/^place\t/ { split($0, field, "\t"); folder[field[2]] = field[3]; branch[field[2]] = field[4]; next }
+{
+  order[++count] = $1
+  parent[$1] = $2; owner[$1] = $3; tty[$1] = $4; elapsed[$1] = $5
+  args = $0
+  sub(/^ *[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ +/, "", args)
+  command[$1] = args
+  name[$1] = base(args)
+}
+END {
+  for (i = 1; i <= count; i++) {
+    p = order[i]
+    if (!shown(p)) continue
+    if (mode == "ids") { ids = ids (ids == "" ? "" : ",") p; continue }
+    group = terminal(parent[p])
+    if (group == "") group = tty[p]
+    if (!(group in section)) { section[group] = ++groups; title[groups] = group }
+    line = command[p]
+    sub(/^[^ ]*\//, "", line)
+    words = line
+    gsub(/,/, " ", words)
+    rows[section[group]] = rows[section[group]] sprintf("item=pid.%s\nparent=terminal-%d\ntitle=%s · %s\ndetail=%s\nkeywords=%s\n\n", p, section[group], name[p], since(elapsed[p]), middle(p in folder ? place(p) : line), words)
+  }
+  if (mode == "ids") { print ids; exit }
+  for (g = 1; g <= groups; g++) printf "box=terminal-%d\nparent=list\ntitle=%s\n\n%s", g, title[g], rows[g]
+}'
+
+# Tells whether git can run, which the stand-in of `/usr/bin/git` cannot until the developer tools are installed.
+has_git() {
+  found=$(command -v git) || return 1
+  [ "$found" != /usr/bin/git ] || xcode-select -p >/dev/null 2>&1
+}
+
+# Prints a line `place<tab>id<tab>folder<tab>branch` for each process of the ids given, joined by commas, with the
+# branch only when git can read it.
+places() {
+  [ -n "$1" ] || return 0
+  git=
+  ! has_git || git=yes
+  lsof -a -d cwd -p "$1" -Fpn 2>/dev/null | awk '/^p/ { id = substr($0, 2) } /^n/ { print id "\t" substr($0, 2) }' |
+    while IFS='	' read -r id dir; do
+      branch=
+      [ -z "$git" ] || branch=$(git -C "$dir" branch --show-current 2>/dev/null)
+      printf 'place\t%s\t%s\t%s\n' "$id" "$dir" "$branch"
+    done
+}
+
+# Prints the sections of the terminal apps and the rows of their programs, oldest first.
 processes() {
-  ps -U "$(id -u)" -o pid=,ppid=,tty=,etime=,args= 2>/dev/null | sort -k3,3 -k1,1n | awk -v width=34 '
-  function base(path) { sub(/ .*/, "", path); sub(/.*\//, "", path); sub(/^-/, "", path); return path }
-  function shell(name) { return name ~ /^(zsh|bash|sh|fish|dash|ksh|tcsh|login|tmux|screen)$/ }
-  function since(time,  days, parts, n, h, m, s) {
-    days = 0
-    if (index(time, "-")) { days = substr(time, 1, index(time, "-") - 1) + 0; time = substr(time, index(time, "-") + 1) }
-    n = split(time, parts, ":")
-    h = n == 3 ? parts[1] + 0 : 0; m = parts[n - 1] + 0; s = parts[n] + 0
-    if (days) return days "d " h "h"
-    if (h) return h "h " m "m"
-    if (m) return m "m"
-    return s "s"
-  }
-  function middle(text,  head) {
-    if (length(text) <= width) return text
-    head = int((width - 1) / 2)
-    return substr(text, 1, head) "…" substr(text, length(text) - (width - 1 - head) + 1)
-  }
-  {
-    count++
-    pid[count] = $1; parent[count] = $2; tty[count] = $3; etime[count] = $4
-    args = $0
-    sub(/^ *[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ +/, "", args)
-    command[count] = args
-    name[$1] = base(args)
-  }
-  END {
-    for (i = 1; i <= count; i++) {
-      p = pid[i]
-      if (tty[i] == "??" || shell(name[p]) || name[p] == "ps" || name[p] == "caffeinate" || !shell(name[parent[i]])) continue
-      if (tty[i] != last) { printf "box=%s\nparent=list\ntitle=%s\n\n", tty[i], tty[i]; last = tty[i] }
-      line = command[i]
-      sub(/^[^ ]*\//, "", line)
-      printf "item=pid.%s\nparent=%s\ntitle=%s · %s\ndetail=%s\n\n", p, tty[i], name[p], since(etime[i]), middle(line)
-    }
-  }'
+  table=$(ps -A -o pid=,ppid=,uid=,tty=,etime=,args= 2>/dev/null | sort -k4,4 -k1,1n)
+  me=$(id -u)
+  ids=$(printf '%s\n' "$table" | awk -v mode=ids -v me="$me" "$process_awk")
+  { places "$ids"; printf '%s\n' "$table"; } | awk -v mode=rows -v me="$me" -v width=30 "$process_awk"
 }
 
 # Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.

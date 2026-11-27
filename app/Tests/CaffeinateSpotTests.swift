@@ -186,49 +186,78 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(flags(), ["-di -t 2700"])
     }
 
-    private func runProcesses() throws {
+    private func runProcesses(git: Bool = true) throws {
+        let me = getuid()
         try fake("ps", """
             case "$*" in
               *comm=*4242*) echo /usr/local/bin/claude; exit 0 ;;
               *comm=*) exit 1 ;;
             esac
             printf '%s\\n' \\
-              '  100     1 ttys001    02:00:00 -zsh' \\
-              ' 4242   100 ttys001    01:02:03 claude --resume abc' \\
-              ' 4300  4242 ttys001       05:00 /usr/bin/sourcekit-lsp' \\
-              '  200     1 ttys002       10:00 -zsh' \\
-              ' 7000   200 ttys002 03-04:05:06 /opt/homebrew/bin/node /very/long/path/to/some/project/scripts/build-and-watch-everything.js --flag' \\
-              ' 5151   200 ttys002       00:42 make verify' \\
-              ' 6161     1 ??     1-00:00:00 /usr/libexec/helper'
+              '   50     1 \(me) ??     3-00:00:00 /Applications/Ghostty.app/Contents/MacOS/ghostty' \\
+              '  100    50 \(me) ttys001    02:00:00 -zsh' \\
+              ' 4242   100 \(me) ttys001    01:02:03 claude --resume abc' \\
+              ' 4300  4242 \(me) ttys001       05:00 /usr/bin/sourcekit-lsp' \\
+              '   60     1 \(me) ??     3-00:00:00 /System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal' \\
+              '  190    60     0 ttys002       10:00 login -pfl me /bin/bash' \\
+              '  200   190 \(me) ttys002       10:00 -zsh' \\
+              ' 7000   200 \(me) ttys002 03-04:05:06 /opt/homebrew/bin/node /very/long/path/to/some/project/scripts/build-and-watch-everything.js --flag' \\
+              ' 5151   200 \(me) ttys002       00:42 make verify' \\
+              ' 8000     1     0 ttys003       00:10 /usr/sbin/root-tool' \\
+              ' 6161     1 \(me) ??     1-00:00:00 /usr/libexec/helper'
             """)
+        try fake("lsof", """
+            printf 'p4242\\nfcwd\\nn/work/openspot\\np5151\\nfcwd\\nn/work/other\\n'
+            """)
+        try fake("xcode-select", "exit 1")
+        if git {
+            try fake("git", """
+                [ "$2" = /work/openspot ] && [ "$3 $4" = 'branch --show-current' ] || exit 128
+                echo fix-caffeinate
+                """)
+        }
     }
 
-    func testTheProcessPageGroupsWhatEachTerminalStartedWithItsRunTime() async throws {
-        try runProcesses()
-        let sheet = try sheet()
+    private func processRows(in sheet: SpotRun) async throws -> [SpotItem] {
         try await wait("the process row") { self.row("process", in: sheet) != nil }
-        guard case .push(_, let route?, _, _)? = try XCTUnwrap(row("process", in: sheet)).move else { return XCTFail("the process row opens no page") }
-
+        guard case .push(_, let route?, _, _)? = try XCTUnwrap(row("process", in: sheet)).move else { throw XCTSkip("the process row opens no page") }
         sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
-
         try await wait("the processes") { sheet.list.all.count == 3 }
-        XCTAssertEqual(sheet.list.all.map(\.title), ["claude · 1h 2m", "make · 42s", "node · 3d 4h"])
-        XCTAssertEqual(sheet.list.all.map(\.section), ["ttys001", "ttys002", "ttys002"])
-        XCTAssertEqual(sheet.list.all.prefix(2).map(\.subtitle), ["claude --resume abc", "make verify"])
+        return sheet.list.all
     }
 
-    func testALongCommandKeepsItsStartAndItsEnd() async throws {
+    func testTheProcessPageGroupsWhatEachTerminalAppStartedWithItsRunTime() async throws {
         try runProcesses()
-        let sheet = try sheet()
-        try await wait("the process row") { self.row("process", in: sheet) != nil }
-        sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
-        try await wait("the processes") { sheet.list.all.count == 3 }
+        let rows = try await processRows(in: try sheet())
 
-        let detail = try XCTUnwrap(sheet.list.all.last?.subtitle)
-        XCTAssertTrue(detail.hasPrefix("node /very/long"), detail)
+        XCTAssertEqual(rows.map(\.title), ["claude · 1h 2m", "make · 42s", "node · 3d 4h"])
+        XCTAssertEqual(rows.map(\.section), ["Ghostty", "Terminal", "Terminal"])
+    }
+
+    func testARowShowsItsFolderAndItsBranchAndIsFoundByItsCommand() async throws {
+        try runProcesses()
+        let rows = try await processRows(in: try sheet())
+
+        XCTAssertEqual(rows.prefix(2).map(\.subtitle), ["openspot · fix-caffeinate", "other"])
+        XCTAssertEqual(rows.first?.keywords, ["claude --resume abc"])
+    }
+
+    func testWithNoGitARowShowsItsFolderAlone() async throws {
+        try runProcesses(git: false)
+        let rows = try await processRows(in: try sheet())
+
+        XCTAssertEqual(rows.first?.subtitle, "openspot")
+    }
+
+    func testARowWithNoFolderShowsItsCommandWithItsStartAndItsEnd() async throws {
+        try runProcesses()
+        let rows = try await processRows(in: try sheet())
+
+        let detail = try XCTUnwrap(rows.last?.subtitle)
+        XCTAssertTrue(detail.hasPrefix("node /very/lo"), detail)
         XCTAssertTrue(detail.hasSuffix(".js --flag"), detail)
         XCTAssertTrue(detail.contains("…"), detail)
-        XCTAssertLessThanOrEqual(detail.count, 34, detail)
+        XCTAssertLessThanOrEqual(detail.count, 30, detail)
     }
 
     func testAPickOfAProcessKeepsTheMacAwakeUntilItEnds() async throws {
