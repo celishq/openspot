@@ -42,12 +42,14 @@ final class Timeline: Sendable {
         var spots: Set<String>?
         var within: TimeInterval?
         var text: String?
+        var after: String?
         var limit: Int?
 
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, limit: Int? = nil) {
+        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil) {
             self.spots = spots
             self.within = within
             self.text = text
+            self.after = after
             self.limit = limit
         }
     }
@@ -141,7 +143,7 @@ final class Timeline: Sendable {
         }
     }
 
-    func list(_ query: Query, at now: Date) -> [TimelineEntry] {
+    func list(_ query: Query, at now: Date) -> [TimelineEntry]? {
         kept.withLock { kept in
             read(&kept)
             cut(&kept, at: now)
@@ -160,6 +162,10 @@ final class Timeline: Sendable {
                 kept.search = search
                 let byID = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })
                 sorted = search.matching(text).compactMap { byID[$0.id] }
+            }
+            if let after = query.after {
+                guard let at = sorted.firstIndex(where: { $0.id == after }) else { return nil }
+                sorted = Array(sorted[sorted.index(after: at)...])
             }
             return query.limit.map { Array(sorted.prefix($0)) } ?? sorted
         }

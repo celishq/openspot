@@ -9,7 +9,7 @@
 # Prints the frame of the newest entries that hold the words of $1: $2 of them, or 500.
 list() {
   if [ -n "$1" ]; then
-    entries=$(openspot timeline list --all --limit "${2:-500}" --text "$1") || exit 1
+    entries=$(openspot timeline list --all --limit "${2:-500}" --search "$1") || exit 1
   else
     entries=$(openspot timeline list --all --limit "${2:-500}") || exit 1
   fi

@@ -2,7 +2,7 @@ import Foundation
 
 enum TimelineCall: NounCall {
     case add([String])
-    case list(spot: String?, all: Bool, within: TimeInterval?, text: String?, limit: Int?)
+    case list(spot: String?, all: Bool, within: TimeInterval?, search: String?, after: String?, limit: Int?)
     case forget(String)
     case restore(String)
     case keep(String)
@@ -11,7 +11,7 @@ enum TimelineCall: NounCall {
 
     private static let keys = AttachmentValue.Kind.allCases.map(\.rawValue) + notes
     private static let notes = ["title", "detail", "app", "icon", "key", "at"]
-    private static let listForm = "[--spot id] [--all] [--within age] [--text words] [--limit n]"
+    private static let listForm = "[--spot id] [--all] [--within age] [--search words] [--after id] [--limit n]"
 
     static let noun = CommandNoun("timeline", group: .build, verbs: [
         CommandVerb(
@@ -21,13 +21,13 @@ enum TimelineCall: NounCall {
         ) { Self.add($0.rest) },
         CommandVerb(
             "list", listForm,
-            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at`, its `kind` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`. --within keeps the entries of the age, such as 1d; --text the ones that hold each word; --limit the first n.",
+            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at`, its `kind` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`. --within keeps the entries of the age, such as 1d; --search the ones that hold each word, best match first; --after the ones after the entry of that id, for the next page; --limit the first n.",
             rule: CallRule(use: .timeline, used: "read its timeline")
         ) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }
             let within = fit.value("--within").map { Manifest.Triggers.age(orSeconds: $0).flatMap { $0 > 0 ? $0 : nil } }
             guard within != .some(nil), fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
-            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within ?? nil, text: fit.value("--text"), limit: fit.value("--limit").flatMap { Int($0) })
+            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within ?? nil, search: fit.value("--search"), after: fit.value("--after"), limit: fit.value("--limit").flatMap { Int($0) })
         },
         CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
         CommandVerb("restore", "<id>", "Brings back an entry that `openspot timeline forget` took out.", rule: CallRule(use: .timeline, used: "restored an entry")) { $0.one.map(Self.restore) },
@@ -43,8 +43,8 @@ enum TimelineCall: NounCall {
         var rule = rule
         switch self {
         case .add(let words) where words.isEmpty: rule.flags.insert(.readsInput)
-        case .list(let other?, _, _, _, _) where other != spot: rule.use = .read
-        case .list(_, true, _, _, _): rule.use = .read
+        case .list(let other?, _, _, _, _, _) where other != spot: rule.use = .read
+        case .list(_, true, _, _, _, _): rule.use = .read
         default: break
         }
         return rule
@@ -85,13 +85,15 @@ enum TimelineCall: NounCall {
                 guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
                 return await Self.add(fields, of: spot, to: runs, peek: Self.peek(in: blocks.dropFirst()))()
             }
-        case .list(let other, let all, let within, let text, let limit):
+        case .list(let other, let all, let within, let search, let after, let limit):
             let spots: Set<String>? = all ? nil : other.map { [$0] } ?? caller.map { [$0.id] }
             let reader = caller?.id
             return {
                 if let reader { timeline.note(reader: reader, of: spots) }
                 let now = runs.clock.now()
-                let entries = timeline.list(Timeline.Query(spots: spots, within: within ?? nil, text: text, limit: limit), at: now)
+                guard let entries = timeline.list(Timeline.Query(spots: spots, within: within ?? nil, text: search, after: after, limit: limit), at: now) else {
+                    return CommandAnswer(errors: "The timeline has no entry `\(after ?? "")` to list after. Start again with no --after.\n", code: 1)
+                }
                 return CommandAnswer(output: entries.map(\.block).joined(separator: "\n"))
             }
         case .keep(let text):

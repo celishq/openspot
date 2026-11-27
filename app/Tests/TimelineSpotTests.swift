@@ -193,12 +193,12 @@ final class TimelineSpotTests: BuiltInCase {
 
         try await timeline.perform("forget", input: "input.item=\(id)\n", timeout: 60)
 
-        XCTAssertEqual(runs.timeline.list(Timeline.Query(), at: Date()).count, 0)
+        XCTAssertEqual((runs.timeline.list(Timeline.Query(), at: Date()) ?? []).count, 0)
         XCTAssertEqual(effects, ["toast --id forgot --action restore Forgot it. Click to put it back."])
 
         try await timeline.perform("restore", timeout: 60)
 
-        XCTAssertEqual(runs.timeline.list(Timeline.Query(), at: Date()).map(\.value), ["secret"])
+        XCTAssertEqual((runs.timeline.list(Timeline.Query(), at: Date()) ?? []).map(\.value), ["secret"])
     }
 
     func testAnOpenSetsTheDaysOfKeepForAndATypedWordSetsNone() async throws {
@@ -259,7 +259,7 @@ final class TimelineSpotTests: BuiltInCase {
 
         _ = try await finder.items(query: "cafe", timeout: 60)
 
-        XCTAssertTrue(programs().contains("openspot timeline list --all --limit 3 --text cafe"), "\(programs())")
+        XCTAssertTrue(programs().contains("openspot timeline list --all --limit 3 --search cafe"), "\(programs())")
     }
 
     func testTheSearchShowsTheThreeNewestEntriesThatHoldTheWords() async throws {
