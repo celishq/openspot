@@ -165,6 +165,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"])?.value as? ClipboardCall, .copy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"])?.value as? ClipboardCall, .paste)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy"])?.value as? ClipboardCall, .copy(nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "--text", "rgb(255 0 0)"])?.value as? ClipboardCall, .text("rgb(255 0 0)"))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "--text", "a", "b.txt"])?.value as? CallFault, .unknown(["clipboard", "copy", "--text", "a", "b.txt"]))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"])?.value as? ClipboardCall, .read(within: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "languages"])?.value as? TranslateCall, .languages)
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "text"])?.value as? TranslateCall, .text(from: nil, to: nil))
