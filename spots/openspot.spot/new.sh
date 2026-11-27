@@ -244,14 +244,9 @@ ways() {
 kept_ways="$OPENSPOT_DATA/ways"
 all_ways=$(cat "$kept_ways" 2>/dev/null)
 
-# The chosen agent and place, from the settings. An agent of an older version names both, such as here-claude.
+# The chosen agent and place, from the settings.
 agent=$(value setting.agent)
 place=$(value setting.place)
-case $agent in
-  here-*) place=${place:-openspot} agent=${agent#here-} ;;
-  term-*) rest=${agent#term-} && agent=${rest%%-*} && place=${place:-term-${rest#*-}} ;;
-  app-*) place=${place:-$agent} agent=${agent#app-} ;;
-esac
 
 # Prints the chosen agent: the setting when this Mac still has it, or else the first.
 chosen_agent() {
@@ -268,12 +263,6 @@ chosen_place() {
 way_of() {
   case $3 in name) c=2 ;; place-name) c=4 ;; opens) c=5 ;; kind) c=6 ;; word) c=7 ;; *) return 1 ;; esac
   printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v p="$2" -v c="$c" '$1 == a && (p == "" ? $c != "" : $3 == p) { print $c; found = 1; exit } END { exit !found }'
-}
-
-# Prints the words of the button that sends to the agent. They are the same for a new spot and a change, and for every
-# app, since the App row above already says where it works.
-go_title() {
-  printf 'Build'
 }
 
 # Prints the id of the button that starts the next run: a new one for each run, so that runs go on side by side.
@@ -303,8 +292,6 @@ place_options() {
 form() {
   me=$(chosen_agent)
   at=$(chosen_place "$me")
-  go=
-  [ -z "$at" ] || go=$(go_title "$me" "$at")
   printf '\nbox=form\nclass=flex-col gap-4 grow\n'
   printf '\nbox=top\nparent=form\nclass=flex-col gap-1 grow min-h-44\n'
   printf '\nfield=describe\nparent=top\ntype=multiline\nclass=grow\n'
@@ -312,7 +299,7 @@ form() {
   openspot_kv value "$1"
   if [ -n "${looking-}" ]; then
     printf '\ntext=looking\nparent=top\nclass=text-secondary\ntitle=Finding agents…\n'
-  elif [ -n "$go" ]; then
+  elif [ -n "$at" ]; then
     printf '\nbox=with\nparent=top\nclass=flex-col gap-0\n'
     printf '\nchoice=agent\nparent=with\nclass=h-8\ntitle=Agent\nicon=sparkles\nvalue=%s\n' "$me"
     agent_options
@@ -322,7 +309,7 @@ form() {
     printf '\nbox=go\nparent=form\nclass=flex-col gap-2 shrink-0\n'
     # A build in Openspot keeps the panel, which shows its progress. One in an app or a terminal hides it, since the work
     # goes on there.
-    printf '\nbutton=%s\nparent=go\ntitle=%s\nclass=bg-accent\nshortcut=cmd+return\n' "$(next_key)" "$go"
+    printf '\nbutton=%s\nparent=go\ntitle=Build\nclass=bg-accent\nshortcut=cmd+return\n' "$(next_key)"
     [ "$at" != openspot ] || printf 'close=false\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nshortcut=cmd+shift+return\nclose=false\n' "${2:-Copy prompt}"
   else
