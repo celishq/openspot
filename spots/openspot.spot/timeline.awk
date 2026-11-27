@@ -31,7 +31,7 @@ function what(kind, value, long, count,    host, lines) {
     sub(/[\/?#].*/, "", host)
     return host
   }
-  if (kind == "file") return (count > 1 ? count " files" : (picture(value) ? "Image" : "File"))
+  if (kind == "file") return (count > 1 ? count " files" : (picture(value) ? "Image" : (video(value) ? "Video" : "File")))
   if (long) return "Long text"
   lines = gsub(/\\n/, "&", value) + 1
   return (lines > 1 ? lines " lines" : length(value) " characters")
@@ -39,6 +39,10 @@ function what(kind, value, long, count,    host, lines) {
 
 function picture(path) {
   return tolower(path) ~ /\.(png|jpe?g|gif|heic|tiff|webp|bmp)$/
+}
+
+function video(path) {
+  return tolower(path) ~ /\.(mov|mp4|m4v)$/
 }
 
 function source(spot,    name) {
@@ -73,7 +77,7 @@ function source(spot,    name) {
     printf "\nbox=day-%s\nparent=list\ntitle=%s\n", day, day_title(day)
     last = day
   }
-  icon = f["icon"] != "" ? f["icon"] : (kind == "url" ? "link" : (kind == "file" ? (picture(f["file"]) && files == 1 ? f["file"] : "doc") : (f["text"] ~ /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/ ? tolower(f["text"]) : "textformat")))
+  icon = f["icon"] != "" ? f["icon"] : (kind == "url" ? "link" : (kind == "file" ? ((picture(f["file"]) || video(f["file"])) && files == 1 ? f["file"] : "doc") : (f["text"] ~ /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/ ? tolower(f["text"]) : "textformat")))
   printf "\nitem=%s\nparent=day-%s\ntitle=%s\ndetail=%s\nicon=%s\nkind=%s\n", f["item"], day, f["title"], detail, icon, kind
   if (kind == "url" || (kind == "text" && f["text.file"] == "")) printf "%s=%s\n", kind, f[kind]
   if (kind == "text" && f["text.file"] != "") printf "file=%s\n", f["text.file"]

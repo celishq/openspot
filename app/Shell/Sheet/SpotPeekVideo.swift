@@ -11,10 +11,10 @@ struct SpotPeekVideo: NSViewRepresentable {
 
         override init(frame: NSRect) {
             super.init(frame: frame)
-            wantsLayer = true
             let layer = AVPlayerLayer(player: player)
-            layer.videoGravity = .resizeAspect
+            layer.videoGravity = .resizeAspectFill
             self.layer = layer
+            wantsLayer = true
             player.isMuted = true
         }
 

@@ -83,6 +83,15 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.picture), [.symbol("doc"), .image("/tmp/shot.png")])
     }
 
+    func testAFileOfAVideoShowsAsAVideoWithItselfAsItsIcon() async throws {
+        try add(.file, "/tmp/clip.mov")
+
+        let rows = try await rows()
+
+        XCTAssertEqual(rows.map { $0.subtitle?.drop { $0 != "·" } }, ["· Video"])
+        XCTAssertEqual(rows.map(\.picture), [.image("/tmp/clip.mov")])
+    }
+
     func testAnEntryThatGivesItsIconAndDetailShowsThemOverThoseOfItsKind() async throws {
         try runs.timeline.add(Timeline.Draft(kind: .url, values: ["https://github.com/a/b/pull/12"], title: "Fix the cut", icon: "arrow.triangle.pull", detail: "Pull request #12"), of: "pulls", at: Date())
 

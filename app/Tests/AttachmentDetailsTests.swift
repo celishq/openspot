@@ -43,7 +43,7 @@ final class AttachmentDetailsTests: XCTestCase {
         }
 
         XCTAssertEqual(picture("/a/shot.PNG"), .image("/a/shot.PNG"))
-        XCTAssertEqual(picture("/a/talk.mov"), .file("/a/talk.mov"))
+        XCTAssertEqual(picture("/a/talk.mov"), .image("/a/talk.mov"))
         XCTAssertEqual(picture("/a/notes.md"), .file("/a/notes.md"))
         XCTAssertEqual(picture("/a/song.mp3"), .symbol("waveform"))
         XCTAssertNil(node("picture", of: AttachmentDetails(AttachmentValue(text: "words"))))

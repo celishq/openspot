@@ -73,4 +73,16 @@ final class PeekVideoTests: PanelCase {
 
         XCTAssertFalse(model.peekPlays)
     }
+
+    func testAVideoPathIsAnIconDrawnFromItsPicture() {
+        XCTAssertEqual(["/tmp/a.mov", "/tmp/b.MP4", "/tmp/c.m4v", "/tmp/d.txt"].map(Icon.init(text:)), [.image("/tmp/a.mov"), .image("/tmp/b.MP4"), .image("/tmp/c.m4v"), .file("/tmp/d.txt")])
+    }
+
+    func testTheStillFrameOfAVideoIsReadAhead() async throws {
+        try await openVideos()
+
+        _ = model.handleKey(peekKey)
+
+        XCTAssertEqual(host.peekReads.first, [.video("/tmp/a.mov"), .video("/tmp/b.mp4")])
+    }
 }

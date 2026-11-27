@@ -253,7 +253,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let scale = panel?.backingScaleFactor ?? 2
         for look in looks {
             switch look {
-            case .picture(let path): Task { _ = await SpotPictureStore.shared.image(SpotPictureStore.Key(path: path, changed: nil)) }
+            case .picture(let path), .video(let path): Task { _ = await SpotPictureStore.shared.image(SpotPictureStore.Key(path: path, changed: nil)) }
             case .file(let path): Task { _ = await SpotPeekThumbnails.shared.image(path, scale: scale) }
             default: break
             }

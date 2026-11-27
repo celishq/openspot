@@ -15,7 +15,6 @@ public struct Peek: Equatable, Sendable {
     static let words = Set((kinds + [.box]).map(\.word))
     public static let variants: Set<Style.Variant> = [.peek]
     static let textLimit = 2000
-    static let videoKinds: Set<String> = ["mov", "mp4", "m4v"]
     static let pictureKinds: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tiff", "webp", "bmp"]
 
     public let run: String
@@ -34,7 +33,7 @@ public struct Peek: Equatable, Sendable {
             look = .color(color)
         } else if let file = value("text") == nil ? item.file : nil {
             let kind = (file as NSString).pathExtension.lowercased()
-            look = Self.pictureKinds.contains(kind) ? .picture(file) : Self.videoKinds.contains(kind) ? .video(file) : .file(file)
+            look = Self.pictureKinds.contains(kind) ? .picture(file) : Icon.videos.contains(kind) ? .video(file) : .file(file)
         } else if let text = value("text") {
             look = .text(String(text.prefix(Self.textLimit)))
         } else {
@@ -48,7 +47,7 @@ public struct Peek: Equatable, Sendable {
 
     var isRead: Bool {
         switch look {
-        case .picture, .file: true
+        case .picture, .file, .video: true
         default: false
         }
     }

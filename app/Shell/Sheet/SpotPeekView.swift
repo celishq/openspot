@@ -77,8 +77,11 @@ private struct PeekFace: View {
         case .file(let path):
             SpotPeekThumbnail(path: path)
         case .video(let path):
-            PeekVideo(model: model, path: path)
-                .clipShape(inner)
+            ZStack {
+                SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: nil))
+                PeekVideo(model: model, path: path)
+            }
+            .clipShape(inner)
         case .color(let hex):
             inner.fill(SpotColorBar.color(hex))
         case .text(let text):
