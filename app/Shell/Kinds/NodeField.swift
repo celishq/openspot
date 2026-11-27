@@ -131,8 +131,7 @@ private struct FieldDrawing: View {
                 }
                 .clipShape(shape)
             } else {
-                AreaEditor(text: text, onSet: onSet)
-                    .scrollContentBackground(.hidden)
+                SpotTextArea(text: text, onSet: onSet)
                     .modifier(FieldFocus(focus: focus, id: part.id))
                     .padding(.horizontal, -SpotTokens.editorInset)
                     .padding(space)
@@ -147,19 +146,6 @@ private struct FieldDrawing: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
-    }
-}
-
-private struct AreaEditor: View {
-    let text: String
-    let onSet: (String) -> Void
-    @State private var typed = ""
-
-    var body: some View {
-        TextEditor(text: $typed)
-            .onAppear { typed = text }
-            .onChange(of: text) { _, new in if new != typed { typed = new } }
-            .onChange(of: typed) { _, new in if new != text { onSet(new) } }
     }
 }
 

@@ -914,6 +914,7 @@
 		B58862F440F1628EE91D6401 /* FakeToastWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ECFAF5AA970A712478877DE /* FakeToastWindow.swift */; };
 		B58A2F63D93A4D41070BCFAC /* SpotBackdropFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = E12444EBBD730953C3E98BC5 /* SpotBackdropFade.swift */; };
 		B5A1A32956D070279CBFA311 /* SettingsView+Places.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2705BC09904F1BA5DB4B30F /* SettingsView+Places.swift */; };
+		B5ABEF0F4D0DBF0A5767367F /* SpotTextArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2FB542F1E7048C53503202 /* SpotTextArea.swift */; };
 		B5D9314DD52323AA2B33C8D4 /* LookPictures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 387A940BAB6751C382BE6C77 /* LookPictures.swift */; };
 		B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */; };
 		B6582E815802148F1D739482 /* ThemeScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17BC46FD789F75D966FBF24 /* ThemeScan.swift */; };
@@ -1848,6 +1849,7 @@
 		5C5D8BDFD493D000E5716E42 /* SpotPlayground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlayground.swift; sourceTree = "<group>"; };
 		5C66B08702EB503F2A379905 /* SpotsModel+Detached.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Detached.swift"; sourceTree = "<group>"; };
 		5CB2F24416F8028DDBD5AADA /* ScreenCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapture.swift; sourceTree = "<group>"; };
+		5D2FB542F1E7048C53503202 /* SpotTextArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTextArea.swift; sourceTree = "<group>"; };
 		5D30787DEDD3331EB862D5A7 /* FrameLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameLog.swift; sourceTree = "<group>"; };
 		5D4CC197BF0486FBBF2C8644 /* SpotRunsInlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunsInlineTests.swift; sourceTree = "<group>"; };
 		5D6700B1F428C34BF43A4DAB /* SpotPin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPin.swift; sourceTree = "<group>"; };
@@ -3095,6 +3097,7 @@
 				FB8B8A575D1F7D0150E8576C /* SpotSheetWarmth.swift */,
 				0666BA5515040D76348882F5 /* SpotShine.swift */,
 				A0FFD250D921A4ADA11DBCE3 /* SpotSlider.swift */,
+				5D2FB542F1E7048C53503202 /* SpotTextArea.swift */,
 				B30D770483477EB2DC8DE6EB /* SpotTextLine.swift */,
 				725E312D3C764B1610D51C5A /* SpotTick.swift */,
 				C8734213EF8777CC8BA1F119 /* SpotTileWords.swift */,
@@ -6125,6 +6128,7 @@
 				A467160A615A07904E0F6AAF /* SpotSurfaceShape.swift in Sources */,
 				065AFFF20789D54605397CD6 /* SpotSystemEvents.swift in Sources */,
 				E787CC83780AF0DD333E3AFD /* SpotTapWatch.swift in Sources */,
+				B5ABEF0F4D0DBF0A5767367F /* SpotTextArea.swift in Sources */,
 				9AF487E777C92755522DDD6B /* SpotTextEditor.swift in Sources */,
 				A1BA791F4E7E04728A7924D9 /* SpotTextLine.swift in Sources */,
 				ED77A78009640AC93F592F6D /* SpotTheme+Parts.swift in Sources */,

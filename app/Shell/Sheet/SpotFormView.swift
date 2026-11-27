@@ -65,8 +65,7 @@ struct SpotFormView: View {
             .frame(height: SpotTokens.listRow)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         case .multiline:
-            TextEditor(text: value(of: field))
-                .scrollContentBackground(.hidden)
+            SpotTextArea(text: draft.values[field.name] ?? "") { onValue($0, field.name) }
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.ink)
                 .focused($focus, equals: field.name)
