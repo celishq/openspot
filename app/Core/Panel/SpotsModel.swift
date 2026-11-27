@@ -485,7 +485,7 @@ public final class SpotsModel {
     }
 
     func showCard(_ id: String) -> Bool {
-        guard let entry = card(id: id), !entry.spot.isDraft else { return false }
+        guard let entry = card(id: id) else { return false }
         closeMenu()
         form = nil
         endEditing(moving: false)
@@ -558,9 +558,13 @@ public final class SpotsModel {
         if next != entries { entries = next }
     }
 
+    public func pictured(_ id: String) -> Entry? {
+        entries.first { $0.id == id } ?? scanned.first { $0.id == id }.map { Entry(spot: $0, run: runs.sheets[$0.id]) }
+    }
+
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        return arrangement.ordered(defaultArrangement.ordered(sorted))
+        return arrangement.ordered(defaultArrangement.ordered(sorted)).filter { !$0.isDraft }
     }
 
     public func panelWillShow() {

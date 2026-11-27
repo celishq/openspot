@@ -60,7 +60,7 @@ extension SpotsModel {
     }
 
     public func takesOffGrid(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.spot.host == nil && entry.spot.fault == nil && !entry.spot.isDraft
+        entry.item == nil && entry.spot.host == nil && entry.spot.fault == nil
     }
 
     public func takeOffGrid(_ id: String, to slot: ShelfSlot? = nil) {

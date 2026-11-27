@@ -27,7 +27,8 @@ final class DraftSpotTests: PanelCase {
         _ = try model.files.config.change { $0.arrangement.set(isInMenuBar: true, of: "cocoa") }
         await model.reload()
 
-        XCTAssertNotNil(model.entries.first { $0.id == "cocoa" })
+        XCTAssertNil(model.entries.first { $0.id == "cocoa" })
+        XCTAssertEqual(model.pictured("cocoa")?.spot.isDraft, true)
         XCTAssertEqual(shown, ["tea"])
         XCTAssertEqual(model.menuBarMarks.map(\.id), [])
         model.query = "Cocoa"
@@ -37,7 +38,7 @@ final class DraftSpotTests: PanelCase {
     func testADraftRunsNoTriggerOfItsOwn() async throws {
         try await cocoa()
 
-        let spot = try XCTUnwrap(model.entries.first { $0.id == "cocoa" }?.spot)
+        let spot = try XCTUnwrap(model.pictured("cocoa")?.spot)
 
         XCTAssertTrue(spot.isDraft)
         XCTAssertEqual(spot.triggers.schedule, [])
@@ -72,7 +73,7 @@ final class DraftSpotTests: PanelCase {
     func testADraftOffersNoActionAndIsNotListedAsYours() async throws {
         try await cocoa()
 
-        let spot = try XCTUnwrap(model.entries.first { $0.id == "cocoa" }?.spot)
+        let spot = try XCTUnwrap(model.pictured("cocoa")?.spot)
         XCTAssertTrue(spot.chipActions.isEmpty)
         XCTAssertTrue(spot.bindings.isEmpty)
         let revealed = await model.reveal("cocoa")
