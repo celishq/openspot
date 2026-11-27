@@ -186,6 +186,8 @@ entry by its words.
 - Timeline's Settings set Keep for, and Show in search, which adds the three newest entries that hold your words under
   the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
 - Tab on an entry hands it to a spot that takes it, such as Translate for a text.
+- The Timeline also lists your visits: each page you ran something on, or stayed on for 2 seconds. Return on a visit
+  opens that page again. A visit of the same page moves up instead of showing twice.
 - Turn off Keep history in the Settings of Clipboard to keep no copy.
 
 ## Rename a slash command

@@ -1,6 +1,8 @@
 import Foundation
 
 extension SpotsModel {
+    public static let sessionsSpot = "openspot"
+
     public func endSession() {
         session.ends = true
         host.dismiss()
@@ -64,8 +66,27 @@ extension SpotsModel {
     }
 
     func commitVisit() {
-        if let visit = session.visit, visit.isWorthKeeping(at: runs.clock.now()) { trail.add(visit.place) }
+        if let visit = session.visit, visit.isWorthKeeping(at: runs.clock.now()) {
+            trail.add(visit.place)
+            keepInTimeline(visit.place)
+        }
         session.visit = nil
+    }
+
+    private func keepInTimeline(_ place: SessionTrail.Place) {
+        guard let page = place.flow.current, let spot = sheets[page.spot]?.spot else { return }
+        let title = title(of: page)
+        var draft = Timeline.Draft(kind: .text, values: [title], title: title, icon: spot.picture, key: "visit:\(page.spot)/\(page.route ?? "")")
+        draft.opens = page.spot
+        draft.opensRoute = page.route
+        let runs = runs
+        let timeline = runs.timeline
+        let now = runs.clock.now()
+        let owner = Self.sessionsSpot
+        Task.detached {
+            _ = try? timeline.add(draft, of: owner, at: now)
+            await runs.timelineChanged(owner, by: nil)
+        }
     }
 
     func handleTrailKey(_ key: ActionKey) -> Bool? {

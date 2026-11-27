@@ -24,6 +24,8 @@ final class Timeline: Sendable {
         var key: String?
         var at: Date?
         var peek: [TextBlock]
+        var opens: String?
+        var opensRoute: String?
 
         init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil, peek: [TextBlock] = []) {
             self.kind = kind
@@ -246,7 +248,7 @@ final class Timeline: Sendable {
         }
         return TimelineEntry(
             id: id, spot: spot, at: at, kind: draft.kind, value: value, textFile: textFile, files: files, title: draft.title ?? Self.title(of: draft),
-            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, bytes: bytes, peekFile: peekFile, forgotten: nil
+            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, opens: draft.opens, opensRoute: draft.opensRoute, bytes: bytes, peekFile: peekFile, forgotten: nil
         )
     }
 

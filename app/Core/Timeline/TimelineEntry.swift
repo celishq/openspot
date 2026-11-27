@@ -19,6 +19,8 @@ struct TimelineEntry: Codable, Equatable, Sendable {
     let icon: String?
     let detail: String?
     let key: String?
+    var opens: String?
+    var opensRoute: String?
     let bytes: Int64
     var peekFile: String?
     var forgotten: Date?
@@ -31,6 +33,8 @@ struct TimelineEntry: Codable, Equatable, Sendable {
         if let icon { fields.append(.init(key: "icon", value: icon)) }
         if let detail { fields.append(.init(key: "detail", value: detail)) }
         if let key { fields.append(.init(key: "key", value: key)) }
+        if let opens { fields.append(.init(key: "opens", value: opens)) }
+        if let opensRoute { fields.append(.init(key: "opens.route", value: opensRoute)) }
         return TextBlock(fields: fields).text
     }
 

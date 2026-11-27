@@ -86,4 +86,30 @@ final class SessionTrailTests: PanelCase {
 
         try await walk(back, to: "other")
     }
+
+    private var visits: [TimelineEntry] {
+        model.runs.timeline.list(Timeline.Query(spots: [SpotsModel.sessionsSpot]), at: clock.time) ?? []
+    }
+
+    func testAKeptVisitIsAnEntryOfTheTimelineThatNamesThePlaceItOpens() async throws {
+        try await visit("other")
+
+        XCTAssertTrue(model.handleKey(back))
+        try await wait("the visit entry") { self.visits.count == 1 }
+        let entry = try XCTUnwrap(visits.first)
+        XCTAssertEqual(entry.opens, "other")
+        XCTAssertNil(entry.opensRoute)
+        XCTAssertEqual(entry.title, "Other")
+        XCTAssertTrue(entry.block.contains("opens=other"))
+    }
+
+    func testARepeatVisitMovesItsEntryToTheTopAndAQuickLookWritesNone() async throws {
+        try await visit("other")
+        try await visit("parts", for: 0.5)
+        try await visit("other")
+
+        XCTAssertTrue(model.handleKey(back))
+        try await wait("the visit entries") { self.visits.count == 1 && self.model.trail.places.count == 1 }
+        XCTAssertEqual(visits.map(\.opens), ["other"])
+    }
 }

@@ -65,6 +65,9 @@ key=2026-11-26-good
 five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole text sits in the file of
 `text.file=`.
 
+Openspot writes a visit of yours to a page under the spot `openspot`, which `--all` prints. A visit carries
+`opens=`, the spot it opened, and `opens.route=` when it was a page of that spot.
+
 ## What lasts
 
 Openspot keeps each entry for as long as Keep for in the Settings of Timeline says, 30 days by default, then drops it

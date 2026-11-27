@@ -1,5 +1,6 @@
 /** The timeline of every spot, newest first, under a heading for each day, a page of 60 entries at a time: the newest
- * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, ⌘Return pastes it
+ * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, or opens
+ * the page of a visit that Openspot wrote, ⌘Return pastes it
  * into the front app, ⌘⌫ forgets it, with a toast that puts it back, and Tab hands it to a spot that takes it. A row
  * holds at most the start of a long text, so a copy pipes the whole value that `timeline get` prints into
  * `clipboard copy`. */
@@ -82,6 +83,15 @@ function start(value) {
   return cut.endsWith("\\") && !cut.endsWith("\\\\") ? cut.slice(0, -1) : cut
 }
 
+/** The lines of the row of a visit, whose Return opens the page it names. */
+function visit(entry, day) {
+  const time = (entry.at || "").slice(11, 16)
+  const lines = [`item=${entry.item}`, `parent=day-${day}`, `title=${entry.title}`, `detail=${time} · Visit`, `icon=${entry.icon || "clock"}`, `opens=${entry.opens}`]
+  if (entry["opens.route"]) lines.push(`opens.route=${entry["opens.route"]}`)
+  lines.push("hides=paste", "open.title=Open")
+  return lines.join("\n")
+}
+
 /** The lines of one row. */
 function row(entry, day) {
   const kind = entry.kind
@@ -121,7 +131,7 @@ function list(words, count, after) {
       blocks.push(`box=day-${day}\nparent=list\ntitle=${dayTitle(day, now)}`)
       last = day
     }
-    blocks.push(row(entry, day), ...entry.peek)
+    blocks.push(entry.opens ? visit(entry, day) : row(entry, day), ...entry.peek)
   }
   if (!last && after) return ""
   if (!last) {
@@ -161,6 +171,11 @@ export default {
   },
   press(input) {
     if (!input.item || input.item === "empty") return
+    if (input["item.opens"]) {
+      run(["spot", "open", input["item.opens"]])
+      if (input["item.opens.route"]) run(["spot", "push", input["item.opens"], input["item.opens.route"]])
+      return
+    }
     copy(input)
     run(["toast", "Copied."])
   },

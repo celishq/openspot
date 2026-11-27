@@ -26,7 +26,7 @@ final class TimelineSpotTests: BuiltInCase {
         case "$1 $2" in
           "clipboard copy") printf 'clipboard copy %s|%s\\n' "$3" "$(cat)" >> '\(log.path)'; exit 0 ;;
           "timeline get") echo "$*" >> '\(log.path)'; printf 'whole of %s' "$3"; exit 0 ;;
-          "clipboard paste" | "toast "* | "spot open") echo "$*" >> '\(log.path)'; exit 0 ;;
+          "clipboard paste" | "toast "* | "spot open" | "spot push") echo "$*" >> '\(log.path)'; exit 0 ;;
         esac
         exec '\(real.path)' "$@"
         """)
@@ -215,6 +215,28 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(frame.items.map(\.picture), [.symbol("textformat")])
         XCTAssertEqual(frame.actions.first { $0.title == "Paste" }?.key, ActionKey(text: "cmd+return"))
         XCTAssertFalse(frame.actions.contains { $0.key == ActionKey(text: "cmd+c") }, "\(frame.actions.map(\.title))")
+    }
+
+    func testAVisitShowsAsAPlaceToOpenWithNoPaste() async throws {
+        var draft = Timeline.Draft(kind: .text, values: ["Weather"], title: "Weather", icon: "cloud.sun", key: "visit:weather/")
+        draft.opens = "weather"
+        try XCTUnwrap(try runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: Date()))
+
+        let listed = try await rows()
+        let row = try XCTUnwrap(listed.first)
+
+        XCTAssertEqual(row.title, "Weather")
+        XCTAssertEqual(row.openTitle, "Open")
+        XCTAssertTrue(row.subtitle?.hasSuffix(" · Visit") == true, row.subtitle ?? "")
+        XCTAssertEqual(row.fields.first { $0.key == "opens" }?.value, "weather")
+        XCTAssertEqual(row.hides, ["paste"])
+    }
+
+    func testReturnOnAVisitOpensItsSpotAndItsPage() async throws {
+        try await timeline.perform("press", input: "input.item=v\ninput.item.opens=weather\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=w\ninput.item.opens=store\ninput.item.opens.route=gallery\n", timeout: 60)
+
+        XCTAssertEqual(effects, ["spot open weather", "spot open store", "spot push store gallery"])
     }
 
     func testForgetTakesTheEntryOutAndTheToastPutsItBack() async throws {
