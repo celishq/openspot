@@ -232,6 +232,17 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(row.hides, ["paste"])
     }
 
+    func testThePageAboutASpotListsOnlyItsEntriesAndItsVisits() async throws {
+        try add(.text, "copied")
+        var draft = Timeline.Draft(kind: .text, values: ["Weather"], title: "Weather")
+        draft.opens = "weather"
+        try XCTUnwrap(try runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: Date()))
+
+        let listed = try await rows(keptDays + "input.route=about/weather\n")
+
+        XCTAssertEqual(listed.map(\.title), ["Weather"])
+    }
+
     func testReturnOnAVisitOpensItsSpotAndItsPage() async throws {
         try await timeline.perform("press", input: "input.item=v\ninput.item.opens=weather\n", timeout: 60)
         try await timeline.perform("press", input: "input.item=w\ninput.item.opens=store\ninput.item.opens.route=gallery\n", timeout: 60)

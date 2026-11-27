@@ -110,11 +110,18 @@ function row(entry, day) {
   return lines.join("\n")
 }
 
-/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page. */
-function list(words, count, after) {
+/** The spot that a page `about/<id>` names, whose entries and visits alone the page lists. */
+function aboutOf(input) {
+  return String(input.route || "").startsWith("about/") ? input.route.slice(6) : ""
+}
+
+/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page, of
+ * the spot `about` alone when it names one. */
+function list(words, count, after, about) {
   const search = words ? ["--search", words] : []
   const next = after ? ["--after", after] : []
-  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...search, ...next])
+  const only = about ? ["--about", about] : []
+  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...only, ...search, ...next])
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
   let last = ""
@@ -158,13 +165,13 @@ export default {
   show(input, env) {
     const days = String(env.settings.keep ?? "").replace(/[^0-9]/g, "")
     if (days) run(["timeline", "keep", days])
-    return list("")
+    return list("", limit, "", aboutOf(input))
   },
-  "sheet.text"({ value = "", limit: count }) {
-    return list(value, count)
+  "sheet.text"(input) {
+    return list(input.value || "", input.limit, "", aboutOf(input))
   },
-  "sheet.more"({ after, value = "" }) {
-    return list(value, limit, after)
+  "sheet.more"(input) {
+    return list(input.value || "", limit, input.after, aboutOf(input))
   },
   command() {
     run(["spot", "open", "openspot/timeline"])

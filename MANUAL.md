@@ -11,12 +11,13 @@ Every spot answers the same keys, so you learn them once.
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
-| `⌘Y`       | Opens the History of a spot whose Return runs its action.                     |
+| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your visits to it.  |
 | `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
 - The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Remove.
+- A spot whose Return runs its action, such as Dictate, shows its sheet from Open in its ⌘K menu.
 - Remove, or `⌘⌫`, moves the spot's folder to the Trash. Its data and its settings stay, so the spot has them again when
   you install it again.
 - An install of a spot whose id your spots have already asks, as Finder does: Replace moves yours to the Trash, Keep

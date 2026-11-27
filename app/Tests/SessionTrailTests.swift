@@ -112,4 +112,17 @@ final class SessionTrailTests: PanelCase {
         try await wait("the visit entries") { self.visits.count == 1 && self.model.trail.places.count == 1 }
         XCTAssertEqual(visits.map(\.opens), ["other"])
     }
+
+    func testCommandYOnACardOpensTheTimelinePageAboutThatSpot() async throws {
+        let core = folder.appendingPathComponent("core", isDirectory: true)
+        try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repo.appendingPathComponent("spots/openspot.spot"))
+        await model.reload()
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "other" })
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))
+
+        try await wait("the timeline page") { self.model.flow.current == FlowSheet(spot: SpotsModel.timelineSpot, route: "about/other") }
+    }
 }

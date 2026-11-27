@@ -46,8 +46,10 @@ final class Timeline: Sendable {
         var text: String?
         var after: String?
         var limit: Int?
+        var about: String?
 
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil) {
+        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil) {
+            self.about = about
             self.spots = spots
             self.within = within
             self.text = text
@@ -153,6 +155,7 @@ final class Timeline: Sendable {
             let found = kept.entries.filter { entry in
                 entry.forgotten == nil
                     && query.spots.map { $0.contains(entry.spot) } != false
+                    && query.about.map { entry.spot == $0 || entry.opens == $0 } != false
                     && since.map { entry.at >= $0 } != false
             }
             var sorted = found.sorted { $0.at > $1.at }

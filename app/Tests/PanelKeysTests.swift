@@ -841,7 +841,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(host.notes, ["⌃⌥S opens Shelf."])
     }
 
-    func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
+    func testOpenInTheMenuShowsTheSheetOfASpotWhoseReturnRunsItsCommandAndCommandYNeedsTheTimeline() async throws {
         try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true", "printf 'item=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
@@ -849,7 +849,8 @@ final class PanelKeysTests: PanelCase {
         model.query = "dictate"
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
-        XCTAssertTrue(model.handleKey(history))
+        XCTAssertFalse(model.handleKey(history))
+        model.run(.open, on: try XCTUnwrap(model.target))
 
         try await wait("its rows") { self.model.openSheetID == "dictate" && self.titles == ["Said"] }
     }

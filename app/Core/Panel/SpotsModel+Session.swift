@@ -2,6 +2,11 @@ import Foundation
 
 extension SpotsModel {
     public static let sessionsSpot = "openspot"
+    public static let timelineSpot = "openspot/timeline"
+
+    func showTimeline(about id: String) {
+        present(FlowSheet(spot: Self.timelineSpot, route: "about/\(id)", title: entry(id)?.spot.name))
+    }
 
     public func endSession() {
         session.ends = true

@@ -192,6 +192,7 @@ icon = "clock.arrow.circlepath"
 detail = "What you copied, newest first"
 keywords = ["timeline", "history", "clipboard history"]
 uses = ["timeline", "read", "clipboard"]
+pages = ["about/*"]
 
 [scripts.timeline.on]
 "sheet.open" = true

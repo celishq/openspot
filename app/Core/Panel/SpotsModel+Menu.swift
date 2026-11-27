@@ -126,9 +126,10 @@ extension SpotsModel {
         }
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
-        let history: [CommandAction] = spot.keepsHistory ? [.history] : []
+        let opens: [CommandAction] = spot.keepsHistory ? [.open] : []
+        let history: [CommandAction] = sheets[Self.timelineSpot] != nil && spot.id != Self.timelineSpot ? [.history] : []
         let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.commands.map(CommandAction.command)
-        return history + commands
+        return opens + history + commands
     }
 
     func offered(on target: Target, answers: inout HookAnswers, asks: Bool) -> [OfferedAction] {
