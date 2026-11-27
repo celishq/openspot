@@ -135,8 +135,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSettles) { malloc_zone_pressure_relief(nil, 0) }
             if isFirstLaunch {
                 Task { await self.model.beginFirstLaunch() }
-            } else {
-                model.toast(ToastNote(words: model.entryKey.openHint))
             }
         }
         isLaunched = true
