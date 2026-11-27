@@ -77,7 +77,7 @@ title = "New spot"
 icon = "plus"
 detail = "Make your own"
 answers = "last"
-uses = ["clipboard", "spots"]
+uses = ["clipboard", "spots", "agent"]
 edits = "spots"
 pages = ["build/*", "sessions"]
 

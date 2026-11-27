@@ -42,6 +42,7 @@ struct SettingsTile: View {
         case .network: "network"
         case .files: "folder.fill"
         case .account: "key.fill"
+        case .agent: "terminal.fill"
         }
     }
 

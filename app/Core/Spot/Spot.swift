@@ -134,6 +134,10 @@ public struct Spot: Equatable, Sendable {
         SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
 
+    var fence: Set<SpotUse>? {
+        SpotUse.runsOutsideTheSandbox(self.uses, isBuiltIn: self.isBuiltIn) ? nil : self.uses
+    }
+
     public var fault: FaultSpot? {
         if case .fault(let fault)? = self.host { fault } else { nil }
     }

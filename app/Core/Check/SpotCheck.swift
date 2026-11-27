@@ -103,9 +103,11 @@ public struct SpotCheck: Sendable {
             }
         }
         for script in scan.scripts where !script.isBuiltIn {
-            guard (try? Manifest(beside: script.url).script(script.url))?.uses.contains(SpotUse.account.rawValue) == true else { continue }
-            let fault = "\(script.name) has account in its uses, which only a spot of Openspot takes. Remove it"
-            findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
+            let uses = (try? Manifest(beside: script.url).script(script.url))?.uses ?? []
+            for use in [SpotUse.account, .agent] where uses.contains(use.rawValue) {
+                let fault = "\(script.name) has \(use.rawValue) in its uses, which only a spot of Openspot takes. Remove it"
+                findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
+            }
         }
         for script in scan.scripts {
             for (kind, view) in script.views.sorted(by: { $0.key < $1.key }) where BlockKind.words.contains(kind) {
