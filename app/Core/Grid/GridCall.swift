@@ -49,6 +49,7 @@ enum GridCall: NounCall {
         case .push(let id):
             guard let app = context.app else { return CommandAnswer.notRunning("grid push") }
             return CommandAnswer.work {
+                await app.spotsChanged()
                 let name = await app.gridSpots().first { $0.id == id }?.name ?? id
                 switch await app.push(id) {
                 case .pinned, .onGrid: return "\(name) is at the top of the grid.\n"

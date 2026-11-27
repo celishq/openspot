@@ -86,7 +86,10 @@ if [ -n "${OPENSPOT_EDIT-}" ]; then
 fi
 spot=
 [ -z "$job" ] || spot=$(get "$job" spot)
-[ -z "$spot" ] || [ -d "$folder/$spot.spot" ] || [ -n "${OPENSPOT_EDIT-}" ] || spot=
+# A spot is made once its folder is there and its spot.toml no longer says it is a draft.
+if [ -n "$spot" ] && [ -z "${OPENSPOT_EDIT-}" ]; then
+  if [ ! -d "$folder/$spot.spot" ] || grep -q '^state *= *"draft"' "$folder/$spot.spot/spot.toml" 2>/dev/null; then spot=; fi
+fi
 
 if [ -n "$job" ]; then
   draft="$builds/$job/draft"
@@ -499,9 +502,13 @@ Title the spot \"$name\" unless the words above name it."
           put "$job" spot "$made"
           put "$job" fresh 1
         fi
+        if [ ! -e "$folder/$made.spot/spot.toml" ]; then
+          mkdir -p "$folder/$made.spot"
+          printf 'state = "draft"\n' > "$folder/$made.spot/spot.toml"
+        fi
         words="$words
 
-Build the spot in the folder $folder/$made.spot."
+Build the spot in the folder $folder/$made.spot. Its spot.toml says state = \"draft\", so the spot shows nowhere while you build it: keep that line, and New spot takes it off when you are done."
       fi
       openspot_keep "$draft.sent" "$typed"
       put "$job" asked "$(printf '%s' "$text" | tr '\n' ' ')"

@@ -69,7 +69,7 @@ final class SpotNewTests: PanelCase {
         model.run(try XCTUnwrap(model.visible.first { $0.id == "tea" }))
 
         try await wait("the sheet") { self.model.openSheetID == "tea" }
-        XCTAssertTrue(model.hint.contains("⌘E Edit"), model.hint)
+        try await wait("the edit hint") { self.model.hint.contains("⌘E Edit") }
     }
 
     func testNoCommandMarksASpot() async throws {

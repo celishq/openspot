@@ -159,7 +159,41 @@ final class NewSpotTests: BuiltInCase {
         _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
 
         let asked = try saved("asked")
-        XCTAssertTrue(asked.hasSuffix("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+        XCTAssertTrue(asked.contains("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+    }
+
+    func testABuildInOpenspotStartsItsSpotAsADraft() async throws {
+        try fake("claude", "cat \"$PWD/log-run-distance.spot/spot.toml\" > '\(root.path)/seen'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let seen = try saved("seen")
+        XCTAssertTrue(seen.contains("state = \"draft\""), seen)
+    }
+
+    func testADoneBuildTakesTheDraftOffItsSpotAndPushesItToTheTopOfTheGrid() async throws {
+        try fake("claude", """
+        printf '#!/bin/sh\\necho hi\\n' > "$PWD/log-run-distance.spot/log-run-distance.sh"
+        chmod +x "$PWD/log-run-distance.spot/log-run-distance.sh"
+        printf '{"type":"result","session_id":"s1","is_error":false,"result":"Done"}\\n'
+        """)
+        let real = tools.appendingPathComponent("openspot-real")
+        try fake("openspot", """
+        echo "$@" >> '\(root.path)/calls'
+        case "$1 $2" in
+          'grid push' | 'toast '*) exit 0 ;;
+        esac
+        exec '\(real.path)' "$@"
+        """)
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let toml = try String(contentsOf: spots.appendingPathComponent("log-run-distance.spot/spot.toml"), encoding: .utf8)
+        XCTAssertFalse(toml.contains("state"), toml)
+        let calls = try saved("calls")
+        XCTAssertTrue(calls.contains("grid push log-run-distance"), calls)
     }
 
     func testBuildingAgainFromAFailedNewBuildNamesTheSameFolder() async throws {
@@ -175,7 +209,7 @@ final class NewSpotTests: BuiltInCase {
 
         let asked = try saved("asked")
         XCTAssertTrue(asked.contains("<request>\nTry again\n</request>"), asked)
-        XCTAssertTrue(asked.hasSuffix("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+        XCTAssertTrue(asked.contains("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
     }
 
     func testTheFolderOfANewSpotIsNamedByTheLatinWordsOfItsNameOrElseSpot() async throws {
@@ -188,8 +222,8 @@ final class NewSpotTests: BuiltInCase {
         _ = try? await newSpot().answer("make-0", input: "input.describe=Кава тиждень\n" + settings, timeout: 60)
         let cyrillic = try saved("asked")
 
-        XCTAssertTrue(mixed.hasSuffix("Build the spot in the folder \(spots.path)/timer.spot."), mixed)
-        XCTAssertTrue(cyrillic.hasSuffix("Build the spot in the folder \(spots.path)/spot.spot."), cyrillic)
+        XCTAssertTrue(mixed.contains("Build the spot in the folder \(spots.path)/timer.spot."), mixed)
+        XCTAssertTrue(cyrillic.contains("Build the spot in the folder \(spots.path)/spot.spot."), cyrillic)
     }
 
     private func fakeApp(_ name: String, id: String) throws -> URL {

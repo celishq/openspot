@@ -28,7 +28,7 @@ moved() {
   openspot emit step build="$1" > /dev/null 2>&1 || true
 }
 
-# Prints a frame that only says how far the background run is, which the search row shows.
+# Prints a frame that says how far the run is and its step, which the card of New spot shows.
 progress() {
   # The Edit sheet of a spot hears no step of New spot, so its own run draws it again at each step.
   if [ -n "${OPENSPOT_EDIT-}" ]; then
@@ -38,19 +38,25 @@ progress() {
   fi
   printf 'frame=\n'
   openspot_kv title "$work"
+  openspot_kv detail "$(get "$building" step)"
   printf 'progress=%s\n\n---\n' "$1"
 }
 
-# Marks the spot of the new build $1 New, so that it shows first on the grid until people open it.
-mark_new() {
+# Says whether the folder of the spot $1 holds more than its spot.toml.
+has_script() {
+  ls "$folder/$1.spot" 2>/dev/null | grep -qv '^spot.toml$'
+}
+
+# Takes the draft off the spot of the new build $1, and puts the spot at the top of the grid.
+publish() {
+  [ -z "$was" ] || return 0
   made=$(get "$1" spot)
-  [ -n "$made" ] && [ -z "$was" ] || return 0
-  said=$(openspot spot mark "$made" new 2>&1) || printf '%s %s: %s\n' "$(date +%T)" "$made" "$said" >> "$builds/$1/marks"
+  sed -i '' '/^state *= *"draft" *$/d' "$folder/$made.spot/spot.toml"
+  openspot grid push "$made" > /dev/null 2>&1 || true
 }
 
 # Runs the agent $3 with no window for the build $1, with the prompt $4. Each step goes to the build's files and tells
-# the sheet. The run itself prints only its title, its progress and the spot it builds, which Openspot hides while the
-# run lasts, so Openspot shows no working card for it.
+# the sheet. The run prints its title, its step and its progress, which the card of New spot shows.
 run() {
   building=$1
   bin=$(agent_bin "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
@@ -99,9 +105,9 @@ run() {
 $(get "$1" end)
 END
   name=$(get "$1" spot)
-  if [ -z "$failed" ] || [ "$failed" = true ] || [ ! -d "$folder/$name.spot" ]; then
+  if [ -z "$failed" ] || [ "$failed" = true ] || ! has_script "$name"; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
-    [ -d "$folder/$name.spot" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
+    has_script "$name" || [ "$failed" = true ] || said='The agent is done, but made no spot.'
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
     moved "$1"
@@ -114,13 +120,13 @@ END
   rm -f "$builds/$1/fresh"
   put "$1" state ready
   moved "$1"
-  mark_new "$1"
+  publish "$1"
   shown "$1" "$name"
   [ -z "${OPENSPOT_EDIT-}" ] || sheet ''
 }
 
-# Says that the spot $2 of the build $1 is ready. It waits on the grid, first and marked New, and opens only when people
-# open it, so that the mark shows and nothing takes the panel.
+# Says that the spot $2 of the build $1 is ready. It waits at the top of the grid, marked New, and opens only when people
+# open it, so that nothing takes the panel.
 shown() {
   openspot toast "$2 is ready." > /dev/null 2>&1 || true
 }
