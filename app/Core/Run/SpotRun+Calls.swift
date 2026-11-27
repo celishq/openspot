@@ -64,9 +64,15 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .act(let act):
-            if act.first?.take(lines) == true, lines.isForm {
-                call.showedPicture = true
-                return
+            if act.first?.take(lines) == true {
+                if lines.isForm {
+                    call.showedPicture = true
+                    return
+                }
+                if act.closes, !lines.isPicture {
+                    call.closedPanel = true
+                    onReport(.done)
+                }
             }
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: act) {
@@ -183,7 +189,7 @@ extension SpotRun {
             if let undo = act.undo { state = undo }
         case (.act(let act), .ended):
             answered = nil
-            if act.closes, !call.showedPicture { onReport(.done) }
+            if act.closes, !call.showedPicture, !call.closedPanel { onReport(.done) }
             if let selected = call.selected, spot.hasSheet {
                 show(selecting: selected, need: .change)
             } else if !call.showedPicture, act.showsAfter {

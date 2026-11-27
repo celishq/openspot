@@ -228,7 +228,15 @@ extension SpotsModel {
         self.form = nil
         if form.openedSheet {
             closeSheet(moving: true)
+        } else if form.route != nil, !popPage() {
+            closeSheet(moving: true)
         }
+    }
+
+    func showPageForm(_ form: ItemForm, of id: String) {
+        guard openSheetID == id, let entry = entry(id), let route = sheets[id]?.route, self.form?.route != route else { return }
+        let press = CommandAction(id: ScriptEntry.press.name, title: form.title)
+        self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: press, item: nil, openedSheet: false, route: route)
     }
 
     public func submitForm() {
