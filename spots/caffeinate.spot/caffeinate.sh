@@ -194,19 +194,45 @@ release() {
   held=
 }
 
-# Prints the row of a process that runs in a terminal, given as its id, its terminal and its command. A shell is no row.
-process_row() {
-  case $2 in '??' | '') return 0 ;; esac
-  program=${3%% *}
-  name=${program##*/}
-  name=${name#-}
-  case $name in zsh | bash | sh | fish | login | tmux | screen | caffeinate | ps) return 0 ;; esac
-  printf 'item=pid.%s\ntitle=%s\ndetail=%s\nname=%s\n\n' "$1" "$name" "$3" "$name"
-}
-
-# Prints the rows of the processes that run in a terminal.
+# Prints a section for each terminal, with a row for each program that its shell started, oldest first. A row shows the
+# program and how long it has run, over its command, cut in the middle to keep its start and its end.
 processes() {
-  ps -U "$(id -u)" -o pid=,tty=,args= 2>/dev/null | while read -r pid tty args; do process_row "$pid" "$tty" "$args"; done
+  ps -U "$(id -u)" -o pid=,ppid=,tty=,etime=,args= 2>/dev/null | sort -k3,3 -k1,1n | awk -v width=34 '
+  function base(path) { sub(/ .*/, "", path); sub(/.*\//, "", path); sub(/^-/, "", path); return path }
+  function shell(name) { return name ~ /^(zsh|bash|sh|fish|dash|ksh|tcsh|login|tmux|screen)$/ }
+  function since(time,  days, parts, n, h, m, s) {
+    days = 0
+    if (index(time, "-")) { days = substr(time, 1, index(time, "-") - 1) + 0; time = substr(time, index(time, "-") + 1) }
+    n = split(time, parts, ":")
+    h = n == 3 ? parts[1] + 0 : 0; m = parts[n - 1] + 0; s = parts[n] + 0
+    if (days) return days "d " h "h"
+    if (h) return h "h " m "m"
+    if (m) return m "m"
+    return s "s"
+  }
+  function middle(text,  head) {
+    if (length(text) <= width) return text
+    head = int((width - 1) / 2)
+    return substr(text, 1, head) "…" substr(text, length(text) - (width - 1 - head) + 1)
+  }
+  {
+    count++
+    pid[count] = $1; parent[count] = $2; tty[count] = $3; etime[count] = $4
+    args = $0
+    sub(/^ *[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ +/, "", args)
+    command[count] = args
+    name[$1] = base(args)
+  }
+  END {
+    for (i = 1; i <= count; i++) {
+      p = pid[i]
+      if (tty[i] == "??" || shell(name[p]) || name[p] == "ps" || name[p] == "caffeinate" || !shell(name[parent[i]])) continue
+      if (tty[i] != last) { printf "box=%s\nparent=list\ntitle=%s\n\n", tty[i], tty[i]; last = tty[i] }
+      line = command[i]
+      sub(/^[^ ]*\//, "", line)
+      printf "item=pid.%s\nparent=%s\ntitle=%s · %s\ndetail=%s\nname=%s\n\n", p, tty[i], name[p], since(etime[i]), middle(line), name[p]
+    }
+  }'
 }
 
 # Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.
@@ -287,7 +313,7 @@ serve() {
       begin "$call" "$item"
       ;;
     'show processes')
-      printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(processes)" "$call"
+      printf 'call=%s\n---\nitems=list\n\n%s\n---\nend=%s\n---\n' "$call" "$(processes)" "$call"
       ;;
     *)
       now=

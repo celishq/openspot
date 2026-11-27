@@ -188,11 +188,18 @@ final class CaffeinateSpotTests: XCTestCase {
 
     private func runProcesses() throws {
         try fake("ps", """
-            printf '  101 ttys001  -zsh\\n 4242 ttys001  claude --resume abc\\n 5151 ttys002  make verify\\n 6161 ??  /usr/libexec/helper\\n'
+            printf '%s\\n' \\
+              '  100     1 ttys001    02:00:00 -zsh' \\
+              ' 4242   100 ttys001    01:02:03 claude --resume abc' \\
+              ' 4300  4242 ttys001       05:00 /usr/bin/sourcekit-lsp' \\
+              '  200     1 ttys002       10:00 -zsh' \\
+              ' 7000   200 ttys002 03-04:05:06 /opt/homebrew/bin/node /very/long/path/to/some/project/scripts/build-and-watch-everything.js --flag' \\
+              ' 5151   200 ttys002       00:42 make verify' \\
+              ' 6161     1 ??     1-00:00:00 /usr/libexec/helper'
             """)
     }
 
-    func testTheProcessPageListsEachProcessOfATerminalByItsProgramAndCommand() async throws {
+    func testTheProcessPageGroupsWhatEachTerminalStartedWithItsRunTime() async throws {
         try runProcesses()
         let sheet = try sheet()
         try await wait("the process row") { self.row("process", in: sheet) != nil }
@@ -200,9 +207,24 @@ final class CaffeinateSpotTests: XCTestCase {
 
         sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
 
-        try await wait("the processes") { sheet.list.all.count == 2 }
-        XCTAssertEqual(sheet.list.all.map(\.title), ["claude", "make"])
-        XCTAssertEqual(sheet.list.all.map(\.subtitle), ["claude --resume abc", "make verify"])
+        try await wait("the processes") { sheet.list.all.count == 3 }
+        XCTAssertEqual(sheet.list.all.map(\.title), ["claude · 1h 2m", "make · 42s", "node · 3d 4h"])
+        XCTAssertEqual(sheet.list.all.map(\.section), ["ttys001", "ttys002", "ttys002"])
+        XCTAssertEqual(sheet.list.all.prefix(2).map(\.subtitle), ["claude --resume abc", "make verify"])
+    }
+
+    func testALongCommandKeepsItsStartAndItsEnd() async throws {
+        try runProcesses()
+        let sheet = try sheet()
+        try await wait("the process row") { self.row("process", in: sheet) != nil }
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
+        try await wait("the processes") { sheet.list.all.count == 3 }
+
+        let detail = try XCTUnwrap(sheet.list.all.last?.subtitle)
+        XCTAssertTrue(detail.hasPrefix("node /very/long"), detail)
+        XCTAssertTrue(detail.hasSuffix(".js --flag"), detail)
+        XCTAssertTrue(detail.contains("…"), detail)
+        XCTAssertLessThanOrEqual(detail.count, 34, detail)
     }
 
     func testAPickOfAProcessKeepsTheMacAwakeUntilItEnds() async throws {
@@ -210,7 +232,7 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         try await wait("the process row") { self.row("process", in: sheet) != nil }
         sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
-        try await wait("the processes") { sheet.list.all.count == 2 }
+        try await wait("the processes") { sheet.list.all.count == 3 }
 
         sheet.pick(try XCTUnwrap(sheet.list.all.first))
 

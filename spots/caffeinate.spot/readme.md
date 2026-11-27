@@ -1,8 +1,8 @@
 Keeps the Mac awake. Open its sheet and pick how long: 30 minutes, 2 hours, Custom… for any number of minutes, until you turn it off, or while a process runs. While it is on,
 the card shows the time left, and Turn off is the first row. Quitting Openspot turns it off.
 
-**While a process runs…** lists what runs in your terminals, each by its program and its command. Pick one, and the Mac
-stays awake until it ends.
+**While a process runs…** lists what each terminal's shell started, one section per terminal, with how long it has run
+and its command. Pick one, and the Mac stays awake until it ends.
 
 Turn off **Keep the display on** to let the screen sleep and lock while the Mac keeps working. It is on by default.
 
