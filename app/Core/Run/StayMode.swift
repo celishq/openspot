@@ -114,7 +114,7 @@ final class StayMode: ScriptMode {
             stop(\.isAnswer)
             if !post(call, isTimed: true) { run?.takeAnswers([], to: text) }
         case .act(let act):
-            call.request.purpose = .act(SpotRun.Act(keeping: act.keeping, showsAfter: false, undo: act.undo, first: act.first))
+            call.request.purpose = .act(SpotRun.Act(keeping: act.keeping, showsAfter: false, undo: act.undo, first: act.first, closes: act.closes))
             if post(call, isTimed: false) { run?.track(call.made) }
         case .form:
             guard !records.values.contains(where: \.isForm), post(call, isTimed: call.request.chain.isEmpty) else { return false }

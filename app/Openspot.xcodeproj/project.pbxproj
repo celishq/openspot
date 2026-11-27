@@ -512,6 +512,7 @@
 		63DC3314DB93351A59E2F5DE /* SpotLift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78A871E8F4B81F58E81F6673 /* SpotLift.swift */; };
 		64206C02FCDB61144C396C15 /* NodeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA68AC029CF0D12097C42B49 /* NodeText.swift */; };
 		64BFD6F141A2EBC2E473DE91 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
+		64C675DB5FB4EB1992FCF67F /* StayingPickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0126A685A64AF78C911631 /* StayingPickTests.swift */; };
 		65990ADCDE89A1BF31A0941D /* SpotLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B47851AA0A0856A47034E71 /* SpotLoad.swift */; };
 		65DEB292B968612507B2016E /* SampleSpotsCase+SwiftSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA697E68DC79BE324E0A63 /* SampleSpotsCase+SwiftSpot.swift */; };
 		66012E373E4A775DDD1C3B2A /* SwiftProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491B7A8DBE7290EADEEFD27A /* SwiftProgram.swift */; };
@@ -2094,6 +2095,7 @@
 		8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AF3BB8B1F8B37952C5181B0 /* PictureFile+Frames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PictureFile+Frames.swift"; sourceTree = "<group>"; };
 		8AFFAE1292EF44932A4115BD /* SpotRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRecording.swift; sourceTree = "<group>"; };
+		8B0126A685A64AF78C911631 /* StayingPickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayingPickTests.swift; sourceTree = "<group>"; };
 		8B383898EBB18E715FB418D9 /* PanelSpan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelSpan.swift; sourceTree = "<group>"; };
 		8B4422A75ACB9599BFDFEDC5 /* CommandAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandAPI.swift; sourceTree = "<group>"; };
 		8B5989E3C812422175C8FC94 /* Style+Variants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Style+Variants.swift"; sourceTree = "<group>"; };
@@ -3829,6 +3831,7 @@
 				8E9411389E6C8BE4861D46EF /* SpringEndTests.swift */,
 				40C9CBCF57716E77BB3BC0D2 /* StatsLogTests.swift */,
 				1BF69273AA1F98E8F02DF94C /* StatsTests.swift */,
+				8B0126A685A64AF78C911631 /* StayingPickTests.swift */,
 				9E8BA66239C52F6061DF82F7 /* StoreCarryTests.swift */,
 				F180545BC14AC0A2FDEFB77A /* StoreSpotTests.swift */,
 				47598A09B1B196730D6C9BFB /* StoreTests.swift */,
@@ -6516,6 +6519,7 @@
 				97DC93B3C7139B9C4A6C17A4 /* SpringEndTests.swift in Sources */,
 				152608768755F0473EB8AE7E /* StatsLogTests.swift in Sources */,
 				0B6ABC68E385C3918C837D04 /* StatsTests.swift in Sources */,
+				64C675DB5FB4EB1992FCF67F /* StayingPickTests.swift in Sources */,
 				945C6E6F1360BFF5B72D148F /* StoreCarryTests.swift in Sources */,
 				EE27B5F402853F983C4CD37F /* StoreSpotTests.swift in Sources */,
 				18041F23C990AB42D9497666 /* StoreTests.swift in Sources */,
