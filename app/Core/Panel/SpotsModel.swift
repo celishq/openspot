@@ -154,7 +154,6 @@ public final class SpotsModel {
     @ObservationIgnored var isReadingSessions = false
     @ObservationIgnored var waitsBack = false
     @ObservationIgnored var restoreTime = Park.restoreTime
-    @ObservationIgnored var isRestoringSession = false
     public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
     public internal(set) var closingSheet: ClosingSheet?

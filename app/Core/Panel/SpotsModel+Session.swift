@@ -32,11 +32,7 @@ extension SpotsModel {
         guard kept.isParked else { return }
         guard flow.current.map(restores) ?? true else { return startClean() }
         if let id = openSheetID, let run = sheets[id], !run.isOpen { run.open {} }
-        if !flow.pages.isEmpty {
-            isRestoringSession = true
-            startSession()
-            isRestoringSession = false
-        }
+        if !flow.pages.isEmpty { startSession() }
         if !searchText.isEmpty { textSelections += 1 }
     }
 
@@ -62,9 +58,10 @@ extension SpotsModel {
             session?.place.flow = flow
             return
         }
+        if let index = window.index, window.stops[index].place.flow == flow { return }
         commitSession()
         startSession()
-        if !isRestoringSession { stopWalking() }
+        stopWalking()
     }
 
     func noteQuery() {
@@ -77,7 +74,7 @@ extension SpotsModel {
     }
 
     func startSession() {
-        session = Session(place: SessionPlace(flow: flow, query: query), since: runs.clock.now(), isRestored: isRestoringSession)
+        session = Session(place: SessionPlace(flow: flow, query: query), since: runs.clock.now())
     }
 
     func commitSession() {
@@ -180,13 +177,10 @@ extension SpotsModel {
 
     func restore(_ place: SessionPlace) {
         asOnePress {
-            isRestoringSession = true
-            defer { isRestoringSession = false }
             endFlow()
             if query != place.query { takeQuery(place.query) }
             guard let page = place.flow.current, restores(page) else {
                 if openSheetID != nil { closeSheet(moving: isShown) }
-                startSession()
                 return
             }
             flow = place.flow
