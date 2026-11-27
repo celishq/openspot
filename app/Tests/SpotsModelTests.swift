@@ -1147,6 +1147,16 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the press of play") { self.calls(in: calls) == ["play"] }
     }
 
+    func testAMenuThatAKeyOpenedIsForgottenWhenTheSheetCloses() async throws {
+        _ = try await openParts("frame=\nclass=gap-part\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.sheets["parts"]?.menuOpening?.part, "look")
+
+        model.closeSheet(moving: false)
+
+        XCTAssertNil(model.sheets["parts"]?.menuOpening)
+    }
+
     func testAKeyPressedWhileTheShortcutRowOnlyHasTheFocusIsNotRecorded() async throws {
         let calls = try await openParts("frame=\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=option+c\\n")
 

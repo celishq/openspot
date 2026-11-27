@@ -38,6 +38,7 @@ extension SpotRun {
         }
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
+        if menuOpening != nil { menuOpening = nil }
         runs.opening.dropMotion(of: spot.id)
         heardRows = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
