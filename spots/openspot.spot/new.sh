@@ -51,16 +51,17 @@ name_of() {
   printf '%s' "${name:-New spot}"
 }
 
+# Says whether the spot $1 is a draft: its folder is there and its spot.toml says state = "draft". A draft is a spot
+# that a build began and has not made yet.
+is_draft() {
+  grep -qE "^state *= *[\"']draft[\"']" "$folder/$1.spot/spot.toml" 2>/dev/null
+}
+
 # Prints the name a build goes by: the title of its spot once the agent has chosen it, so that people meet the spot by
-# its name while it is built, or else its id, or else the words sent.
-# A change of a spot that is already made goes by the words of the change, so that each change has its own name.
+# its name while it is built, or else the words sent, or else its id.
 title_of() {
   made=$(get "$1" spot)
   words=$(short "$(get "$1" asked)")
-  if [ -n "$(get "$1" change)" ] && [ -n "$words" ]; then
-    printf '%s' "$words"
-    return
-  fi
   title=$(sed -n 's/^title *= *"\(.*\)" *$/\1/p' "$folder/$made.spot/spot.toml" 2>/dev/null | head -n 1)
   printf '%s' "${title:-${words:-$made}}"
 }
@@ -95,9 +96,9 @@ if [ -n "${OPENSPOT_EDIT-}" ]; then
 fi
 spot=
 [ -z "$job" ] || spot=$(get "$job" spot)
-# A spot is made once its folder is there and its spot.toml no longer says it is a draft.
+# A spot is made once its folder is there and it is no draft.
 if [ -n "$spot" ] && [ -z "${OPENSPOT_EDIT-}" ]; then
-  if [ ! -d "$folder/$spot.spot" ] || grep -qE "^state *= *[\"']draft[\"']" "$folder/$spot.spot/spot.toml" 2>/dev/null; then spot=; fi
+  if [ ! -d "$folder/$spot.spot" ] || is_draft "$spot"; then spot=; fi
 fi
 
 if [ -n "$job" ]; then
@@ -531,15 +532,11 @@ Title the spot \"$name\" unless the words above name it."
   case $at in
     openspot)
       [ -n "$job" ] || job="b$(date +%s)$$"
-      if [ -n "$spot" ]; then
-        put "$job" change 1
-      else
-        rm -f "$builds/$job/change"
+      if [ -z "$spot" ]; then
         made=$(get "$job" spot)
         if [ -z "$made" ]; then
           made=$(free_id "$name")
           put "$job" spot "$made"
-          put "$job" fresh 1
         fi
         if [ ! -e "$folder/$made.spot/spot.toml" ]; then
           mkdir -p "$folder/$made.spot"
@@ -624,14 +621,14 @@ case "$1" in
     [ -z "$made" ] || openspot spot push "$made" > /dev/null
     ;;
   delete)
-    # Delete drops a build, and the spot it began, if it never got ready, goes to the Trash, where ⌘Z brings it back.
+    # Delete drops a build, and the spot it began, while it is still a draft, goes to the Trash, where ⌘Z brings it back.
     dir=$(value item)
     [ -n "$dir" ] || dir=$job
     case $dir in '' | */* | .*) exit 1 ;; esac
     settle "$dir"
     [ "$(get "$dir" state)" != running ] || { echo 'Stop this build first.' >&2; exit 1; }
     made=$(get "$dir" spot)
-    if [ -n "$made" ] && [ -n "$(get "$dir" fresh)" ] && [ -d "$folder/$made.spot" ]; then
+    if [ -n "$made" ] && is_draft "$made"; then
       openspot spot delete "$made" > /dev/null 2>&1 || true
     fi
     rm -rf "${builds:?}/$dir"

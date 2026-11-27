@@ -48,8 +48,8 @@ has_script() {
 
 # Takes the draft off the spot of the new build $1, and puts the spot at the top of the grid.
 publish() {
-  [ -z "$(get "$1" change)" ] || return 0
   made=$(get "$1" spot)
+  is_draft "$made" || return 0
   sed -i '' -E "/^state *= *[\"']draft[\"']/d" "$folder/$made.spot/spot.toml"
   openspot grid push "$made" > /dev/null 2>&1 || true
 }
@@ -65,7 +65,7 @@ run() {
   mkdir -p "$folder" "${builds:?}/$1"
   log="$builds/$1/log"
   name=$(get "$1" spot)
-  if [ -n "$(get "$1" change)" ]; then work="Changing $name…"; else work='Building a spot…'; fi
+  if is_draft "$name"; then work='Building a spot…'; else work="Changing $name…"; fi
   put "$1" pid "$$"
   put "$1" state running
   agent=
@@ -130,7 +130,6 @@ run() {
     exit 1
   fi
   # The build is done before its spot shows, so that the spot never comes while New spot still shows it as building.
-  rm -f "$builds/$building/fresh"
   put "$building" state ready
   moved "$building"
   publish "$building"
