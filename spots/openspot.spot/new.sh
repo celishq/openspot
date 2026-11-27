@@ -147,11 +147,32 @@ shell_look() {
 aliased() {
   printf '%s\n' "$1" | sed 's/^alias //' | while IFS='=' read -r word line; do
     case $word in '' | claude | codex | *[!A-Za-z0-9_.-]*) continue ;; esac
-    for kind in claude codex; do
-      printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$kind " || continue
-      printf '%s|%s|%s||%s|%s\n' "$word" "$word" "$word" "$kind" "$word"
-      break
-    done
+    kind=$(kind_of "$line")
+    [ -z "$kind" ] || printf '%s|%s|%s||%s|%s\n' "$word" "$word" "$word" "$kind" "$word"
+  done
+}
+
+# Prints claude or codex when the command line $1 runs Claude Code or Codex.
+kind_of() {
+  for each in claude codex; do
+    printf ' %s ' "$1" | tr "'\"" '  ' | grep -q "[ /]$each " && { printf '%s' "$each"; return; }
+  done
+}
+
+# Prints the terminals on this Mac, each followed by a space.
+terminals() {
+  for term in Ghostty iTerm Warp Terminal; do
+    app_path "$term" > /dev/null && printf '%s ' "$term"
+  done
+}
+
+# Prints the ways of the agent $1, named $2, that runs as $3 by the word $4: Openspot when it runs as Claude Code or
+# Codex, then the way $5 when there is one, then each terminal of $terms.
+agent_ways() {
+  [ -z "$3" ] || printf '%s|%s|openspot|Openspot||%s|%s\n' "$1" "$2" "$3" "$4"
+  [ -z "${5-}" ] || printf '%s\n' "$5"
+  for term in $terms; do
+    printf '%s|%s|term-%s|%s|%s|%s|%s\n' "$1" "$2" "$(slug "$term")" "$term" "$term" "$3" "$4"
   done
 }
 
@@ -222,22 +243,20 @@ slug() {
 ways() {
   apps=$(installed_apps)
   look=$(shell_look)
+  terms=$(terminals)
   printf '%s\n%s\n' "$known_agents" "$(aliased "$look")" | while IFS='|' read -r key name bin app kind word; do
     [ -n "$key" ] || continue
-    has_bin=
     [ -n "$word" ] || [ -z "$bin" ] || word=$(agent_word "$bin" "$look") || word=
-    [ -z "$word" ] || has_bin=1
-    own=
-    [ -z "$app" ] || own=$(app_of "$app") || own=
-    [ -n "$has_bin" ] || [ -n "$own" ] || continue
-    if [ -n "$has_bin" ]; then
-      [ -z "$kind" ] || printf '%s|%s|openspot|Openspot||%s|%s\n' "$key" "$name" "$kind" "$word"
-    fi
-    [ -z "$own" ] || printf '%s|%s|app-%s|%s|%s\n' "$key" "$name" "$(slug "$app")" "$(basename "$own" .app)" "$own"
-    if [ -n "$has_bin" ]; then
-      for term in Ghostty iTerm Warp Terminal; do
-        app_path "$term" > /dev/null && printf '%s|%s|term-%s|%s|%s|%s|%s\n' "$key" "$name" "$(slug "$term")" "$term" "$term" "$kind" "$word"
-      done
+    ships=
+    [ -z "$app" ] || ships=$(app_of "$app") || ships=
+    shipped=
+    [ -z "$ships" ] || shipped=$(printf '%s|%s|app-%s|%s|%s' "$key" "$name" "$(slug "$app")" "$(basename "$ships" .app)" "$ships")
+    if [ -n "$word" ]; then
+      agent_ways "$key" "$name" "$kind" "$word" "$shipped"
+    elif [ -n "$shipped" ]; then
+      printf '%s\n' "$shipped"
+    else
+      continue
     fi
     [ "$key" = claude ] || continue
     printf '%s\n' "$editors" | while IFS='|' read -r editor scheme extensions; do
@@ -258,15 +277,8 @@ own_ways() {
   line=$(value setting.command)
   [ -n "$line" ] || return 0
   name=$(printf '%s' "$line" | awk '{ print $1 }')
-  name=${name##*/}
-  kind=
-  for each in claude codex; do
-    printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$each " && { kind=$each; break; }
-  done
-  [ -z "$kind" ] || printf 'custom|%s|openspot|Openspot||%s|%s\n' "$name" "$kind" "$line"
-  for term in Ghostty iTerm Warp Terminal; do
-    app_path "$term" > /dev/null && printf 'custom|%s|term-%s|%s|%s|%s|%s\n' "$name" "$(slug "$term")" "$term" "$term" "$kind" "$line"
-  done
+  terms=$(terminals)
+  agent_ways custom "${name##*/}" "$(kind_of "$line")" "$line"
 }
 own=$(own_ways)
 
