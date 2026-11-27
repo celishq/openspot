@@ -1045,7 +1045,6 @@
 		CC3C2862D16DAF5D582960C9 /* GuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B467BDEE5282FDB198947907 /* GuideTests.swift */; };
 		CCCD368C4C2FDC15FD2E8FA0 /* EmptySearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B604254C90EF7E19ECF6085B /* EmptySearchTests.swift */; };
 		CCF9EB81292CEE022FBCBE5D /* LinksSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422F920EDC6604D8738E717C /* LinksSpotTests.swift */; };
-		CD41293072742586D0C7D994 /* SpotBreathingSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF9C57B4FF9DFCC138090D5 /* SpotBreathingSymbol.swift */; };
 		CD4C2908C693034E2435C625 /* FrontApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEED060D3E79FC41AD86B8A6 /* FrontApp.swift */; };
 		CD740F1EDB91F7D0731928D3 /* KeyCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EFEFE50AB8FFF45095ABF8 /* KeyCodeTests.swift */; };
 		CD7F5BB6D31B502C197AE188 /* SpotSheetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76EA5686CCCFF757A2E0DA47 /* SpotSheetCard.swift */; };
@@ -1466,7 +1465,6 @@
 		0D731A0DF8EF32E22C3D3E82 /* SearchRanks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchRanks.swift; sourceTree = "<group>"; };
 		0DEF5FDD7805656647E97A4A /* SpotSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSample.swift; sourceTree = "<group>"; };
 		0DEF7FFB2E6252C8DBCFB4EE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		0EF9C57B4FF9DFCC138090D5 /* SpotBreathingSymbol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBreathingSymbol.swift; sourceTree = "<group>"; };
 		0F61985982F48DE726BF08BA /* HelpCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpCall.swift; sourceTree = "<group>"; };
 		0F73C02502299A509A427DA9 /* AttachmentLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentLayout.swift; sourceTree = "<group>"; };
 		0F94032BF55521D28DBE4D34 /* SpotMenuLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuLayer.swift; sourceTree = "<group>"; };
@@ -3062,7 +3060,6 @@
 				16DB4F0DC2A390811F35BBA5 /* SheetPicture.swift */,
 				0A33A7188607030B560E3319 /* SheetStep.swift */,
 				4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */,
-				0EF9C57B4FF9DFCC138090D5 /* SpotBreathingSymbol.swift */,
 				11D3D0BD6C083FA82A61C56E /* SpotButtonKey.swift */,
 				51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */,
 				7C387D3F42D00284C238F537 /* SpotColorBar.swift */,
@@ -5977,7 +5974,6 @@
 				B08A6E1FBA58A828A5AB66A0 /* SpotBackdropMask.swift in Sources */,
 				190C5EDD64FC0AD98A99ECF4 /* SpotBackdropTint.swift in Sources */,
 				DBC230393CF874C437542081 /* SpotBlocking.swift in Sources */,
-				CD41293072742586D0C7D994 /* SpotBreathingSymbol.swift in Sources */,
 				1EF2850A27D6FB0ABA34228C /* SpotButtonKey.swift in Sources */,
 				F46C0274AA306738AC012321 /* SpotCalendarApp.swift in Sources */,
 				81C73CBBAC90071FE0DBE1DB /* SpotCardArrow.swift in Sources */,

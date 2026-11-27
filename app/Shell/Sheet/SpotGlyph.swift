@@ -4,18 +4,16 @@ import SwiftUI
 struct SpotGlyph: View {
     let entry: SpotsModel.Entry
     var showsDisc = true
-    var side = SpotTokens.glyph
-    var font = SpotType.glyph
     @Environment(\.spotIsOnSolid) private var isOnSolid
 
     var body: some View {
         if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: side)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)
         } else {
             Image(systemName: entry.symbol)
-                .font(font)
+                .font(SpotType.glyph)
                 .foregroundStyle(isOnSolid ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
-                .frame(width: side, height: side)
+                .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
                 .background(SpotTheme.ink.opacity(showsDisc ? SpotTheme.disc : 0), in: Circle())
         }
     }

@@ -213,7 +213,7 @@ private struct FailureMark: View {
 
     var body: some View {
         if let failure = model.failure(of: entry) {
-            SpotCornerMark(face: .symbol("exclamationmark.triangle.fill"), corner: .trailing, size: size)
+            SpotCornerMark(symbol: "exclamationmark.triangle.fill", size: size)
                 .accessibilityLabel("Last run failed")
                 .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }
@@ -227,7 +227,7 @@ private struct WaitingMark: View {
 
     var body: some View {
         if entry.item == nil, model.waiting.contains(entry.spot.id), model.failure(of: entry) == nil {
-            SpotCornerMark(face: .symbol("lock.fill"), corner: .trailing, size: size)
+            SpotCornerMark(symbol: "lock.fill", size: size)
                 .allowsHitTesting(false)
                 .accessibilityLabel("Needs you in Settings")
         }

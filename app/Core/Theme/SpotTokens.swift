@@ -19,7 +19,6 @@ public enum SpotTokens {
     public static let glyphInset: CGFloat = 9
     public static let workMark: CGFloat = 16
     public static let cornerMark: CGFloat = 20
-    public static let cornerMarkPadding: CGFloat = 6
     public static var cornerMarkRadius: CGFloat { layout.radius.cornerMark }
     public static let ring: CGFloat = 2
     public static let thinRing: CGFloat = 1.5
