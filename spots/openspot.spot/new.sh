@@ -36,6 +36,15 @@ put() {
   openspot_keep "${builds:?}/$1/$2" "$3"
 }
 
+# An agent that builds a spot reports each step with `openspot spot run openspot/new step build=<id> words=<step>`, and
+# the card of its build shows the words.
+if [ "$1" = step ]; then
+  dir=$(value input.build)
+  case $dir in '' | */* | .*) echo 'Name the build, such as build=b1795784144.' >&2; exit 2 ;; esac
+  put "$dir" step "$(value input.words | tr '\n' ' ' | cut -c 1-80)"
+  exit 0
+fi
+
 # Prints the name of the build $1: its spot, or the first words sent.
 name_of() {
   name=$(title_of "$1" | cut -c 1-40)
@@ -109,14 +118,32 @@ com.exafunction.windsurf	Windsurf
 dev.zed.Zed	Zed
 com.microsoft.VSCode	VS Code'
 
-# The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, and yes
-# when Openspot can run it with no window.
-known_agents='claude|Claude Code|claude|Claude|yes
-codex|Codex|codex|Codex|yes
-gemini|Gemini CLI|gemini||
-opencode|opencode|opencode||
-amp|Amp|amp||
-cursor|Cursor|cursor-agent||'
+# The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, yes when
+# Openspot can run it with no window, and the agent it runs as: claude or codex.
+known_agents='claude|Claude Code|claude|Claude|yes|claude
+codex|Codex|codex|Codex|yes|codex
+gemini|Gemini CLI|gemini|||
+opencode|opencode|opencode|||
+amp|Amp|amp|||
+cursor|Cursor|cursor-agent|||'
+
+# Prints the shell of the person when Openspot can run a line in it, or else zsh.
+person_shell() {
+  case ${SHELL-} in */zsh | */bash) printf '%s' "$SHELL" ;; *) printf /bin/zsh ;; esac
+}
+
+# Prints an agent, in the form of known_agents and then its alias, for each alias of the person's shell that runs
+# Claude Code or Codex, such as claude-personal for another account.
+aliased() {
+  "$(person_shell)" -ic alias < /dev/null 2> /dev/null | sed 's/^alias //' | while IFS='=' read -r word line; do
+    case $word in '' | claude | codex | *[!A-Za-z0-9_.-]*) continue ;; esac
+    for kind in claude codex; do
+      printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$kind " || continue
+      printf '%s|%s|%s||yes|%s|%s\n' "$word" "$word" "$word" "$kind" "$word"
+      break
+    done
+  done
+}
 
 # The editors where Claude Code works through its extension, each the editor, its link scheme and its folder of
 # extensions. A link opens a new Claude Code session there with the prompt.
@@ -186,21 +213,27 @@ slug() {
 # Prints each way this Mac can run an agent, one line each: the agent, its name, the place, the place's name and what
 # opens it. A place is Openspot, a terminal, or an app that takes the prompt in a link: the agent's own, or an editor
 # with Claude Code. An app that takes no prompt adds nothing to Copy prompt, so New spot leaves it out.
+# Each line also names the agent it runs as and, for an alias, the alias.
 ways() {
   apps=$(installed_apps)
-  printf '%s\n' "$known_agents" | while IFS='|' read -r key name bin app here; do
+  printf '%s\n%s\n' "$known_agents" "$(aliased)" | while IFS='|' read -r key name bin app here kind word; do
+    [ -n "$key" ] || continue
     has_bin=
-    [ -z "$bin" ] || ! agent_bin "$bin" > /dev/null || has_bin=1
+    if [ -n "$word" ]; then
+      has_bin=1
+    elif [ -n "$bin" ] && agent_bin "$bin" > /dev/null; then
+      has_bin=1
+    fi
     own=
     [ -z "$app" ] || own=$(app_of "$app") || own=
     [ -n "$has_bin" ] || [ -n "$own" ] || continue
     if [ -n "$has_bin" ]; then
-      [ -z "$here" ] || printf '%s|%s|openspot|Openspot|\n' "$key" "$name"
+      [ -z "$here" ] || printf '%s|%s|openspot|Openspot||%s|%s\n' "$key" "$name" "$kind" "$word"
     fi
     [ -z "$own" ] || printf '%s|%s|app-%s|%s|%s\n' "$key" "$name" "$(slug "$app")" "$(basename "$own" .app)" "$own"
     if [ -n "$has_bin" ]; then
       for term in Ghostty iTerm Warp Terminal; do
-        app_path "$term" > /dev/null && printf '%s|%s|term-%s|%s|%s\n' "$key" "$name" "$(slug "$term")" "$term" "$term"
+        app_path "$term" > /dev/null && printf '%s|%s|term-%s|%s|%s|%s|%s\n' "$key" "$name" "$(slug "$term")" "$term" "$term" "$kind" "$word"
       done
     fi
     [ "$key" = claude ] || continue
@@ -240,9 +273,17 @@ way_of() {
   printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v p="$2" -v c="$3" '$1 == a && $3 == p { print $c; exit }'
 }
 
-# Prints the command of the agent $1.
-bin_of() {
-  printf '%s\n' "$known_agents" | awk -F '|' -v a="$1" '$1 == a { print $3; exit }'
+# Prints the agent that the agent $1 runs as: claude, codex or nothing.
+kind_of() {
+  printf '%s\n%s\n' "$known_agents" "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $6 != "" { print $6; exit }'
+}
+
+# Prints the command word of the agent $1 for the person's shell: its alias, or else the path of its command, quoted.
+command_of() {
+  word=$(printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $7 != "" { print $7; exit }')
+  [ -z "$word" ] || { printf '%s' "$word"; return; }
+  path=$(agent_bin "$(printf '%s\n' "$known_agents" | awk -F '|' -v a="$1" '$1 == a { print $3; exit }')") || return 1
+  quote "$path"
 }
 
 # Prints the words of the button that sends to the agent. They are the same for a new spot and a change, and for every
@@ -506,14 +547,17 @@ Title the spot \"$name\" unless the words above name it."
         fi
         words="$words
 
-Build the spot in the folder $folder/$made.spot. Its spot.toml says state = \"draft\", so the spot shows nowhere while you build it: keep that line, and New spot takes it off when you are done."
+$(draft_words "$folder/$made.spot")"
       fi
+      words="$words
+
+$(step_words "$job" "$(quote "$(command -v openspot)")")"
       openspot_keep "$draft.sent" "$typed"
       put "$job" asked "$(printf '%s' "$text" | tr '\n' ' ')"
-      run "$job" "$1" "$(bin_of "$me")" "$words"
+      run "$job" "$1" "$me" "$words"
       ;;
     term-*)
-      terminal "$(bin_of "$me")" "$(way_of "$me" "$at" 5)" "$words"
+      terminal "$me" "$(way_of "$me" "$at" 5)" "$words"
       openspot toast "Opened $(way_of "$me" "$at" 4)."
       sheet ""
       ;;

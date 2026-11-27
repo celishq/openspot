@@ -1,26 +1,22 @@
 # The build of New spot: it runs an agent with no window and tells the sheet each step, or hands the words to an
 # agent in a terminal or an app. new.sh sources it.
 
-# Prints one step of the agent, from a tool it uses, in plain words.
-step() {
-  case $1 in
-    Write) printf 'Writing %s' "${2##*/}" ;;
-    Edit | MultiEdit) printf 'Changing %s' "${2##*/}" ;;
-    Read) printf 'Reading %s' "${2##*/}" ;;
-    Glob | Grep) printf 'Looking through the files' ;;
-    Bash)
-      case $2 in
-        *' guide'*) printf 'Reading the guide' ;;
-        *' check'*) printf 'Checking the spot' ;;
-        *' spot run'*) printf 'Trying the spot' ;;
-        *' render'*) printf 'Looking at its card' ;;
-        *' spot show'*) printf 'Looking at what it runs' ;;
-        *chmod*) printf 'Making it run' ;;
-        *) printf 'Running a command' ;;
-      esac
-      ;;
-    *) printf 'Working' ;;
-  esac
+# Prints the words of the prompt that name the draft folder $1 of a new build.
+draft_words() {
+  printf 'Build the spot in the folder %s. Its spot.toml says state = "draft", so the spot shows nowhere while you build it: keep that line, and New spot takes it off when you are done.' "$1"
+}
+
+# Prints the words of the prompt that ask the agent to report each step of the build $1 with the command $2.
+step_words() {
+  printf 'Before each step, such as reading the guide, writing a file, checking or rendering the spot, run %s spot run openspot/new step build=%s words="<the step in a few words, such as Writing view.html>" < /dev/null, so that Openspot shows how far you are.' "$2" "$1"
+}
+
+# Runs the command word $1 with the words after it in the person's shell, so that their aliases and PATH work, in the
+# same process group, so that Stop ends it.
+in_shell() {
+  line=$1
+  shift
+  "$(person_shell)" -ic "set +m; $line \"\$@\"" "$line" "$@"
 }
 
 # Tells the sheet that a build moved, so that it shows the new step.
@@ -58,74 +54,87 @@ publish() {
   openspot grid push "$made" > /dev/null 2>&1 || true
 }
 
-# Runs the agent $3 with no window for the build $1, with the prompt $4. Each step goes to the build's files and tells
-# the sheet. The run prints its title, its step and its progress, which the card of New spot shows.
+# Runs the agent $3 with no window for the build $1, with the prompt $4 on its stdin. The run prints its title, the step
+# that the agent last reported and its progress, which the card of New spot shows. An agent that reports no step shows
+# for how long it has worked.
 run() {
   building=$1
-  bin=$(agent_bin "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
+  kind=$(kind_of "$3")
+  line=$(command_of "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
+  words=$4
   mkdir -p "$folder" "${builds:?}/$1"
   log="$builds/$1/log"
   name=$(get "$1" spot)
   if [ -n "$(get "$1" change)" ]; then work="Changing $name…"; else work='Building a spot…'; fi
   put "$1" pid "$$"
   put "$1" state running
-  trap 'openspot toast --remove "build-$building" > /dev/null 2>&1; put "$building" state stopped; moved "$building"; exit 0' TERM INT
-  put "$1" step 'Starting the agent…'
+  agent=
+  trap '[ -z "$agent" ] || { pkill -TERM -P "$agent"; kill -TERM "$agent"; } 2>/dev/null; openspot toast --remove "build-$building" > /dev/null 2>&1; put "$building" state stopped; moved "$building"; exit 0' TERM INT
+  start='Starting the agent…'
+  put "$1" step "$start"
   put "$1" said ''
-  put "$1" end ''
   progress 0.03
   moved "$1"
   session=$(get "$1" session)
-  openspot=$(command -v openspot)
+  openspot_path=$(command -v openspot)
   cd "$folder" || exit 1
-  case $3 in
+  case $kind in
     claude)
-      "$bin" -p "$4" ${session:+--resume "$session"} --output-format stream-json --verbose --permission-mode acceptEdits --add-dir "$folder" \
-        --allowedTools Read Write Edit Glob Grep "Bash($openspot:*)" "Bash(\"$openspot\":*)" "Bash(openspot:*)" \
-        "Bash(chmod:*)" "Bash(mkdir:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(swift:*)" "Bash(swiftc:*)" < /dev/null 2> "$log" |
-        /usr/bin/jq -r --unbuffered 'if .type == "assistant" then (.message.content[]? | if .type == "text" then "say\t" + (.text | gsub("[\n\t]"; " ")) elif .type == "tool_use" then "tool\t" + .name + "\t" + ((.input.file_path // .input.command // "") | tostring | gsub("[\n\t]"; " ")) else empty end) elif .type == "result" then "end\t" + (.session_id // "") + "\t" + ((.is_error // false) | tostring) + "\t" + ((.result // "") | gsub("[\n\t]"; " ")) else empty end' 2>> "$log" |
-        {
-          fill=3
-          while IFS='	' read -r kind one two three; do
-            case $kind in
-              say) put "$1" said "$(printf '%s' "$one" | cut -c 1-160)" ;;
-              tool)
-                put "$1" step "$(step "$one" "$two")"
-                ;;
-              end) put "$1" end "$(printf '%s\t%s\t%s' "$one" "$two" "$three")"; continue ;;
-            esac
-            [ "$fill" -ge 90 ] || fill=$((fill + 4))
-            progress "0.$(printf '%02d' "$fill")"
-            moved "$1"
-          done
-        }
+      if [ -n "$session" ]; then
+        set -- --resume "$session"
+      else
+        session=$(uuidgen | tr 'A-Z' 'a-z')
+        put "$building" session "$session"
+        set -- --session-id "$session"
+      fi
+      set -- -p "$@" --permission-mode acceptEdits --add-dir "$folder" \
+        --allowedTools Read Write Edit Glob Grep "Bash($openspot_path:*)" "Bash(\"$openspot_path\":*)" "Bash(openspot:*)" \
+        "Bash(chmod:*)" "Bash(mkdir:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(swift:*)" "Bash(swiftc:*)"
       ;;
-    codex)
-      "$bin" exec --full-auto -C "$folder" "$4" < /dev/null > "$log" 2>&1 && put "$1" end "$(printf '\tfalse\t')"
-      ;;
+    codex) set -- exec --skip-git-repo-check -s workspace-write -c sandbox_workspace_write.network_access=true -C "$folder" - ;;
+    *) echo "Openspot cannot run $3 with no window." >&2; exit 1 ;;
   esac
-  IFS='	' read -r session failed said <<END
-$(get "$1" end)
-END
-  name=$(get "$1" spot)
-  if [ -z "$failed" ] || [ "$failed" = true ] || ! has_script "$name"; then
-    [ -n "$said" ] || said=$(tail -n 1 "$log")
-    has_script "$name" || [ "$failed" = true ] || said='The agent is done, but made no spot.'
-    openspot toast --remove "build-$1" > /dev/null 2>&1 || true
-    put "$1" state failed
-    put "$1" said "${said:-The agent gave no answer.}"
-    moved "$1"
+  printf '%s' "$words" | in_shell "$line" "$@" > "$log" 2>&1 &
+  agent=$!
+  began=$(date +%s)
+  shown=$start
+  fill=3
+  while kill -0 "$agent" 2>/dev/null; do
+    sleep 1
+    now=$(get "$building" step)
+    if [ "$now" = "$start" ] || [ "${now#Working for }" != "$now" ]; then
+      minutes=$((($(date +%s) - began) / 60))
+      [ "$minutes" -lt 1 ] || { now="Working for $minutes min"; put "$building" step "$now"; }
+    fi
+    [ "$now" != "$shown" ] || continue
+    shown=$now
+    [ "$fill" -ge 90 ] || fill=$((fill + 4))
+    progress "0.$(printf '%02d' "$fill")"
+    moved "$building"
+  done
+  wait "$agent"
+  code=$?
+  agent=
+  if [ "$code" -ne 0 ] || ! has_script "$name"; then
+    if [ "$code" -ne 0 ]; then
+      said=$(awk 'NF { last = $0 } END { print last }' "$log" | cut -c 1-160)
+    else
+      said='The agent is done, but made no spot.'
+    fi
+    openspot toast --remove "build-$building" > /dev/null 2>&1 || true
+    put "$building" state failed
+    put "$building" said "${said:-The agent stopped and gave no answer.}"
+    moved "$building"
     [ -z "${OPENSPOT_EDIT-}" ] || { sheet ''; printf -- '---\n'; }
     echo "The agent stopped: ${said:-it gave no answer}." >&2
     exit 1
   fi
-  [ -z "$session" ] || put "$1" session "$session"
   # The build is done before its spot shows, so that the spot never comes while New spot still shows it as building.
-  rm -f "$builds/$1/fresh"
-  put "$1" state ready
-  moved "$1"
-  publish "$1"
-  shown "$1" "$name"
+  rm -f "$builds/$building/fresh"
+  put "$building" state ready
+  moved "$building"
+  publish "$building"
+  shown "$building" "$name"
   [ -z "${OPENSPOT_EDIT-}" ] || sheet ''
 }
 
@@ -156,17 +165,20 @@ stop() {
   settle "$1"
 }
 
-# Opens a new tab of the terminal $2 that runs the agent $1 in the spots folder, with the prompt as its first message.
+# Opens a new tab of the terminal $2 that runs the agent $1 in the person's shell in the spots folder, with the prompt
+# as its first message.
 terminal() {
-  bin=$(agent_bin "$1") || { echo "Openspot cannot find $1." >&2; exit 1; }
+  line=$(command_of "$1") || { echo "Openspot cannot find $1." >&2; exit 1; }
   mkdir -p "$folder" "$OPENSPOT_DATA/terminal"
   stamp=$(date +%s)
   printf '%s' "$3" > "$OPENSPOT_DATA/terminal/$stamp.prompt"
-  session=
-  [ -z "$job" ] || [ "$1" != claude ] || session=$(get "$job" session)
+  case $(kind_of "$1") in
+    claude) [ -z "$job" ] || { session=$(get "$job" session) && [ -n "$session" ] && line="$line --resume $session"; } ;;
+    codex) line="$line -c sandbox_workspace_write.network_access=true" ;;
+  esac
   {
-    printf '#!/bin/zsh -l\ncd %s || exit 1\n' "$(quote "$folder")"
-    printf 'exec %s %s"$(cat %s)"\n' "$(quote "$bin")" "${session:+--resume $session }" "$(quote "$OPENSPOT_DATA/terminal/$stamp.prompt")"
+    printf '#!/bin/sh\ncd %s || exit 1\n' "$(quote "$folder")"
+    printf 'exec %s -ic %s %s\n' "$(person_shell)" "$(quote "$line \"\$(cat \"\$0\")\"")" "$(quote "$OPENSPOT_DATA/terminal/$stamp.prompt")"
   } > "$OPENSPOT_DATA/terminal/$stamp.command"
   chmod +x "$OPENSPOT_DATA/terminal/$stamp.command"
   case $2 in

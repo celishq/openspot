@@ -153,7 +153,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testABuildInOpenspotNamesTheFolderOfItsSpotBeforeTheAgentStarts() async throws {
-        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try fake("claude", "cat > '\(root.path)/asked'")
         try forgetWays()
 
         _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
@@ -176,7 +176,7 @@ final class NewSpotTests: BuiltInCase {
         try fake("claude", """
         printf '#!/bin/sh\\necho hi\\n' > "$PWD/log-run-distance.spot/log-run-distance.sh"
         chmod +x "$PWD/log-run-distance.spot/log-run-distance.sh"
-        printf '{"type":"result","session_id":"s1","is_error":false,"result":"Done"}\\n'
+        echo Done
         """)
         let real = tools.appendingPathComponent("openspot-real")
         try fake("openspot", """
@@ -199,7 +199,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testBuildingAgainFromAFailedNewBuildNamesTheSameFolder() async throws {
-        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try fake("claude", "cat > '\(root.path)/asked'")
         try forgetWays()
         let settings = "setting.agent=claude\nsetting.place=openspot\n"
         _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\n" + settings, timeout: 60)
@@ -215,7 +215,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheFolderOfANewSpotIsNamedByTheLatinWordsOfItsNameOrElseSpot() async throws {
-        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try fake("claude", "cat > '\(root.path)/asked'")
         try forgetWays()
         let settings = "setting.agent=claude\nsetting.place=openspot\n"
 
@@ -226,6 +226,60 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertTrue(mixed.contains("Build the spot in the folder \(spots.path)/timer.spot."), mixed)
         XCTAssertTrue(cyrillic.contains("Build the spot in the folder \(spots.path)/spot.spot."), cyrillic)
+    }
+
+    func testABuildInOpenspotTellsTheAgentHowToReportEachStep() async throws {
+        try fake("claude", "cat > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.contains("spot run openspot/new step build=b"), asked)
+    }
+
+    func testAStepThatTheAgentReportsBecomesTheStepOfItsBuild() async throws {
+        _ = try await newSpot().answer("step", input: "input.build=b1\ninput.words=Writing view.html\n", timeout: 60)
+
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let step = try XCTUnwrap(paths.first { $0.hasSuffix("builds/b1/step") })
+        XCTAssertEqual(try saved(step), "Writing view.html")
+    }
+
+    func testAFailedAgentShowsItsLastLine() async throws {
+        try fake("claude", "echo 'Starting'\necho 'Not signed in. Run claude auth login.' >&2\nexit 1")
+        try forgetWays()
+
+        let failed = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        XCTAssertNil(failed)
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let said = try XCTUnwrap(paths.first { $0.hasSuffix("/said") })
+        XCTAssertEqual(try saved(said), "Not signed in. Run claude auth login.")
+    }
+
+    func testABuildWithCodexGivesItThePromptOnStdinAndASandboxThatReachesOpenspot() async throws {
+        try fake("codex", "echo \"$@\" > '\(root.path)/args'\ncat > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=codex\nsetting.place=openspot\n", timeout: 60)
+
+        let args = try saved("args")
+        XCTAssertTrue(args.hasPrefix("exec --skip-git-repo-check -s workspace-write -c sandbox_workspace_write.network_access=true"), args)
+        XCTAssertTrue(try saved("asked").contains("<request>\nLog my run distance\n</request>"))
+    }
+
+    func testAnAliasOfTheShellThatRunsClaudeIsAnAgentOfItsOwn() async throws {
+        let alias = "alias claude-personal='OPENSPOT_ACCOUNT=personal claude'\n"
+        for rc in [".zshrc", ".bashrc"] { try alias.write(to: root.appendingPathComponent("home/\(rc)"), atomically: true, encoding: .utf8) }
+        try fake("claude", "echo \"$OPENSPOT_ACCOUNT\" > '\(root.path)/account'")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", timeout: 60)
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude-personal\nsetting.place=openspot\n", timeout: 60)
+
+        XCTAssertTrue(options(of: "agent", in: output.parts).map(\.id).contains("claude-personal"), "\(options(of: "agent", in: output.parts))")
+        XCTAssertEqual(try saved("account"), "personal\n")
     }
 
     private func fakeApp(_ name: String, id: String) throws -> URL {
