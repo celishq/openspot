@@ -71,4 +71,19 @@ final class ArrangeHoldTests: PanelCase {
         XCTAssertEqual(gone.code, 1)
         XCTAssertEqual(gone.errors, "You have no spot `nope` to push. Run `openspot grid list` to see each one.\n")
     }
+
+    func testGridPushOnAFullGridMovesTheLastSpotsOffIt() async throws {
+        try await spots((0..<40).map { "s\($0)" }, off: ["z"])
+        takeCalls()
+        let full = model.visible.map(\.id)
+
+        let pushed = try await call(["grid", "push", "z"])
+
+        XCTAssertEqual(pushed.code, 0, pushed.errors)
+        XCTAssertEqual(reading.first, "z")
+        let gone = full.filter { !self.model.visible.map(\.id).contains($0) }
+        XCTAssertFalse(gone.isEmpty)
+        XCTAssertTrue(pushed.output.hasPrefix("Z is at the top of the grid. Moved "), pushed.output)
+        XCTAssertTrue(gone.allSatisfy { pushed.output.contains($0.capitalized) }, pushed.output)
+    }
 }

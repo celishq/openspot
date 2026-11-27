@@ -32,9 +32,14 @@ extension SpotsModel {
             let size = grid.size(of: entry.size, at: top, among: [], choices: sizes(of: entry))
             let spots = others.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) } + [GridSpot(size: size, cell: top)]
             let laid = grid.place(spots, first: others.count)
-            guard laid.count == spots.count else { return .full }
-            saveLayout(laid, of: others + [entry], selecting: id, also: { $0.set(isOnGrid: true, of: id) })
-            return .pinned(top)
+            guard laid.contains(where: { $0.index == others.count }) else { return .full }
+            let placed = Set(laid.map(\.index))
+            let off = others.indices.filter { !placed.contains($0) }.map { others[$0] }
+            saveLayout(laid, of: others + [entry], selecting: id, also: { choices in
+                choices.set(isOnGrid: true, of: id)
+                for spot in off { choices.set(isOnGrid: false, of: spot.id) }
+            })
+            return .pushed(off: off.map(\.spot.name))
         }
     }
 
