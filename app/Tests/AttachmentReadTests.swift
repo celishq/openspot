@@ -215,7 +215,7 @@ final class AttachmentReadTests: AttachmentCase {
         try await refuse()
 
         XCTAssertEqual(model.details?.label, "Openspot can't read Safari. Allow it in Openspot's settings.")
-        XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   ⌘K Settings   Esc Leave")
+        XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   ⌘⏎ Settings   Esc Leave")
         XCTAssertEqual(shown, [])
         XCTAssertEqual(host.notes, [])
         model.runSelected()
@@ -225,10 +225,12 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertNil(model.openSheetID)
     }
 
-    func testCommandKOnAChipOpensTheSettingsOfItsSource() async throws {
+    func testCommandReturnOnAChipOpensTheSettingsOfItsSourceAndCommandKDoesNot() async throws {
         try await refuse()
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        XCTAssertEqual(host.settingsOpens, 0)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
         XCTAssertEqual(host.settingsOpens, 1)
         XCTAssertEqual(model.settingsBook.page, .spotOf("tab"))

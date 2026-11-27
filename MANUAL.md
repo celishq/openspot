@@ -120,7 +120,7 @@ free slot, as `openspot grid pin <id>` does.
 ## Hand what you work on to a spot
 
 The Settings page of Selection, Browser Tab and Clipboard holds a Show as attachment row, which hides or shows its card in
-the field. `⌘K` on a card in the field opens that page, and so does Return on a card that Openspot may not read yet. Its
+the field. `⌘` Return on a card in the field opens that page, and so does Return on a card that Openspot may not read yet. Its
 Access rows show whether macOS lets Openspot read each app. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.
 

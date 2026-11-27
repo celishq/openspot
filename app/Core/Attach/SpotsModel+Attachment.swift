@@ -189,7 +189,7 @@ extension SpotsModel {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
         guard attachments.isOn else { return attachments.layout.isQuiet ? "⇥ Attach" : nil }
         let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" } ?? (isChipRefused ? "⏎ Allow" : nil)
-        return [run, "⇥ Next", "⌘K Settings", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
+        return [run, "⇥ Next", "⌘⏎ Settings", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
     func hideAttachments() {

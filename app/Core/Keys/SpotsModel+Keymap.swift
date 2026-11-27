@@ -185,7 +185,7 @@ extension SpotsModel {
     var settingsRow: KeyRow {
         let shows = target.map { openSheetID == nil && $0.item == nil && hasSettings($0.entry) } ?? false
         return KeyRow("return", command: true, words: shows ? "Settings" : nil) { [self] _ in
-            openSelectedSettings() ? true : nil
+            openSourceSettings() || openSelectedSettings() ? true : nil
         }
     }
 
@@ -240,7 +240,7 @@ extension SpotsModel {
             },
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
-                guard let target else { return openSourceSettings() ? true : nil }
+                guard let target else { return nil }
                 guard actionMenu(on: target)?.holdsMore == true else { return false }
                 openMenu(on: target)
                 return menu != nil
