@@ -152,6 +152,16 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(opened.queryItems?.first { $0.name == "prompt" }?.value?.contains("<request>\nA timer\n</request>"), true, "\(opened)")
     }
 
+    func testABuildInOpenspotNamesTheFolderOfItsSpotBeforeTheAgentStarts() async throws {
+        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.hasSuffix("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+    }
+
     private func fakeApp(_ name: String, id: String) throws -> URL {
         let app = root.appendingPathComponent("\(name).app")
         try FileManager.default.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)

@@ -47,12 +47,13 @@ name_of() {
 # A change of a spot that is already made goes by the words of the change, so that each change has its own name.
 title_of() {
   made=$(get "$1" spot)
-  if [ -z "$made" ] || [ -n "$(get "$1" change)" ]; then
-    words=$(short "$(get "$1" asked)")
-    [ -z "$words" ] && [ -n "$made" ] || { printf '%s' "$words"; return; }
+  words=$(short "$(get "$1" asked)")
+  if [ -n "$(get "$1" change)" ] && [ -n "$words" ]; then
+    printf '%s' "$words"
+    return
   fi
   title=$(sed -n 's/^title *= *"\(.*\)" *$/\1/p' "$folder/$made.spot/spot.toml" 2>/dev/null | head -n 1)
-  printf '%s' "${title:-$made}"
+  printf '%s' "${title:-${words:-$made}}"
 }
 
 # Prints a short name of the words $1: their first three words that say what, such as Log run distance for "spot to log
@@ -158,6 +159,20 @@ agent_bin() {
       ;;
   esac
   return 1
+}
+
+# Prints a free id for a new spot from the words $1, such as log-run-distance, with a number after it when a spot or
+# another build has it.
+free_id() {
+  base=$(printf '%s' "$1" | tr 'A-Z ' 'a-z-' | tr -cd 'a-z0-9-')
+  [ -n "$base" ] || base=spot
+  id=$base
+  n=2
+  while [ -e "$folder/$id.spot" ] || grep -qxF "$id" "${builds:?}"/*/spot 2>/dev/null; do
+    id="$base-$n"
+    n=$((n + 1))
+  done
+  printf '%s' "$id"
 }
 
 slug() {
@@ -495,52 +510,23 @@ mark() {
   said=$(openspot spot mark "$made" "$2" 2>&1) || printf '%s %s %s: %s\n' "$(date +%T)" "$made" "$2" "$said" >> "$builds/$1/marks"
 }
 
-# Makes the spot $2 the build $1's, if it has none yet, and hides it from the grid until the build is done.
-claim() {
-  [ -z "$(get "$1" spot)" ] || return 0
-  guess=$(get "$1" guess)
-  if [ -n "$guess" ] && [ "$guess" != "$2" ]; then
-    openspot spot mark "$guess" none > /dev/null 2>&1 || true
-  fi
-  rm -f "$builds/$1/guess"
-  put "$1" spot "$2"
-  printf '%s\n' "$before" | grep -qxF "$2.spot" || put "$1" fresh 1
-  mark "$1" building
-}
-
-# Takes the spot $2 that a command of the build $1 names as a guess: it hides at once, but the first spot the agent
-# writes to is the build's own.
-guess() {
-  [ -z "$(get "$1" spot)" ] && [ -z "$(get "$1" guess)" ] || return 0
-  [ -z "$was" ] || return 0
-  put "$1" guess "$2"
-  openspot spot mark "$2" building > /dev/null 2>&1 || true
-}
-
-# Takes off the mark of the guess of the build $1, which the agent never made.
-drop_guess() {
-  guess=$(get "$1" guess)
-  [ -z "$guess" ] || openspot spot mark "$guess" none > /dev/null 2>&1 || true
-  rm -f "$builds/$1/guess"
-}
-
 run() {
   building=$1
   bin=$(agent_bin "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
   mkdir -p "$folder" "${builds:?}/$1"
   log="$builds/$1/log"
   name=$(get "$1" spot)
-  if [ -n "$name" ]; then work="Changing $name…"; else work='Building a spot…'; fi
+  if [ -n "$(get "$1" change)" ]; then work="Changing $name…"; else work='Building a spot…'; fi
   put "$1" pid "$$"
   put "$1" state running
-  trap 'mark "$building" none; drop_guess "$building"; put "$building" state stopped; moved "$building"; exit 0' TERM INT
+  mark "$1" building
+  trap 'mark "$building" none; put "$building" state stopped; moved "$building"; exit 0' TERM INT
   put "$1" step 'Starting the agent…'
   put "$1" said ''
   put "$1" end ''
   progress 0.03
   moved "$1"
   session=$(get "$1" session)
-  before=$(ls -1 "$folder")
   openspot=$(command -v openspot)
   cd "$folder" || exit 1
   case $3 in
@@ -558,22 +544,6 @@ run() {
                 put "$1" step "$(step "$one" "$two")"
                 # Each step marks the spot again, so that it stays hidden whatever took the mark off.
                 mark "$1" building
-                case $one:$two in
-                  # The first spot the agent writes is the build's, also one that was there, such as one of the
-                  # same name it built on. Only a new one is fresh, so that Delete trashes no spot of before.
-                  Write:"$folder"/*.spot/* | Edit:"$folder"/*.spot/* | MultiEdit:"$folder"/*.spot/*)
-                    made=${two#"$folder"/}
-                    claim "$1" "${made%%.spot/*}"
-                    ;;
-                  # A command that names a spot folder not there before, such as a mkdir, makes the build's spot.
-                  # Its mark comes before the command runs, so that the spot never shows on the grid half made.
-                  Bash:*.spot*)
-                    made=$(printf '%s\n' "$two" | grep -oE '[A-Za-z0-9_-]+\.spot' | sed 's/\.spot$//' | while IFS= read -r name; do
-                      printf '%s\n' "$before" | grep -qxF "$name.spot" || { printf '%s' "$name"; break; }
-                    done)
-                    [ -z "$made" ] || guess "$1" "$made"
-                    ;;
-                esac
                 ;;
               end) put "$1" end "$(printf '%s\t%s\t%s' "$one" "$two" "$three")"; continue ;;
             esac
@@ -590,13 +560,12 @@ run() {
   IFS='	' read -r session failed said <<END
 $(get "$1" end)
 END
-  guess=$(get "$1" guess)
-  if [ -n "$guess" ] && [ -d "$folder/$guess.spot" ]; then claim "$1" "$guess"; else drop_guess "$1"; fi
   name=$(get "$1" spot)
-  if [ -z "$failed" ] || [ "$failed" = true ] || [ -z "$name" ]; then
+  if [ -z "$failed" ] || [ "$failed" = true ] || [ ! -d "$folder/$name.spot" ]; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
-    [ -n "$name" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
+    [ -d "$folder/$name.spot" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
     mark "$1" none
+    [ -d "$folder/$name.spot" ] || rm -f "$builds/$1/spot" "$builds/$1/fresh"
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
     moved "$1"
@@ -730,7 +699,17 @@ Title the spot \"$name\" unless the words above name it."
     openspot)
       was=$job
       [ -n "$job" ] || job="b$(date +%s)$$"
-      if [ -n "$was" ]; then put "$job" change 1; else rm -f "$builds/$job/change"; fi
+      if [ -n "$was" ]; then
+        put "$job" change 1
+      else
+        rm -f "$builds/$job/change"
+        made=$(free_id "$name")
+        put "$job" spot "$made"
+        put "$job" fresh 1
+        words="$words
+
+Build the spot in the folder $folder/$made.spot."
+      fi
       openspot_keep "$draft.sent" "$typed"
       put "$job" asked "$(printf '%s' "$text" | tr '\n' ' ')"
       run "$job" "$1" "$(bin_of "$me")" "$words"
