@@ -10,7 +10,6 @@ public enum SpotCall: NounCall {
     case list(core: Bool, form: PrintForm)
     case add(String?, isConfirmed: Bool)
     case remove(String)
-    case mark(String, isNew: Bool)
     case allow(String, use: String)
     case open(String)
     case push(String, route: String?, title: String?, replace: Bool)
@@ -62,16 +61,6 @@ public enum SpotCall: NounCall {
             return Self.allow(fit.rest[0], use: fit.rest[1])
         },
         CommandVerb("remove", "<id>", "Moves a spot that spot add or store get added to the Trash, and drops it from spots.lock. Its data stays.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb(
-            "mark", "<id> <mark>",
-            "Marks a spot: new shows it first with a New mark until the person opens it, and none takes the mark off.",
-            rule: CallRule(use: .spots, used: "marked a spot", inShow: .changes("changes the grid"))
-        ) { words in
-            guard let fit = words.fit, fit.rest.count == 2 else { return nil }
-            let word = fit.rest[1]
-            guard ["new", "none"].contains(word) else { return nil }
-            return Self.mark(fit.rest[0], isNew: word == "new")
-        },
         CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow, or its window. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
@@ -119,7 +108,6 @@ public enum SpotCall: NounCall {
         case .add(let source?, let isConfirmed): spots.add(source, isConfirmed: isConfirmed)
         case .add(nil, let isConfirmed): spots.restore(isConfirmed: isConfirmed)
         case .remove(let id): spots.remove(id)
-        case .mark(let id, let isNew): spots.mark(id, isNew: isNew)
         case .allow(let id, let use): spots.allow(use, for: id)
         case .open(let id): spots.open(id)
         case .push(let id, let route, let title, let replace): spots.push(id, route: route, title: title, replace: replace)

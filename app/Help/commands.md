@@ -38,8 +38,8 @@ fail in it:
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
 - calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
   `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
-- calls that change Openspot or its places: `app quit`, `app restart`, `spot mark`, each call of `theme` but `theme list`
-  and `theme open`, `update install`, `spot allow`, and `setting set` of a key that Openspot keeps for the person;
+- calls that change Openspot or its places: `app quit`, `app restart`, each call of `theme` but `theme list` and
+  `theme open`, `update install`, `spot allow`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
 - calls that open a window or the panel: `app settings`, `spot open`, `spot choose`, `spot edit`, `spot prompt`,
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
@@ -74,7 +74,6 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot delete <id>`                        | Moves a spot's folder to the Trash, as Remove in its ⌘K menu does. Its data stays.              |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` or `store get` added to the Trash. Its data stays.                 |
-| `openspot spot mark <id> <mark>` | `new` shows a spot first with a New mark until you open it, and `none` takes the mark off. |
 | `openspot spot allow <id> <use>` | Lets a spot that `spot add` added make the calls of a use that its `spot.toml` doesn't name, and records the use in `spots.lock`, as an update with `--yes` does. Only the person can run it. |
 | `openspot spot list [--core] [--json]` | Prints an `item=<id>` record for each spot: its `state=` (`ready`, `access` or `review`), its `uses=`, the macOS accesses it `needs=` that are denied or not asked yet, the uses it was `refused=`, the time of its last call of each use as `last.<use>=`, and the accesses that the calls of each use need as `access.<use>=`, or may need as `maybe.<use>=`. `--core` prints each spot that comes with Openspot, with `own=` when a spot of your spots folder takes its place. |
 | `openspot setting list [--spot <id>] [--json]` | Prints a record for each row of Settings, of the app and of each spot, or of one spot, `openspot` for the app: `item=`, `spot=`, `name=` (the spot's name), `key=` (what `setting set` takes), `title=`, `value=` (`set` for a secret), `kind=`, `section=`, `icon=` and `detail=`, and for a choice its `options=` and `default=`. |

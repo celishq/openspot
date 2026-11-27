@@ -24,9 +24,9 @@ extension SpotsModel {
         public let cells: [Int: GridCell]
         public let isNew: Bool
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices(), isCore: Bool = false) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices(), isCore: Bool = false, isNew: Bool = false) {
             id = spot.id
-            isNew = choice.isNew(spot.id)
+            self.isNew = isNew
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? (isCore && !choice.names(spot.id) ? false : defaults.isOnGrid(of: spot.id))
@@ -85,7 +85,7 @@ extension SpotsModel {
         }
 
         @MainActor public var isOnGrid: Bool {
-            !spot.isDraft && (isNew && spot.isFound || (gridChoice ?? state.isOnGrid))
+            !spot.isDraft && (gridChoice ?? state.isOnGrid)
         }
 
         @MainActor public var kind: SpotKind {

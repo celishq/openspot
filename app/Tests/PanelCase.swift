@@ -58,7 +58,9 @@ class PanelCase: XCTestCase {
     let toGrid = ActionKey(name: "escape", isCommand: true)
 
     func script(_ name: String, toml: String, _ body: String) throws {
-        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
+        let file = spots.spotFile(name)
+        try TestSpot(toml: toml, body: "\(body)").write(to: file)
+        try FileManager.default.setAttributes([.creationDate: Date().addingTimeInterval(-30 * 86_400)], ofItemAtPath: file.path)
     }
 
     var titles: [String] {

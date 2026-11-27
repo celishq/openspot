@@ -141,21 +141,6 @@ final class SpotChoicesTests: XCTestCase {
         ])
     }
 
-    func testANewMarkTakesTrueOrFalse() {
-        let config = Config(text: """
-        [[spots]]
-        id = "a"
-        new = "yes"
-
-        [[spots]]
-        id = "b"
-        new = true
-        """)
-
-        XCTAssertEqual(config.arrangement.newIDs, ["b"])
-        XCTAssertEqual(config.faults, ["config.toml: a new takes true or false."])
-    }
-
     func testAFileKeepsItsKeyAndItsChoicesThroughEachWrite() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-arrangement-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }

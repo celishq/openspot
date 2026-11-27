@@ -251,12 +251,7 @@ public struct Config: Equatable, Sendable {
         case nil: break
         default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
         }
-        switch table["new"] {
-        case .boolean(let isNew)?: choice.isNew = isNew
-        case nil: break
-        default: faults.append("config.toml: \(id) new takes true or false.")
-        }
-        for key in table.keys.sorted() where !ReservedSetting.choiceKeys.union(["id", "size", "window", "letter", "key", "side", "places", "commands", "new"]).contains(key) {
+        for key in table.keys.sorted() where !ReservedSetting.choiceKeys.union(["id", "size", "window", "letter", "key", "side", "places", "commands"]).contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice
