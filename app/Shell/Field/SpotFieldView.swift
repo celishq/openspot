@@ -27,7 +27,7 @@ struct SpotFieldView: View {
                 promptLayer
                     .modifier(SpotFaded())
                     .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
-                editHeader
+                SpotEditHeader(model: model)
                     .modifier(SpotFaded())
                     .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                     .allowsHitTesting(model.isEditing)
@@ -99,27 +99,6 @@ struct SpotFieldView: View {
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.glassInk)
         .modifier(FieldPlace(isShown: model.isShown))
-    }
-
-    private var editHeader: some View {
-        HStack {
-            Text(model.isArranging ? "Arranging spots" : "Edit Spots")
-                .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink)
-            Spacer()
-            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
-                ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
-        }
-        .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
-        .padding(.trailing, SpotTokens.padding)
-        .frame(width: Self.rect.width, height: Self.rect.height)
-        .offset(x: Self.rect.minX, y: Self.rect.minY)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
     static func sheetRow(top: SheetTop) -> CGRect {

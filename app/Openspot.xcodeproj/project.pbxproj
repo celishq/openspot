@@ -371,6 +371,7 @@
 		456B45637CBD0369B6344706 /* FloatHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FD28974A85220A792B49FA /* FloatHost.swift */; };
 		458683122D4F69FE94747093 /* ClipboardCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E518A63418FE33CDA929F64 /* ClipboardCall.swift */; };
 		45F0C13557E363D5469D446A /* URL+SpotFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24BAAC7014CA50EA7277EE18 /* URL+SpotFile.swift */; };
+		45FDBC0008E4003D8647BCDE /* SpotEditHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3BEB346380B09F4AA8E21C /* SpotEditHeader.swift */; };
 		467F1134177144246732FE1E /* MacCallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7550D4A89B7A892745DC4B /* MacCallsTests.swift */; };
 		4691F0F3F98E01ED573A438D /* NSEvent+Key.swift in Sources */ = {isa = PBXBuildFile; fileRef = A403F80489A189FFC6569D8C /* NSEvent+Key.swift */; };
 		46AE09580C49A17F7170E474 /* SettingRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAC199C8FF2B952AB81808D /* SettingRows.swift */; };
@@ -2000,6 +2001,7 @@
 		79DFA80B8470228C32B23A49 /* SpotsModel+Drag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Drag.swift"; sourceTree = "<group>"; };
 		79F9F8F8A5DF2955584F82ED /* PanelFootTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelFootTests.swift; sourceTree = "<group>"; };
 		7AFB8F059DB7D10AF2664980 /* SpotLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLock.swift; sourceTree = "<group>"; };
+		7B3BEB346380B09F4AA8E21C /* SpotEditHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEditHeader.swift; sourceTree = "<group>"; };
 		7B7E74011BAC4C7ACD987A3C /* AppWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWordsTests.swift; sourceTree = "<group>"; };
 		7BC62747E5454041447E56FA /* SampleSpotsCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSpotsCase.swift; sourceTree = "<group>"; };
 		7BE5363A94099011F3E6C060 /* TreeFaultsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeFaultsTests.swift; sourceTree = "<group>"; };
@@ -4125,6 +4127,7 @@
 			children = (
 				B8C8E91BF5940C14E3C95304 /* SpotAddDrop.swift */,
 				8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */,
+				7B3BEB346380B09F4AA8E21C /* SpotEditHeader.swift */,
 				AB4C876B74746CC1FF5730EC /* SpotEmptyField.swift */,
 				DA0055869671071E03A6137B /* SpotFieldFocus.swift */,
 				3AF9B1EA0E1D4D172FE7EADC /* SpotFieldLook.swift */,
@@ -5994,6 +5997,7 @@
 				A02BCB45D1D7549CCE52F46E /* SpotCustomView.swift in Sources */,
 				360DD355FBEF9D7341EB426E /* SpotDropView.swift in Sources */,
 				3FBEE56F9CA5E8D50DA07C29 /* SpotEditControls.swift in Sources */,
+				45FDBC0008E4003D8647BCDE /* SpotEditHeader.swift in Sources */,
 				9F9B2DF49399108338DD2C8B /* SpotEmptyField.swift in Sources */,
 				E2B9983579DFD248E8630353 /* SpotEventStore.swift in Sources */,
 				1AD9817F60DBC68B82EAE054 /* SpotFadeLook.swift in Sources */,
