@@ -59,8 +59,8 @@ publish() {
 # for how long it has worked.
 run() {
   build=$1
-  kind=$(kind_of "$3")
-  line=$(command_of "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
+  kind=$(way_of "$3" '' kind)
+  line=$(way_of "$3" '' word) || { echo "Openspot cannot find $3." >&2; exit 1; }
   words=$4
   mkdir -p "$folder" "${builds:?}/$1"
   log="$builds/$1/log"
@@ -167,11 +167,11 @@ stop() {
 # Opens a new tab of the terminal $2 that runs the agent $1 in the person's shell in the spots folder, with the prompt
 # as its first message.
 terminal() {
-  line=$(command_of "$1") || { echo "Openspot cannot find $1." >&2; exit 1; }
+  line=$(way_of "$1" '' word) || { echo "Openspot cannot find $1." >&2; exit 1; }
   mkdir -p "$folder" "$OPENSPOT_DATA/terminal"
   stamp=$(date +%s)
   printf '%s' "$3" > "$OPENSPOT_DATA/terminal/$stamp.prompt"
-  case $(kind_of "$1") in
+  case $(way_of "$1" '' kind) in
     claude) [ -z "$build" ] || { session=$(get "$build" session) && [ -n "$session" ] && line="$line --resume $session"; } ;;
     codex) line="$line -c sandbox_workspace_write.network_access=true" ;;
   esac

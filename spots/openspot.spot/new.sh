@@ -113,14 +113,14 @@ com.exafunction.windsurf	Windsurf
 dev.zed.Zed	Zed
 com.microsoft.VSCode	VS Code'
 
-# The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, yes when
-# Openspot can run it with no window, and the agent it runs as: claude or codex.
-known_agents='claude|Claude Code|claude|Claude|yes|claude
-codex|Codex|codex|Codex|yes|codex
-gemini|Gemini CLI|gemini|||
-opencode|opencode|opencode|||
-amp|Amp|amp|||
-cursor|Cursor|cursor-agent|||'
+# The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, and the
+# agent it runs as: claude or codex, which Openspot can run with no window.
+known_agents='claude|Claude Code|claude|Claude|claude
+codex|Codex|codex|Codex|codex
+gemini|Gemini CLI|gemini||
+opencode|opencode|opencode||
+amp|Amp|amp||
+cursor|Cursor|cursor-agent||'
 
 # Prints the shell of the person when Openspot can run a line in it, or else zsh.
 person_shell() {
@@ -141,7 +141,7 @@ aliased() {
     case $word in '' | claude | codex | *[!A-Za-z0-9_.-]*) continue ;; esac
     for kind in claude codex; do
       printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$kind " || continue
-      printf '%s|%s|%s||yes|%s|%s\n' "$word" "$word" "$word" "$kind" "$word"
+      printf '%s|%s|%s||%s|%s\n' "$word" "$word" "$word" "$kind" "$word"
       break
     done
   done
@@ -208,14 +208,13 @@ slug() {
   printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9'
 }
 
-# Prints each way this Mac can run an agent, one line each: the agent, its name, the place, the place's name and what
-# opens it. A place is Openspot, a terminal, or an app that takes the prompt in a link: the agent's own, or an editor
+# Prints each way this Mac can run an agent, one line each, which way_of reads: the agent, its name, the place, the
+# place's name, what opens it, the agent it runs as and the word that runs it. A place is Openspot, a terminal, or an app that takes the prompt in a link: the agent's own, or an editor
 # with Claude Code. An app that takes no prompt adds nothing to Copy prompt, so New spot leaves it out.
-# Each line also names the agent it runs as and, for an alias, the alias.
 ways() {
   apps=$(installed_apps)
   look=$(shell_look)
-  printf '%s\n%s\n' "$known_agents" "$(aliased "$look")" | while IFS='|' read -r key name bin app here kind word; do
+  printf '%s\n%s\n' "$known_agents" "$(aliased "$look")" | while IFS='|' read -r key name bin app kind word; do
     [ -n "$key" ] || continue
     has_bin=
     [ -n "$word" ] || [ -z "$bin" ] || word=$(agent_word "$bin" "$look") || word=
@@ -224,7 +223,7 @@ ways() {
     [ -z "$app" ] || own=$(app_of "$app") || own=
     [ -n "$has_bin" ] || [ -n "$own" ] || continue
     if [ -n "$has_bin" ]; then
-      [ -z "$here" ] || printf '%s|%s|openspot|Openspot||%s|%s\n' "$key" "$name" "$kind" "$word"
+      [ -z "$kind" ] || printf '%s|%s|openspot|Openspot||%s|%s\n' "$key" "$name" "$kind" "$word"
     fi
     [ -z "$own" ] || printf '%s|%s|app-%s|%s|%s\n' "$key" "$name" "$(slug "$app")" "$(basename "$own" .app)" "$own"
     if [ -n "$has_bin" ]; then
@@ -264,22 +263,11 @@ chosen_place() {
   printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v want="$place" '$1 != a { next } first == "" { first = $3 } $3 == want { print $3; found = 1; exit } END { if (!found && first != "") print first }'
 }
 
-# Prints the column $3 of the way of the agent $1 at the place $2.
+# Prints the fact $3 of the way of the agent $1 at the place $2, or at any place that has it when $2 is empty: name,
+# place-name, opens, kind (claude, codex or nothing) or word, the word that runs the agent in the person's shell.
 way_of() {
-  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v p="$2" -v c="$3" '$1 == a && $3 == p { print $c; exit }'
-}
-
-# Prints the agent that the agent $1 runs as: claude, codex or nothing.
-kind_of() {
-  printf '%s\n%s\n' "$known_agents" "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $6 != "" { print $6; exit }'
-}
-
-# Prints the word that runs the agent $1 in the person's shell, which ways found: its alias, its command, or the path
-# of the one its app ships.
-command_of() {
-  word=$(printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a && $7 != "" { print $7; exit }')
-  [ -n "$word" ] || return 1
-  printf '%s' "$word"
+  case $3 in name) c=2 ;; place-name) c=4 ;; opens) c=5 ;; kind) c=6 ;; word) c=7 ;; *) return 1 ;; esac
+  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v p="$2" -v c="$c" '$1 == a && (p == "" ? $c != "" : $3 == p) { print $c; found = 1; exit } END { exit !found }'
 }
 
 # Prints the words of the button that sends to the agent. They are the same for a new spot and a change, and for every
@@ -549,12 +537,12 @@ $(step_words "$build" "$(quote "$(command -v openspot)")")"
       run "$build" "$1" "$me" "$words"
       ;;
     term-*)
-      terminal "$me" "$(way_of "$me" "$at" 5)" "$words"
-      openspot toast "Opened $(way_of "$me" "$at" 4)."
+      terminal "$me" "$(way_of "$me" "$at" opens)" "$words"
+      openspot toast "Opened $(way_of "$me" "$at" place-name)."
       sheet ""
       ;;
     app-*)
-      in_app "$at" "$(way_of "$me" "$at" 5)" "$words"
+      in_app "$at" "$(way_of "$me" "$at" opens)" "$words"
       sheet ""
       ;;
     *)
