@@ -58,6 +58,7 @@ struct SpotFieldView: View {
         return ZStack(alignment: .topLeading) {
             SpotTheme.highlight.opacity(SpotTheme.fill)
                 .clipShape(SpotSurfaceShape(rect: place, radius: fieldRadius))
+                .contentShape(SpotSurfaceShape(rect: place, radius: fieldRadius))
                 .opacity(isInSheet ? 1 : MotionTokens.hiddenOpacity)
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
