@@ -132,9 +132,10 @@ public struct ViewTree: Equatable, Sendable {
             guard let block = found[id], let word = block.fields.first?.key else { continue }
             let partKind = BlockKind.of(block, in: kinds)
             guard let kind = partKind ?? BlockKind.lists.first(where: { $0.word == word }) ?? kinds.first(where: { $0.name == word }) else { continue }
-            let style = block.value(ViewNode.classKey).map(styles.style(of:)) ?? Style()
+            let classes = block.value(ViewNode.classKey)
+            let style = classes.map(styles.style(of:)) ?? Style()
             faults += style.unknown.map { "the part \(id) has an unknown class: \($0)" }
-            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], partKind: partKind)
+            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, classes: classes, styles: styles, children: held[id] ?? [], partKind: partKind)
             places.formUnion(style.named)
         }
         holdsItems = nodes.values.contains { $0.kind == .items }

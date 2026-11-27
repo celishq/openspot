@@ -10,7 +10,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
     public let kind: BlockKind
     public let parent: String?
     public let block: TextBlock
-    public let style: Style
+    private let kept: StyleCache.Kept
     public let children: [String]
     public internal(set) var part: SpotPart?
     public let value: String?
@@ -19,6 +19,10 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
     public let values: [String: [String]]
     public let isSearch: Bool
     private let lines: Int
+
+    public var style: Style {
+        kept.style
+    }
 
     public var title: String? {
         part?.title
@@ -40,7 +44,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         }
     }
 
-    init(id: String, kind: BlockKind, parent: String?, block: TextBlock, style written: Style, children: [String], partKind: BlockKind?) {
+    init(id: String, kind: BlockKind, parent: String?, block: TextBlock, style written: Style, classes: String?, styles: StyleCache, children: [String], partKind: BlockKind?) {
         self.id = id
         self.kind = kind
         self.parent = parent
@@ -53,7 +57,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
             let isFree = partKind?.source != nil && style.height == nil && !style.isSquare
             style.grows = block.flag("grow") ?? (kind == .items || isMultiline || isFree ? true : nil)
         }
-        self.style = style
+        kept = styles.kept(style, classes: classes, grows: style.grows)
         self.children = children
         value = block.value("value")
         icon = kind == .icon ? Icon(text: value) : part?.icon
