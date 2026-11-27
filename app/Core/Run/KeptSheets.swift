@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 public final class KeptSheets {
     static let writePause = Duration.seconds(2)
-    static let byteLimit = 256 << 10
+    nonisolated static let byteLimit = 256 << 10
 
     let folder: URL?
     private var texts: [String: String] = [:]
@@ -23,7 +23,7 @@ public final class KeptSheets {
     public nonisolated static func read(_ folder: URL?) -> [String: String] {
         guard let folder, let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return [:] }
         var read: [String: String] = [:]
-        for file in files where file.pathExtension == "frame" {
+        for file in files where file.pathExtension == "frame" && ((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) <= byteLimit {
             if let text = try? String(contentsOf: file, encoding: .utf8) { read[file.deletingPathExtension().lastPathComponent] = text }
         }
         return read
@@ -43,10 +43,11 @@ public final class KeptSheets {
 
     func keep(_ text: String, frame: Frame, of id: String) {
         let name = Self.name(of: id)
-        guard texts[name] != text, text.utf8.count <= Self.byteLimit else { return }
-        texts[name] = text
-        frames[name] = frame
-        unwritten[name] = text
+        guard texts[name] != text else { return }
+        let fits = text.utf8.count <= Self.byteLimit
+        texts[name] = fits ? text : ""
+        frames[name] = fits ? frame : nil
+        unwritten[name] = fits ? text : ""
         guard folder != nil, writing == nil else { return }
         writing = Task { [weak self] in
             try? await Task.sleep(for: Self.writePause, tolerance: Self.writePause)
@@ -63,7 +64,8 @@ public final class KeptSheets {
         guard let folder else { return }
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for (name, text) in texts {
-            try? text.write(to: folder.appendingPathComponent(name + ".frame"), atomically: true, encoding: .utf8)
+            let file = folder.appendingPathComponent(name + ".frame")
+            if text.isEmpty { try? FileManager.default.removeItem(at: file) } else { try? text.write(to: file, atomically: true, encoding: .utf8) }
         }
     }
 }

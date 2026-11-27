@@ -331,7 +331,7 @@ public final class SpotRuns {
     }
 
     func showBuilding() {
-        let ids = Set(sheets.values.flatMap { sheet in sheet.calls.compactMap { $0.isStopped ? nil : $0.builds } })
+        let ids = Set(sheets.values.filter(\.spot.isBuiltIn).flatMap { sheet in sheet.calls.compactMap { $0.isStopped ? nil : $0.builds } })
         guard ids != buildingIDs else { return }
         buildingIDs = ids
         showMarks()

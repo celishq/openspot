@@ -18,16 +18,39 @@ final class SpotMarkTests: PanelCase {
     }
 
     private var shown: [String] {
-        model.visible.map(\.id).filter { $0 != "maker" }
+        model.visible.filter { $0.spot.name != "Maker" }.map(\.id)
+    }
+
+    private func maker(of id: String, in place: URL) throws -> URL {
+        let done = folder.appendingPathComponent("built-\(id)")
+        try "printf 'frame=\\nbackground=true\\nbuilds=\(id)\\n---\\n'\nwhile [ ! -e '\(done.path)' ]; do sleep 0.02; done\n".writeScript(to: place, toml: "title = 'Maker'")
+        return done
+    }
+
+    private func makerRun() throws -> SpotRun {
+        let id = try XCTUnwrap(model.entries.first { $0.spot.name == "Maker" }?.id)
+        return try XCTUnwrap(model.runs.sheets[id])
     }
 
     private func build(_ id: String) async throws -> URL {
-        let done = folder.appendingPathComponent("built-\(id)")
-        try script("maker", toml: "title = 'Maker'", "printf 'frame=\\nbackground=true\\nbuilds=\(id)\\n---\\n'\nwhile [ ! -e '\(done.path)' ]; do sleep 0.02; done")
+        let done = try maker(of: id, in: core.appendingPathComponent("openspot.spot/maker.sh"))
         await model.reload()
-        try XCTUnwrap(model.runs.sheets["maker"]).pressCard()
+        try makerRun().pressCard()
         try await wait("the build of \(id)") { self.model.runs.buildingIDs.contains(id) }
         return done
+    }
+
+    func testOnlyASpotOfTheAppHidesTheSpotItBuilds() async throws {
+        try await drinks()
+        _ = try maker(of: "coffee", in: spots.spotFile("maker"))
+        await model.reload()
+
+        try makerRun().pressCard()
+
+        let call = try makerRun()
+        try await wait("the frame of the maker") { call.calls.first?.builds == "coffee" }
+        XCTAssertEqual(model.runs.buildingIDs, [])
+        XCTAssertTrue(shown.contains("coffee"))
     }
 
     private func mark(_ id: String, _ word: String) async throws {

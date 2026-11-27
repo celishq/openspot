@@ -86,6 +86,7 @@ if [ -n "${OPENSPOT_EDIT-}" ]; then
 fi
 spot=
 [ -z "$job" ] || spot=$(get "$job" spot)
+[ -z "$spot" ] || [ -d "$folder/$spot.spot" ] || [ -n "${OPENSPOT_EDIT-}" ] || spot=
 
 if [ -n "$job" ]; then
   draft="$builds/$job/draft"
@@ -164,7 +165,7 @@ agent_bin() {
 # Prints a free id for a new spot from the words $1, such as log-run-distance, with a number after it when a spot or
 # another build has it.
 free_id() {
-  base=$(printf '%s' "$1" | tr 'A-Z ' 'a-z-' | tr -cd 'a-z0-9-')
+  base=$(printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9' ' ' | tr -s ' ' | sed 's/^ //; s/ $//' | tr ' ' '-')
   [ -n "$base" ] || base=spot
   id=$base
   n=2
@@ -473,7 +474,7 @@ go() {
     return
   fi
   words=$(prompt "$text") || exit 1
-  if [ -z "$job" ] && name=$(short "$text") && [ -n "$name" ]; then
+  if [ -z "$spot" ] && name=$(short "$text") && [ -n "$name" ]; then
     words="$words
 
 Title the spot \"$name\" unless the words above name it."
@@ -485,15 +486,19 @@ Title the spot \"$name\" unless the words above name it."
   rm -f "$draft" "$copied"
   case $at in
     openspot)
-      was=$job
+      was=
+      [ -z "$spot" ] || was=$job
       [ -n "$job" ] || job="b$(date +%s)$$"
       if [ -n "$was" ]; then
         put "$job" change 1
       else
         rm -f "$builds/$job/change"
-        made=$(free_id "$name")
-        put "$job" spot "$made"
-        put "$job" fresh 1
+        made=$(get "$job" spot)
+        if [ -z "$made" ]; then
+          made=$(free_id "$name")
+          put "$job" spot "$made"
+          put "$job" fresh 1
+        fi
         words="$words
 
 Build the spot in the folder $folder/$made.spot."

@@ -162,6 +162,36 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(asked.hasSuffix("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
     }
 
+    func testBuildingAgainFromAFailedNewBuildNamesTheSameFolder() async throws {
+        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try forgetWays()
+        let settings = "setting.agent=claude\nsetting.place=openspot\n"
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\n" + settings, timeout: 60)
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let builds = root.appendingPathComponent(try XCTUnwrap(paths.first { $0.hasSuffix("/builds") }))
+        let job = try XCTUnwrap(try FileManager.default.contentsOfDirectory(atPath: builds.path).first)
+
+        _ = try? await newSpot().answer("make-0", input: "input.route=build/\(job)\ninput.describe=Try again\n" + settings, timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.contains("<request>\nTry again\n</request>"), asked)
+        XCTAssertTrue(asked.hasSuffix("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+    }
+
+    func testTheFolderOfANewSpotIsNamedByTheLatinWordsOfItsNameOrElseSpot() async throws {
+        try fake("claude", "printf '%s' \"$2\" > '\(root.path)/asked'")
+        try forgetWays()
+        let settings = "setting.agent=claude\nsetting.place=openspot\n"
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Кава timer\n" + settings, timeout: 60)
+        let mixed = try saved("asked")
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Кава тиждень\n" + settings, timeout: 60)
+        let cyrillic = try saved("asked")
+
+        XCTAssertTrue(mixed.hasSuffix("Build the spot in the folder \(spots.path)/timer.spot."), mixed)
+        XCTAssertTrue(cyrillic.hasSuffix("Build the spot in the folder \(spots.path)/spot.spot."), cyrillic)
+    }
+
     private func fakeApp(_ name: String, id: String) throws -> URL {
         let app = root.appendingPathComponent("\(name).app")
         try FileManager.default.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)

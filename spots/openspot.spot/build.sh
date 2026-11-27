@@ -103,7 +103,6 @@ END
   if [ -z "$failed" ] || [ "$failed" = true ] || [ ! -d "$folder/$name.spot" ]; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
     [ -d "$folder/$name.spot" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
-    [ -d "$folder/$name.spot" ] || rm -f "$builds/$1/spot" "$builds/$1/fresh"
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
     moved "$1"
