@@ -149,7 +149,9 @@ public final class SpotsModel {
         }
     }
     @ObservationIgnored var session = PanelSession()
-    @ObservationIgnored var trail = SessionTrail()
+    @ObservationIgnored var window = SessionWindow()
+    @ObservationIgnored var isReadingSessions = false
+    @ObservationIgnored var waitingBacks = 0
     @ObservationIgnored var restoreTime = PanelSession.restoreTime
     @ObservationIgnored var isRestoringVisit = false
     public internal(set) var textSelections = 0

@@ -17,6 +17,11 @@ final class SessionTrailTests: PanelCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
+        try await waitForSessions()
+    }
+
+    private func waitForSessions() async throws {
+        try await wait("the read of the sessions") { !self.model.isReadingSessions }
     }
 
     private func visit(_ id: String, for seconds: TimeInterval = 3) async throws {
@@ -62,7 +67,7 @@ final class SessionTrailTests: PanelCase {
         try await walk(back, to: "other")
         XCTAssertTrue(model.handleKey(back))
         XCTAssertEqual(model.openSheetID, "other")
-        XCTAssertEqual(model.trail.places.count, 1)
+        XCTAssertEqual(model.window.stops.count, 1)
     }
 
     func testAVisitComesBackAfterCommandWAndAReopen() async throws {
@@ -73,6 +78,7 @@ final class SessionTrailTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         XCTAssertNil(model.openSheetID)
+        try await waitForSessions()
 
         try await walk(back, to: "other")
     }
@@ -108,7 +114,7 @@ final class SessionTrailTests: PanelCase {
         try await visit("other")
 
         XCTAssertTrue(model.handleKey(back))
-        try await wait("the visit entries") { self.visits.count == 1 && self.model.trail.places.count == 1 }
+        try await wait("the visit entries") { self.visits.count == 1 && self.model.window.stops.count == 1 }
         XCTAssertEqual(visits.map { $0.session?.flow.current?.spot }, ["other"])
     }
 
@@ -182,5 +188,49 @@ final class SessionTrailTests: PanelCase {
         XCTAssertFalse(missing)
         try await wait("the session's page") { self.model.flow.current == FlowSheet(spot: "other", route: "o") }
         XCTAssertEqual(model.flow.pages.count, 2)
+    }
+
+    private func keep(_ spots: [String]) throws {
+        for (index, spot) in spots.enumerated() {
+            var flow = Flow()
+            flow.push(FlowSheet(spot: spot))
+            var draft = Timeline.Draft(kind: .text, values: [spot], title: spot, key: "\(index)")
+            draft.session = SessionPlace(flow: flow, query: "")
+            _ = try model.runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: clock.time.addingTimeInterval(Double(index)))
+        }
+    }
+
+    func testCommandBracketWalksPastTheWindowAsItsReadsLandAndKeepsAtMostAWindowWhenTheWalkEnds() async throws {
+        try keep(["other", "parts", "other", "parts", "other", "parts", "other", "parts"])
+        model.readSessions(older: false)
+        try await waitForSessions()
+        XCTAssertEqual(model.window.stops.count, SessionWindow.size)
+
+        let order = ["parts", "other", "parts", "other", "parts", "other", "parts", "other"]
+        for (step, spot) in order.enumerated() {
+            XCTAssertTrue(model.handleKey(back))
+            try await wait("session \(step)") { self.model.openSheetID == spot && self.model.transition.phase == .open && self.model.window.index == step }
+        }
+        try await waitForSessions()
+        XCTAssertTrue(model.window.isWhole)
+        XCTAssertTrue(model.handleKey(back))
+        XCTAssertEqual(model.window.index, 7)
+
+        model.window.stopWalking()
+        XCTAssertEqual(model.window.stops.count, SessionWindow.size)
+    }
+
+    func testANewModelOnTheSameTimelineReachesTheSessionsOfTheLastRun() async throws {
+        try keep(["parts"])
+        let files = model.files
+        model.quit()
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(opening: SheetOpening(motionLength: motionLength), clock: clock.value, stopPause: stopPause, timeline: files.timeline))
+        host.model = model
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        try await waitForSessions()
+
+        try await walk(back, to: "parts")
     }
 }

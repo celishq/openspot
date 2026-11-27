@@ -25,6 +25,7 @@ extension SpotsModel {
     }
 
     func resumeSession() {
+        if !window.isWalking { readSessions(older: false) }
         let kept = session
         session = PanelSession(visit: kept.visit)
         guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
@@ -62,7 +63,7 @@ extension SpotsModel {
         }
         commitVisit()
         startVisit()
-        if !isRestoringVisit { trail.stopWalking() }
+        if !isRestoringVisit { window.stopWalking() }
     }
 
     func noteQuery() {
@@ -75,18 +76,18 @@ extension SpotsModel {
     }
 
     func startVisit() {
-        session.visit = PanelSession.Visit(place: SessionTrail.Place(flow: flow, query: query), since: runs.clock.now(), isRestored: isRestoringVisit)
+        session.visit = PanelSession.Visit(place: SessionPlace(flow: flow, query: query), since: runs.clock.now(), isRestored: isRestoringVisit)
     }
 
     func commitVisit() {
         if let visit = session.visit, visit.isWorthKeeping(at: runs.clock.now()) {
-            trail.add(visit.place)
+            window.add(visit.place, at: runs.clock.now())
             keepInTimeline(visit.place)
         }
         session.visit = nil
     }
 
-    private func keepInTimeline(_ place: SessionTrail.Place) {
+    private func keepInTimeline(_ place: SessionPlace) {
         guard let page = place.flow.current, let spot = sheets[page.spot]?.spot else { return }
         let title = title(of: page)
         var draft = Timeline.Draft(kind: .text, values: [title], title: title, icon: spot.picture, key: "visit:\(page.spot)/\(page.route ?? "")")
@@ -106,7 +107,7 @@ extension SpotsModel {
         guard let place = await Task.detached(operation: { timeline.entry(id)?.session }).value, let page = place.flow.current, restores(page) else { return false }
         asOnePress {
             leaveParkedSession()
-            trail.stopWalking()
+            window.stopWalking()
             afterShowing({ host.show() }) { [weak self] in self?.restore(place) }
         }
         return true
@@ -133,24 +134,48 @@ extension SpotsModel {
     }
 
     func backVisit() -> Bool {
-        if !trail.isWalking {
-            let shown = SessionTrail.Place(flow: flow, query: query)
+        if !window.isWalking {
+            let shown = SessionPlace(flow: flow, query: query)
             commitVisit()
-            if trail.places.last?.merges(with: shown) == true { _ = trail.back() }
+            if window.stops.first?.place.merges(with: shown) == true { _ = window.back() }
         }
-        guard let place = trail.back() else { return false }
-        restore(place)
+        guard let stop = window.back() else {
+            guard !window.isWhole else { return false }
+            waitingBacks += 1
+            readSessions(older: true)
+            return true
+        }
+        restore(stop.place)
+        if window.needsOlder { readSessions(older: true) }
         return true
     }
 
     func forwardVisit() -> Bool {
-        guard trail.isWalking else { return false }
-        guard let place = trail.forward() else {
-            if openSheetID != nil { closeSheet(moving: isShown) }
-            return true
+        switch window.forward() {
+        case nil: return false
+        case .present: if openSheetID != nil { closeSheet(moving: isShown) }
+        case .stop(let stop): restore(stop.place)
         }
-        restore(place)
         return true
+    }
+
+    func readSessions(older: Bool) {
+        guard !isReadingSessions else { return }
+        isReadingSessions = true
+        let timeline = runs.timeline
+        let owner = Self.sessionsSpot
+        let before = older ? window.oldest : nil
+        let size = SessionWindow.size
+        Task { [weak self] in
+            let read = await Task.detached { timeline.sessions(of: owner, before: before, limit: size) }.value
+            guard let self else { return }
+            isReadingSessions = false
+            let stops = read.compactMap { entry in entry.session.map { SessionWindow.Stop(place: $0, at: entry.at) } }
+            if older { window.take(older: stops, isWhole: read.count < size) } else { window.take(newest: stops, isWhole: read.count < size) }
+            guard waitingBacks > 0 else { return }
+            waitingBacks -= 1
+            _ = asOnePress { backVisit() }
+        }
     }
 
     func restore(_ place: SessionPlace) {

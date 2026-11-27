@@ -182,6 +182,23 @@ final class Timeline: Sendable {
         }
     }
 
+    func sessions(of spot: String, before: Date?, limit: Int) -> [TimelineEntry] {
+        let place = folder.appendingPathComponent(Self.folderName(of: spot), isDirectory: true)
+        let files = ((try? FileManager.default.contentsOfDirectory(at: place, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.pathExtension == "jsonl" }
+            .sorted { $0.lastPathComponent > $1.lastPathComponent }
+        let last = before.map { day(of: $0) }
+        let decoder = JSONDecoder()
+        var found: [TimelineEntry] = []
+        for file in files where last.map({ file.deletingPathExtension().lastPathComponent <= $0 }) ?? true {
+            guard let data = try? Data(contentsOf: file) else { continue }
+            let entries = data.split(separator: UInt8(ascii: "\n")).compactMap { try? decoder.decode(TimelineEntry.self, from: $0) }
+            found += entries.filter { entry in entry.session != nil && entry.forgotten == nil && (before.map { entry.at < $0 } ?? true) }.sorted { $0.at > $1.at }
+            if found.count >= limit { break }
+        }
+        return Array(found.prefix(limit))
+    }
+
     func forget(_ id: String, at now: Date) -> TimelineEntry? {
         mark(id, forgotten: now)
     }

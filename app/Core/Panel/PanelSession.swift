@@ -9,7 +9,7 @@ public struct PanelSession: Equatable, Sendable {
     }
 
     public struct Visit: Equatable, Sendable {
-        var place: SessionTrail.Place
+        var place: SessionPlace
         let since: Date
         var ran = false
         var isRestored = false
