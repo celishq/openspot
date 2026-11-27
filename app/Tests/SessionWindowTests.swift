@@ -5,6 +5,8 @@ import XCTest
 final class SessionWindowTests: PanelCase {
     private var clock = FakeClock()
     private let close = ActionKey(name: "w", isCommand: true)
+    private let earlier = ActionKey(name: "{", isCommand: true, isShift: true)
+    private let later = ActionKey(name: "}", isCommand: true, isShift: true)
 
     override func setUp() async throws {
         try await super.setUp()
@@ -40,13 +42,13 @@ final class SessionWindowTests: PanelCase {
     func testCommandBracketOnTheGridBringsBackTheSheetThatEscLeft() async throws {
         try await visit("other")
 
-        try await walk(back, to: "other")
+        try await walk(earlier, to: "other")
     }
 
     func testAQuickLookIsNotKept() async throws {
         try await visit("other", for: 0.5)
 
-        XCTAssertFalse(model.handleKey(back))
+        XCTAssertFalse(model.handleKey(earlier))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -54,18 +56,18 @@ final class SessionWindowTests: PanelCase {
         try await visit("other")
         try await visit("parts")
 
-        try await walk(back, to: "parts")
-        try await walk(back, to: "other")
-        try await walk(forward, to: "parts")
-        try await walk(forward, to: nil)
+        try await walk(earlier, to: "parts")
+        try await walk(earlier, to: "other")
+        try await walk(later, to: "parts")
+        try await walk(later, to: nil)
     }
 
     func testARepeatVisitOfTheSamePlaceIsKeptOnce() async throws {
         try await visit("other")
         try await visit("other")
 
-        try await walk(back, to: "other")
-        XCTAssertTrue(model.handleKey(back))
+        try await walk(earlier, to: "other")
+        XCTAssertTrue(model.handleKey(earlier))
         XCTAssertEqual(model.openSheetID, "other")
         XCTAssertEqual(model.window.stops.count, 1)
     }
@@ -80,7 +82,7 @@ final class SessionWindowTests: PanelCase {
         XCTAssertNil(model.openSheetID)
         try await waitForSessions()
 
-        try await walk(back, to: "other")
+        try await walk(earlier, to: "other")
     }
 
     func testARunMakesAQuickVisitWorthKeeping() async throws {
@@ -90,7 +92,7 @@ final class SessionWindowTests: PanelCase {
         XCTAssertTrue(model.handleKey(escape))
         try await wait("the grid") { self.model.openSheetID == nil }
 
-        try await walk(back, to: "other")
+        try await walk(earlier, to: "other")
     }
 
     private var visits: [TimelineEntry] {
@@ -100,7 +102,7 @@ final class SessionWindowTests: PanelCase {
     func testAKeptVisitIsAnEntryOfTheTimelineThatNamesThePlaceItOpens() async throws {
         try await visit("other")
 
-        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(earlier))
         try await wait("the visit entry") { self.visits.count == 1 }
         let entry = try XCTUnwrap(visits.first)
         XCTAssertEqual(entry.session?.flow.pages.map(\.spot), ["other"])
@@ -113,7 +115,7 @@ final class SessionWindowTests: PanelCase {
         try await visit("parts", for: 0.5)
         try await visit("other")
 
-        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(earlier))
         try await wait("the visit entries") { self.visits.count == 1 && self.model.window.stops.count == 1 }
         XCTAssertEqual(visits.map { $0.session?.flow.current?.spot }, ["other"])
     }
@@ -135,7 +137,7 @@ final class SessionWindowTests: PanelCase {
         try await visit("other", for: 0.5)
         clock.advance(by: 3)
 
-        XCTAssertFalse(model.handleKey(back))
+        XCTAssertFalse(model.handleKey(earlier))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -143,7 +145,7 @@ final class SessionWindowTests: PanelCase {
         try await visit("other", for: 0.5)
         model.noteRun()
 
-        XCTAssertFalse(model.handleKey(back))
+        XCTAssertFalse(model.handleKey(earlier))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -151,7 +153,7 @@ final class SessionWindowTests: PanelCase {
         model.search("calc")
         model.noteRun()
 
-        XCTAssertFalse(model.handleKey(back))
+        XCTAssertFalse(model.handleKey(earlier))
         XCTAssertEqual(model.searchText, "calc")
     }
 
@@ -208,12 +210,12 @@ final class SessionWindowTests: PanelCase {
 
         let order = ["parts", "other", "parts", "other", "parts", "other", "parts", "other"]
         for (step, spot) in order.enumerated() {
-            XCTAssertTrue(model.handleKey(back))
+            XCTAssertTrue(model.handleKey(earlier))
             try await wait("session \(step)") { self.model.openSheetID == spot && self.model.transition.phase == .open && self.model.window.index == step }
         }
         try await waitForSessions()
         XCTAssertTrue(model.window.isWhole)
-        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(earlier))
         XCTAssertEqual(model.window.index, 7)
 
         model.window.stopWalking()
@@ -231,7 +233,7 @@ final class SessionWindowTests: PanelCase {
         model.panelWillShow()
         try await waitForSessions()
 
-        try await walk(back, to: "parts")
+        try await walk(earlier, to: "parts")
     }
 
     func testPressesPastTheWindowWaitForOneReadAndLeaveNoBackForALaterRead() async throws {
@@ -239,7 +241,7 @@ final class SessionWindowTests: PanelCase {
         model.readSessions(older: false)
         try await waitForSessions()
 
-        for _ in 0..<8 { XCTAssertTrue(model.handleKey(back)) }
+        for _ in 0..<8 { XCTAssertTrue(model.handleKey(earlier)) }
         try await waitForSessions()
         XCTAssertEqual(model.window.index, 5)
 
@@ -260,10 +262,23 @@ final class SessionWindowTests: PanelCase {
         model.panelWillShow()
         try await waitForSessions()
 
-        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(earlier))
         try await wait("other") { self.model.openSheetID == "other" }
-        XCTAssertTrue(model.handleKey(back))
+        XCTAssertTrue(model.handleKey(earlier))
 
         try await wait("the text session") { self.model.openSheetID == nil && self.model.searchText == "2+2" }
+    }
+
+    func testCommandBracketMovesOnlyThroughThePagesOfASessionAndNeverIntoAnother() async throws {
+        try await visit("other")
+
+        XCTAssertFalse(model.handleKey(back))
+        XCTAssertNil(model.openSheetID)
+        model.pushFirst("parts", moving: true)
+        try await wait("the open parts") { self.model.openSheetID == "parts" && self.model.transition.phase == .open }
+        XCTAssertTrue(model.handleKey(back))
+
+        XCTAssertEqual(model.openSheetID, "parts")
+        XCTAssertNil(model.window.index)
     }
 }

@@ -41,14 +41,15 @@ Keep your place, in the General section of Settings, sets that time: 30 seconds,
 | ---------- | ----------------------------------------------------------------------------- |
 | Esc        | Goes back one level: clears the text, then the page before, then the grid. On an empty grid it closes the panel. |
 | `⌘W`       | Closes the panel from anywhere. The next open starts on an empty search.      |
-| `⌘[`       | Goes back a page. On the first page, or on the grid, it brings back what you did before, one session at a time. |
-| `⌘]`       | Goes forward again, and past the newest session back to the grid.             |
+| `⌘[`, `⌘]` | Goes back or forward a page within what you're doing.                         |
+| `⇧⌘[`      | Brings back what you did before, one session at a time, from a page or the grid. |
+| `⇧⌘]`      | Goes to the session after, and past the newest one back to the grid.          |
 
 - An Esc that closes the panel, or `⌘W`, ends what you were doing, so the next open is clean.
 - A click outside, the panel's key, and an action that closes the panel, such as a paste, keep your place.
 - Opening a spot by its own key starts on that spot, not on the place you left.
 - A session counts when you ran something in it or stayed on its page for 2 seconds, and two sessions of the same
-  page in a row count once. The Timeline keeps them, so `⌘[` reaches them after Openspot restarts too.
+  page in a row count once. The Timeline keeps them, so `⇧⌘[` reaches them after Openspot restarts too.
 
 ## Get spots in the Store
 
@@ -189,7 +190,7 @@ entry by its words.
   the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
 - Tab on an entry hands it to a spot that takes it, such as Translate for a text.
 - The Timeline also lists your sessions. Return on one opens it again as it was, with its pages and its text, and
-  `⌘[` goes back from there. A session of the same page moves up instead of showing twice.
+  `⇧⌘[` goes back from there. A session of the same page moves up instead of showing twice.
 - Turn off Keep history in the Settings of Clipboard to keep no copy.
 
 ## Rename a slash command

@@ -117,7 +117,7 @@ extension SpotsModel {
         asOnePress {
             var moved = false
             for _ in 0..<abs(steps) {
-                let step = steps < 0 ? (openSheetID != nil && back()) || backSession() : (openSheetID != nil && forward()) || forwardSession()
+                let step = steps < 0 ? backSession() : forwardSession()
                 guard step else { break }
                 moved = true
             }

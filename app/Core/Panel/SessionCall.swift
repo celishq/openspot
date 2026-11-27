@@ -8,8 +8,8 @@ enum SessionCall: NounCall {
 
     static let noun = CommandNoun("session", group: .app, verbs: [
         CommandVerb("open", "<id>", "Opens again the session of a timeline entry, as it was: its pages, the page it showed and its text, as a new flow. Opens the panel when it is hidden. It asks the spot again and runs no action.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.open) },
-        CommandVerb("back", "[steps]", "Goes back as ⌘[ does: the page before in the flow, then the session before it.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { Self.step($0, by: -1) },
-        CommandVerb("forward", "[steps]", "Goes forward as ⌘] does: back the other way, and past the newest session to the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { Self.step($0, by: 1) },
+        CommandVerb("back", "[steps]", "Goes to the session before, as ⇧⌘[ does.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { Self.step($0, by: -1) },
+        CommandVerb("forward", "[steps]", "Goes to the session after, as ⇧⌘] does, and past the newest one to the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { Self.step($0, by: 1) },
     ])
 
     private static func step(_ words: CallWords, by sign: Int) -> SessionCall? {
