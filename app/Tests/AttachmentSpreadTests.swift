@@ -57,7 +57,7 @@ final class AttachmentSpreadTests: AttachmentCase {
             stack.leave()
             stack.fold()
             stack.place()
-            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), Array(order[1...] + order[..<1]))
             stack.turn(by: 1)
             stack.spread()
             stack.place()
@@ -134,6 +134,23 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertFalse(spread.isSpread)
         XCTAssertNil(spread.selection)
         XCTAssertNil(model.attachmentWatch)
+    }
+
+    func testEscOnTheSecondChipKeepsItInFrontAndTheNextTabStartsFromIt() async throws {
+        try await openWithTwoChips()
+        let second = model.attachments.chips[1].source
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertEqual(model.attachments.selected, second)
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        XCTAssertNil(model.attachments.selected)
+        XCTAssertEqual(spread.places.first?.chip.source, second)
+        XCTAssertEqual(spread.places.first?.opacity, 1)
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertEqual(model.attachments.selected, second)
+        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
     }
 
     func testAClosedPanelStopsThePauseAndTheNextOpenFoldsTheRow() async throws {

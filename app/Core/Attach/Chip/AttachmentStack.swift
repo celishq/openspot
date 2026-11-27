@@ -17,6 +17,7 @@ public struct AttachmentStack: Equatable, Sendable {
     private(set) var spreads = false
     var isMoving = false
     private var front: FrontApp?
+    private var lead: String?
 
     public init(fit: Int = SpotTokens.attachmentFit) {
         self.fit = fit
@@ -33,11 +34,12 @@ public struct AttachmentStack: Equatable, Sendable {
     mutating func open(over front: FrontApp?, unread: [(source: String, look: AttachmentChip.Look?)]) {
         self.front = front
         selected = nil
+        lead = nil
         spreads = false
         isMoving = false
         chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: $0.look), state: .unread) }
         settle()
-        layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
+        layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, lead: nil, spreads: false, fit: fit)
     }
 
     mutating func fill(_ source: String, with value: AttachmentValue, look own: AttachmentChip.Look?) {
@@ -63,13 +65,15 @@ public struct AttachmentStack: Equatable, Sendable {
     mutating func remove(_ source: String) {
         chips.removeAll { $0.source == source }
         if selected == source { selected = chips.first?.source }
+        if lead == source { lead = nil }
     }
 
     mutating func turn(by step: Int) {
         let order = chips.map(\.source)
         guard !order.isEmpty else { return }
         guard let selected, let index = order.firstIndex(of: selected) else {
-            self.selected = order[step < 0 ? order.count - 1 : 0]
+            let first = lead.flatMap { order.firstIndex(of: $0) } ?? 0
+            self.selected = order[step < 0 ? (first + order.count - 1) % order.count : first]
             return
         }
         self.selected = order[(index + step % order.count + order.count) % order.count]
@@ -81,6 +85,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     mutating func leave() {
+        lead = selected ?? lead
         selected = nil
         spreads = false
     }
@@ -94,7 +99,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     mutating func place() {
-        layout = AttachmentLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
+        layout = AttachmentLayout(chips: chips, after: layout, selection: selected, lead: lead, spreads: spreads, fit: fit)
     }
 
     private func look(of app: String?, value: AttachmentValue?, own: AttachmentChip.Look?) -> AttachmentChip.Look {
@@ -107,5 +112,6 @@ public struct AttachmentStack: Equatable, Sendable {
     private mutating func settle() {
         if chips.count > Self.limit { chips = Array(chips.prefix(Self.limit)) }
         if let selected, !chips.contains(where: { $0.source == selected }) { self.selected = chips.first?.source }
+        if let lead, !chips.contains(where: { $0.source == lead }) { self.lead = nil }
     }
 }

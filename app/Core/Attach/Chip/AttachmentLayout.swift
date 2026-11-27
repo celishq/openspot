@@ -59,10 +59,10 @@ public struct AttachmentLayout: Equatable, Sendable {
         start = 0
     }
 
-    init(chips: [AttachmentChip], after previous: AttachmentLayout, selection: String?, spreads: Bool, fit: Int) {
+    init(chips: [AttachmentChip], after previous: AttachmentLayout, selection: String?, lead: String?, spreads: Bool, fit: Int) {
         let isSpread = spreads && selection != nil
         var order = chips.map(\.source)
-        if !isSpread, let selection, let index = order.firstIndex(of: selection) {
+        if !isSpread, let first = selection ?? lead, let index = order.firstIndex(of: first) {
             order = Array(order[index...] + order[..<index])
         }
         let start = isSpread ? previous.start(of: order.firstIndex { $0 == selection } ?? 0, count: order.count, fit: fit) : 0
