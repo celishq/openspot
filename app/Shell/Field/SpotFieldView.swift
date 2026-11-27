@@ -56,8 +56,9 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
+            SpotTheme.highlight.opacity(SpotTheme.fill)
+                .clipShape(SpotSurfaceShape(rect: place, radius: fieldRadius))
+                .opacity(isInSheet ? 1 : MotionTokens.hiddenOpacity)
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 SpotFieldPrompt.glyph

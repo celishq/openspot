@@ -182,6 +182,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
   a rim or words.
+- Draw a fill or a ring of a moving shape as a colour that the shape clips (`Color.ring(of:width:)`), not as a shape view: a
+  shape view is a leaf of layout, and a new shape on each frame lays out the stack that holds it.
 - A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
