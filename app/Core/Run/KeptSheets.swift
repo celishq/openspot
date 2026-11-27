@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 public final class KeptSheets {
     static let writePause = Duration.seconds(2)
+    static let byteLimit = 256 << 10
 
     let folder: URL?
     private var texts: [String: String] = [:]
@@ -42,7 +43,7 @@ public final class KeptSheets {
 
     func keep(_ text: String, frame: Frame, of id: String) {
         let name = Self.name(of: id)
-        guard texts[name] != text else { return }
+        guard texts[name] != text, text.utf8.count <= Self.byteLimit else { return }
         texts[name] = text
         frames[name] = frame
         unwritten[name] = text
