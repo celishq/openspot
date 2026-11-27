@@ -21,7 +21,7 @@ final class PanelSessionTests: PanelCase {
 
     private func openParts() async throws {
         model.pushFirst("parts", moving: true)
-        try await wait("the open parts") { self.model.openSheetID == "parts" && self.model.openParts != nil }
+        try await wait("the open parts") { self.model.openSheetID == "parts" && self.model.openParts != nil && self.model.transition.phase == .open }
     }
 
     private func openOther() async throws {

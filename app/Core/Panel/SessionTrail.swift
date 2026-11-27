@@ -3,18 +3,7 @@ import Foundation
 public struct SessionTrail: Equatable, Sendable {
     public static let limit = 20
 
-    public struct Place: Equatable, Sendable {
-        public var flow: Flow
-        public var query: String
-
-        var start: FlowSheet? {
-            flow.pages.first
-        }
-
-        func merges(with other: Place) -> Bool {
-            start == other.start && query == other.query
-        }
-    }
+    public typealias Place = SessionPlace
 
     public private(set) var places: [Place] = []
     public private(set) var index = 0

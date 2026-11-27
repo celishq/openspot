@@ -24,8 +24,7 @@ final class Timeline: Sendable {
         var key: String?
         var at: Date?
         var peek: [TextBlock]
-        var opens: String?
-        var opensRoute: String?
+        var session: SessionPlace?
 
         init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil, peek: [TextBlock] = []) {
             self.kind = kind
@@ -155,7 +154,7 @@ final class Timeline: Sendable {
             let found = kept.entries.filter { entry in
                 entry.forgotten == nil
                     && query.spots.map { $0.contains(entry.spot) } != false
-                    && query.about.map { entry.spot == $0 || entry.opens == $0 } != false
+                    && query.about.map { about in entry.spot == about || entry.session?.flow.pages.contains { $0.spot == about } == true } != false
                     && since.map { entry.at >= $0 } != false
             }
             var sorted = found.sorted { $0.at > $1.at }
@@ -251,7 +250,7 @@ final class Timeline: Sendable {
         }
         return TimelineEntry(
             id: id, spot: spot, at: at, kind: draft.kind, value: value, textFile: textFile, files: files, title: draft.title ?? Self.title(of: draft),
-            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, opens: draft.opens, opensRoute: draft.opensRoute, bytes: bytes, peekFile: peekFile, forgotten: nil
+            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, session: draft.session, bytes: bytes, peekFile: peekFile, forgotten: nil
         )
     }
 

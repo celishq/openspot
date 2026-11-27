@@ -350,6 +350,10 @@ extension SpotsModel {
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         asOnePress {
+            if action == nil, case .session(let session)? = item.move {
+                Task { await openSession(session) }
+                return
+            }
             if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
                 push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
                 return

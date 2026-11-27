@@ -117,6 +117,7 @@ extension SpotsModel {
         case .pop: pop(in: id)
         case .close: close(in: id)
         case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, route: page, title: title), replace: replace)
+        case .session(let session): Task { await openSession(session) }
         }
     }
 

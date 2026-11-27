@@ -97,10 +97,9 @@ final class SessionTrailTests: PanelCase {
         XCTAssertTrue(model.handleKey(back))
         try await wait("the visit entry") { self.visits.count == 1 }
         let entry = try XCTUnwrap(visits.first)
-        XCTAssertEqual(entry.opens, "other")
-        XCTAssertNil(entry.opensRoute)
+        XCTAssertEqual(entry.session?.flow.pages.map(\.spot), ["other"])
         XCTAssertEqual(entry.title, "Other")
-        XCTAssertTrue(entry.block.contains("opens=other"))
+        XCTAssertTrue(entry.block.contains("session=\(entry.id)\nsession.spot=other\nsession.steps=1"))
     }
 
     func testARepeatVisitMovesItsEntryToTheTopAndAQuickLookWritesNone() async throws {
@@ -110,7 +109,7 @@ final class SessionTrailTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(back))
         try await wait("the visit entries") { self.visits.count == 1 && self.model.trail.places.count == 1 }
-        XCTAssertEqual(visits.map(\.opens), ["other"])
+        XCTAssertEqual(visits.map { $0.session?.flow.current?.spot }, ["other"])
     }
 
     func testCommandYOnACardOpensTheTimelinePageAboutThatSpot() async throws {
@@ -148,5 +147,40 @@ final class SessionTrailTests: PanelCase {
 
         XCTAssertFalse(model.handleKey(back))
         XCTAssertEqual(model.searchText, "calc")
+    }
+
+    private func keptSession(of spot: String, route: String? = nil) throws -> String {
+        var flow = Flow()
+        flow.push(FlowSheet(spot: spot))
+        if let route { flow.push(FlowSheet(spot: spot, route: route)) }
+        var draft = Timeline.Draft(kind: .text, values: [spot], title: spot)
+        draft.session = SessionPlace(flow: flow, query: "")
+        return try XCTUnwrap(try model.runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: clock.time)).id
+    }
+
+    func testARowOfASessionOpensItsPlaceOnPressWithNoRunAndKeepsThePanelOpen() async throws {
+        let id = try keptSession(of: "parts")
+        model.pushFirst("other", moving: true)
+        try await wait("the open other") { self.model.openSheetID == "other" }
+
+        model.pick(SpotItem(title: "Parts", run: id, move: .session(id)), of: try XCTUnwrap(model.openEntry))
+
+        try await wait("the session") { self.model.openSheetID == "parts" && self.model.transition.phase == .open }
+        XCTAssertEqual(host.dismissals, 0)
+        XCTAssertEqual(model.flow.pages.map(\.spot), ["parts"])
+    }
+
+    func testTheCommandOpensASessionWithItsPagesAndFailsOnAnUnknownOne() async throws {
+        let id = try keptSession(of: "other", route: "o")
+        try script("other", toml: "title = 'Other'\npages = ['*']", "printf 'item=o\\ntitle=Other\\n'")
+        await model.reload()
+
+        let opened = await ModelApp(model: model).openSession(id)
+        let missing = await ModelApp(model: model).openSession("nope")
+
+        XCTAssertTrue(opened)
+        XCTAssertFalse(missing)
+        try await wait("the session's page") { self.model.flow.current == FlowSheet(spot: "other", route: "o") }
+        XCTAssertEqual(model.flow.pages.count, 2)
     }
 }

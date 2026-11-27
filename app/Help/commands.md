@@ -67,6 +67,9 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow, or its window. `--select` only selects its card.      |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows. |
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet.                                |
+| `openspot session open <id>`                       | Opens again a session of the timeline as it was: its pages, its page and its text. It runs no action. |
+| `openspot session back [<steps>]`                  | Goes back as `⌘[` does: the page before, then the session before.                               |
+| `openspot session forward [<steps>]`               | Goes forward as `⌘]` does.                                                                       |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot. A spot that comes with Openspot refuses it, and `spot edit`, `spot delete`, `spot remove` and `prompt change` too. |

@@ -19,8 +19,7 @@ struct TimelineEntry: Codable, Equatable, Sendable {
     let icon: String?
     let detail: String?
     let key: String?
-    var opens: String?
-    var opensRoute: String?
+    var session: SessionPlace?
     let bytes: Int64
     var peekFile: String?
     var forgotten: Date?
@@ -33,8 +32,13 @@ struct TimelineEntry: Codable, Equatable, Sendable {
         if let icon { fields.append(.init(key: "icon", value: icon)) }
         if let detail { fields.append(.init(key: "detail", value: detail)) }
         if let key { fields.append(.init(key: "key", value: key)) }
-        if let opens { fields.append(.init(key: "opens", value: opens)) }
-        if let opensRoute { fields.append(.init(key: "opens.route", value: opensRoute)) }
+        if let session, let page = session.flow.current {
+            fields.append(.init(key: "session", value: id))
+            fields.append(.init(key: "session.spot", value: page.spot))
+            if let route = page.route { fields.append(.init(key: "session.route", value: route)) }
+            fields.append(.init(key: "session.steps", value: String(session.flow.pages.count)))
+            if !session.query.isEmpty { fields.append(.init(key: "session.text", value: session.query)) }
+        }
         return TextBlock(fields: fields).text
     }
 

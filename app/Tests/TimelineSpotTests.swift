@@ -26,7 +26,7 @@ final class TimelineSpotTests: BuiltInCase {
         case "$1 $2" in
           "clipboard copy") printf 'clipboard copy %s|%s\\n' "$3" "$(cat)" >> '\(log.path)'; exit 0 ;;
           "timeline get") echo "$*" >> '\(log.path)'; printf 'whole of %s' "$3"; exit 0 ;;
-          "clipboard paste" | "toast "* | "spot open" | "spot push") echo "$*" >> '\(log.path)'; exit 0 ;;
+          "clipboard paste" | "toast "* | "spot open") echo "$*" >> '\(log.path)'; exit 0 ;;
         esac
         exec '\(real.path)' "$@"
         """)
@@ -217,37 +217,35 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertFalse(frame.actions.contains { $0.key == ActionKey(text: "cmd+c") }, "\(frame.actions.map(\.title))")
     }
 
-    func testAVisitShowsAsAPlaceToOpenWithNoPaste() async throws {
-        var draft = Timeline.Draft(kind: .text, values: ["Weather"], title: "Weather", icon: "cloud.sun", key: "visit:weather/")
-        draft.opens = "weather"
-        try XCTUnwrap(try runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: Date()))
+    @discardableResult
+    private func session(of spot: String) throws -> String {
+        var flow = Flow()
+        flow.push(FlowSheet(spot: spot))
+        var draft = Timeline.Draft(kind: .text, values: [spot.capitalized], title: spot.capitalized, icon: "cloud.sun")
+        draft.session = SessionPlace(flow: flow, query: "")
+        return try XCTUnwrap(try runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: Date())).id
+    }
+
+    func testASessionShowsAsAPlaceToOpenThatCoreRestoresWithNoPaste() async throws {
+        let id = try session(of: "weather")
 
         let listed = try await rows()
         let row = try XCTUnwrap(listed.first)
 
         XCTAssertEqual(row.title, "Weather")
         XCTAssertEqual(row.openTitle, "Open")
-        XCTAssertTrue(row.subtitle?.hasSuffix(" · Visit") == true, row.subtitle ?? "")
-        XCTAssertEqual(row.fields.first { $0.key == "opens" }?.value, "weather")
+        XCTAssertTrue(row.subtitle?.hasSuffix(" · Session") == true, row.subtitle ?? "")
+        XCTAssertEqual(row.move, .session(id))
         XCTAssertEqual(row.hides, ["paste"])
     }
 
-    func testThePageAboutASpotListsOnlyItsEntriesAndItsVisits() async throws {
+    func testThePageAboutASpotListsOnlyItsEntriesAndItsSessions() async throws {
         try add(.text, "copied")
-        var draft = Timeline.Draft(kind: .text, values: ["Weather"], title: "Weather")
-        draft.opens = "weather"
-        try XCTUnwrap(try runs.timeline.add(draft, of: SpotsModel.sessionsSpot, at: Date()))
+        try session(of: "weather")
 
         let listed = try await rows(keptDays + "input.route=about/weather\n")
 
         XCTAssertEqual(listed.map(\.title), ["Weather"])
-    }
-
-    func testReturnOnAVisitOpensItsSpotAndItsPage() async throws {
-        try await timeline.perform("press", input: "input.item=v\ninput.item.opens=weather\n", timeout: 60)
-        try await timeline.perform("press", input: "input.item=w\ninput.item.opens=store\ninput.item.opens.route=gallery\n", timeout: 60)
-
-        XCTAssertEqual(effects, ["spot open weather", "spot open store", "spot push store gallery"])
     }
 
     func testForgetTakesTheEntryOutAndTheToastPutsItBack() async throws {

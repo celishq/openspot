@@ -90,8 +90,7 @@ extension SpotsModel {
         guard let page = place.flow.current, let spot = sheets[page.spot]?.spot else { return }
         let title = title(of: page)
         var draft = Timeline.Draft(kind: .text, values: [title], title: title, icon: spot.picture, key: "visit:\(page.spot)/\(page.route ?? "")")
-        draft.opens = page.spot
-        draft.opensRoute = page.route
+        draft.session = place
         let runs = runs
         let timeline = runs.timeline
         let now = runs.clock.now()
@@ -99,6 +98,29 @@ extension SpotsModel {
         Task.detached {
             _ = try? timeline.add(draft, of: owner, at: now)
             await runs.timelineChanged(owner, by: nil)
+        }
+    }
+
+    public func openSession(_ id: String) async -> Bool {
+        let timeline = runs.timeline
+        guard let place = await Task.detached(operation: { timeline.entry(id)?.session }).value, let page = place.flow.current, restores(page) else { return false }
+        asOnePress {
+            leaveParkedSession()
+            trail.stopWalking()
+            afterShowing({ host.show() }) { [weak self] in self?.restore(place) }
+        }
+        return true
+    }
+
+    public func stepSession(by steps: Int) -> Bool {
+        asOnePress {
+            var moved = false
+            for _ in 0..<abs(steps) {
+                let step = steps < 0 ? (openSheetID != nil && back()) || backVisit() : (openSheetID != nil && forward()) || forwardVisit()
+                guard step else { break }
+                moved = true
+            }
+            return moved
         }
     }
 
@@ -131,7 +153,7 @@ extension SpotsModel {
         return true
     }
 
-    private func restore(_ place: SessionTrail.Place) {
+    func restore(_ place: SessionPlace) {
         asOnePress {
             isRestoringVisit = true
             defer { isRestoringVisit = false }

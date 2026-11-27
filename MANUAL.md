@@ -11,7 +11,7 @@ Every spot answers the same keys, so you learn them once.
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
-| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your visits to it.  |
+| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your sessions in it. |
 | `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
@@ -41,14 +41,14 @@ Keep your place, in the General section of Settings, sets that time: 30 seconds,
 | ---------- | ----------------------------------------------------------------------------- |
 | Esc        | Goes back one level: clears the text, then the page before, then the grid. On an empty grid it closes the panel. |
 | `⌘W`       | Closes the panel from anywhere. The next open starts on an empty search.      |
-| `⌘[`       | Goes back a page. On the first page, or on the grid, it brings back what you did before, one visit at a time. |
-| `⌘]`       | Goes forward again, and past the newest visit back to the grid.               |
+| `⌘[`       | Goes back a page. On the first page, or on the grid, it brings back what you did before, one session at a time. |
+| `⌘]`       | Goes forward again, and past the newest session back to the grid.             |
 
 - An Esc that closes the panel, or `⌘W`, ends what you were doing, so the next open is clean.
 - A click outside, the panel's key, and an action that closes the panel, such as a paste, keep your place.
 - Opening a spot by its own key starts on that spot, not on the place you left.
-- `⌘[` keeps the last 20 visits until Openspot quits. A visit counts when you ran something in it or stayed on its
-  page for 2 seconds, and two visits of the same page in a row count once.
+- A session counts when you ran something in it or stayed on its page for 2 seconds, and two sessions of the same
+  page in a row count once. The Timeline keeps them, so `⌘[` reaches them after Openspot restarts too.
 
 ## Get spots in the Store
 
@@ -188,8 +188,8 @@ entry by its words.
 - Timeline's Settings set Keep for, and Show in search, which adds the three newest entries that hold your words under
   the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
 - Tab on an entry hands it to a spot that takes it, such as Translate for a text.
-- The Timeline also lists your visits: each page you ran something on, or stayed on for 2 seconds. Return on a visit
-  opens that page again. A visit of the same page moves up instead of showing twice.
+- The Timeline also lists your sessions. Return on one opens it again as it was, with its pages and its text, and
+  `⌘[` goes back from there. A session of the same page moves up instead of showing twice.
 - Turn off Keep history in the Settings of Clipboard to keep no copy.
 
 ## Rename a slash command
