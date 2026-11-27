@@ -14,7 +14,7 @@ public struct SpotRows: Equatable, Sendable {
     static let valueIcon = "slider.horizontal.3"
     static let attachmentIcon = "paperclip"
     static let attachmentTitle = "Show beside the search field"
-    static let attachmentLine = "Tab hands what shows beside the search field to a spot."
+    static let attachmentLine = "When the panel opens, what this spot reads shows on the right of the search field. Press Tab to hand it to a spot."
     static let placeKeys = [ReservedSetting.attachment, menuBarKey, windowKey]
 
     public static func placeName(of key: String) -> String? {

@@ -228,6 +228,8 @@ extension SpotTokens {
     public static let settingsPlaceWindowHeight: CGFloat = 46
     public static let settingsPlaceWindowRadius: CGFloat = 6
     public static let settingsPlaceWindowIcon: CGFloat = 20
+    public static let settingsInfoWidth: CGFloat = 240
+    public static let settingsInfoPadding: CGFloat = 12
     public static let settingsChipTile: CGFloat = 18
     public static let settingsChipGap: CGFloat = 6
     public static let settingsChipInset: CGFloat = 3

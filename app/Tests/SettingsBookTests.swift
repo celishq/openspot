@@ -51,7 +51,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(standing.attachmentNeeds, [.accessibility, .automation])
         XCTAssertEqual(standing.accessUses.map(\.id), [.clipboard])
         XCTAssertEqual(try row("tab/attachment").title, "Show beside the search field")
-        XCTAssertEqual(try row("tab/attachment").detail, "Tab hands what shows beside the search field to a spot.")
+        XCTAssertEqual(try row("tab/attachment").detail, "When the panel opens, what this spot reads shows on the right of the search field. Press Tab to hand it to a spot.")
         XCTAssertEqual(standing.attachmentChip?.look, .symbol("safari"))
     }
 
