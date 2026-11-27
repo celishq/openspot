@@ -250,11 +250,16 @@ final class Timeline: Sendable {
         )
     }
 
+    private static func holdsGroup(_ button: TextBlock, in peek: [TextBlock]) -> Bool {
+        guard let name = button.fields.first?.value else { return false }
+        return peek.contains { $0.fields.first?.key == BlockKind.button.word && $0.fields.first?.value.hasPrefix(name + ".") == true }
+    }
+
     private func keep(_ peek: [TextBlock], of id: String, in place: URL) -> String {
         let old = peek.first?.value(BlockKind.peek.word)
         let new = "peek-\(id)"
         let head = TextBlock(fields: [.init(key: BlockKind.peek.word, value: new), .init(key: ViewNode.parentKey, value: id)] + (peek.first?.fields.dropFirst().filter { $0.key != ViewNode.parentKey } ?? []))
-        let parts = peek.dropFirst().filter { $0.value(PeekAct.runKey) == nil }.map { block in
+        let parts = peek.dropFirst().filter { $0.fields.first?.key != BlockKind.button.word || !$0.values(PeekAct.key).isEmpty || Self.holdsGroup($0, in: peek) }.map { block in
             TextBlock(fields: block.fields.map { field in
                 if field.key == ViewNode.parentKey, field.value == old { return .init(key: field.key, value: new) }
                 if field.key == "icon", block.fields.first?.key == BlockKind.picture.word, field.value.hasPrefix("/") { return .init(key: field.key, value: keep(field.value, in: place).path) }

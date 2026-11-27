@@ -38,8 +38,9 @@ case "$1" in
     printf 'peek=red-peek\nparent=red\nclass=flex-col gap-part\n\n'
     printf 'icon=red-square\nparent=red-peek\nvalue=#ff3b30\n\n'
     printf 'text=red-hex\nparent=red-peek\ntitle=#FF3B30\nclass=font-title\n\n'
-    printf 'button=red-rgb\nparent=red-peek\ntitle=Copy RGB\ncopy=rgb(255 59 48)\n\n'
-    printf 'button=red-name\nparent=red-peek\ntitle=Rename\nrun=rename\n'
+    printf 'button=red-rgb\nparent=red-peek\ntitle=Copy RGB\naction=clipboard copy --text "rgb(255 59 48)"\n\n'
+    printf 'button=red-paste\nparent=red-peek\ntitle=Paste HEX\naction=clipboard copy --text "#FF3B30"\naction=clipboard paste\n\n'
+    printf 'button=rename\nparent=red-peek\ntitle=Rename\n'
     ;;
   rename)
     openspot toast "Renamed $(sed -n 's/^input.item=//p')."
@@ -48,24 +49,22 @@ esac
 ```
 
 Open Swatches, and press `⌘P`. The peek shows the red square over `#FF3B30` in large type. `⌘K` on the row offers
-Copy RGB and Rename.
+Copy RGB, Paste HEX and Rename.
 
 ## Give it actions
 
-A `button` in a peek is an action of its row's `⌘K` menu. It does one of these:
+A `button` in a peek is an action of its row's `⌘K` menu. Each `action=` line of it is one `openspot` command, written
+as in Terminal without `openspot`, such as `clipboard copy --text "rgb(255 59 48)"`. Openspot splits the line into
+words by the quotes and backslashes of a shell, and starts no shell, so a pipe or a `$()` is only words.
 
-| Key       | Does                                                                     |
-| --------- | ------------------------------------------------------------------------ |
-| `copy`    | Copies its text.                                                         |
-| `paste`   | Copies its text and pastes it into the app in front.                     |
-| `open`    | Opens its link, or the file at its path.                                 |
-| `run`     | Runs your spot with that id, as a button of the sheet does, with the row. |
+- The lines run one after another, after the panel hides, so `clipboard paste` reaches the app in front.
+- The first line that fails stops the rest and shows its failure.
+- Each line runs under the uses of your spot, such as `clipboard`, and your spot itself doesn't run.
+- A button with no `action=` runs your spot with its id and the row, as a button of the sheet does: Rename runs
+  `swatches.sh rename`. `action=run <spot>/<action>` runs an action of another spot.
 
 A button whose id starts with another button's id and a dot, such as `copy-as.hex` after `copy-as`, sits in that
 button's submenu. A copied colour peeks this way with Copy as › HEX, RGB, RGBA, HSL and SwiftUI.
-
-Openspot runs `copy`, `paste` and `open` itself, so your spot doesn't run. They still need the uses of your spot, such
-as `clipboard`.
 
 ## How it works
 

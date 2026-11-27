@@ -78,7 +78,7 @@ extension HexColor {
         ]
         blocks += shown.filter { $0.id != "rgba" && $0.id != "swiftui" }.map { TextBlock(fields: [field(BlockKind.text.word, $0.id), parent, field("title", $0.text)] + ($0.id == "hex" ? [field(ViewNode.classKey, "font-title")] : [])) }
         blocks.append(TextBlock(fields: [field(BlockKind.button.word, Self.copyAs), parent, field("title", "Copy as")]))
-        blocks += shown.map { TextBlock(fields: [field(BlockKind.button.word, "\(Self.copyAs).\($0.id)"), parent, field("title", $0.title), field("copy", $0.text)]) }
+        blocks += shown.map { TextBlock(fields: [field(BlockKind.button.word, "\(Self.copyAs).\($0.id)"), parent, field("title", $0.title), field(PeekAct.key, ActionLine.text(of: ["clipboard", "copy", "--text", $0.text]))]) }
         return blocks
     }
 

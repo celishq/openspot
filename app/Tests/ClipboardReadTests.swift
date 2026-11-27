@@ -58,7 +58,7 @@ final class ClipboardReadTests: XCTestCase {
 
         XCTAssertEqual(blocks.first?.fields, [.init(key: "text", value: "#FF3B30")])
         XCTAssertEqual(blocks.dropFirst().first?.firstLine, "peek=color")
-        XCTAssertTrue(blocks.contains { $0.value("copy") == "rgb(255 59 48)" })
+        XCTAssertTrue(blocks.contains { $0.value("action") == "clipboard copy --text 'rgb(255 59 48)'" })
     }
 
     func testBlocksOfAPlainTextCarryNoPeek() async throws {

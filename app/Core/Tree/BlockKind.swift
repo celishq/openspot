@@ -214,7 +214,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    public static let button = BlockKind(name: "button", keys: ["copy", "paste", "open", PeekAct.runKey], presses: true)
+    public static let button = BlockKind(name: "button", keys: [PeekAct.key], presses: true)
 
     public static let items = BlockKind(name: "items")
 

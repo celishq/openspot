@@ -20,12 +20,11 @@ final class TimelinePeekTests: PanelCase {
     button=rgb
     parent=p
     title=Copy RGB
-    copy=rgb(255 0 0)
+    action=clipboard copy --text 'rgb(255 0 0)'
 
     button=name
     parent=p
     title=Rename
-    run=rename
 
     """
 

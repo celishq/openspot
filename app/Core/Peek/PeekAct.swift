@@ -1,49 +1,15 @@
 import Foundation
 
-public enum PeekAct: Equatable, Sendable {
-    case copy(String)
-    case paste(String)
-    case open(String)
+public struct PeekAct: Equatable, Sendable {
+    static let key = "action"
 
-    static let runKey = "run"
+    let lines: [ActionLine]
 
     init?(block: TextBlock) {
-        if let text = block.value("copy") {
-            self = .copy(text)
-        } else if let text = block.value("paste") {
-            self = .paste(text)
-        } else if let place = block.value("open") {
-            self = .open(place)
-        } else {
-            return nil
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .copy: "copy"
-        case .paste: "paste"
-        case .open: "open"
-        }
-    }
-
-    var url: URL? {
-        guard case .open(let place) = self else { return nil }
-        return place.hasPrefix("/") ? URL(fileURLWithPath: place) : URL(string: place)
-    }
-
-    var calls: [[String]] {
-        switch self {
-        case .copy: [["clipboard", "copy"]]
-        case .paste: [["clipboard", "copy"], ["clipboard", "paste"]]
-        case .open: []
-        }
-    }
-
-    var input: String {
-        switch self {
-        case .copy(let text), .paste(let text), .open(let text): text
-        }
+        let texts = block.values(Self.key)
+        let lines = texts.compactMap(ActionLine.init(text:))
+        guard !lines.isEmpty, lines.count == texts.count else { return nil }
+        self.lines = lines
     }
 
     static func actions(of blocks: [TextBlock]) -> [CommandAction] {
@@ -52,8 +18,9 @@ public enum PeekAct: Equatable, Sendable {
         return buttons.compactMap { block in
             guard let name = block.fields.first?.value, let title = block.value("title") else { return nil }
             if let act = PeekAct(block: block) { return .act(act, name: name, title: title) }
-            if let run = block.value(runKey) { return CommandAction(id: run, title: title, scope: .item, after: .close) }
-            return names.contains { $0.hasPrefix(name + ".") } ? .group(name, title: title) : nil
+            guard block.values(key).isEmpty else { return nil }
+            if names.contains(where: { $0.hasPrefix(name + ".") }) { return .group(name, title: title) }
+            return CommandAction(id: name, title: title, scope: .item, after: .close)
         }
     }
 }

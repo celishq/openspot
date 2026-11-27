@@ -17,7 +17,7 @@ enum TimelineCall: NounCall {
     static let noun = CommandNoun("timeline", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, the line under it in `detail=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A file up to 25 MB on the same disk is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value; a `peek=` block after them and the blocks under it are kept as the peek of the entry, up to 64 KB, with no `run=` button and a copy of each picture. It works in a show.",
+            "Adds an entry to the calling spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, the line under it in `detail=`, the app in `app=`, `icon=` as `icon` in spot.toml takes it, `key=`, which moves an entry of the same key to the top, and `at=`, an ISO 8601 time. A file up to 25 MB on the same disk is kept as a copy. With no input it takes the same lines on stdin, and adds nothing when they hold no value; a `peek=` block after them and the blocks under it are kept as the peek of the entry, up to 64 KB, with no button that lacks an `action=` and a copy of each picture. It works in a show.",
             rule: CallRule(use: .timeline, used: "added to its timeline")
         ) { Self.add($0.rest) },
         CommandVerb(

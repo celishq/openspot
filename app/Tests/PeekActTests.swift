@@ -9,7 +9,7 @@ final class PeekActTests: PanelCase {
         model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
         try script("colors", toml: "title = 'Colors'\nuses = \(uses)\n\n[on]\n\"sheet.open\" = true", """
         [ -n "$1" ] && [ "$1" != show ] && printf '%s|%s\\n' "$1" "$(sed -n 's/^input.item=//p')" >> '\(folder.appendingPathComponent("runs").path)' && exit 0
-        printf 'item=red\\ntitle=Red\\ntext=#ff0000\\n\\npeek=pr\\nparent=red\\n\\ntext=hex\\nparent=pr\\ntitle=#FF0000\\n\\nbutton=rgb\\nparent=pr\\ntitle=Copy RGB\\ncopy=rgb(255 0 0)\\n\\nbutton=put\\nparent=pr\\ntitle=Paste Hex\\npaste=#FF0000\\n\\nbutton=web\\nparent=pr\\ntitle=Open Page\\nopen=https://example.com/red\\n\\nbutton=name\\nparent=pr\\ntitle=Rename\\nrun=rename\\n'
+        printf 'item=red\\ntitle=Red\\ntext=#ff0000\\n\\npeek=pr\\nparent=red\\n\\ntext=hex\\nparent=pr\\ntitle=#FF0000\\n\\nbutton=rgb\\nparent=pr\\ntitle=Copy RGB\\naction=clipboard copy --text '"'"'rgb(255 0 0)'"'"'\\n\\nbutton=put\\nparent=pr\\ntitle=Paste Hex\\naction=clipboard copy --text '"'"'#FF0000'"'"'\\naction=clipboard paste\\n\\nbutton=bad\\nparent=pr\\ntitle=Fails First\\naction=clipboard nothing\\naction=clipboard copy --text never\\n\\nbutton=rename\\nparent=pr\\ntitle=Rename\\n'
         """)
         await model.reload()
         model.press("colors")
@@ -28,7 +28,7 @@ final class PeekActTests: PanelCase {
 
         let titles = model.actionMenu(on: target)?.rows.map(\.title) ?? []
 
-        XCTAssertTrue(["Peek", "Copy RGB", "Paste Hex", "Open Page", "Rename"].allSatisfy(titles.contains), "\(titles)")
+        XCTAssertTrue(["Peek", "Copy RGB", "Paste Hex", "Fails First", "Rename"].allSatisfy(titles.contains), "\(titles)")
         guard case .blocks(let tree) = Peek(item: try XCTUnwrap(target.item))?.look else { return XCTFail("no blocks") }
         XCTAssertNil(tree.node("rgb"))
     }
@@ -53,13 +53,14 @@ final class PeekActTests: PanelCase {
         XCTAssertEqual(board.text(), "#FF0000")
     }
 
-    func testOpenOpensItsPlace() async throws {
+    func testTheFirstActionThatFailsStopsTheRestAndSaysWhy() async throws {
         try await openColors()
-        let (open, target) = try action("Open Page")
+        let (bad, target) = try action("Fails First")
 
-        model.run(open, on: target)
+        model.run(bad, on: target)
 
-        XCTAssertEqual(host.opened, [URL(string: "https://example.com/red")!])
+        try await wait("the failure") { !self.host.notes.isEmpty }
+        XCTAssertEqual(board.count(), 0)
     }
 
     func testRunCallsTheSpotWithTheRow() async throws {
@@ -83,7 +84,7 @@ final class PeekActTests: PanelCase {
 
     func testAButtonWhoseIdHoldsAnotherAsItsStartIsTheSubmenuOfIt() async throws {
         model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
-        try script("shades", toml: "title = 'Shades'\nuses = [\"clipboard\"]\n\n[on]\n\"sheet.open\" = true", "printf 'item=red\\ntitle=Red\\ntext=#ff0000\\n\\npeek=p\\nparent=red\\n\\ntext=t\\nparent=p\\ntitle=Red\\n\\nbutton=as\\nparent=p\\ntitle=Copy as\\n\\nbutton=as.hex\\nparent=p\\ntitle=HEX\\ncopy=#FF0000\\n\\nbutton=as.rgb\\nparent=p\\ntitle=RGB\\ncopy=rgb(255 0 0)\\n'")
+        try script("shades", toml: "title = 'Shades'\nuses = [\"clipboard\"]\n\n[on]\n\"sheet.open\" = true", "printf 'item=red\\ntitle=Red\\ntext=#ff0000\\n\\npeek=p\\nparent=red\\n\\ntext=t\\nparent=p\\ntitle=Red\\n\\nbutton=as\\nparent=p\\ntitle=Copy as\\n\\nbutton=as.hex\\nparent=p\\ntitle=HEX\\naction=clipboard copy --text #FF0000\\n\\nbutton=as.rgb\\nparent=p\\ntitle=RGB\\naction=clipboard copy --text \"rgb(255 0 0)\"\\n'")
         await model.reload()
         model.press("shades")
         try await wait("the open list") { self.model.openSheet?.list.shown.isEmpty == false }

@@ -114,7 +114,7 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     func testTheRowOfAnEntryWithAPeekCarriesItAndTheNextRowStaysItsOwn() async throws {
-        let peek = TextBlock.blocks(in: "peek=p\n\ntext=hex\nparent=p\ntitle=#FF0000\n\nbutton=rgb\nparent=p\ntitle=Copy RGB\ncopy=rgb(255 0 0)\n")
+        let peek = TextBlock.blocks(in: "peek=p\n\ntext=hex\nparent=p\ntitle=#FF0000\n\nbutton=rgb\nparent=p\ntitle=Copy RGB\naction=clipboard copy --text rgb\n")
         let id = try XCTUnwrap(try runs.timeline.add(Timeline.Draft(kind: .text, values: ["#ff0000"], peek: peek), of: "clipboard", at: Date().addingTimeInterval(1))).id
         try add(.text, "plain")
 

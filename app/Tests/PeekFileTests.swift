@@ -7,7 +7,7 @@ final class PeekFileTests: PanelCase {
 
     private func frame(_ name: String, row: String, title: String) throws -> String {
         let file = folder.appendingPathComponent("\(name).frame")
-        try "peek=peek-\(row)\nparent=\(row)\n\ntext=t\nparent=peek-\(row)\ntitle=\(title)\n\nbutton=c\nparent=peek-\(row)\ntitle=Copy \(title)\ncopy=\(title)\n".write(to: file, atomically: true, encoding: .utf8)
+        try "peek=peek-\(row)\nparent=\(row)\n\ntext=t\nparent=peek-\(row)\ntitle=\(title)\n\nbutton=c\nparent=peek-\(row)\ntitle=Copy \(title)\naction=clipboard copy --text \(title)\n".write(to: file, atomically: true, encoding: .utf8)
         return file.path
     }
 
