@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
+.PHONY: verify test perf memory film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -28,6 +28,9 @@ test:
 
 perf:
 	sh scripts/motion-perf.sh $(N)
+
+memory:
+	sh scripts/memory-budget.sh $(N)
 
 film:
 	sh scripts/motion-film.sh

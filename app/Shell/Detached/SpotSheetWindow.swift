@@ -31,7 +31,14 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         return book.record(key: name, modifiers: Shortcut.Modifiers.all.filter { modifiers.contains($0) }.compactMap(\.word))
     }
 
+    #if OPENSPOT_TOOLS
+    static var showsQuietly = false
+    #endif
+
     func show() {
+        #if OPENSPOT_TOOLS
+        if Self.showsQuietly { return showQuietly() }
+        #endif
         let opens = !isPresent
         if opens {
             isPresent = true
@@ -48,6 +55,17 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
     }
+
+    #if OPENSPOT_TOOLS
+    private func showQuietly() {
+        isPresent = true
+        if let declared { setContentSize(declared) }
+        setFrameOrigin(SpotTokens.offScreen)
+        ignoresMouseEvents = true
+        contentView?.layoutSubtreeIfNeeded()
+        orderFrontRegardless()
+    }
+    #endif
 
     func focus() {
         guard isPresent else { return }

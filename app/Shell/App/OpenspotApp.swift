@@ -47,6 +47,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var submenu: SpotSubmenuWindow?
     #if OPENSPOT_TOOLS
     private var motionProbe: SpotMotionProbe?
+    private var memoryProbe: SpotMemoryProbe?
     #endif
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
@@ -89,7 +90,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel = SpotsPanel.make(model: model)
         menuBar = SpotMenuBar(model: model, openspotItem: item)
         #if OPENSPOT_TOOLS
-        if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
+        if let probe = SpotMemoryProbe(model: model) {
+            memoryProbe = probe
+            probe.run()
+        } else if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
         }
