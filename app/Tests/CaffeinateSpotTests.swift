@@ -188,6 +188,10 @@ final class CaffeinateSpotTests: XCTestCase {
 
     private func runProcesses() throws {
         try fake("ps", """
+            case "$*" in
+              *comm=*4242*) echo /usr/local/bin/claude; exit 0 ;;
+              *comm=*) exit 1 ;;
+            esac
             printf '%s\\n' \\
               '  100     1 ttys001    02:00:00 -zsh' \\
               ' 4242   100 ttys001    01:02:03 claude --resume abc' \\
@@ -240,6 +244,19 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(flags(), ["-di -w 4242"])
         try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on until claude ends" }
         try await wait("the card") { sheet.shownState.subtitle == "Until claude ends" }
+    }
+
+    func testAPickOfAProcessThatHasEndedKeepsCaffeinateOffAndSaysSo() async throws {
+        try runProcesses()
+        let sheet = try sheet()
+        try await wait("the process row") { self.row("process", in: sheet) != nil }
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
+        try await wait("the processes") { sheet.list.all.count == 3 }
+
+        sheet.pick(try XCTUnwrap(sheet.list.all.first { $0.run == "pid.5151" }))
+
+        try await wait("the toast") { self.lines("toasts").last == "That process has ended. Pick one that still runs." }
+        XCTAssertTrue(running().isEmpty)
     }
 
     func testTheCardOfALidHoldSaysTheLidCanClose() async throws {

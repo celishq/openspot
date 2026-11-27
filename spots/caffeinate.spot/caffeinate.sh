@@ -13,11 +13,15 @@ display=
 lidded=
 holder=
 fault=
-watched=
 named=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
+}
+
+# Tells whether the hold picked keeps the Mac awake while a process runs, which `picked` names as `pid.<id>`.
+watching() {
+  case $picked in pid.*) return 0 ;; *) return 1 ;; esac
 }
 
 # Tells whether this Mac has a lid, as macOS reports a clamshell state only for one that has. Read once, at the start.
@@ -91,7 +95,7 @@ remaining() {
 
 # Prints how long the Mac stays awake, which the card shows while the call that turned it on runs.
 left() {
-  if [ -n "$watched" ]; then
+  if watching; then
     echo "Until $named ends"
     return
   fi
@@ -146,7 +150,7 @@ hold() {
   held=$1
   picked=$2
   seconds=${3:-$2}
-  [ -z "$watched" ] || seconds=0
+  ! watching || seconds=0
   if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
   if display_on; then flags=-di; else flags=-i; fi
   closed=true
@@ -157,7 +161,7 @@ hold() {
   fi
   (
     trap 'let_go; exit 0' TERM
-    if [ -n "$watched" ]; then caffeinate $flags -w "$watched" &
+    if watching; then caffeinate $flags -w "${picked#pid.}" &
     elif [ "$seconds" = 0 ]; then caffeinate $flags &
     else caffeinate $flags -t "$seconds" &
     fi
@@ -230,7 +234,7 @@ processes() {
       if (tty[i] != last) { printf "box=%s\nparent=list\ntitle=%s\n\n", tty[i], tty[i]; last = tty[i] }
       line = command[i]
       sub(/^[^ ]*\//, "", line)
-      printf "item=pid.%s\nparent=%s\ntitle=%s · %s\ndetail=%s\nname=%s\n\n", p, tty[i], name[p], since(etime[i]), middle(line), name[p]
+      printf "item=pid.%s\nparent=%s\ntitle=%s · %s\ndetail=%s\n\n", p, tty[i], name[p], since(etime[i]), middle(line)
     }
   }'
 }
@@ -243,14 +247,16 @@ given() {
 # Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
 # and why.
 toast() {
-  minutes=0
-  [ -n "$watched" ] || minutes=$(( $1 / 60 ))
-  if [ -n "$watched" ]; then on="Caffeinate is on until $named ends"
-  elif [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
-  elif [ "$minutes" -ge 120 ]; then on="Caffeinate is on for $(( minutes / 60 )) hours"
-  elif [ "$minutes" -eq 60 ]; then on="Caffeinate is on for 1 hour"
-  elif [ "$minutes" -eq 1 ]; then on="Caffeinate is on for 1 minute"
-  else on="Caffeinate is on for $minutes minutes"
+  if watching; then
+    on="Caffeinate is on until $named ends"
+  else
+    minutes=$(( $1 / 60 ))
+    if [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
+    elif [ "$minutes" -ge 120 ]; then on="Caffeinate is on for $(( minutes / 60 )) hours"
+    elif [ "$minutes" -eq 60 ]; then on="Caffeinate is on for 1 hour"
+    elif [ "$minutes" -eq 1 ]; then on="Caffeinate is on for 1 minute"
+    else on="Caffeinate is on for $minutes minutes"
+    fi
   fi
   if [ "$2" = lost ]; then
     echo "$on, but not with the lid closed. $fault"
@@ -266,8 +272,8 @@ serve() {
   lid_on
   display_on
   item=$(given input.item)
-  [ -n "$item" ] || item=$(given input.route)
-  case "$1 $item" in
+  page=$(given input.route)
+  case "$1 ${item:-$page}" in
     'press off')
       release
       openspot toast 'Caffeinate is off'
@@ -285,7 +291,6 @@ serve() {
           ;;
         *)
           release
-          watched=
           begin "$call" $(( minutes * 60 ))
           ;;
       esac
@@ -303,14 +308,17 @@ serve() {
       ;;
     press\ [0-9]*)
       release
-      watched=
       begin "$call" "${item%%.*}"
       ;;
     press\ pid.*)
-      release
-      watched=${item#pid.}
-      named=$(given input.item.name)
-      begin "$call" "$item"
+      if program=$(ps -o comm= -p "${item#pid.}" 2>/dev/null) && [ -n "$program" ]; then
+        release
+        named=${program##*/}
+        begin "$call" "$item"
+      else
+        openspot toast 'That process has ended. Pick one that still runs.'
+        printf 'call=%s\n---\nitems=list\n\n%s\n---\nend=%s\n---\n' "$call" "$(processes)" "$call"
+      fi
       ;;
     'show processes')
       printf 'call=%s\n---\nitems=list\n\n%s\n---\nend=%s\n---\n' "$call" "$(processes)" "$call"
