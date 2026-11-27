@@ -71,7 +71,7 @@ final class NewSpotTests: BuiltInCase {
         let output = try await newSpot().answer("describe", input: "setting.agent=codex\n", timeout: 60)
 
         XCTAssertEqual(options(of: "agent", in: output.parts).map(\.title), ["Claude Code", "Codex"])
-        XCTAssertEqual(options(of: "agent", in: output.parts).map { $0.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") } }, ["white/claude.png", "white/openai.png"])
+        XCTAssertEqual(options(of: "agent", in: output.parts).map { $0.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") } }, ["dark/claude.png", "dark/codex.png"])
         let places = options(of: "place", in: output.parts)
         XCTAssertEqual(places.first?.title, "Openspot")
         XCTAssertEqual(places.first { $0.id == "app-codex" }?.title, "ChatGPT", "\(places)")
@@ -283,6 +283,33 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertTrue(options(of: "agent", in: output.parts).map(\.id).contains("claude-personal"), "\(options(of: "agent", in: output.parts))")
         XCTAssertEqual(try saved("account"), "personal\n")
+    }
+
+    func testAnAgentBeyondClaudeAndCodexShowsWithItsMarkWhenTheShellRunsIt() async throws {
+        try fake("pi", "exit 0")
+        try fake("defaults", "exit 1")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", timeout: 60)
+
+        let pi = options(of: "agent", in: output.parts).first { $0.id == "pi" }
+        XCTAssertEqual(pi?.title, "Pi", "\(options(of: "agent", in: output.parts))")
+        XCTAssertEqual(pi?.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") }, "light/pi.png")
+    }
+
+    func testACommandOfThePersonsOwnIsAnAgentThatWorksOnlyInATerminalUnlessItRunsClaude() async throws {
+        try forgetWays()
+
+        let own = try await newSpot().answer("describe", input: "setting.command=myagent --fast\nsetting.agent=custom\n", timeout: 60)
+
+        XCTAssertEqual(options(of: "agent", in: own.parts).first { $0.id == "custom" }?.title, "myagent")
+        XCTAssertFalse(options(of: "place", in: own.parts).contains { $0.id == "openspot" }, "\(options(of: "place", in: own.parts))")
+
+        try fake("claude", "echo \"$@\" > '\(root.path)/args'")
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.command=claude --model opus\nsetting.agent=custom\nsetting.place=openspot\n", timeout: 60)
+
+        let args = try saved("args")
+        XCTAssertTrue(args.hasPrefix("--model opus -p"), args)
     }
 
     private func fakeApp(_ name: String, id: String) throws -> URL {

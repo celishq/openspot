@@ -116,10 +116,19 @@ com.microsoft.VSCode	VS Code'
 # agent it runs as: claude or codex, which Openspot can run with no window.
 known_agents='claude|Claude Code|claude|Claude|claude
 codex|Codex|codex|Codex|codex
+pi|Pi|pi||
 gemini|Gemini CLI|gemini||
+agy|Antigravity|agy||
+kimi|Kimi|kimi||
 opencode|opencode|opencode||
 amp|Amp|amp||
-cursor|Cursor|cursor-agent||'
+cursor|Cursor|cursor-agent||
+qwen|Qwen Code|qwen||
+droid|Droid|droid||
+copilot|Copilot|copilot||
+goose|Goose|goose||
+crush|Crush|crush||
+aider|Aider|aider||'
 
 # Prints the shell of the person when Openspot can run a line in it, or else zsh.
 person_shell() {
@@ -243,25 +252,49 @@ ways() {
 kept_ways="$OPENSPOT_DATA/ways"
 all_ways=$(cat "$kept_ways" 2>/dev/null)
 
+# Prints the ways of the command of the person's own from Settings, in the form of ways: each terminal, and Openspot
+# when the command runs Claude Code or Codex. No look keeps them, so a change in Settings shows at once.
+own_ways() {
+  line=$(value setting.command)
+  [ -n "$line" ] || return 0
+  name=$(printf '%s' "$line" | awk '{ print $1 }')
+  name=${name##*/}
+  kind=
+  for each in claude codex; do
+    printf ' %s ' "$line" | tr "'\"" '  ' | grep -q "[ /]$each " && { kind=$each; break; }
+  done
+  [ -z "$kind" ] || printf 'custom|%s|openspot|Openspot||%s|%s\n' "$name" "$kind" "$line"
+  for term in Ghostty iTerm Warp Terminal; do
+    app_path "$term" > /dev/null && printf 'custom|%s|term-%s|%s|%s|%s|%s\n' "$name" "$(slug "$term")" "$term" "$term" "$kind" "$line"
+  done
+}
+own=$(own_ways)
+
+# Prints each way: the kept ways of this Mac, then those of the person's own command.
+ways_here() {
+  printf '%s\n' "$all_ways"
+  [ -z "$own" ] || printf '%s\n' "$own"
+}
+
 # The chosen agent and place, from the settings.
 agent=$(value setting.agent)
 place=$(value setting.place)
 
 # Prints the chosen agent: the setting when this Mac still has it, or else the first.
 chosen_agent() {
-  printf '%s\n' "$all_ways" | awk -F '|' -v want="$agent" 'NR == 1 { first = $1 } $1 == want { print $1; found = 1; exit } END { if (!found && first != "") print first }'
+  ways_here | awk -F '|' -v want="$agent" 'NR == 1 { first = $1 } $1 == want { print $1; found = 1; exit } END { if (!found && first != "") print first }'
 }
 
 # Prints the chosen place of the agent $1: the setting when the agent has it, or else its first.
 chosen_place() {
-  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v want="$place" '$1 != a { next } first == "" { first = $3 } $3 == want { print $3; found = 1; exit } END { if (!found && first != "") print first }'
+  ways_here | awk -F '|' -v a="$1" -v want="$place" '$1 != a { next } first == "" { first = $3 } $3 == want { print $3; found = 1; exit } END { if (!found && first != "") print first }'
 }
 
 # Prints the fact $3 of the way of the agent $1 at the place $2, or at any place that has it when $2 is empty: name,
 # place-name, opens, kind (claude, codex or nothing) or word, the word that runs the agent in the person's shell.
 way_of() {
   case $3 in name) c=2 ;; place-name) c=4 ;; opens) c=5 ;; kind) c=6 ;; word) c=7 ;; *) return 1 ;; esac
-  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" -v p="$2" -v c="$c" '$1 == a && (p == "" ? $c != "" : $3 == p) { print $c; found = 1; exit } END { exit !found }'
+  ways_here | awk -F '|' -v a="$1" -v p="$2" -v c="$c" '$1 == a && (p == "" ? $c != "" : $3 == p) { print $c; found = 1; exit } END { exit !found }'
 }
 
 # Prints the id of the button that starts the next run: a new one for each run, so that runs go on side by side.
@@ -270,23 +303,22 @@ next_key() {
   if [ -n "$build" ]; then printf 'change-%s-%s' "$build" "$count"; else printf 'make-%s' "$count"; fi
 }
 
-# Prints an option of the agent choice for each agent on this Mac, with the logo of the agent it runs as in the ink of
-# the appearance of macOS, since a menu draws a picture as it is.
+# Prints an option of the agent choice for each agent on this Mac, with its mark, or else the mark of the agent it runs
+# as, in the ink of the appearance of macOS, since a menu draws a picture as it is.
 agent_options() {
-  case $(defaults read -g AppleInterfaceStyle 2>/dev/null) in Dark) ink=white ;; *) ink=black ;; esac
-  printf '%s\n' "$all_ways" | awk -F '|' '!seen[$1]++ { print $1 "|" $2 }' | while IFS='|' read -r key name; do
+  case $(defaults read -g AppleInterfaceStyle 2>/dev/null) in Dark) ink=dark ;; *) ink=light ;; esac
+  ways_here | awk -F '|' '!seen[$1]++ { print $1 "|" $2 }' | while IFS='|' read -r key name; do
     printf '\noption=%s\n' "$key"
     openspot_kv title "$name"
-    case $(way_of "$key" '' kind) in
-      claude) openspot_kv icon "${0%/*}/logos/$ink/claude.png" ;;
-      codex) openspot_kv icon "${0%/*}/logos/$ink/openai.png" ;;
-    esac
+    for mark in "$key" "$(way_of "$key" '' kind)"; do
+      [ -f "${0%/*}/logos/$ink/$mark.png" ] && { openspot_kv icon "${0%/*}/logos/$ink/$mark.png"; break; }
+    done
   done
 }
 
 # Prints an option of the place choice for each place of the agent $1, with the icon of the app it opens.
 place_options() {
-  printf '%s\n' "$all_ways" | awk -F '|' -v a="$1" '$1 == a { print $3 "|" $4 "|" $5 }' | while IFS='|' read -r id name opens; do
+  ways_here | awk -F '|' -v a="$1" '$1 == a { print $3 "|" $4 "|" $5 }' | while IFS='|' read -r id name opens; do
     printf '\noption=%s\n' "$id"
     openspot_kv title "$name"
     case $id in
