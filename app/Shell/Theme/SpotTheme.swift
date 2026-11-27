@@ -7,8 +7,10 @@ enum SpotTheme {
         isDark(appearance) ? loaded.dark : loaded.light
     }
 
+    private static let darkNames: Set<NSAppearance.Name> = [.darkAqua, .vibrantDark, .accessibilityHighContrastDarkAqua, .accessibilityHighContrastVibrantDark]
+
     static func isDark(_ appearance: NSAppearance) -> Bool {
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        darkNames.contains(appearance.name)
     }
 
     @MainActor static var loaded: SpotPalette { SpotLoadedTheme.shared.palette }
@@ -91,6 +93,6 @@ enum SpotTheme {
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
 
     private static func color(dark: NSColor, light: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil) { isDark($0) ? dark : light })
+        SpotPalette.color(dark, light)
     }
 }

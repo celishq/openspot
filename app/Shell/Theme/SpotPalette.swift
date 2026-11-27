@@ -82,7 +82,9 @@ final class SpotPalette: Sendable {
         return color(one.nsColor, other.nsColor)
     }
 
-    private static func color(_ dark: NSColor, _ light: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? dark : light })
+    static func color(_ dark: NSColor, _ light: NSColor) -> Color {
+        let dark = dark.usingColorSpace(.sRGB) ?? dark
+        let light = light.usingColorSpace(.sRGB) ?? light
+        return Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? dark : light })
     }
 }
