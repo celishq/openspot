@@ -79,7 +79,7 @@ detail = "Make your own"
 answers = "last"
 uses = ["clipboard", "spots", "agent"]
 edits = "spots"
-pages = ["build/*", "sessions"]
+pages = ["build/*", "builds"]
 
 [scripts.new.on]
 "sheet.open" = true

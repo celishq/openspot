@@ -22,9 +22,9 @@ fi
 # deleted), the step it is on, the agent's last words and its session. Builds run side by side, each in its own call, and
 # each shows on its own page, build/<id>. The first sheet starts a new one. The Edit sheet of a spot shows its last build.
 route=$(value route)
-job=
-case $route in build/*) job=${route#build/} ;; esac
-case $job in */* | .*) job= ;; esac
+build=
+case $route in build/*) build=${route#build/} ;; esac
+case $build in */* | .*) build= ;; esac
 
 # Prints the file $2 of the build $1, or nothing.
 get() {
@@ -39,9 +39,9 @@ put() {
 # An agent that builds a spot reports each step with `openspot spot run openspot/new step build=<id> words=<step>`, and
 # the card of its build shows the words.
 if [ "$1" = step ]; then
-  dir=$(value input.build)
-  case $dir in '' | */* | .*) echo 'Name the build, such as build=b1795784144.' >&2; exit 2 ;; esac
-  put "$dir" step "$(value input.words | tr '\n' ' ' | cut -c 1-80)"
+  id=$(value input.build)
+  case $id in '' | */* | .*) echo 'Name the build, such as build=b1795784144.' >&2; exit 2 ;; esac
+  put "$id" step "$(value input.words | tr '\n' ' ' | cut -c 1-80)"
   exit 0
 fi
 
@@ -81,28 +81,28 @@ short() {
 
 # Prints the last build of the spot $1.
 build_of() {
-  for dir in $(ls -1t "${builds:?}" 2>/dev/null); do
-    [ "$(get "$dir" spot)" = "$1" ] && { printf '%s' "$dir"; return; }
+  for id in $(ls -1t "${builds:?}" 2>/dev/null); do
+    [ "$(get "$id" spot)" = "$1" ] && { printf '%s' "$id"; return; }
   done
 }
 
 if [ -n "${OPENSPOT_EDIT-}" ]; then
-  job=$(build_of "$OPENSPOT_EDIT")
-  if [ -z "$job" ]; then
-    job="e$(date +%s)$$"
-    put "$job" spot "$OPENSPOT_EDIT"
-    put "$job" state ready
+  build=$(build_of "$OPENSPOT_EDIT")
+  if [ -z "$build" ]; then
+    build="e$(date +%s)$$"
+    put "$build" spot "$OPENSPOT_EDIT"
+    put "$build" state ready
   fi
 fi
 spot=
-[ -z "$job" ] || spot=$(get "$job" spot)
+[ -z "$build" ] || spot=$(get "$build" spot)
 # A spot is made once its folder is there and it is no draft.
 if [ -n "$spot" ] && [ -z "${OPENSPOT_EDIT-}" ]; then
   if [ ! -d "$folder/$spot.spot" ] || is_draft "$spot"; then spot=; fi
 fi
 
-if [ -n "$job" ]; then
-  draft="$builds/$job/draft"
+if [ -n "$build" ]; then
+  draft="$builds/$build/draft"
   placeholder="Describe a change to ${spot:-this spot}"
 else
   draft="$OPENSPOT_DATA/draft"
@@ -296,7 +296,7 @@ go_title() {
 # Prints the id of the button that starts the next run: a new one for each run, so that runs go on side by side.
 next_key() {
   count=$(cat "$OPENSPOT_DATA/runs.count" 2>/dev/null || echo 0)
-  if [ -n "$job" ]; then printf 'change-%s-%s' "$job" "$count"; else printf 'make-%s' "$count"; fi
+  if [ -n "$build" ]; then printf 'change-%s-%s' "$build" "$count"; else printf 'make-%s' "$count"; fi
 }
 
 # Prints an option of the agent choice for each agent on this Mac.
@@ -335,7 +335,7 @@ form() {
     agent_options
     printf '\nchoice=place\nparent=with\nclass=h-8\ntitle=App\nicon=macwindow\nvalue=%s\n' "$at"
     place_options "$me"
-    [ -z "${building-}" ] || builds_section
+    [ -z "${live-}" ] || builds_section
     printf '\nbox=go\nparent=form\nclass=flex-col gap-2 shrink-0\n'
     # A build in Openspot keeps the panel, which shows its progress. One in an app or a terminal hides it, since the work
     # goes on there.
@@ -377,24 +377,24 @@ builds_section() {
   printf '\nbox=runs\nparent=form\nclass=flex-col gap-0\n'
   printf '\ntext=runs-head\nparent=runs\nclass=font-section text-secondary shrink-0\ntitle=Building\n'
   printf '\nbox=runs-list\nparent=runs\nclass=flex-col gap-0 overflow-y-auto\n'
-  printf '%s\n' "$building" | while IFS= read -r dir; do working "$dir" runs-list; done
+  printf '%s\n' "$live" | while IFS= read -r id; do working "$id" runs-list; done
 }
 
 # Prints the builds that run now, the newest first.
 running() {
-  ls -1r "${builds:?}" 2>/dev/null | while IFS= read -r dir; do
-    settle "$dir"
-    [ "$(get "$dir" state)" = running ] && printf '%s\n' "$dir"
+  ls -1r "${builds:?}" 2>/dev/null | while IFS= read -r id; do
+    settle "$id"
+    [ "$(get "$id" state)" = running ] && printf '%s\n' "$id"
   done
 }
 
 # Prints the first sheet: the form of a new build, with the builds that run over its buttons. Each build shows on the
-# Sessions page.
+# Builds page.
 first_sheet() {
   printf 'frame=\nclass=gap-group animate-layout\n'
-  building=$(running)
+  live=$(running)
   form "$1" "$2"
-  printf '\nbutton=sessions\ntitle=Sessions\nscope=spot\nshortcut=cmd+y\nclose=false\n'
+  printf '\nbutton=builds\ntitle=Builds\nscope=spot\nshortcut=cmd+y\nclose=false\n'
   printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\n'
 }
 
@@ -403,14 +403,14 @@ delete_button() {
   printf '\nbutton=delete\ntitle=Delete\n%s\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n' "$1"
 }
 
-# Prints the page of the build $job: its step while it runs, then the spot it made and the form of the next change.
+# Prints the page of the build $build: its step while it runs, then the spot it made and the form of the next change.
 build_sheet() {
-  settle "$job"
-  state=$(get "$job" state)
+  settle "$build"
+  state=$(get "$build" state)
   printf 'frame=%s\nclass=gap-group\n' "$route"
   if [ "$state" = running ]; then
     printf '\nbox=now\nclass=flex-col gap-0\n'
-    working "$job" now cmd+return
+    working "$build" now cmd+return
     return
   fi
   edit=${OPENSPOT_EDIT-}
@@ -418,7 +418,7 @@ build_sheet() {
     printf '\nbox=made\nclass=flex-row items-center gap-2\n'
     printf '\nicon=made-icon\nparent=made\nvalue=exclamationmark.triangle.fill\nclass=text-bad\n'
     printf '\ntext=made-name\nparent=made\nclass=grow line-clamp-2\n'
-    openspot_kv title "$(get "$job" said)"
+    openspot_kv title "$(get "$build" said)"
     [ -n "$edit" ] || delete_button 'parent=made
 class=rounded-full'
   elif [ -n "$spot" ] && [ -z "$edit" ] && [ "$state" != stopped ]; then
@@ -432,29 +432,29 @@ class=rounded-full'
   [ -n "$edit" ] || [ "$state" = failed ] || delete_button 'scope=spot'
 }
 
-# Prints the Sessions page: a row for each build, the running ones first, then the newest first. A row opens the
+# Prints the Builds page: a row for each build, the running ones first, then the newest first. A row opens the
 # build's page, and its menu opens the spot it made or deletes it.
-sessions_page() {
-  printf 'frame=sessions\nrecents=false\n'
-  list=$(ls -1t "${builds:?}" 2>/dev/null | while IFS= read -r dir; do
-    settle "$dir"
-    [ -s "$builds/$dir/asked" ] || continue
-    if [ "$(get "$dir" state)" = running ]; then printf '0 %s\n' "$dir"; else printf '1 %s\n' "$dir"; fi
+builds_page() {
+  printf 'frame=builds\nrecents=false\n'
+  list=$(ls -1t "${builds:?}" 2>/dev/null | while IFS= read -r id; do
+    settle "$id"
+    [ -s "$builds/$id/asked" ] || continue
+    if [ "$(get "$id" state)" = running ]; then printf '0 %s\n' "$id"; else printf '1 %s\n' "$id"; fi
   done | sort -s -k 1,1 | cut -d ' ' -f 2)
-  [ -n "$list" ] || { printf '\ntext=empty\ntitle=No sessions yet\n'; return; }
-  printf '%s\n' "$list" | while IFS= read -r dir; do
-    state=$(get "$dir" state)
+  [ -n "$list" ] || { printf '\ntext=empty\ntitle=No builds yet\n'; return; }
+  printf '%s\n' "$list" | while IFS= read -r id; do
+    state=$(get "$id" state)
     case $state in
-      running) icon=sparkles words=$(get "$dir" step) tone= ;;
+      running) icon=sparkles words=$(get "$id" step) tone= ;;
       failed) icon=exclamationmark.triangle words=Failed tone=bad ;;
       stopped) icon=stop.circle words=Stopped tone= ;;
       *) icon=checkmark.circle words=Ready tone=good ;;
     esac
-    printf '\nitem=%s\nicon=%s\nroute=build/%s\n' "$dir" "$icon" "$dir"
-    openspot_kv title "$(name_of "$dir")"
+    printf '\nitem=%s\nicon=%s\nroute=build/%s\n' "$id" "$icon" "$id"
+    openspot_kv title "$(name_of "$id")"
     openspot_kv detail "$words"
     [ -z "$tone" ] || printf 'tone=%s\n' "$tone"
-    [ -n "$(get "$dir" spot)" ] && [ "$state" = ready ] || printf 'hides=open-spot\n'
+    [ -n "$(get "$id" spot)" ] && [ "$state" = ready ] || printf 'hides=open-spot\n'
     [ "$state" != running ] || printf 'hides=delete\n'
   done
   printf '\nbutton=open-spot\ntitle=Open\nscope=item\nshortcut=cmd+o\n'
@@ -463,8 +463,8 @@ sessions_page() {
 
 sheet() {
   case $route in
-    sessions | history) sessions_page ;;
-    *) if [ -n "$job" ]; then build_sheet "$@"; else first_sheet "$@"; fi ;;
+    builds | history) builds_page ;;
+    *) if [ -n "$build" ]; then build_sheet "$@"; else first_sheet "$@"; fi ;;
   esac
 }
 
@@ -531,12 +531,12 @@ Title the spot \"$name\" unless the words above name it."
   rm -f "$draft" "$copied"
   case $at in
     openspot)
-      [ -n "$job" ] || job="b$(date +%s)$$"
+      [ -n "$build" ] || build="b$(date +%s)$$"
       if [ -z "$spot" ]; then
-        made=$(get "$job" spot)
+        made=$(get "$build" spot)
         if [ -z "$made" ]; then
           made=$(free_id "$name")
-          put "$job" spot "$made"
+          put "$build" spot "$made"
         fi
         if [ ! -e "$folder/$made.spot/spot.toml" ]; then
           mkdir -p "$folder/$made.spot"
@@ -548,10 +548,10 @@ $(draft_words "$folder/$made.spot")"
       fi
       words="$words
 
-$(step_words "$job" "$(quote "$(command -v openspot)")")"
+$(step_words "$build" "$(quote "$(command -v openspot)")")"
       openspot_keep "$draft.sent" "$typed"
-      put "$job" asked "$(printf '%s' "$text" | tr '\n' ' ')"
-      run "$job" "$1" "$me" "$words"
+      put "$build" asked "$(printf '%s' "$text" | tr '\n' ' ')"
+      run "$build" "$1" "$me" "$words"
       ;;
     term-*)
       terminal "$me" "$(way_of "$me" "$at" 5)" "$words"
@@ -605,15 +605,15 @@ case "$1" in
     sheet "$typed"
     ;;
   make-* | change-*) go "$1" ;;
-  sessions | history) openspot route push sessions --title Sessions > /dev/null ;;
+  builds | history) openspot route push builds --title Builds > /dev/null ;;
   stop-*)
     # The row goes at once, and the run stops after the sheet shows without it, so that Stop never waits.
-    dir=${1#stop-}
-    case $dir in '' | */* | .*) exit 1 ;; esac
-    put "$dir" state stopped
+    id=${1#stop-}
+    case $id in '' | */* | .*) exit 1 ;; esac
+    put "$id" state stopped
     sheet "$typed"
     printf -- '---\n'
-    stop "$dir"
+    stop "$id"
     ;;
   open) [ -z "$spot" ] || openspot spot push "$spot" > /dev/null ;;
   open-spot)
@@ -622,17 +622,17 @@ case "$1" in
     ;;
   delete)
     # Delete drops a build, and the spot it began, while it is still a draft, goes to the Trash, where ⌘Z brings it back.
-    dir=$(value item)
-    [ -n "$dir" ] || dir=$job
-    case $dir in '' | */* | .*) exit 1 ;; esac
-    settle "$dir"
-    [ "$(get "$dir" state)" != running ] || { echo 'Stop this build first.' >&2; exit 1; }
-    made=$(get "$dir" spot)
+    id=$(value item)
+    [ -n "$id" ] || id=$build
+    case $id in '' | */* | .*) exit 1 ;; esac
+    settle "$id"
+    [ "$(get "$id" state)" != running ] || { echo 'Stop this build first.' >&2; exit 1; }
+    made=$(get "$id" spot)
     if [ -n "$made" ] && is_draft "$made"; then
       openspot spot delete "$made" > /dev/null 2>&1 || true
     fi
-    rm -rf "${builds:?}/$dir"
-    if [ "$job" = "$dir" ]; then openspot route back > /dev/null 2>&1 || true; else sheet "$typed"; fi
+    rm -rf "${builds:?}/$id"
+    if [ "$build" = "$id" ]; then openspot route back > /dev/null 2>&1 || true; else sheet "$typed"; fi
     ;;
   clear)
     rm -f "$draft" "$copied"

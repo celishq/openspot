@@ -33,8 +33,8 @@ progress() {
     printf -- '---\n'
     return
   fi
-  step=$(get "$building" step)
-  openspot toast --id "build-$building" "$work ${step:-}" > /dev/null 2>&1 || true
+  step=$(get "$build" step)
+  openspot toast --id "build-$build" "$work ${step:-}" > /dev/null 2>&1 || true
   printf 'frame=\n'
   openspot_kv title "$work"
   openspot_kv detail "$step"
@@ -58,7 +58,7 @@ publish() {
 # that the agent last reported and its progress, which the card of New spot shows. An agent that reports no step shows
 # for how long it has worked.
 run() {
-  building=$1
+  build=$1
   kind=$(kind_of "$3")
   line=$(command_of "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
   words=$4
@@ -69,7 +69,7 @@ run() {
   put "$1" pid "$$"
   put "$1" state running
   agent=
-  trap '[ -z "$agent" ] || { pkill -TERM -P "$agent"; kill -TERM "$agent"; } 2>/dev/null; openspot toast --remove "build-$building" > /dev/null 2>&1; put "$building" state stopped; moved "$building"; exit 0' TERM INT
+  trap '[ -z "$agent" ] || { pkill -TERM -P "$agent"; kill -TERM "$agent"; } 2>/dev/null; openspot toast --remove "build-$build" > /dev/null 2>&1; put "$build" state stopped; moved "$build"; exit 0' TERM INT
   start='Starting the agent…'
   put "$1" step "$start"
   put "$1" said ''
@@ -84,7 +84,7 @@ run() {
         set -- --resume "$session"
       else
         session=$(uuidgen | tr 'A-Z' 'a-z')
-        put "$building" session "$session"
+        put "$build" session "$session"
         set -- --session-id "$session"
       fi
       set -- -p "$@" --permission-mode acceptEdits --add-dir "$folder" \
@@ -101,16 +101,16 @@ run() {
   fill=3
   while kill -0 "$agent" 2>/dev/null; do
     sleep 1
-    now=$(get "$building" step)
+    now=$(get "$build" step)
     if [ "$now" = "$start" ] || [ "${now#Working for }" != "$now" ]; then
       minutes=$((($(date +%s) - began) / 60))
-      [ "$minutes" -lt 1 ] || { now="Working for $minutes min"; put "$building" step "$now"; }
+      [ "$minutes" -lt 1 ] || { now="Working for $minutes min"; put "$build" step "$now"; }
     fi
     [ "$now" != "$shown" ] || continue
     shown=$now
     [ "$fill" -ge 90 ] || fill=$((fill + 4))
     progress "0.$(printf '%02d' "$fill")"
-    moved "$building"
+    moved "$build"
   done
   wait "$agent"
   code=$?
@@ -121,19 +121,19 @@ run() {
     else
       said='The agent is done, but made no spot.'
     fi
-    openspot toast --remove "build-$building" > /dev/null 2>&1 || true
-    put "$building" state failed
-    put "$building" said "${said:-The agent stopped and gave no answer.}"
-    moved "$building"
+    openspot toast --remove "build-$build" > /dev/null 2>&1 || true
+    put "$build" state failed
+    put "$build" said "${said:-The agent stopped and gave no answer.}"
+    moved "$build"
     [ -z "${OPENSPOT_EDIT-}" ] || { sheet ''; printf -- '---\n'; }
     echo "The agent stopped: ${said:-it gave no answer}." >&2
     exit 1
   fi
-  # The build is done before its spot shows, so that the spot never comes while New spot still shows it as building.
-  put "$building" state ready
-  moved "$building"
-  publish "$building"
-  shown "$building" "$name"
+  # The build is done before its spot shows, so that the spot never comes while New spot still shows it as build.
+  put "$build" state ready
+  moved "$build"
+  publish "$build"
+  shown "$build" "$name"
   [ -z "${OPENSPOT_EDIT-}" ] || sheet ''
 }
 
@@ -172,7 +172,7 @@ terminal() {
   stamp=$(date +%s)
   printf '%s' "$3" > "$OPENSPOT_DATA/terminal/$stamp.prompt"
   case $(kind_of "$1") in
-    claude) [ -z "$job" ] || { session=$(get "$job" session) && [ -n "$session" ] && line="$line --resume $session"; } ;;
+    claude) [ -z "$build" ] || { session=$(get "$build" session) && [ -n "$session" ] && line="$line --resume $session"; } ;;
     codex) line="$line -c sandbox_workspace_write.network_access=true" ;;
   esac
   {

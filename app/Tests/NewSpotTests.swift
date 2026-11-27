@@ -58,7 +58,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertFalse(make.closes)
         XCTAssertEqual(output.tree.look(of: make.id), .strong)
         XCTAssertEqual(make.key, ActionKey(name: "return", isCommand: true))
-        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Sessions", "Open spots folder"])
+        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Builds", "Open spots folder"])
     }
 
     func testAnAgentWhoseAppHasAnotherNameAndShipsItsCommandInsideWorksInOpenspotAndInItsApp() async throws {
@@ -349,7 +349,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(cleared.parts.first?.value ?? "", "")
         let again = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(again.parts.first?.value ?? "", "")
-        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Sessions", "Open spots folder"])
+        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Builds", "Open spots folder"])
     }
 
     func testCopyPromptWithWordsCopiesThePromptThatBuildsTheSpotToTheEnd() async throws {
