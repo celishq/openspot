@@ -71,14 +71,16 @@ struct SpotFieldView: View {
                     .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
-                if !isInSheet {
+                ZStack(alignment: .topLeading) {
                     SpotAttachmentDetails(model: model)
-                        .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
+                        .mask { SpotSurfaceShape(rect: gridPlace.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: SurfaceEdge(card: .strip).radius) }
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotAttachmentStack(model: model)
                         .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.cell, alignment: .trailing)
-                        .offset(x: Self.attachmentLeft, y: top)
+                        .offset(x: Self.attachmentLeft, y: SpotTokens.halo)
                 }
+                .morph(progress, opacity: { SheetMorph.cardOpacity(at: $0) })
+                .allowsHitTesting(!isInSheet)
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
