@@ -174,6 +174,10 @@ extension Manifest {
             events.contains(EventName.sheetOpen) || searchesSheet
         }
 
+        public var pages: Bool {
+            events.contains(EventName.sheetMore)
+        }
+
         public var searchesSheet: Bool {
             events.contains(EventName.sheetText)
         }

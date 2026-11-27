@@ -20,6 +20,7 @@ struct TimelineEntry: Codable, Equatable, Sendable {
     let detail: String?
     let key: String?
     let bytes: Int64
+    var peekFile: String?
     var forgotten: Date?
 
     var block: String {

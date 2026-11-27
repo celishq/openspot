@@ -152,7 +152,7 @@ final class SourceSpotTests: AttachmentCase {
     }
 
     private func kept() -> [String] {
-        model.runs.timeline.list(Timeline.Query(spots: ["clipboard"]), at: Date()).map(\.value)
+        (model.runs.timeline.list(Timeline.Query(spots: ["clipboard"]), at: Date()) ?? []).map(\.value)
     }
 
     func testClipboardKeepsEachCopyInTheTimelineWhileThePanelIsClosed() async throws {

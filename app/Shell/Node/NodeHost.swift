@@ -11,6 +11,7 @@ protocol NodeHost {
     func act(of part: SpotPart) -> ScriptCall?
     func run(_ item: SpotItem)
     func dragOut(_ items: [SpotItem])
+    func nearsEnd()
     func slot(_ id: String, _ value: String?)
     func isSelected(_ node: ViewNode, in tree: ViewTree) -> Bool
     func selectedRun() -> String?
@@ -29,6 +30,7 @@ protocol NodeHost {
 
 extension NodeHost {
     func part(of node: ViewNode) -> SpotPart? { node.part }
+    func nearsEnd() {}
     func set(_ part: SpotPart, to value: String) {}
     func press(_ part: SpotPart) {}
     func record(_ part: SpotPart) {}

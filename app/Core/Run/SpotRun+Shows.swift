@@ -42,8 +42,10 @@ extension SpotRun {
     public func search(_ text: String) {
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         if list.search == .local { return find(text) }
-        guard list.search(text), list.search == .script else { return }
+        let isInline = spot.mode == .inline
+        guard list.search(text, narrows: !isInline), list.search == .script else { return }
         if let older = running(Self.searchKey) { stop(older) }
+        if isInline { return ask() }
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
     }
 
@@ -52,6 +54,18 @@ extension SpotRun {
         guard next.beginFinding(text) else { return }
         next.take(next.found())
         list = next
+    }
+
+    public func more() {
+        guard spot.triggers.pages, !list.isWhole, !list.isWaiting, !link.isAsking, running(Self.moreKey) == nil, let last = list.lastRun else { return }
+        let query = list.query
+        send(Call(
+            message: ScriptEntry.sheetMore.message([last], query.isEmpty ? [] : [query], after: showsSheet ? panel?.inputs ?? [] : []),
+            key: Self.moreKey,
+            limit: runs.showLimit,
+            event: .event(EventName.sheetMore, value: nil),
+            purpose: .ask(.more(after: last, query: query))
+        ))
     }
 
     func ask() {

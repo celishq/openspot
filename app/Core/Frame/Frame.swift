@@ -43,12 +43,19 @@ public struct Frame: Equatable, Sendable {
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
         var choice: Int?
+        var rows: [String: Int] = [:]
+        var peeks: [String: Int] = [:]
         for block in blocks {
             let kind = block.fields.first?.key
+            let parent = block.value(ViewNode.parentKey)
             if kind == BlockKind.option.word, let index = choice {
                 grouped[index] = grouped[index].adding(child: block)
+            } else if let index = parent.flatMap({ kind == BlockKind.peek.word ? rows[$0] : peeks[$0] }) {
+                grouped[index] = grouped[index].adding(child: block)
+                if let id = block.fields.first?.value, !id.isEmpty { peeks[id] = index }
             } else {
                 choice = kind == BlockKind.choice.word ? grouped.count : nil
+                if kind == BlockKind.item.word, let id = block.fields.first?.value { rows[id] = grouped.count }
                 grouped.append(block)
             }
         }

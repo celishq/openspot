@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import ImageIO
 import OpenspotCore
 
@@ -55,7 +56,11 @@ final class SpotPictureStore {
         if let image = cached(key) { return image }
         if let load = loads[key] { return await load.value }
         let shortSide = Self.shortSide
-        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { Self.picture(at: $0, shortSide: shortSide) } }
+        let load = Task.detached(priority: .userInitiated) { () -> CGImage? in
+            guard let path = await WebPictures.shared.path(of: key.path) else { return nil }
+            guard Icon.videos.contains((path as NSString).pathExtension.lowercased()) else { return Self.picture(at: path, shortSide: shortSide) }
+            return await Self.still(of: path, shortSide: shortSide)
+        }
         loads[key] = load
         let image = await load.value
         loads[key] = nil
@@ -65,6 +70,13 @@ final class SpotPictureStore {
 
     private static func name(of key: Key) -> NSString {
         "\(shortSide)|\(key.changed ?? 0)|\(key.path)" as NSString
+    }
+
+    private nonisolated static func still(of path: String, shortSide: Int) async -> CGImage? {
+        let still = AVAssetImageGenerator(asset: AVURLAsset(url: URL(fileURLWithPath: path)))
+        still.appliesPreferredTrackTransform = true
+        still.maximumSize = CGSize(width: shortSide * 2, height: shortSide * 2)
+        return try? await still.image(at: .zero).image
     }
 
     private nonisolated static func picture(at path: String, shortSide: Int) -> CGImage? {

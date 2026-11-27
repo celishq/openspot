@@ -19,7 +19,7 @@ extension SpotsModel {
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
-                second: [settingsRow.hint].compactMap { $0 }
+                second: [peekRow.hint, settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
         let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
@@ -48,6 +48,7 @@ extension SpotsModel {
         place(HintWords(withObservationTracking { hint } onChange: { [weak self] in
             MainActor.assumeIsolated { self?.staleHint() }
         }))
+        takePeek()
     }
 
     private func staleHint() {

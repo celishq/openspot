@@ -86,6 +86,15 @@ public final class SpotsModel {
         }
     }
     public private(set) var heldDetails: AttachmentDetails?
+    public internal(set) var peek: Peek?
+    public internal(set) var peekRect: CGRect?
+    public internal(set) var peekSource: CGRect?
+    public internal(set) var isPeekOpen = false
+    @ObservationIgnored var isPeekGrowing = false
+    var isPeeking = false
+    public internal(set) var isPeekGrown = false
+    public internal(set) var isPeekPaused = false
+    @ObservationIgnored var peekRead: [Peek.Look] = []
     public private(set) var detailsRoom: CGFloat = 0
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var spotListBuilds = 0
@@ -567,6 +576,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
+            dropPeekNow()
             holdCommand(false)
             endSpread()
             if attachments.spreads { attachments.fold() }

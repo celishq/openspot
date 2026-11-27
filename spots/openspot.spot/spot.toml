@@ -196,6 +196,7 @@ uses = ["timeline", "read", "clipboard"]
 [scripts.timeline.on]
 "sheet.open" = true
 "sheet.text" = true
+"sheet.more" = true
 command = ["timeline"]
 
 [scripts.timeline.actions.pause]
@@ -206,11 +207,6 @@ title = "Resume Timeline"
 
 [scripts.timeline.actions.restore]
 
-[scripts.timeline.actions.copy]
-inputs.kind = { type = "text", required = true, description = "text, url or file" }
-inputs.text = "text"
-inputs.url = "text"
-inputs.file = "text"
 
 [scripts.timeline.settings]
 keep = { type = "choice", title = "Keep for", icon = "calendar", options = ["7 days", "30 days", "90 days", "365 days"], default = "30 days" }
@@ -221,10 +217,7 @@ title = "Timeline in search"
 icon = "clock.arrow.circlepath"
 detail = "The newest entries of the timeline that hold the words you type"
 answers = "last"
-uses = ["spots"]
-
-[scripts.timeline-search.bindings]
-timeline = { spot = "openspot/timeline" }
+uses = ["spots", "timeline", "read", "clipboard"]
 
 [scripts.timeline-search.on]
 search = "\\S"

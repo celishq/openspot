@@ -15,6 +15,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 - [A list you can press](docs/show/a-list.md)
 - [A value on the card](docs/show/the-card.md)
 - [Lay out a sheet](docs/show/a-layout.md)
+- [Peek at a row](docs/show/peek.md)
 
 ## Act
 

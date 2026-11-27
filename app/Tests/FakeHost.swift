@@ -133,6 +133,23 @@ final class FakeHost: SpotsHost {
         submenus.append(nil)
     }
 
+    var reaches: [CGRect?] = []
+    var roomRight = true
+
+    func hasRoomRight(of sheet: CGRect, for width: CGFloat) -> Bool {
+        roomRight
+    }
+
+    func reach(_ rect: CGRect?) {
+        reaches.append(rect)
+    }
+
+    var peekReads: [[Peek.Look]] = []
+
+    func readAhead(_ looks: [Peek.Look]) {
+        peekReads.append(looks)
+    }
+
     var floatsFollowingDrag: [Bool] = []
 
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
