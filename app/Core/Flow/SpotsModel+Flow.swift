@@ -126,8 +126,8 @@ extension SpotsModel {
 
     func handleFlowKey(_ key: ActionKey) -> Bool? {
         switch FlowKey(key) {
-        case .back: back()
-        case .forward: forward()
+        case .back: _ = back() || backVisit()
+        case .forward: _ = forward() || forwardVisit()
         case .grid: closeSheet(moving: isShown)
         case nil: return nil
         }

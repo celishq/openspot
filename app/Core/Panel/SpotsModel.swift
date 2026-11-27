@@ -50,6 +50,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            noteQuery()
             takeDetails()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
@@ -144,9 +145,13 @@ public final class SpotsModel {
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
+            noteFlow(from: oldValue)
         }
     }
     @ObservationIgnored var session = PanelSession()
+    @ObservationIgnored var trail = SessionTrail()
+    @ObservationIgnored var holdsVisit = false
+    @ObservationIgnored var isRestoringVisit = false
     public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
     public internal(set) var closingSheet: ClosingSheet?

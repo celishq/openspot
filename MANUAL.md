@@ -39,10 +39,14 @@ page of the same spot, with your text selected so you can type over it. After 90
 | ---------- | ----------------------------------------------------------------------------- |
 | Esc        | Goes back one level: clears the text, then the page before, then the grid. On an empty grid it closes the panel. |
 | `⌘W`       | Closes the panel from anywhere. The next open starts on an empty search.      |
+| `⌘[`       | Goes back a page. On the first page, or on the grid, it brings back what you did before, one visit at a time. |
+| `⌘]`       | Goes forward again, and past the newest visit back to the grid.               |
 
 - An Esc that closes the panel, or `⌘W`, ends what you were doing, so the next open is clean.
 - A click outside, the panel's key, and an action that closes the panel, such as a paste, keep your place.
 - Opening a spot by its own key starts on that spot, not on the place you left.
+- `⌘[` keeps the last 20 visits until Openspot quits. A visit counts when you ran something in it or stayed on its
+  page for 2 seconds, and two visits of the same page in a row count once.
 
 ## Get spots in the Store
 

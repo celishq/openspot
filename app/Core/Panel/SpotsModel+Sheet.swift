@@ -354,6 +354,7 @@ extension SpotsModel {
                 push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
                 return
             }
+            noteRun()
             if place.isDetached {
                 if action == nil, item.records { return press(entry.id) }
                 remember(item, of: entry)

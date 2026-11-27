@@ -94,6 +94,7 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
+        noteRun()
         if action == .peek {
             togglePeek()
         } else if case .act(let act, _) = action.kind {
