@@ -55,11 +55,11 @@ extension SpotsModel {
     func takePeek() {
         if openSheetID == nil, isPeeking { isPeeking = false }
         let next = isPeeking ? peekedItem.flatMap(Peek.init(item:)) : nil
-        if next != peek {
+        placePeek(beside: next == nil ? nil : openSheet?.sheetRect)
+        if let next, next != peek {
             peek = next
             if isPeekPaused { isPeekPaused = false }
         }
-        placePeek(beside: next == nil ? nil : openSheet?.sheetRect)
         readAhead(around: next == nil ? nil : peekedItem)
     }
 
@@ -81,8 +81,10 @@ extension SpotsModel {
         guard let sheet, isShown else {
             guard peekRect != nil else { return }
             guard isShown else { return dropPeek() }
-            if isPeekGrown { isPeekGrown = false }
-            change(.sheet(isOpen: false), { isPeekOpen = false }, completion: { [weak self] in
+            change(.sheet(isOpen: false), {
+                isPeekOpen = false
+                if isPeekGrown { isPeekGrown = false }
+            }, completion: { [weak self] in
                 guard self?.isPeekOpen == false else { return }
                 self?.dropPeek()
             })
@@ -122,6 +124,7 @@ extension SpotsModel {
 
     private func dropPeek() {
         isPeekGrowing = false
+        if peek != nil { peek = nil }
         if isPeekGrown { isPeekGrown = false }
         if isPeekOpen { isPeekOpen = false }
         if peekRect != nil { peekRect = nil }

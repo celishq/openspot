@@ -9,6 +9,7 @@ struct SpotPeekView: View {
         if let rect = model.peekRect, let source = row ?? model.peekSource {
             let isOpen = model.isPeekOpen
             let shape = SpotSurfaceShape(rect: isOpen ? rect : source, radius: SpotTokens.cardRadius)
+            let morph = SheetMorph(card: source, sheet: rect)
             ZStack(alignment: .topLeading) {
                 Color.clear
                     .spotGlass(in: shape)
@@ -17,7 +18,10 @@ struct SpotPeekView: View {
                     PeekFace(model: model, peek: peek)
                         .frame(width: rect.width, height: rect.height)
                         .offset(x: rect.minX, y: rect.minY)
-                        .morph(isOpen ? 1 : 0, opacity: { SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
+                        .morph(isOpen ? 1 : 0, offset: { [morph] in
+                            let corner = morph.origin(at: $0)
+                            return CGSize(width: corner.x - morph.sheet.minX, height: corner.y - morph.sheet.minY)
+                        }, opacity: { SheetMorph.contentOpacity(at: $0, isOpen: isOpen) })
                         .clipShape(shape)
                 }
             }

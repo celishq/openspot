@@ -35,10 +35,17 @@ final class PeekTests: PanelCase {
         try await openHistory("printf 'item=a\\ntitle=Note\\ntext=words\\n'")
         _ = model.handleKey(peekKey)
 
+        try await wait("the grown peek") { self.model.isPeekGrown }
+        host.heldEnds = []
+
         XCTAssertTrue(model.handleKey(peekKey))
 
-        XCTAssertNil(model.peek)
+        XCTAssertFalse(model.isPeekOpen)
+        XCTAssertEqual(model.peek?.look, .text("words"))
         XCTAssertEqual(model.openSheetID, "history")
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.peek)
+        XCTAssertNil(model.peekRect)
     }
 
     func testAFileRowPeeksAsAPictureOrAFile() async throws {
@@ -77,7 +84,7 @@ final class PeekTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
 
-        XCTAssertNil(model.peek)
+        XCTAssertFalse(model.isPeekOpen)
         XCTAssertEqual(model.openSheetID, "history")
         try await wait("the panel back to its own size") { self.model.peekRect == nil && self.host.reaches.last == .some(nil) }
     }
@@ -108,7 +115,7 @@ final class PeekTests: PanelCase {
         _ = model.handleKey(ActionKey(name: "escape"))
 
         XCTAssertNil(model.openSheetID)
-        XCTAssertNil(model.peek)
+        try await wait("the peek gone with the sheet") { self.model.peek == nil }
     }
 
     func testTypingInTheFieldKeepsThePeekOnTheNewSelection() async throws {
