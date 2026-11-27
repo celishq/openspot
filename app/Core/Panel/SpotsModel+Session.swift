@@ -128,14 +128,6 @@ extension SpotsModel {
         }
     }
 
-    func handleTrailKey(_ key: ActionKey) -> Bool? {
-        switch FlowKey(key) {
-        case .back: backSession()
-        case .forward: forwardSession()
-        default: nil
-        }
-    }
-
     func backSession() -> Bool {
         if !window.isWalking {
             let shown = SessionPlace(flow: flow, query: query)

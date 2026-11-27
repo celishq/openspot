@@ -124,14 +124,17 @@ extension SpotsModel {
         entry(id)?.kind.opensSheet == true
     }
 
-    func handleFlowKey(_ key: ActionKey) -> Bool? {
+    func handleStepKey(_ key: ActionKey) -> Bool? {
+        let inSheet = openSheetID != nil
         switch FlowKey(key) {
-        case .back: _ = back() || backSession()
-        case .forward: _ = forward() || forwardSession()
-        case .grid: closeSheet(moving: isShown)
+        case .back: return stepSession(by: -1) || inSheet
+        case .forward: return stepSession(by: 1) || inSheet
+        case .grid:
+            guard inSheet else { return nil }
+            closeSheet(moving: isShown)
+            return true
         case nil: return nil
         }
-        return true
     }
 
     func show(_ page: FlowSheet, moving: Bool) {

@@ -198,7 +198,7 @@ extension SpotsModel {
 
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
-            .any { [self] key in openSheetID == nil ? handleTrailKey(key) : handleFlowKey(key) },
+            .any { [self] key in handleStepKey(key) },
             settingsRow,
         ]
         let parts = openParts
