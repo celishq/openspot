@@ -9,8 +9,7 @@ extension SpotsModel {
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard entry(page.spot) != nil else { return false }
-        endPark()
-        afterShowing({ host.show() }) { [weak self] in
+        afterShowing({ showPanel() }) { [weak self] in
             guard let self else { return }
             endFlow()
             push(page)
@@ -44,7 +43,7 @@ extension SpotsModel {
             return true
         }
         let moves = isShown
-        if !moves { host.show() }
+        if !moves { showPanel() }
         endEditing(moving: false)
         guard let route = sheet.route else {
             pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source)

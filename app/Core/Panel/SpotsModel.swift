@@ -496,8 +496,7 @@ public final class SpotsModel {
         form = nil
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
-        endPark()
-        host.show()
+        showPanel()
         takeQuery(visible.contains { $0.id == id } ? "" : entry.state.title)
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true

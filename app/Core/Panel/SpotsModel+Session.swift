@@ -19,9 +19,9 @@ extension SpotsModel {
         commitSession()
     }
 
-    func endPark() {
-        guard !isShown, park.isParked else { return }
-        park.state = .ended
+    func showPanel() {
+        if !isShown, park.isParked { park.state = .ended }
+        host.show()
     }
 
     func resumePark() {
@@ -30,6 +30,7 @@ extension SpotsModel {
         park = Park()
         guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
         guard kept.isParked else { return }
+        guard flow.current.map(restores) ?? true else { return startClean() }
         if let id = openSheetID, let run = sheets[id], !run.isOpen { run.open {} }
         if !flow.pages.isEmpty {
             isRestoringSession = true
@@ -109,9 +110,8 @@ extension SpotsModel {
         let timeline = runs.timeline
         guard let place = await Task.detached(operation: { timeline.entry(id)?.session }).value, place.flow.current.map(restores) ?? true else { return false }
         asOnePress {
-            endPark()
             stopWalking()
-            afterShowing({ host.show() }) { [weak self] in self?.restore(place) }
+            afterShowing({ showPanel() }) { [weak self] in self?.restore(place) }
         }
         return true
     }

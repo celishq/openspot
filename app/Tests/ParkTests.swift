@@ -277,4 +277,15 @@ final class ParkTests: PanelCase {
         XCTAssertNil(model.openSheetID)
         XCTAssertEqual(model.sheets["parts"]?.isParked, false)
     }
+
+    func testAParkedSheetThatFloatsFromTheMenuBarIsNotOpenedInThePanelAgain() async throws {
+        try await openParts()
+        clickOutside()
+
+        model.openFromMenuBar("parts")
+        try await wait("the float") { self.model.runs.floating.contains("parts") }
+        reopen()
+
+        XCTAssertNil(model.openSheetID)
+    }
 }
