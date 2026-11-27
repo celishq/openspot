@@ -5,6 +5,10 @@ if grep -rEn --include='*.swift' 'homeDirectoryForCurrentUser|NSHomeDirectory|NS
   echo "A test reads the person's state or blocks with a sleep; see Tests in AGENTS.md." >&2
   exit 1
 fi
+if grep -rEn '/opt/homebrew|/usr/local/bin|HOME"?/\.(local|npm-global|bun|volta|nvm|claude/local)' spots examples; then
+  echo "A spot names a folder where installers put a command; Openspot adds those folders to the PATH at launch, so a test sees only the PATH it gives." >&2
+  exit 1
+fi
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
 grep -rEo --include='*.swift' 'Task\.sleep|setenv\(' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '(' >"$found"

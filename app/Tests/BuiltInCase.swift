@@ -78,6 +78,7 @@ class BuiltInCase: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("bi-\(UUID().uuidString.prefix(8))")
         let environment = ProcessInfo.processInfo.environment.merging([
             "PATH": root.appendingPathComponent("tools").path + ":/usr/bin:/bin",
+            "HOME": root.appendingPathComponent("home").path,
             "OPENSPOT_CONFIG": root.path,
             "OPENSPOT_SPOTS": root.appendingPathComponent("spots").path,
             "OPENSPOT_CORE": root.appendingPathComponent("core").path,
@@ -93,7 +94,7 @@ class BuiltInCase: XCTestCase {
         core = root.appendingPathComponent("core")
         tools = root.appendingPathComponent("tools")
         runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"), callers: TestEnvironment.callers, timeline: root.appendingPathComponent("timeline"))
-        for folder in [spots!, core!, tools!] {
+        for folder in [spots!, core!, tools!, root.appendingPathComponent("home")] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")

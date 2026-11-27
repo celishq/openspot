@@ -147,14 +147,10 @@ app_of() {
   printf '%s\n' "${apps:-$(installed_apps)}" | awk -F '\t' -v name="$1" '$1 == name { print $2; found = 1; exit } END { exit !found }'
 }
 
-# Prints the path of the command $1 of an agent: on the PATH, in a folder where installers put it, or inside the app
-# that ships it, as Codex does.
+# Prints the path of the command $1 of an agent: on the PATH, which Openspot gives the folders where installers put it,
+# or inside the app that ships it, as Codex does.
 agent_bin() {
   command -v "$1" 2>/dev/null && return
-  for path in "$HOME/.local/bin/$1" "$HOME/.claude/local/$1" "/opt/homebrew/bin/$1" "/usr/local/bin/$1" \
-    "$HOME/.npm-global/bin/$1" "$HOME/.bun/bin/$1" "$HOME/.volta/bin/$1" "$HOME"/.nvm/versions/node/*/bin/"$1"; do
-    [ -x "$path" ] && { printf '%s' "$path"; return; }
-  done
   case $1 in
     codex)
       ships=$(app_of Codex) && [ -x "$ships/Contents/Resources/codex-cli/bin/codex" ] &&

@@ -73,7 +73,6 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     static let locale = "en_US.UTF-8"
-    static let commonPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
 
     public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
@@ -81,9 +80,8 @@ public final class ScriptProcess: @unchecked Sendable {
         let config = SpotsFolder.config(environment: base, home: home(of: base))
         let data = dataFolder(config: config, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        var paths = [helpers] + (base["PATH"] ?? "").split(separator: ":").map(String.init)
-        paths += commonPaths.filter { !paths.contains($0) }
-        var environment = base.merging(["PATH": paths.joined(separator: ":"), "LC_ALL": locale, "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
+        let path = SearchPath.adding(SearchPath.system, to: ([helpers] + [base["PATH"]].compactMap { $0 }).joined(separator: ":"))
+        var environment = base.merging(["PATH": path, "LC_ALL": locale, "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
         if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
         return environment
