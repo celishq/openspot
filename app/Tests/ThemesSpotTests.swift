@@ -74,12 +74,14 @@ final class ThemesSpotTests: BuiltInCase {
         try await themes.perform("copy", input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
 
         XCTAssertEqual(page.fields.map { $0.block.value("field") }, ["describe"])
-        XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(AgentPrompt.copied)"])
+        XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(SpotPrompt.copied)"])
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
-        XCTAssertTrue(prompt.hasPrefix("Change the look of Openspot, its theme Openspot: Warm and round\n\(ThemePrompt.finishAlone)\n"), prompt)
+        XCTAssertTrue(prompt.hasSuffix("<request>\nWarm and round\n</request>"), prompt)
+        XCTAssertTrue(prompt.contains(ThemePrompt.finish), prompt)
+        XCTAssertFalse(prompt.contains("Ask me"), prompt)
         XCTAssertTrue(prompt.contains("theme duplicate 'Openspot'"), prompt)
         XCTAssertTrue(prompt.contains(root.appendingPathComponent("themes").path), prompt)
-        XCTAssertTrue(prompt.contains("Change the look of Openspot, which says"), prompt)
+        XCTAssertTrue(prompt.contains("guide use-openspot/change-the-look-of-openspot"), prompt)
         XCTAssertTrue(prompt.contains("[look] "), prompt)
         XCTAssertTrue(prompt.contains("theme reload"), prompt)
     }

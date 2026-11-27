@@ -35,19 +35,9 @@ public struct AgentNote: Equatable, Sendable {
 
         In this file, `openspot` stands for `"\(command)"`. Type that full path in quotes, since it can hold a space, when `openspot` is not on the PATH.
 
-        Before you change a file here, run `openspot guide` and read all of it. It is the contract that each spot follows.
-
-        1. Make a spot: `openspot spot new "<name>" --from button`. In place of `button`, use `list`, `number` or `form`.
-           It prints the file to change.
-        2. Try a call as the app makes it: `openspot spot run <id> [call] [value]...`. With no call, it reads a spot whose
-           `spot.toml` lists an event in `on`, and runs a spot that lists none.
-        3. Look at the card: `openspot render spot <id> --card wide card.png`, then open `card.png`.
-        4. Check: `openspot check spots --json` must print `[]`. Fix each fault that it lists, then check again.
-        5. At the end of your answer to the person, run `openspot spot open <id> --select`. It opens the panel with the spot selected.
-           Then tell the person what the spot runs on their Mac.
-
-        When the person says that a spot does not work, run `openspot spot log <id>` first. It prints the last calls that the
-        app made to the spot, each with its stdin, its stdout, its stderr and its exit code.
+        Before you change a file here, run `openspot guide build-and-check-a-spot` and follow it. `openspot guide`
+        prints the map of the guide. Print only the parts that your change needs: a page or a page/section by its address,
+        and `openspot guide <word>` for the row of a key, a block, a class or a command.
 
         """
     }

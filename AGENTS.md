@@ -305,7 +305,7 @@ make shots                 # saves pictures of the actions menu in the running p
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
 sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
 make docs-images           # shows each example of the docs that has a picture on screen, focused, and takes its image; GuideImageTests fail when one is out of date
-make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
+make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet, or MODEL=opus) N=3 times, grades what it did and how it used
                            # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
 make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other
 ```

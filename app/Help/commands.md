@@ -50,11 +50,11 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 
 ## Commands
 
-[Try it from the terminal](../../docs/first-spot.md#try-it-from-the-terminal) shows how the commands that try a spot work together. In each command, an app is its bundle ID, such as `com.apple.Safari`.
+[Build and check a spot](../../docs/build-and-check-a-spot.md) shows how the commands that try a spot work together. In each command, an app is its bundle ID, such as `com.apple.Safari`.
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
+| `openspot guide [address \| --all \| --find <words>...]` | Prints the map of the docs, with the address and the size of each part. An address prints one part, such as this page; `--find` lists each part that holds the words, and `--all` prints the whole guide. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](../../docs/reference/commands.md#a-toast) has the options. |
 | `openspot toast --remove <id>`                     | Takes the spot's toast with the id away.                                                        |
@@ -100,7 +100,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
 | `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
-| `openspot check spots [--json] <folder>`           | Loads and runs each spot of the folder once, and prints a `fault` block for each error.         |
+| `openspot check spots [--json] <folder>`           | Loads and runs each spot of the folder once, and prints a `fault` block for each error. On stderr, it notes each spot that takes a way past a shell script.         |
 | `openspot check sheet`                             | Reports the faults of a sheet on stdin.                                                         |
 | `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
@@ -108,9 +108,9 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot render panel [--arrange] [--search <text>] [--swap <id>] [--hold] [--light] <file.png>` | Draws the panel with each installed spot on its grid, dark or light; `--search` alone draws what a search finds; `--arrange` draws Arrange over a screen, with the words of `--search` and the spot of `--swap` lifted over the last card; `--hold` draws the grid while `⌘` is held. |
 | `openspot render settings [--at <where>] [--light] <file.png>` | Draws the Settings window, opened at a place as `app settings --at` opens it, dark or light. |
 | `openspot render store [--place <name>] [--spot <id>] [--try] [--review <id>] <file.png>` | Draws the window of the Store at My spots, or at the place that `--place` names, such as `Openspot`, with the page of `--spot` open, its Try with `--try`, or the review of an install of `--review` over it. |
-| `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
-| `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
-| `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot prompt new <words>...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
+| `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts, or else a review of the spot. |
+| `openspot prompt theme <name> <words>...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot browser tab <app>` | Prints the `url=`, `title=` and `app=` of the front tab of the browser `<app>`, or nothing when it is not running. |
 | `openspot browser tabs <app>` | Prints a record for each tab of each window of the browser `<app>`: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
