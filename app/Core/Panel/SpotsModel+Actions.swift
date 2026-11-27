@@ -94,6 +94,7 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
+        noteRun()
         if action == .peek {
             togglePeek()
         } else if case .act(let act, _) = action.kind {
@@ -116,7 +117,9 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
-        } else if action == .open || action == .history {
+        } else if action == .history {
+            showTimeline(about: target.entry.id)
+        } else if action == .open {
             presentSheet(of: target.entry.id)
         } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
             show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")

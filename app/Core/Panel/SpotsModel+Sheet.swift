@@ -169,7 +169,7 @@ extension SpotsModel {
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.triggers.search != nil { sheets[entry.id]?.answer("") }
-        runs.panelClosed()
+        runs.panelClosed(keepsAnswers: park.isParked)
         if isFirstLaunch, !isWarming { isFirstLaunch = false }
         endReview()
         if let heldLayout { lay(heldLayout) }
@@ -350,10 +350,15 @@ extension SpotsModel {
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         asOnePress {
+            if action == nil, case .session(let session)? = item.move {
+                Task { await openSession(session) }
+                return
+            }
             if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
                 push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
                 return
             }
+            noteRun()
             if place.isDetached {
                 if action == nil, item.records { return press(entry.id) }
                 remember(item, of: entry)
@@ -387,7 +392,7 @@ extension SpotsModel {
                     let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
                     switch place {
                     case .window: toast(.failure("\(item.title) asks with a form, which a window does not show yet."))
-                    case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
+                    case .float: afterShowing({ showPanel() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
                     case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
                     }
                 }

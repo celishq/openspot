@@ -122,6 +122,7 @@ footer.
 | `route`         | The page a press opens, with no run of `press`.                           |
 | `route.title`   | The title of that page, the row's title by default.                       |
 | `route.replace` | `true` replaces the sheet that shows.                                     |
+| `session`       | The id of a session in the timeline. A press opens it again, with no run of `press`, and keeps the panel open. |
 
 Any other key, such as `path=`, is the row's own, and comes back as `input.item.path=` when people press it.
 

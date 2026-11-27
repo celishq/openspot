@@ -52,6 +52,22 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertFalse(model.isAttachmentHidden)
     }
 
+    func testAReopenWithKeptTextKeepsTheChipsHiddenWhileTheirReadsArrive() async throws {
+        try await openWithTab()
+        model.search("k")
+        XCTAssertTrue(model.isAttachmentHidden)
+        model.panelWillHide()
+        model.panelDidHide()
+        let writes = host.hiddenWrites.count
+
+        await open()
+        XCTAssertTrue(model.isAttachmentHidden)
+        try await wait("the value of the tab again") { self.model.attachments.chips.first?.value != nil }
+
+        XCTAssertTrue(model.isAttachmentHidden)
+        XCTAssertEqual(host.hiddenWrites.count, writes)
+    }
+
     func testAWriteOfTheQueryMakesNoChangeOfItsOwn() async throws {
         try await openWithTab()
         let changes = host.motions.count

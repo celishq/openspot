@@ -11,12 +11,13 @@ Every spot answers the same keys, so you learn them once.
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
-| `⌘Y`       | Opens the History of a spot whose Return runs its action.                     |
+| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your sessions in it. |
 | `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
 - A press of a card, its key, a click in the menu bar and its slash command do what Return does.
 - The ⌘K menu of a card starts with what you do with the spot, then Settings, Edit and Change Icon, then Remove.
+- A spot whose Return runs its action, such as Dictate, shows its sheet from Open in its ⌘K menu.
 - Remove, or `⌘⌫`, moves the spot's folder to the Trash. Its data and its settings stay, so the spot has them again when
   you install it again.
 - An install of a spot whose id your spots have already asks, as Finder does: Replace moves yours to the Trash, Keep
@@ -29,6 +30,26 @@ Every spot answers the same keys, so you learn them once.
 - A spot that comes with Openspot is always on, and has no Edit and no Remove. Its − in Arrange takes it off the grid.
 - A card with a lock can't run yet. A press of it opens Settings at the spot; see
   [Let a spot use what it needs](#let-a-spot-use-what-it-needs).
+
+## Come back to where you were
+
+The panel keeps your place when you click outside it. Open it again within 90 seconds, and you're back on the same
+page of the same spot, with your text selected so you can type over it. After 90 seconds it opens on an empty search.
+Keep your place, in the General section of Settings, sets that time: 30 seconds, 90 seconds, 5 minutes or 1 hour.
+
+| Key        | Does                                                                          |
+| ---------- | ----------------------------------------------------------------------------- |
+| Esc        | Goes back one level: clears the text, then the page before, then the grid. On an empty grid it closes the panel. |
+| `⌘W`       | Closes the panel from anywhere. The next open starts on an empty search.      |
+| `⌘[`, `⌘]` | Goes back or forward a page within what you're doing.                         |
+| `⇧⌘[`      | Brings back what you did before, one session at a time, from a page or the grid. |
+| `⇧⌘]`      | Goes to the session after, and past the newest one back to the grid.          |
+
+- An Esc that closes the panel, or `⌘W`, ends what you were doing, so the next open is clean.
+- A click outside, the panel's key, and an action that closes the panel, such as a paste, keep your place.
+- Opening a spot by its own key starts on that spot, not on the place you left.
+- A session counts when you ran something in it or stayed on its page for 2 seconds, and two sessions of the same
+  page in a row count once. The Timeline keeps them, so `⇧⌘[` reaches them after Openspot restarts too.
 
 ## Get spots in the Store
 
@@ -168,6 +189,8 @@ entry by its words.
 - Timeline's Settings set Keep for, and Show in search, which adds the three newest entries that hold your words under
   the other results of the panel's search. Its `⌘K` menu holds Pause Timeline for an Hour and Resume Timeline.
 - Tab on an entry hands it to a spot that takes it, such as Translate for a text.
+- The Timeline also lists your sessions. Return on one opens it again as it was, with its pages and its text, and
+  `⇧⌘[` goes back from there. A session of the same page moves up instead of showing twice.
 - Turn off Keep history in the Settings of Clipboard to keep no copy.
 
 ## Rename a slash command

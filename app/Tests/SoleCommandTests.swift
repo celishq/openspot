@@ -132,7 +132,7 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(menu.rows.first { $0.title == "Wipe" }?.action?.confirm, "Press again to wipe")
     }
 
-    func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
+    func testReturnRunsTheOneCommandOfASpotWithRowsAndOpenInTheMenuShowsTheRows() async throws {
         try "#!/bin/sh\ncase \"$1\" in show) printf 'item=one\\ntitle=Hello there\\n\\nitem=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true\n\"app.update\" = true")
         await model.reload()
@@ -146,15 +146,10 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.hint, "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History"])
-        XCTAssertEqual(menu.rows.first { $0.title == "History" }?.keyLabel, "⌘Y")
+        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "Open"])
         model.closeMenu()
 
-        XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))
-        try await wait("its History with a search typed") { model.openSheetID == "dictate" }
-        model.closeSheet(moving: false)
-
-        model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
+        model.run(.open, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
         try await wait("its own rows") { model.openItems?.shown.map(\.run) == ["one", "two"] }
         XCTAssertEqual(model.openSheetID, "dictate")
         model.closeSheet(moving: false)
@@ -192,14 +187,14 @@ final class SoleCommandTests: XCTestCase {
         try await wait("the close") { self.host.dismissals == 1 }
     }
 
-    func testASheetWithATreeAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
+    func testASheetWithATreeAndNoSearchFieldShowsOnlyItsOwnItemsOnOpen() async throws {
         try "#!/bin/sh\ncase \"$1\" in show) printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\nitem=whisper\\nparent=list\\ntitle=Download\\npin=top\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
 
-        model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
+        model.run(.open, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
 
         try await wait("the rows") { model.openItems?.shown.count == 1 }
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["whisper"])

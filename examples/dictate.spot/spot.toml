@@ -2,7 +2,7 @@ title = "Dictate"
 icon = "mic"
 detail = "Convert speech to text"
 stay = true
-uses = ["clipboard", "network"]
+uses = ["clipboard", "network", "timeline"]
 source = ["dictate"]
 
 [actions.dictate]
@@ -11,3 +11,6 @@ icon = "mic"
 
 [on]
 "sheet.open" = true
+
+[settings]
+history = { type = "bool", title = "Keep history", default = true }

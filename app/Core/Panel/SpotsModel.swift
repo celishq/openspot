@@ -50,6 +50,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            noteQuery()
             takeDetails()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
@@ -144,8 +145,16 @@ public final class SpotsModel {
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
+            noteFlow(from: oldValue)
         }
     }
+    @ObservationIgnored var park = Park()
+    @ObservationIgnored var session: Session?
+    @ObservationIgnored var window = SessionWindow()
+    @ObservationIgnored var isReadingSessions = false
+    @ObservationIgnored var waitsBack = false
+    @ObservationIgnored var restoreTime = Park.restoreTime
+    public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
     public internal(set) var closingSheet: ClosingSheet?
     @ObservationIgnored var edgeStep = 0
@@ -454,6 +463,7 @@ public final class SpotsModel {
         fileStamps = stamps
         holdAssignedKeys(config)
         if grid != config.grid { grid = config.grid }
+        restoreTime = config.restoreTime
         if let store, Set(scan.spots.map(\.url)) != Set(scanned.map(\.url)) { Task { await store.read() } }
         scanned = scan.spots
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
@@ -485,7 +495,7 @@ public final class SpotsModel {
         form = nil
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
-        host.show()
+        showPanel()
         takeQuery(visible.contains { $0.id == id } ? "" : entry.state.title)
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
@@ -564,6 +574,7 @@ public final class SpotsModel {
             readWaiting()
             settingsBook.readRows()
             finishPick()
+            resumePark()
             selected = 0
             openAttachment()
             askAnswers()
@@ -576,6 +587,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
+            parkPanel()
             dropPeekNow()
             holdCommand(false)
             endSpread()

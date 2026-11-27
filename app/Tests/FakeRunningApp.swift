@@ -92,6 +92,16 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
+    func openSession(_ id: String) -> Bool {
+        opened.append("session open \(id)")
+        return id != "gone"
+    }
+
+    func stepSession(by steps: Int) -> Bool {
+        opened.append("session step \(steps)")
+        return steps != 0
+    }
+
     func review(_ id: String) -> Bool {
         opened.append("review \(id)")
         return id != "gone"

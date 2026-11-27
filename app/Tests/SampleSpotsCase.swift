@@ -90,6 +90,9 @@ class SampleSpotsCase: XCTestCase {
           'toast '*) shift; printf '%s\\n' "$*" >> '\(folder.path)/toasts' ;;
           'select '*) printf '%s\\n' "$2" >> '\(folder.path)/selected' ;;
           'spot open') printf '%s\\n' "$3" >> '\(folder.path)/opened-spots' ;;
+          'timeline list') cat '\(folder.path)/timeline' 2>/dev/null ;;
+          'timeline add') printf '%s\\n' "$3" >> '\(folder.path)/timeline-added'; echo added ;;
+          'timeline forget') printf '%s\\n' "$3" >> '\(folder.path)/forgotten' ;;
         esac
         """
     }

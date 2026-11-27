@@ -8,6 +8,20 @@ enum Tool {
         return folders.map { "\($0)/\(name)" }.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
+    /// Runs a command and waits for it, and gives its stdout, or nil when it fails.
+    static func output(of arguments: [String]) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = arguments
+        let stdout = Pipe()
+        process.standardOutput = stdout
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return nil }
+        let data = stdout.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return process.terminationStatus == 0 ? String(decoding: data, as: UTF8.self) : nil
+    }
+
     /// Runs a command with a text on its stdin, and gives its exit code, its stdout and its stderr on the main queue. A
     /// command that runs longer than `limit` is stopped.
     static func run(_ arguments: [String], input: String = "", limit: TimeInterval? = nil, done: @escaping (Int32, String, String) -> Void = { _, _, _ in }) {

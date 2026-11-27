@@ -176,8 +176,15 @@ extension SpotsModel {
             if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
                 run(action, on: target)
             } else if !stepBack() {
-                host.dismiss()
+                endSession()
             }
+            return true
+        }
+    }
+
+    var closeRow: KeyRow {
+        KeyRow("w", command: true) { [self] _ in
+            endSession()
             return true
         }
     }
@@ -191,7 +198,7 @@ extension SpotsModel {
 
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
-            .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
+            .any { [self] key in handleStepKey(key) },
             settingsRow,
         ]
         let parts = openParts
@@ -216,9 +223,10 @@ extension SpotsModel {
                     return menu != nil
                 },
                 KeyRow("escape") { [self] _ in
-                    if !stepBack() { host.dismiss() }
+                    if !stepBack() { endSession() }
                     return true
                 },
+                closeRow,
                 KeyRow("up", act: scroll(-1)),
                 KeyRow("down", act: scroll(1)),
                 .any { [self] key in
@@ -249,6 +257,7 @@ extension SpotsModel {
             .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
             peekRow,
             .any { [self] key in openSheet(on: key) ? true : nil },
+            closeRow,
         ]
         return rows
     }

@@ -67,6 +67,14 @@ struct SpotRunningApp: RunningApp {
         await all ? model.pop(in: id, all: true) : model.pop(in: id)
     }
 
+    func openSession(_ id: String) async -> Bool {
+        await model.openSession(id)
+    }
+
+    func stepSession(by steps: Int) async -> Bool {
+        await model.stepSession(by: steps)
+    }
+
     func choose(for id: String) async -> Bool {
         await model.chooseFiles(for: id)
     }
