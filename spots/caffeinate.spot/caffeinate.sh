@@ -13,6 +13,8 @@ display=
 lidded=
 holder=
 fault=
+watched=
+named=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
@@ -89,6 +91,10 @@ remaining() {
 
 # Prints how long the Mac stays awake, which the card shows while the call that turned it on runs.
 left() {
+  if [ -n "$watched" ]; then
+    echo "Until $named ends"
+    return
+  fi
   seconds=$(remaining)
   if [ "$seconds" = 0 ]; then
     echo "Until off"
@@ -127,6 +133,7 @@ sheet() {
   duration 7200 '2 hours'; echo
   printf 'item=custom\ntitle=Custom…\nroute=custom\n\n'
   duration 0 'Until turned off'; echo
+  printf 'item=process\ntitle=While a process runs…\nroute=processes\n\n'
   printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
   printf '\nswitch=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\nvalue=%s\nclose=false\n' "${lid:-false}"
@@ -139,6 +146,7 @@ hold() {
   held=$1
   picked=$2
   seconds=${3:-$2}
+  [ -z "$watched" ] || seconds=0
   if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
   if display_on; then flags=-di; else flags=-i; fi
   closed=true
@@ -149,7 +157,10 @@ hold() {
   fi
   (
     trap 'let_go; exit 0' TERM
-    if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
+    if [ -n "$watched" ]; then caffeinate $flags -w "$watched" &
+    elif [ "$seconds" = 0 ]; then caffeinate $flags &
+    else caffeinate $flags -t "$seconds" &
+    fi
     wait $!
     let_go
     watcher=
@@ -183,6 +194,45 @@ release() {
   held=
 }
 
+# Sets `title` to the title of the chat of the Claude Code process with that id, and `detail` to its folder, from the
+# files that Claude Code keeps of each session it runs.
+claude_session() {
+  dir=$(ps eww -o command= -p "$1" 2>/dev/null | tr ' ' '\n' | sed -n 's/^CLAUDE_CONFIG_DIR=//p' | head -n 1)
+  dir=${dir:-$HOME/.claude}
+  session=$(cat "$dir/sessions/$1.json" 2>/dev/null)
+  id=$(printf '%s' "$session" | sed -n 's/.*"sessionId":"\([^"]*\)".*/\1/p')
+  folder=$(printf '%s' "$session" | sed -n 's/.*"cwd":"\([^"]*\)".*/\1/p')
+  [ -z "$folder" ] || detail=${folder##*/}
+  [ -n "$id" ] || return 0
+  found=$(grep -h '"type":"ai-title"' "$dir"/projects/*/"$id".jsonl 2>/dev/null | tail -n 1 | sed -n 's/.*"aiTitle":"\([^"]*\)".*/\1/p')
+  [ -z "$found" ] || title=$found
+  return 0
+}
+
+# Prints the row of a process that runs in a terminal, given as its group, its id, its terminal and its command, when
+# its group, `agents` or `others`, is the one asked. A shell is no row.
+process_row() {
+  case $3 in '??' | '') return 0 ;; esac
+  program=${4%% *}
+  name=${program##*/}
+  name=${name#-}
+  case $name in zsh | bash | sh | fish | login | tmux | screen | caffeinate | ps) return 0 ;; esac
+  case $name in claude | codex | cursor-agent | aider | gemini | opencode) side=agents ;; *) side=others ;; esac
+  [ "$side" = "$1" ] || return 0
+  title=$name
+  detail=$4
+  [ "$name" != claude ] || claude_session "$2"
+  printf 'item=pid.%s\ntitle=%s\ndetail=%s\nname=%s\n\n' "$2" "$title" "$detail" "$title"
+}
+
+# Prints the rows of the processes that run in a terminal, the agents first.
+processes() {
+  list=$(ps -U "$(id -u)" -o pid=,tty=,args= 2>/dev/null)
+  for group in agents others; do
+    printf '%s\n' "$list" | while read -r pid tty args; do process_row "$group" "$pid" "$tty" "$args"; done
+  done
+}
+
 # Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.
 given() {
   printf '%s' "$input" | sed -n "s/^$1=//p" | head -n 1
@@ -191,8 +241,10 @@ given() {
 # Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
 # and why.
 toast() {
-  minutes=$(( $1 / 60 ))
-  if [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
+  minutes=0
+  [ -n "$watched" ] || minutes=$(( $1 / 60 ))
+  if [ -n "$watched" ]; then on="Caffeinate is on until $named ends"
+  elif [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
   elif [ "$minutes" -ge 120 ]; then on="Caffeinate is on for $(( minutes / 60 )) hours"
   elif [ "$minutes" -eq 60 ]; then on="Caffeinate is on for 1 hour"
   elif [ "$minutes" -eq 1 ]; then on="Caffeinate is on for 1 minute"
@@ -231,6 +283,7 @@ serve() {
           ;;
         *)
           release
+          watched=
           begin "$call" $(( minutes * 60 ))
           ;;
       esac
@@ -248,7 +301,17 @@ serve() {
       ;;
     press\ [0-9]*)
       release
+      watched=
       begin "$call" "${item%%.*}"
+      ;;
+    press\ pid.*)
+      release
+      watched=${item#pid.}
+      named=$(given input.item.name)
+      begin "$call" "$item"
+      ;;
+    'show processes')
+      printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(processes)" "$call"
       ;;
     *)
       now=
