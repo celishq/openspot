@@ -55,35 +55,35 @@ final class ArrangeHoldTests: PanelCase {
         XCTAssertEqual(gone.code, 1)
     }
 
-    func testGridPushPutsASpotFirstAndTheOthersMoveAlong() async throws {
+    func testGridTopPutsASpotFirstAndTheOthersMoveAlong() async throws {
         try await spots(["a", "b", "c"], off: ["d"])
         takeCalls()
 
-        let onGrid = try await call(["grid", "push", "c"])
+        let onGrid = try await call(["grid", "top", "c"])
         XCTAssertEqual(onGrid.output, "C is at the top of the grid.\n", onGrid.errors)
         XCTAssertEqual(reading, ["c", "a", "b"])
 
-        let offGrid = try await call(["grid", "push", "d"])
+        let offGrid = try await call(["grid", "top", "d"])
         XCTAssertEqual(offGrid.code, 0, offGrid.errors)
         XCTAssertEqual(reading, ["d", "c", "a", "b"])
 
-        let gone = try await call(["grid", "push", "nope"])
+        let gone = try await call(["grid", "top", "nope"])
         XCTAssertEqual(gone.code, 1)
-        XCTAssertEqual(gone.errors, "You have no spot `nope` to push. Run `openspot grid list` to see each one.\n")
+        XCTAssertEqual(gone.errors, "You have no spot `nope` to put on top. Run `openspot grid list` to see each one.\n")
     }
 
-    func testGridPushOnAFullGridMovesTheLastSpotsOffIt() async throws {
+    func testGridTopOnAFullGridMovesTheLastSpotsOffIt() async throws {
         try await spots((0..<40).map { "s\($0)" }, off: ["z"])
         takeCalls()
         let full = model.visible.map(\.id)
 
-        let pushed = try await call(["grid", "push", "z"])
+        let topped = try await call(["grid", "top", "z"])
 
-        XCTAssertEqual(pushed.code, 0, pushed.errors)
+        XCTAssertEqual(topped.code, 0, topped.errors)
         XCTAssertEqual(reading.first, "z")
         let gone = full.filter { !self.model.visible.map(\.id).contains($0) }
         XCTAssertFalse(gone.isEmpty)
-        XCTAssertTrue(pushed.output.hasPrefix("Z is at the top of the grid. Moved "), pushed.output)
-        XCTAssertTrue(gone.allSatisfy { pushed.output.contains($0.capitalized) }, pushed.output)
+        XCTAssertTrue(topped.output.hasPrefix("Z is at the top of the grid. Moved "), topped.output)
+        XCTAssertTrue(gone.allSatisfy { topped.output.contains($0.capitalized) }, topped.output)
     }
 }

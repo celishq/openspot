@@ -182,7 +182,7 @@ final class NewSpotTests: BuiltInCase {
         try fake("openspot", """
         echo "$@" >> '\(root.path)/calls'
         case "$1 $2" in
-          'grid push' | 'toast '*) exit 0 ;;
+          'grid top' | 'toast '*) exit 0 ;;
         esac
         exec '\(real.path)' "$@"
         """)
@@ -193,7 +193,7 @@ final class NewSpotTests: BuiltInCase {
         let toml = try String(contentsOf: spots.appendingPathComponent("log-run-distance.spot/spot.toml"), encoding: .utf8)
         XCTAssertFalse(toml.contains("state"), toml)
         let calls = try saved("calls")
-        XCTAssertTrue(calls.contains("grid push log-run-distance"), calls)
+        XCTAssertTrue(calls.contains("grid top log-run-distance"), calls)
         XCTAssertTrue(calls.contains("toast --id build-"), calls)
         XCTAssertTrue(calls.contains("toast --remove build-"), calls)
     }

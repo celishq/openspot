@@ -24,7 +24,7 @@ extension SpotsModel {
         return spots.filter { !placed.contains($0.id) }.map(listed) + spots.filter { placed.contains($0.id) }.map(listed)
     }
 
-    public func push(_ id: String) -> GridPush {
+    public func putOnTop(_ id: String) -> GridTop {
         asOnePress {
             guard let entry = card(id: id), arranges(entry) else { return .unknown }
             let top = GridCell(row: 0, column: 0)
@@ -39,7 +39,7 @@ extension SpotsModel {
                 choices.set(isOnGrid: true, of: id)
                 for spot in off { choices.set(isOnGrid: false, of: spot.id) }
             })
-            return .pushed(off: off.map(\.spot.name))
+            return .placed(off: off.map(\.spot.name))
         }
     }
 

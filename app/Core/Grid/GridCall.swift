@@ -4,7 +4,7 @@ enum GridCall: NounCall {
     case edit
     case list(PrintForm)
     case pin(String)
-    case push(String)
+    case top(String)
 
     static let noun = CommandNoun("grid", group: .app, verbs: [
         CommandVerb("edit", "", "Opens Arrange, where you pin your spots to the grid and take them off.", rule: CallRule(inShow: .changes("opens the panel"))) { $0.none ? Self.edit : nil },
@@ -12,7 +12,7 @@ enum GridCall: NounCall {
             words.fit.flatMap { $0.rest.isEmpty ? Self.list($0.form) : nil }
         },
         CommandVerb("pin", "<id>", "Puts a spot of yours that is off the grid in the first free slot of the grid.", rule: CallRule(inShow: .changes("changes the grid"))) { $0.one.map(Self.pin) },
-        CommandVerb("push", "<id>", "Puts a spot of yours at the top of the grid, and the other spots move along after it, as a drop in Arrange does. The ones that no longer fit go off the grid.", rule: CallRule(inShow: .changes("changes the grid"))) { $0.one.map(Self.push) },
+        CommandVerb("top", "<id>", "Puts a spot of yours at the top of the grid, and the other spots move along after it, as a drop in Arrange does. The ones that no longer fit go off the grid.", rule: CallRule(inShow: .changes("changes the grid"))) { $0.one.map(Self.top) },
     ])
 
     private struct Listed: PrintedRecord {
@@ -46,16 +46,16 @@ enum GridCall: NounCall {
                 case .unknown: throw SpotError.failed(1, "You have no spot `\(id)` to pin. Run `openspot grid list` to see each one.")
                 }
             }
-        case .push(let id):
-            guard let app = context.app else { return CommandAnswer.notRunning("grid push") }
+        case .top(let id):
+            guard let app = context.app else { return CommandAnswer.notRunning("grid top") }
             return CommandAnswer.work {
                 await app.spotsChanged()
                 let name = await app.gridSpots().first { $0.id == id }?.name ?? id
-                switch await app.push(id) {
-                case .pushed(let off) where off.isEmpty: return "\(name) is at the top of the grid.\n"
-                case .pushed(let off): return "\(name) is at the top of the grid. Moved \(off.joined(separator: ", ")) off the grid.\n"
+                switch await app.putOnTop(id) {
+                case .placed(let off) where off.isEmpty: return "\(name) is at the top of the grid.\n"
+                case .placed(let off): return "\(name) is at the top of the grid. Moved \(off.joined(separator: ", ")) off the grid.\n"
                 case .tooLarge: throw SpotError.failed(1, "\(name) is larger than the grid.")
-                case .unknown: throw SpotError.failed(1, "You have no spot `\(id)` to push. Run `openspot grid list` to see each one.")
+                case .unknown: throw SpotError.failed(1, "You have no spot `\(id)` to put on top. Run `openspot grid list` to see each one.")
                 }
             }
         }

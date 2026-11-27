@@ -51,7 +51,7 @@ publish() {
   made=$(get "$1" spot)
   is_draft "$made" || return 0
   sed -i '' -E "/^state *= *[\"']draft[\"']/d" "$folder/$made.spot/spot.toml"
-  openspot grid push "$made" > /dev/null 2>&1 || true
+  openspot grid top "$made" > /dev/null 2>&1 || true
 }
 
 # Runs the agent $3 with no window for the build $1, with the prompt $4 on its stdin. The run prints its title, the step
