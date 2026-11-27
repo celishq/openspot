@@ -2,6 +2,15 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testAListThatShowsEachRowInOrderKeepsOneCopyOfThem() {
+        var list = ItemList(items: (0..<500).map { SpotItem(title: "Row \($0)", run: "\($0)") })
+        XCTAssertEqual(list.shown.withUnsafeBufferPointer(\.baseAddress), list.all.withUnsafeBufferPointer(\.baseAddress))
+
+        list.search("Row 1")
+        list.search("")
+        XCTAssertEqual(list.shown.withUnsafeBufferPointer(\.baseAddress), list.all.withUnsafeBufferPointer(\.baseAddress))
+    }
+
     func testAPointInTheLinesFindsTheRowUnderItPastEachSectionTitle() {
         let list = ItemList(items: [
             SpotItem(title: "One", run: "1", section: "Today"),
