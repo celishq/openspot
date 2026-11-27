@@ -186,25 +186,14 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(flags(), ["-di -t 2700"])
     }
 
-    private func runAgent() throws {
-        let f = folder.path
+    private func runProcesses() throws {
         try fake("ps", """
-            case "$*" in
-              *eww*) echo 'claude --resume abc CLAUDE_CONFIG_DIR=\(f)/agent TERM=xterm' ;;
-              *) printf '  101 ttys001  -zsh\\n 4242 ttys001  claude --resume abc\\n 5151 ttys002  make verify\\n 6161 ??  /usr/libexec/helper\\n' ;;
-            esac
+            printf '  101 ttys001  -zsh\\n 4242 ttys001  claude --resume abc\\n 5151 ttys002  make verify\\n 6161 ??  /usr/libexec/helper\\n'
             """)
-        let agent = folder.appendingPathComponent("agent")
-        let sessions = agent.appendingPathComponent("sessions")
-        let project = agent.appendingPathComponent("projects/-work-openspot")
-        try FileManager.default.createDirectory(at: sessions, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
-        try #"{"pid":4242,"sessionId":"abc","cwd":"/work/openspot","name":"openspot-1"}"#.write(to: sessions.appendingPathComponent("4242.json"), atomically: true, encoding: .utf8)
-        try #"{"type":"ai-title","aiTitle":"Reducing memory footprint","sessionId":"abc"}"#.appending("\n").write(to: project.appendingPathComponent("abc.jsonl"), atomically: true, encoding: .utf8)
     }
 
-    func testTheProcessPageListsEachProcessOfATerminalWithTheTitleOfAnAgentFirst() async throws {
-        try runAgent()
+    func testTheProcessPageListsEachProcessOfATerminalByItsProgramAndCommand() async throws {
+        try runProcesses()
         let sheet = try sheet()
         try await wait("the process row") { self.row("process", in: sheet) != nil }
         guard case .push(_, let route?, _, _)? = try XCTUnwrap(row("process", in: sheet)).move else { return XCTFail("the process row opens no page") }
@@ -212,12 +201,12 @@ final class CaffeinateSpotTests: XCTestCase {
         sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
 
         try await wait("the processes") { sheet.list.all.count == 2 }
-        XCTAssertEqual(sheet.list.all.map(\.title), ["Reducing memory footprint", "make"])
-        XCTAssertEqual(sheet.list.all.map(\.subtitle), ["openspot", "make verify"])
+        XCTAssertEqual(sheet.list.all.map(\.title), ["claude", "make"])
+        XCTAssertEqual(sheet.list.all.map(\.subtitle), ["claude --resume abc", "make verify"])
     }
 
     func testAPickOfAProcessKeepsTheMacAwakeUntilItEnds() async throws {
-        try runAgent()
+        try runProcesses()
         let sheet = try sheet()
         try await wait("the process row") { self.row("process", in: sheet) != nil }
         sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
@@ -227,8 +216,8 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -w 4242"])
-        try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on until Reducing memory footprint ends" }
-        try await wait("the card") { sheet.shownState.subtitle == "Until Reducing memory footprint ends" }
+        try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on until claude ends" }
+        try await wait("the card") { sheet.shownState.subtitle == "Until claude ends" }
     }
 
     func testTheCardOfALidHoldSaysTheLidCanClose() async throws {

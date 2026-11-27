@@ -194,43 +194,19 @@ release() {
   held=
 }
 
-# Sets `title` to the title of the chat of the Claude Code process with that id, and `detail` to its folder, from the
-# files that Claude Code keeps of each session it runs.
-claude_session() {
-  dir=$(ps eww -o command= -p "$1" 2>/dev/null | tr ' ' '\n' | sed -n 's/^CLAUDE_CONFIG_DIR=//p' | head -n 1)
-  dir=${dir:-$HOME/.claude}
-  session=$(cat "$dir/sessions/$1.json" 2>/dev/null)
-  id=$(printf '%s' "$session" | sed -n 's/.*"sessionId":"\([^"]*\)".*/\1/p')
-  folder=$(printf '%s' "$session" | sed -n 's/.*"cwd":"\([^"]*\)".*/\1/p')
-  [ -z "$folder" ] || detail=${folder##*/}
-  [ -n "$id" ] || return 0
-  found=$(grep -h '"type":"ai-title"' "$dir"/projects/*/"$id".jsonl 2>/dev/null | tail -n 1 | sed -n 's/.*"aiTitle":"\([^"]*\)".*/\1/p')
-  [ -z "$found" ] || title=$found
-  return 0
-}
-
-# Prints the row of a process that runs in a terminal, given as its group, its id, its terminal and its command, when
-# its group, `agents` or `others`, is the one asked. A shell is no row.
+# Prints the row of a process that runs in a terminal, given as its id, its terminal and its command. A shell is no row.
 process_row() {
-  case $3 in '??' | '') return 0 ;; esac
-  program=${4%% *}
+  case $2 in '??' | '') return 0 ;; esac
+  program=${3%% *}
   name=${program##*/}
   name=${name#-}
   case $name in zsh | bash | sh | fish | login | tmux | screen | caffeinate | ps) return 0 ;; esac
-  case $name in claude | codex | cursor-agent | aider | gemini | opencode) side=agents ;; *) side=others ;; esac
-  [ "$side" = "$1" ] || return 0
-  title=$name
-  detail=$4
-  [ "$name" != claude ] || claude_session "$2"
-  printf 'item=pid.%s\ntitle=%s\ndetail=%s\nname=%s\n\n' "$2" "$title" "$detail" "$title"
+  printf 'item=pid.%s\ntitle=%s\ndetail=%s\nname=%s\n\n' "$1" "$name" "$3" "$name"
 }
 
-# Prints the rows of the processes that run in a terminal, the agents first.
+# Prints the rows of the processes that run in a terminal.
 processes() {
-  list=$(ps -U "$(id -u)" -o pid=,tty=,args= 2>/dev/null)
-  for group in agents others; do
-    printf '%s\n' "$list" | while read -r pid tty args; do process_row "$group" "$pid" "$tty" "$args"; done
-  done
+  ps -U "$(id -u)" -o pid=,tty=,args= 2>/dev/null | while read -r pid tty args; do process_row "$pid" "$tty" "$args"; done
 }
 
 # Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.
