@@ -155,7 +155,7 @@ extension SpotTokens {
     public static let menuMargin: CGFloat = 16
     public static let backdropLeastFade: CGFloat = 16
     public static var backdrop: Theme.Backdrop { layout.backdrop }
-    public static let backdropMaskScale: CGFloat = 0.5
+    public static let backdropMaskScale: CGFloat = 0.4
     public static let backdropFadeSteps = 64
     public static let backdropMaskBytes = 16 * 1024 * 1024
     public static let backdropLeastBlur: CGFloat = 0.25

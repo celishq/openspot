@@ -5,7 +5,7 @@ import XCTest
 final class BackdropFadePictureTests: XCTestCase {
     private let fade = BackdropFade(size: 80, padding: 0, corner: 20, blur: 8, ease: 2, roundness: 2, inset: 40)
     private let size = CGSize(width: 580, height: 700.5)
-    private let scale: CGFloat = 0.5
+    private let scale = SpotTokens.backdropMaskScale
 
     private func bytes(_ image: CGImage?) -> [UInt8] {
         guard let image, let data = image.dataProvider?.data as Data? else { return [] }
@@ -31,9 +31,44 @@ final class BackdropFadePictureTests: XCTestCase {
             CGRect(x: 0, y: 0, width: 580, height: 700)
         ]
         for area in areas {
-            XCTAssertLessThanOrEqual(try largestDifference(from: tall, to: area), 8, "\(area)")
-            XCTAssertLessThanOrEqual(try largestDifference(from: area, to: tall), 8, "back from \(area)")
+            XCTAssertLessThanOrEqual(try largestDifference(from: tall, to: area), 9, "\(area)")
+            XCTAssertLessThanOrEqual(try largestDifference(from: area, to: tall), 9, "back from \(area)")
         }
+    }
+
+    func testAFadeAtTheBackdropScaleStaysWithinEightLevelsOfOneAtHalfScale() throws {
+        let area = CGRect(x: 30, y: 0, width: 520, height: 700)
+        let fine = try XCTUnwrap(fade.picture(of: area, size: size, scale: 0.5))
+        let coarse = try XCTUnwrap(fade.picture(of: area, size: size, scale: SpotTokens.backdropMaskScale))
+        let fineAlpha = alpha(fine)
+        let coarseAlpha = alpha(coarse)
+        let ratio = Double(SpotTokens.backdropMaskScale) / 0.5
+        var largest = 0
+        for y in 0..<fine.height {
+            for x in 0..<fine.width {
+                let sampled = sample(coarseAlpha, width: coarse.width, height: coarse.height, x: (Double(x) + 0.5) * ratio - 0.5, y: (Double(y) + 0.5) * ratio - 0.5)
+                largest = max(largest, abs(Int(sampled.rounded()) - Int(fineAlpha[y * fine.width + x])))
+            }
+        }
+        XCTAssertLessThan(SpotTokens.backdropMaskScale, 0.5)
+        XCTAssertLessThanOrEqual(largest, 8)
+    }
+
+    private func alpha(_ picture: CGContext) -> [UInt8] {
+        let data = picture.data!.assumingMemoryBound(to: UInt8.self)
+        return (0..<picture.height).flatMap { y in (0..<picture.width).map { x in data[y * picture.bytesPerRow + x * 4 + 3] } }
+    }
+
+    private func sample(_ alpha: [UInt8], width: Int, height: Int, x: Double, y: Double) -> Double {
+        let x = min(max(x, 0), Double(width - 1))
+        let y = min(max(y, 0), Double(height - 1))
+        let left = Int(x), top = Int(y)
+        let right = min(left + 1, width - 1), bottom = min(top + 1, height - 1)
+        let dx = x - Double(left), dy = y - Double(top)
+        let value = { (column: Int, row: Int) in Double(alpha[row * width + column]) }
+        let upper = value(left, top) * (1 - dx) + value(right, top) * dx
+        let lower = value(left, bottom) * (1 - dx) + value(right, bottom) * dx
+        return upper * (1 - dy) + lower * dy
     }
 
     func testAnAreaWithoutAStraightBandIsDrawnAfresh() {
