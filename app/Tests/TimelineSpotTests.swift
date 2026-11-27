@@ -120,9 +120,11 @@ final class TimelineSpotTests: BuiltInCase {
         let rows = try await rows()
 
         XCTAssertEqual(rows.map(\.title), ["#ff0000", "plain"])
-        XCTAssertEqual(rows.first?.peek.map(\.firstLine), ["peek=peek-\(id)", "text=hex", "button=rgb"])
-        XCTAssertEqual(rows.first.map { PeekAct.actions(of: $0.peek).map(\.title) }, ["Copy RGB"])
-        XCTAssertEqual(rows.last?.peek, [])
+        let file = try XCTUnwrap(rows.first?.peekFile)
+        let kept = TextBlock.blocks(in: try String(contentsOfFile: file, encoding: .utf8))
+        XCTAssertEqual(kept.map(\.firstLine), ["peek=peek-\(id)", "text=hex", "button=rgb"])
+        XCTAssertEqual(PeekAct.actions(of: kept).map(\.title), ["Copy RGB"])
+        XCTAssertNil(rows.last?.peekFile)
     }
 
     func testTheSpotIsTitledTimelineAndNotByItsNewestEntry() async throws {

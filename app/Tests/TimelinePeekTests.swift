@@ -82,7 +82,7 @@ final class TimelinePeekTests: PanelCase {
 
         let row = Frame(text: "item=\(entry.value("item") ?? "")\ntitle=Red\ntext=#ff0000\n\n" + text).items.first
 
-        guard case .blocks(let tree) = row.flatMap(Peek.init(item:))?.look else { return XCTFail("no blocks") }
+        guard case .blocks(let tree) = row.flatMap { Peek(item: $0) }?.look else { return XCTFail("no blocks") }
         XCTAssertEqual(tree.node("hex")?.block.value("title"), "#FF0000")
         XCTAssertEqual(row.map { PeekAct.actions(of: $0.peek).map(\.title) }, ["Copy RGB"])
     }

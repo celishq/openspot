@@ -663,6 +663,7 @@
 		89040A5967BC2D2BACDD6A34 /* SpotTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F0F199285F66143AF841BB9 /* SpotTokensTests.swift */; };
 		890654C11254D41249EE3046 /* SpotScrollEdges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F7A346EB827091726B282F /* SpotScrollEdges.swift */; };
 		8938F8959EB5F2B35D16948C /* NodeWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = A009EF90C9665DC589229DD4 /* NodeWords.swift */; };
+		8941D5CA6E550FDA119647A3 /* PeekFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E357F98C40AB96D95F47FF1C /* PeekFrames.swift */; };
 		89478F9DE698CDD4642ECDF5 /* StoreAsk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4F6BC3EC7CFD6B391C3579 /* StoreAsk.swift */; };
 		89518DB77282E81758B4BFE0 /* InlineScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B5DD1F3EA02519207DE3849 /* InlineScript.swift */; };
 		89C34A6EC0F2585FE721899E /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92977EA0E3F6905D9B2AE08 /* Icon.swift */; };
@@ -733,6 +734,7 @@
 		9638AFF34B3EF9A6DF3B2D40 /* GlobalKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */; };
 		963E23E2EBB2EE341650F104 /* SpotSampleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EA03B49F061A9C31FE0C4B /* SpotSampleSheet.swift */; };
 		966A61476E172786A654DCF4 /* AccountStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3135ABD411D311144DC40D1 /* AccountStatus.swift */; };
+		966CD0495D2A2D3C34753AD5 /* PeekFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376682B9592A0FC8C28D0BA9 /* PeekFileTests.swift */; };
 		9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD8983A5D718934384188E9 /* FocusLoss.swift */; };
 		969C4AAB8DA20D2375A8C639 /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D42A800C4CAF73DD0F643D7 /* ItemPick.swift */; };
 		96E4F3DA79F94D30E4253FBB /* PreviousAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21BFE08731F6CD652D67FACF /* PreviousAppTests.swift */; };
@@ -1647,6 +1649,7 @@
 		372FFA7311722583C1180AA0 /* SpotInputLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotInputLog.swift; sourceTree = "<group>"; };
 		3753D77C01284EE9F8D25D87 /* SpotInstallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotInstallTests.swift; sourceTree = "<group>"; };
 		376275AB3EFB50CAEFFC6BDB /* BoxLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoxLayout.swift; sourceTree = "<group>"; };
+		376682B9592A0FC8C28D0BA9 /* PeekFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekFileTests.swift; sourceTree = "<group>"; };
 		37CDE4763C41D4BDCB373DAC /* CommandHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHelp.swift; sourceTree = "<group>"; };
 		381871858EBC26B4B69B5C5B /* SpotUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotUpdate.swift; sourceTree = "<group>"; };
 		38668DF73B7C5F138F116F7B /* SpotTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTheme.swift; sourceTree = "<group>"; };
@@ -2532,6 +2535,7 @@
 		E28967D3DD023A8C8DBA1E85 /* SpotArrangeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrangeView.swift; sourceTree = "<group>"; };
 		E2DB98BC59E90C1E83DE7E69 /* SpotStorePicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotStorePicture.swift; sourceTree = "<group>"; };
 		E345B88BAC41A77FBEDEF770 /* PanelCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelCase.swift; sourceTree = "<group>"; };
+		E357F98C40AB96D95F47FF1C /* PeekFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekFrames.swift; sourceTree = "<group>"; };
 		E3A528E71CE22F9C5AA7A772 /* ActionMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenu.swift; sourceTree = "<group>"; };
 		E3CD13ED5DE95AB2AAE0FB33 /* SpotsModel+Grid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Grid.swift"; sourceTree = "<group>"; };
 		E41076F30B7792F010F79D1E /* SpotPagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPagesTests.swift; sourceTree = "<group>"; };
@@ -3440,6 +3444,7 @@
 			children = (
 				6C97F9163A67108365415CE4 /* Peek.swift */,
 				EBF507D44612EDA486F50665 /* PeekAct.swift */,
+				E357F98C40AB96D95F47FF1C /* PeekFrames.swift */,
 			);
 			path = Peek;
 			sourceTree = "<group>";
@@ -3653,6 +3658,7 @@
 				AB84E5714FEF2B0FAB42FE77 /* PanelViewReadsTests.swift */,
 				625D6DDBE169903376A2FAF2 /* PeekActTests.swift */,
 				F38FC10DEA3E6AB81271C40E /* PeekBlocksTests.swift */,
+				376682B9592A0FC8C28D0BA9 /* PeekFileTests.swift */,
 				CE6CA404510EE3BF9CA3CD93 /* PeekTests.swift */,
 				96AD2A647A43BDD1F0F3FBBB /* PeekVideoTests.swift */,
 				424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */,
@@ -5461,6 +5467,7 @@
 				379E4E7D1DC62336EA6FCCBB /* PanelSearch.swift in Sources */,
 				3EE1F30DEA3CD6B72C7AAB98 /* Peek.swift in Sources */,
 				2D068C8371A3A8D865220678 /* PeekAct.swift in Sources */,
+				8941D5CA6E550FDA119647A3 /* PeekFrames.swift in Sources */,
 				CB7374DDBB93578E37E49AE3 /* PickWeights.swift in Sources */,
 				4F9EE8C4F8713C64E33B997B /* PictureFile+Frames.swift in Sources */,
 				5189C339DB9B568559B04A2B /* PictureFile.swift in Sources */,
@@ -6305,6 +6312,7 @@
 				C2E8D872D195FC056BF97256 /* PanelViewReadsTests.swift in Sources */,
 				9609F04F49BA1FBDD06C0E7F /* PeekActTests.swift in Sources */,
 				95DBA21904489BF03C5AAE90 /* PeekBlocksTests.swift in Sources */,
+				966CD0495D2A2D3C34753AD5 /* PeekFileTests.swift in Sources */,
 				5D449DEE84AB40F29DFC7356 /* PeekTests.swift in Sources */,
 				1C146DEA162AE799F0DA5A28 /* PeekVideoTests.swift in Sources */,
 				B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */,

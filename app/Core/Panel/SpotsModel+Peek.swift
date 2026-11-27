@@ -21,7 +21,7 @@ extension SpotsModel {
     }
 
     var peekedItem: SpotItem? {
-        guard openSheetID != nil, let item = target?.item, Peek(item: item) != nil else { return nil }
+        guard openSheetID != nil, let item = target?.item, peek(of: item) != nil else { return nil }
         return item
     }
 
@@ -33,6 +33,27 @@ extension SpotsModel {
             takePeek()
         }
         return true
+    }
+
+    func peekBlocks(of item: SpotItem) -> [TextBlock] {
+        item.peek.isEmpty ? item.peekFile.flatMap(peekFrames.blocks(of:)) ?? [] : item.peek
+    }
+
+    func peek(of item: SpotItem) -> Peek? {
+        Peek(item: item, kept: peekBlocks(of: item))
+    }
+
+    private func readFrames(of rows: [SpotItem]) {
+        for path in rows.compactMap(\.peekFile) where peekFrames.blocks(of: path) == nil && peekFileReads.insert(path).inserted {
+            Task { [weak self] in
+                let read = await PeekFrames.read(path)
+                guard let self else { return }
+                peekFileReads.remove(path)
+                guard let read else { return }
+                peekFrames.take(read.blocks, of: path, bytes: read.bytes)
+                if isPeeking, peekedItem?.peekFile == path { asOnePress { takePeek() } }
+            }
+        }
     }
 
     public var peekPlays: Bool {
@@ -54,7 +75,7 @@ extension SpotsModel {
 
     func takePeek() {
         if openSheetID == nil, isPeeking { isPeeking = false }
-        let next = isPeeking ? peekedItem.flatMap(Peek.init(item:)) : nil
+        let next = isPeeking ? peekedItem.flatMap(peek(of:)) : nil
         placePeek(beside: next == nil ? nil : openSheet?.sheetRect)
         if let next, next != peek {
             peek = next
@@ -71,7 +92,8 @@ extension SpotsModel {
         let rows = openSheet?.list.shown ?? []
         let at = rows.firstIndex { $0.run == item.run }
         let around = [item] + [at.map { $0 + 1 }, at.map { $0 - 1 }].compactMap { $0 }.filter(rows.indices.contains).map { rows[$0] }
-        let looks = around.compactMap(Peek.init(item:)).filter(\.isRead).map(\.look)
+        readFrames(of: around)
+        let looks = around.compactMap(peek(of:)).filter(\.isRead).map(\.look)
         guard looks != peekRead else { return }
         peekRead = looks
         host.readAhead(looks)

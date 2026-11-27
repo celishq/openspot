@@ -31,10 +31,11 @@ public struct SpotItem: Equatable, Sendable {
     public let move: FlowMove?
     public let section: String?
     public let peek: [TextBlock]
+    public let peekFile: String?
     public let number: NumberReading?
     public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true, peek: [TextBlock] = []) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true, peek: [TextBlock] = [], peekFile: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -57,6 +58,7 @@ public struct SpotItem: Equatable, Sendable {
         self.move = move
         self.section = section
         self.peek = peek
+        self.peekFile = peekFile
         self.number = number
         self.showsWords = showsWords
     }
@@ -94,7 +96,8 @@ public struct SpotItem: Equatable, Sendable {
             section: section,
             number: number,
             showsWords: !style.hidesWords,
-            peek: kind == .item && block.children.first?.fields.first?.key == BlockKind.peek.word ? block.children : []
+            peek: kind == .item && block.children.first?.fields.first?.key == BlockKind.peek.word ? block.children : [],
+            peekFile: block.value(ItemKey.peekFile).flatMap { $0.hasPrefix("/") ? $0 : nil }
         )
     }
 

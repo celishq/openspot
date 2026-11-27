@@ -22,10 +22,10 @@ public struct Peek: Equatable, Sendable {
     public let title: String
     public let caption: String?
 
-    public init?(item: SpotItem) {
+    public init?(item: SpotItem, kept: [TextBlock] = []) {
         let value = { (key: String) in item.fields.first { $0.key == key && !$0.value.isEmpty }?.value }
         let look: Look
-        if let tree = Self.tree(of: item.peek) {
+        if let tree = Self.tree(of: item.peek.isEmpty ? kept : item.peek) {
             look = .blocks(tree)
         } else if let url = value("url") {
             look = .link(url, host: URL(string: url)?.host())

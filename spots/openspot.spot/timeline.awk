@@ -84,10 +84,7 @@ function source(spot,    name) {
   if (kind == "text" || kind == "url") printf "keywords=%s\n", substr(f[kind], 1, 200)
   if (kind == "file") printf "file=%s\n", f[kind]
   printf "open.title=Copy\n"
-  if (f["peek.file"] != "") {
-    while ((getline block < f["peek.file"]) > 0) printf "\n%s\n", block
-    close(f["peek.file"])
-  }
+  if (f["peek.file"] != "") printf "peek.file=%s\n", f["peek.file"]
 }
 
 END {
