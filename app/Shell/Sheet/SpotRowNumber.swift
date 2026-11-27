@@ -6,7 +6,7 @@ struct SpotRowNumber: View {
     let tone: MetricValue.Tone?
 
     private var colour: Color {
-        SpotToneWords.colour(of: tone) ?? SpotTheme.ink
+        (SpotToneWords.colour(of: tone) ?? SpotTheme.ink).color
     }
 
     var body: some View {

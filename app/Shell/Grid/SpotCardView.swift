@@ -160,7 +160,7 @@ struct SpotCardView: View, @MainActor Equatable {
         .sliderThumbVisibility(.hidden)
     }
 
-    private var glyphDisc: Color {
+    private var glyphDisc: SpotColor {
         size == .small || isFilled ? .clear : SpotTheme.ink.opacity(SpotTheme.disc)
     }
 

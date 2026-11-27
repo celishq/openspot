@@ -16,8 +16,8 @@ struct SpotAttachmentCard: View, Equatable {
         .frame(width: SpotTokens.attachmentCard, height: SpotTokens.attachmentCard)
         .background {
             shape.fill(SpotTheme.attachmentFace)
-                .shadow(color: SpotTheme.attachmentFarShadow, radius: SpotTokens.attachmentFarShadowRadius, y: SpotTokens.attachmentFarShadowDrop)
-                .shadow(color: SpotTheme.attachmentNearShadow, radius: SpotTokens.attachmentNearShadowRadius, y: SpotTokens.attachmentNearShadowDrop)
+                .shadow(color: SpotTheme.attachmentFarShadow.color, radius: SpotTokens.attachmentFarShadowRadius, y: SpotTokens.attachmentFarShadowDrop)
+                .shadow(color: SpotTheme.attachmentNearShadow.color, radius: SpotTokens.attachmentNearShadowRadius, y: SpotTokens.attachmentNearShadowDrop)
                 .opacity(isQuiet ? MotionTokens.hiddenOpacity : 1)
         }
         .overlay(SpotRoundShape(radius: SpotTokens.attachmentCardRadius + SpotTokens.attachmentBorder).strokeBorder(SpotTheme.attachmentRim, lineWidth: SpotTokens.attachmentBorder).padding(-SpotTokens.attachmentBorder).opacity(isQuiet ? MotionTokens.hiddenOpacity : 1))
@@ -52,7 +52,7 @@ struct SpotAttachmentCard: View, Equatable {
         case .symbol(let symbol):
             let tile = SpotRoundShape(radius: SpotTokens.attachmentIconRadius)
             ZStack {
-                tile.fill(LinearGradient(colors: [SpotTheme.attachmentTileTop, SpotTheme.attachmentTileBottom], startPoint: .top, endPoint: .bottom))
+                tile.fill(LinearGradient(colors: [SpotTheme.attachmentTileTop.color, SpotTheme.attachmentTileBottom.color], startPoint: .top, endPoint: .bottom))
                     .overlay(Image(systemName: symbol).font(SpotType.attachmentTile).foregroundStyle(SpotTheme.attachmentTileInk))
                     .opacity(isQuiet ? MotionTokens.hiddenOpacity : 1)
                 tile.fill(SpotTheme.attachmentQuietFill)

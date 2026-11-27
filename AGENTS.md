@@ -79,7 +79,8 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   `Core/Theme/SpotTokens.swift`, formulas over them in `Core/Theme/SpotTokens+Derived.swift`, sizes of single parts in
   `Core/Theme/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
   new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
-  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
+  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. A colour of the theme is a `SpotColor`,
+  a style that picks its value from the colour scheme without AppKit; take its `.color` only where an API needs a `Color`. The defaults of the rules
   mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
   such as a colour of one card, is a constant in a token file. `make verify` runs `scripts/check-tokens.sh`, which fails
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
@@ -182,7 +183,7 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
   a rim or words.
-- Draw a fill or a ring of a moving shape as a colour that the shape clips (`Color.ring(of:width:)`), not as a shape view: a
+- Draw a fill or a ring of a moving shape as a colour that the shape clips (`SpotColor.ring(of:width:)`), not as a shape view: a
   shape view is a leaf of layout, and a new shape on each frame lays out the stack that holds it.
 - A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is

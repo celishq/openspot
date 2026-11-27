@@ -16,7 +16,7 @@ struct SpotRingShape<Edge: InsettableShape>: Shape {
     }
 }
 
-extension Color {
+extension SpotColor {
     func ring(of edge: some InsettableShape, width: CGFloat) -> some View {
         clipShape(SpotRingShape(edge: edge, width: width), style: FillStyle(eoFill: true))
     }

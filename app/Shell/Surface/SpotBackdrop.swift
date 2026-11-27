@@ -41,10 +41,10 @@ private struct BackdropShape: View, @preconcurrency Animatable {
             case .blur:
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
             case .tint:
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
+                SpotBackdropTint(color: SpotTheme.backdropTint.color, fadingIn: rect, isMoving: isMoving)
             case .veil:
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
+                SpotBackdropTint(color: SpotTheme.backdropTint.color, fadingIn: rect, isMoving: isMoving)
             }
         }
     }

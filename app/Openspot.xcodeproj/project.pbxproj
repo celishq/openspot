@@ -522,6 +522,7 @@
 		672CF22D1E7A5BC134417256 /* PanelScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75CF3427600E17CB9525AB80 /* PanelScene.swift */; };
 		673181E175080459FDD56699 /* SocketPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63C8158E402FCAD2460BDD2 /* SocketPath.swift */; };
 		675F7F23FD7C0CE5549E71E8 /* MacAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85366F1DE5D75FB2E6938DC9 /* MacAccess.swift */; };
+		6766FE831B95D7D533C8B1F5 /* SpotColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C2561DC4C735A8A339D420 /* SpotColor.swift */; };
 		67707C841A53A5E19391D55C /* SpotTypes+Swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1BF4C4E6B20F4A38C5117FA /* SpotTypes+Swift.swift */; };
 		67812551D15700869A947D2A /* CaffeinateSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BB6FEF64A12552DBC57343 /* CaffeinateSpotTests.swift */; };
 		68784B0D074356161E66A06D /* SpotQuietHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8869295A1556AE510C578CEC /* SpotQuietHost.swift */; };
@@ -2511,6 +2512,7 @@
 		D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftProgramTests.swift; sourceTree = "<group>"; };
 		D88BB45F4B9CF3EC7A96BF93 /* SpotPlaygroundHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundHost.swift; sourceTree = "<group>"; };
 		D8AA05B0417CD59C701689A3 /* SchemaCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaCall.swift; sourceTree = "<group>"; };
+		D8C2561DC4C735A8A339D420 /* SpotColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotColor.swift; sourceTree = "<group>"; };
 		D90D63EDCEA1A048E23A6DF0 /* SpotRuns+Bindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Bindings.swift"; sourceTree = "<group>"; };
 		D92830FC5F9483CB37C269A8 /* ActionLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionLine.swift; sourceTree = "<group>"; };
 		D979AA33BA3AF2AA448F7AA6 /* FirstLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchTests.swift; sourceTree = "<group>"; };
@@ -4147,6 +4149,7 @@
 		9A142C8FBC01305C6ECBD5E6 /* Theme */ = {
 			isa = PBXGroup;
 			children = (
+				D8C2561DC4C735A8A339D420 /* SpotColor.swift */,
 				5AB1E2D7A61065BE32EE3E25 /* SpotLoadedTheme.swift */,
 				09293884216E1C8854E71BDC /* SpotPalette.swift */,
 				38668DF73B7C5F138F116F7B /* SpotTheme.swift */,
@@ -5983,6 +5986,7 @@
 				5C07C408DE38F74F22E5DF78 /* SpotCarriedCard.swift in Sources */,
 				77BEAA45A47F0153AD74F0E0 /* SpotChoiceMenu.swift in Sources */,
 				D8AF994BAB780D3D202A6E72 /* SpotClipboard.swift in Sources */,
+				6766FE831B95D7D533C8B1F5 /* SpotColor.swift in Sources */,
 				C8FE4BD039C223902E25BD51 /* SpotColorBar.swift in Sources */,
 				E93A359BEBA94E2259108CEE /* SpotColorPick.swift in Sources */,
 				0EC360BE3AACA148BEA813DC /* SpotCommandLine.swift in Sources */,

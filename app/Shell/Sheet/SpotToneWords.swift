@@ -13,7 +13,7 @@ struct SpotToneWords: View {
         }
     }
 
-    static func colour(of tone: MetricValue.Tone?) -> Color? {
+    static func colour(of tone: MetricValue.Tone?) -> SpotColor? {
         switch tone {
         case .good: SpotTheme.good
         case .warn: SpotTheme.warn

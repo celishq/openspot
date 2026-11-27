@@ -726,7 +726,7 @@ final class SpotMotionProbe: NSObject {
         guard let view = panel.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: bitmap)
         let image = NSImage(size: view.bounds.size, flipped: false) { bounds in
-            NSColor(SpotTheme.window).setFill()
+            NSColor(SpotTheme.window.color).setFill()
             bounds.fill()
             bitmap.draw(in: bounds)
             return true
