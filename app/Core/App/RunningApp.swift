@@ -19,6 +19,7 @@ public protocol RunningApp: Sendable {
     func editGrid() async
     func gridSpots() async -> [ArrangedSpot]
     func pin(_ id: String) async -> GridPin
+    func push(_ id: String) async -> GridPin
     func openStore(_ id: String?, search: String?) async -> Bool
     func reveal(_ id: String) async -> Bool
     func playground(_ file: URL?) async
@@ -54,6 +55,10 @@ extension RunningApp {
     }
 
     public func pin(_ id: String) async -> GridPin {
+        .unknown
+    }
+
+    public func push(_ id: String) async -> GridPin {
         .unknown
     }
     public func grant(_ id: String?, needs: [MacAccess]) async -> Bool {

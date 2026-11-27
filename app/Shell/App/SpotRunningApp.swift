@@ -93,6 +93,10 @@ struct SpotRunningApp: RunningApp {
         await model.pin(id)
     }
 
+    func push(_ id: String) async -> GridPin {
+        await model.push(id)
+    }
+
     func openStore(_ id: String?, search: String?) async -> Bool {
         await StoreWindow.show(model: model, id: id, search: search)
     }
