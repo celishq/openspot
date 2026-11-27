@@ -50,7 +50,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let id: String
     public let kind: String
     public let title: String?
-    public let spoken: String?
+    public let label: String
     public let detail: String?
     public internal(set) var icon: Icon?
     public let tone: MetricValue.Tone?
@@ -90,7 +90,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         let words = block.value("title")
         let round = kind.presses && (words == nil || style.hidesWords) && style.corner == .full ? icon : nil
         title = round == nil ? words : nil
-        spoken = words
+        label = words ?? id.capitalized
         self.icon = round == nil ? icon : nil
         press = kind.presses ? round.map(Press.round) ?? .line : .none
         control = kind.control(block)

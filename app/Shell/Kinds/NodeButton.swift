@@ -53,12 +53,12 @@ private struct ButtonDrawing: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .help(part.title ?? part.spoken ?? part.id.capitalized)
+            .help(part.label)
         case .round(let icon):
             NodeLine(part: part, size: size, call: call, keepsIconColumn: look != .bare && keepsIconColumn) {
                 SpotRoundButton(
                     icon: icon,
-                    label: part.title ?? part.spoken ?? part.id.capitalized,
+                    label: part.label,
                     act: call,
                     size: min(size.width, size.height, SpotTokens.partMaxRound),
                     look: look == .strong ? .strong : look == .bare ? .bare : .plain,
@@ -68,7 +68,7 @@ private struct ButtonDrawing: View {
             .modifier(NodeTile(isOn: look == .tile))
         case .line where isCard:
             Button(action: onPress) {
-                Text(part.title ?? part.id.capitalized)
+                Text(part.label)
                     .font(SpotType.action)
                     .foregroundStyle(ink)
                     .padding(.horizontal, SpotTokens.slotChipPaddingX)
@@ -165,7 +165,7 @@ private struct ButtonDrawing: View {
     }
 
     private func centered(isActive: Bool) -> some View {
-        keyed(words(part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium)))
+        keyed(words(part.label, font: SpotType.body.weight(.medium)))
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
