@@ -1,7 +1,8 @@
 /** The timeline of every spot, newest first, under a heading for each day, a page of 60 entries at a time: the newest
  * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, ⌘Return pastes it
  * into the front app, ⌘⌫ forgets it, with a toast that puts it back, and Tab hands it to a spot that takes it. A row
- * holds at most the start of a long text, and the whole entry is copied by its id. */
+ * holds at most the start of a long text, so a copy pipes the whole value that `timeline get` prints into
+ * `clipboard copy`. */
 
 const limit = 60
 const heldText = 2000
@@ -128,6 +129,13 @@ function run(words) {
   return ran.stdout
 }
 
+/** Copies the entry of a row: its file as Finder does, or the whole text or link that `timeline get` prints. */
+function copy(input) {
+  if (input["item.kind"] === "file") return run(["clipboard", "copy", input["item.file"]])
+  const copied = openspot.call(["clipboard", "copy"], run(["timeline", "get", input.item]))
+  if (copied.code !== 0) throw new Error((copied.stderr || copied.stdout || "").trim() || "Timeline could not copy that entry.")
+}
+
 export default {
   show(input, env) {
     const days = String(env.settings.keep ?? "").replace(/[^0-9]/g, "")
@@ -143,19 +151,15 @@ export default {
   command() {
     run(["spot", "open", "openspot/timeline"])
   },
-  press({ item }) {
-    if (!item || item === "empty") return
-    run(["timeline", "copy", item])
+  press(input) {
+    if (!input.item || input.item === "empty") return
+    copy(input)
     run(["toast", "Copied."])
   },
-  paste({ item }) {
-    if (!item || item === "empty") return
-    run(["timeline", "copy", item])
+  paste(input) {
+    if (!input.item || input.item === "empty") return
+    copy(input)
     run(["clipboard", "paste"])
-  },
-  copy({ item }) {
-    run(["timeline", "copy", item])
-    run(["toast", "Copied."])
   },
   forget({ item }, env) {
     run(["timeline", "forget", item])

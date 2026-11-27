@@ -266,23 +266,21 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(gone.errors, "The timeline has no entry `nothing` to list after. Start again with no --after.\n")
     }
 
-    func testCopyPutsTheWholeEntryOnTheClipboard() async throws {
-        let board = FakeClipboard()
-        model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
-        try script("copier", toml: "title = 'Copier'\nuses = ['timeline', 'clipboard']", "printf 'item=c\\ntitle=C\\n'")
-        await model.reload()
-        let long = String(repeating: "a", count: Timeline.heldText + 10)
-        let text = try await add(["text=\(long)"], of: "copier")
-        let link = try await add(["url=https://a.com"], of: "copier")
+    func testGetPrintsTheWholeValueOfAnEntry() async throws {
+        let long = "first\n" + String(repeating: "a", count: Timeline.heldText + 10)
+        let text = try await add(["text=\(long)"])
+        let link = try await add(["url=https://a.com"])
+        let files = try await add(["file=/tmp/one.txt", "file=/tmp/two.txt"])
 
-        let copied = try await call(["copy", text], of: "copier")
-        let whole = board.text()
-        _ = try await call(["copy", link], of: "copier")
-        let missing = try await call(["copy", "nothing"], of: "copier")
+        let got = try await call(["get", text])
+        let url = try await call(["get", link])
+        let paths = try await call(["get", files])
+        let missing = try await call(["get", "nothing"])
 
-        XCTAssertEqual(copied.code, 0, copied.errors)
-        XCTAssertEqual(whole, long)
-        XCTAssertEqual(board.text(), "https://a.com")
+        XCTAssertEqual(got.code, 0, got.errors)
+        XCTAssertEqual(got.output, long)
+        XCTAssertEqual(url.output, "https://a.com")
+        XCTAssertEqual(paths.output, "/tmp/one.txt\n/tmp/two.txt")
         XCTAssertEqual(missing.code, 1)
         XCTAssertEqual(missing.errors, "The timeline has no entry `nothing` that this spot can reach. `openspot timeline list` prints its entries.\n")
     }

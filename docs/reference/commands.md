@@ -49,7 +49,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timer list`                               | Prints an item for each timer of your spot.                              |
 | `openspot timer remove <id>`                        | Removes a timer.                                                         |
 | `openspot timeline add [<key>=<value>...]`          | Adds an entry to your spot's timeline and prints its id: `text=`, `url=` or `file=` once for each file, with `title=`, `detail=`, `app=`, `icon=`, `key=` and `at=`. With none, it takes the same lines on stdin. It needs `timeline` in `uses`, and works in a show. |
-| `openspot timeline copy <id>` | Copies the whole entry to the clipboard: its text, its link or its first file. |
+| `openspot timeline get <id>` | Prints the whole value of the entry: its text, its link, or the path of each file on a line. |
 | `openspot timeline list [--spot <id>] [--all] [--within <age>] [--search <words>] [--after <id>] [--limit <n>]` | Prints an item for each entry of your spot's timeline, newest first. `--spot` and `--all` read other timelines and need `read`. |
 | `openspot timeline forget <id>`                     | Takes an entry out of the timeline.                                      |
 | `openspot timeline restore <id>`                    | Brings back an entry forgotten in the last 10 minutes.                   |

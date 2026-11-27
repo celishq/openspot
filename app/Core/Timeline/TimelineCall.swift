@@ -3,7 +3,7 @@ import Foundation
 enum TimelineCall: NounCall {
     case add([String])
     case list(spot: String?, all: Bool, within: TimeInterval?, search: String?, after: String?, limit: Int?)
-    case copy(String)
+    case get(String)
     case forget(String)
     case restore(String)
     case keep(String)
@@ -30,7 +30,7 @@ enum TimelineCall: NounCall {
             guard within != .some(nil), fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
             return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within ?? nil, search: fit.value("--search"), after: fit.value("--after"), limit: fit.value("--limit").flatMap { Int($0) })
         },
-        CommandVerb("copy", "<id>", "Copies the whole entry to the clipboard: its text, its link or its first file.", rule: CallRule(use: .clipboard, used: "copied an entry", inShow: .changes("changes the clipboard"))) { $0.one.map(Self.copy) },
+        CommandVerb("get", "<id>", "Prints the whole value of the entry: its text, its link, or the path of each file on a line. Pipe it into `clipboard copy` to copy a text or a link.", rule: CallRule(use: .timeline, used: "read an entry")) { $0.one.map(Self.get) },
         CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
         CommandVerb("restore", "<id>", "Brings back an entry that `openspot timeline forget` took out.", rule: CallRule(use: .timeline, used: "restored an entry")) { $0.one.map(Self.restore) },
         CommandVerb("keep", "<days>", "Keeps each entry for the days, 30 by default, and drops what is older.", rule: CallRule(use: .timeline, used: "changed how long the timeline keeps", onlyPerson: Self.personOnly)) { $0.one.map(Self.keep) },
@@ -120,21 +120,14 @@ enum TimelineCall: NounCall {
                 timeline.pause(until: nil, at: runs.clock.now())
                 return CommandAnswer()
             }
-        case .copy(let id):
-            let mac = context.mac
+        case .get(let id):
             return {
                 guard let found = timeline.entry(id), found.forgotten == nil, Self.reaches(found.spot, from: caller) else {
                     return CommandAnswer(errors: "The timeline has no entry `\(id)` that this spot can reach. `openspot timeline list` prints its entries.\n", code: 1)
                 }
-                do {
-                    let clipboard = try Mac.part(mac.clipboard, "clipboard")
-                    switch found.kind {
-                    case .file: try clipboard.copy(file: URL(fileURLWithPath: found.files.first?.path ?? found.value))
-                    case .text, .url: try clipboard.copy(text: found.textFile.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) } ?? found.value)
-                    }
-                    return CommandAnswer()
-                } catch {
-                    return CommandAnswer(errors: "Openspot could not copy the entry: \(error.localizedDescription)\n", code: 1)
+                switch found.kind {
+                case .file: return CommandAnswer(output: found.files.map(\.path).joined(separator: "\n"))
+                case .text, .url: return CommandAnswer(output: found.textFile.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) } ?? found.value)
                 }
             }
         case .forget(let id), .restore(let id):

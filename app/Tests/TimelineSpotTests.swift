@@ -25,7 +25,7 @@ final class TimelineSpotTests: BuiltInCase {
         try fake("openspot", """
         case "$1 $2" in
           "clipboard copy") printf 'clipboard copy %s|%s\\n' "$3" "$(cat)" >> '\(log.path)'; exit 0 ;;
-          "timeline copy") echo "$*" >> '\(log.path)'; exit 0 ;;
+          "timeline get") echo "$*" >> '\(log.path)'; printf 'whole of %s' "$3"; exit 0 ;;
           "clipboard paste" | "toast "* | "spot open") echo "$*" >> '\(log.path)'; exit 0 ;;
         esac
         exec '\(real.path)' "$@"
@@ -195,16 +195,17 @@ final class TimelineSpotTests: BuiltInCase {
 
     func testReturnCopiesAnEntryOfEachKind() async throws {
         try await timeline.perform("press", input: "input.item=a\ninput.item.kind=text\ninput.item.text=two\\nlines\n", timeout: 60)
+        try await timeline.perform("press", input: "input.item=c\ninput.item.kind=file\ninput.item.file=/tmp/kept.txt\n", timeout: 60)
         try await timeline.perform("press", input: "input.item=empty\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
+        XCTAssertEqual(effects, ["timeline get a", "clipboard copy |whole of a", "toast Copied.", "clipboard copy /tmp/kept.txt|", "toast Copied."])
     }
 
     func testCommandReturnPastesAnEntryAndALinkToo() async throws {
         try await timeline.perform("paste", input: "input.item=a\n", timeout: 60)
         try await timeline.perform("paste", input: "input.item=b\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["timeline copy a", "clipboard paste", "timeline copy b", "clipboard paste"])
+        XCTAssertEqual(effects, ["timeline get a", "clipboard copy |whole of a", "clipboard paste", "timeline get b", "clipboard copy |whole of b", "clipboard paste"])
     }
 
     func testTheSheetSaysCopyOnReturnAndOffersPasteOnCommandReturnAndATextShowsAa() async throws {
@@ -327,14 +328,8 @@ final class TimelineSpotTests: BuiltInCase {
     }
 
     func testReturnOnARowOfTheSearchCopiesItsEntry() async throws {
-        try await finder.perform("press", input: "input.item=a\n", timeout: 60)
+        try await finder.perform("press", input: "input.item=a\ninput.item.kind=text\n", timeout: 60)
 
-        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
-    }
-
-    func testCopyCopiesAsReturnInTheSheetDoes() async throws {
-        try await timeline.perform("copy", input: "input.item=a\n", timeout: 60)
-
-        XCTAssertEqual(effects, ["timeline copy a", "toast Copied."])
+        XCTAssertEqual(effects, ["timeline get a", "clipboard copy |whole of a", "toast Copied."])
     }
 }

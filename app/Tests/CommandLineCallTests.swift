@@ -31,7 +31,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, search: nil, after: nil, limit: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--limit", "0"])?.value as? CallFault, .unknown(["timeline", "list", "--limit", "0"]))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--text", "cafe"])?.value as? CallFault, .unknown(["timeline", "list", "--text", "cafe"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "copy", "ab12"])?.value as? TimelineCall, .copy("ab12"))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "get", "ab12"])?.value as? TimelineCall, .get("ab12"))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "forget", "ab12"])?.value as? TimelineCall, .forget("ab12"))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "restore", "ab12"])?.value as? TimelineCall, .restore("ab12"))
     }
