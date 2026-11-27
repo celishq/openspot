@@ -18,9 +18,9 @@ extension SpotsModel {
     }
 
     func leaveParkedSession() {
-        guard !isShown else { return }
+        guard !isShown, session.parked != nil else { return }
         session.parked = nil
-        commitVisit()
+        session.isEnded = true
     }
 
     func resumeSession() {
@@ -28,7 +28,7 @@ extension SpotsModel {
         session = PanelSession(visit: kept.visit)
         guard !kept.startsClean(at: runs.clock.now(), within: restoreTime) else { return startClean() }
         guard let parked = kept.parked else { return }
-        if openSheetID == nil, flow.current == nil, let page = parked.flow.current, sheets[page.spot] != nil {
+        if openSheetID == nil, flow.current == nil, let page = parked.flow.current, restores(page) {
             holdsVisit = true
             flow = parked.flow
             holdsVisit = false
@@ -40,6 +40,7 @@ extension SpotsModel {
 
     private func startClean() {
         commitVisit()
+        form = nil
         if openSheetID != nil { closeSheet(moving: false) }
         endFlow()
         if !query.isEmpty { takeQuery("") }
@@ -51,7 +52,11 @@ extension SpotsModel {
     }
 
     func noteFlow(from old: Flow) {
-        guard !holdsVisit, !flow.pages.isEmpty else { return }
+        guard !holdsVisit else { return }
+        guard !flow.pages.isEmpty else {
+            if !old.pages.isEmpty { commitVisit() }
+            return
+        }
         guard old.pages.isEmpty else {
             session.visit?.place.flow = flow
             return
@@ -64,6 +69,10 @@ extension SpotsModel {
     func noteQuery() {
         guard !holdsVisit, !query.isEmpty, flow.pages.isEmpty, session.visit?.place.start == nil else { return }
         if session.visit == nil { startVisit() } else { session.visit?.place.query = query }
+    }
+
+    private func restores(_ page: FlowSheet) -> Bool {
+        sheets[page.spot] != nil && place(ofSheet: page.spot) == .panel && !runs.floating.contains(page.spot)
     }
 
     private func startVisit() {
@@ -104,9 +113,9 @@ extension SpotsModel {
 
     func backVisit() -> Bool {
         if !trail.isWalking {
-            let shown = flow.pages.first
+            let shown = SessionTrail.Place(flow: flow, query: query)
             commitVisit()
-            if shown != nil, trail.places.last?.start == shown { _ = trail.back() }
+            if trail.places.last?.merges(with: shown) == true { _ = trail.back() }
         }
         guard let place = trail.back() else { return false }
         restore(place)
@@ -129,7 +138,7 @@ extension SpotsModel {
             defer { isRestoringVisit = false }
             endFlow()
             if query != place.query { takeQuery(place.query) }
-            guard let page = place.flow.current, sheets[page.spot] != nil else {
+            guard let page = place.flow.current, restores(page) else {
                 if openSheetID != nil { closeSheet(moving: isShown) }
                 startVisit()
                 return

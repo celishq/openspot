@@ -101,6 +101,7 @@ extension SpotsModel {
 
     public func prepareForDrag() {
         isOpenForDrag = true
+        session.parked = nil
         followDrag()
         guard openSheetID != nil else { return }
         closeSheet(moving: false)

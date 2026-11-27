@@ -3,7 +3,6 @@ import Foundation
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
         asOnePress {
-            leaveParkedSession()
             if confirming == key, runConfirmed() { return }
             if confirmWords(of: key) != nil, showCard(key.spot) {
                 confirming = key
@@ -50,6 +49,7 @@ extension SpotsModel {
 
     private func open(byKey entry: Entry) {
         guard entry.soleCommand == nil else { return run(entry) }
+        leaveParkedSession()
         if entry.kind.opensSheet { endFlow() }
         press(entry.id)
     }
@@ -252,6 +252,7 @@ extension SpotsModel {
     }
 
     public func openFromMenuBar(_ id: String) {
+        leaveParkedSession()
         if isShown { host.dismiss() }
         float(id)
     }

@@ -125,4 +125,28 @@ final class SessionTrailTests: PanelCase {
 
         try await wait("the timeline page") { self.model.flow.current == FlowSheet(spot: SpotsModel.timelineSpot, route: "about/other") }
     }
+
+    func testTimeOnTheGridAfterAQuickLookDoesNotKeepIt() async throws {
+        try await visit("other", for: 0.5)
+        clock.advance(by: 3)
+
+        XCTAssertFalse(model.handleKey(back))
+        XCTAssertNil(model.openSheetID)
+    }
+
+    func testARunOnTheGridAfterAQuickLookDoesNotKeepTheLook() async throws {
+        try await visit("other", for: 0.5)
+        model.noteRun()
+
+        XCTAssertFalse(model.handleKey(back))
+        XCTAssertNil(model.openSheetID)
+    }
+
+    func testTheFirstCommandBracketOnTheGridSkipsThePlaceItShows() async throws {
+        model.search("calc")
+        model.noteRun()
+
+        XCTAssertFalse(model.handleKey(back))
+        XCTAssertEqual(model.searchText, "calc")
+    }
 }

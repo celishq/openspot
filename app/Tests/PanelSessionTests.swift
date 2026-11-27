@@ -179,4 +179,39 @@ final class PanelSessionTests: PanelCase {
         XCTAssertEqual(Config(text: "restore-within = \"1 hour\"\n").restoreTime, 3600)
         XCTAssertEqual(Config(text: "restore-within = \"forever\"\n").faults, ["config.toml: restore-within is \"30 seconds\", \"90 seconds\", \"5 minutes\", \"1 hour\"."])
     }
+
+    func testADragOntoTheHiddenPanelDoesNotBringBackTheParkedSheet() async throws {
+        try await openParts()
+        model.search("ban")
+        clickOutside()
+
+        model.prepareForDrag()
+        reopen()
+
+        XCTAssertNil(model.openSheetID)
+    }
+
+    func testARevealOfACardWhileParkedShowsTheCardAndNotTheParkedSheet() async throws {
+        try await openParts()
+        clickOutside()
+
+        XCTAssertTrue(model.showCard("other"))
+        try await wait("the grid") { self.model.isShown }
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(model.selectedEntry?.id, "other")
+    }
+
+    func testACommandKeyWhileHiddenKeepsTheRestoreTime() async throws {
+        try script("ping", toml: "title = 'Ping'\n[actions.ping]\ntitle = 'Ping'", "true")
+        await model.reload()
+        model.search("ban")
+        clickOutside()
+
+        model.press(GlobalKey(spot: "ping", command: "ping", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+p"))))
+        clock.advance(by: PanelSession.restoreTime + 1)
+        reopen()
+
+        XCTAssertEqual(model.searchText, "")
+    }
 }
