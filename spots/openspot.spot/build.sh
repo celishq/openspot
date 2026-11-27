@@ -52,7 +52,7 @@ has_script() {
 
 # Takes the draft off the spot of the new build $1, and puts the spot at the top of the grid.
 publish() {
-  [ -z "$was" ] || return 0
+  [ -z "$(get "$1" change)" ] || return 0
   made=$(get "$1" spot)
   sed -i '' -E "/^state *= *[\"']draft[\"']/d" "$folder/$made.spot/spot.toml"
   openspot grid push "$made" > /dev/null 2>&1 || true

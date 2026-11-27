@@ -489,10 +489,8 @@ Title the spot \"$name\" unless the words above name it."
   rm -f "$draft" "$copied"
   case $at in
     openspot)
-      was=
-      [ -z "$spot" ] || was=$job
       [ -n "$job" ] || job="b$(date +%s)$$"
-      if [ -n "$was" ]; then
+      if [ -n "$spot" ]; then
         put "$job" change 1
       else
         rm -f "$builds/$job/change"
