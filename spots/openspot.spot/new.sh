@@ -335,9 +335,9 @@ place_options() {
 form() {
   me=$(chosen_agent)
   at=$(chosen_place "$me")
-  printf '\nbox=form\nclass=flex-col gap-4 grow\n'
+  printf '\nbox=form\nclass=flex-col gap-4\n'
   printf '\nbox=top\nparent=form\nclass=flex-col gap-1\n'
-  printf '\nfield=describe\nparent=top\ntype=multiline\nclass=h-32\n'
+  printf '\nfield=describe\nparent=top\ntype=multiline\nclass=h-32\ngrow=false\n'
   openspot_kv placeholder "$placeholder"
   openspot_kv value "$1"
   if [ -n "${looking-}" ] || [ -n "$at" ]; then
@@ -349,7 +349,6 @@ form() {
     printf '\nchoice=place\nparent=with\nclass=h-8\ntitle=App\nicon=macwindow\nvalue=%s\n' "$at"
     [ -n "${looking-}" ] || place_options "$me"
     [ -z "${live-}" ] || builds_section
-    printf '\nbox=space\nparent=form\nclass=grow\n'
     printf '\nbox=go\nparent=form\nclass=flex-col gap-2 shrink-0\n'
     # A build in Openspot keeps the panel, which shows its progress. One in an app or a terminal hides it, since the work
     # goes on there.
@@ -358,7 +357,6 @@ form() {
     printf '\nbutton=copy\nparent=go\ntitle=%s\nshortcut=cmd+shift+return\nclose=false\n' "${2:-Copy prompt}"
     [ -z "$dim" ] || printf 'class=%s\n' "${dim# }"
   else
-    printf '\nbox=space\nparent=form\nclass=grow\n'
     printf '\nbox=go\nparent=form\nclass=flex-row gap-2\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nclass=grow bg-accent\nshortcut=cmd+return\nclose=false\n' "${2:-Copy prompt}"
   fi

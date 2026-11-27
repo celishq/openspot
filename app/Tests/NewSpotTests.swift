@@ -46,6 +46,7 @@ final class NewSpotTests: BuiltInCase {
         let output = try await newSpot().items(timeout: 60)
 
         XCTAssertEqual(output.parts.map(\.id), ["describe", "agent", "place", "make-0", "copy"])
+        XCTAssertNotNil(output.tree.height(in: SpotTokens.partsWidth), "the sheet takes the height of its form")
         XCTAssertEqual(output.items, [])
         let field = try XCTUnwrap(output.parts.first)
         XCTAssertEqual(output.fields.first?.block.value("type"), "multiline")
