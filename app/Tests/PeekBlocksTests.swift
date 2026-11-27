@@ -30,7 +30,7 @@ final class PeekBlocksTests: PanelCase {
     func testAPeekOfOnlyUnknownBlocksFallsBackToTheRowsValue() {
         let frame = Frame(text: "item=a\ntitle=A\ntext=words\n\npeek=pa\nparent=a\n\nslider=s\nparent=pa\n")
 
-        XCTAssertEqual(frame.items.first.flatMap(Peek.init(item:))?.look, .text("words"))
+        XCTAssertEqual(frame.items.first.flatMap { Peek(item: $0) }?.look, .text("words"))
     }
 
     func testAPeekWhoseParentNamesNoRowIsAFaultOfTheFrame() {
