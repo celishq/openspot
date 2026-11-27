@@ -49,7 +49,7 @@ extension SpotsModel {
 
     private func open(byKey entry: Entry) {
         guard entry.soleCommand == nil else { return run(entry) }
-        leaveParkedSession()
+        endPark()
         if entry.kind.opensSheet { endFlow() }
         press(entry.id)
     }
@@ -236,7 +236,7 @@ extension SpotsModel {
             host.dismiss()
             return true
         }
-        leaveParkedSession()
+        endPark()
         closeSheet(moving: isShown)
         host.show()
         if let spot = spot() { selected = spot }
@@ -252,7 +252,7 @@ extension SpotsModel {
     }
 
     public func openFromMenuBar(_ id: String) {
-        leaveParkedSession()
+        endPark()
         if isShown { host.dismiss() }
         float(id)
     }

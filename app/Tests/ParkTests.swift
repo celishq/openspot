@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class PanelSessionTests: PanelCase {
+final class ParkTests: PanelCase {
     private var clock = FakeClock()
     private let close = ActionKey(name: "w", isCommand: true)
 
@@ -73,7 +73,7 @@ final class PanelSessionTests: PanelCase {
         try await openOther()
 
         clickOutside()
-        clock.advance(by: PanelSession.restoreTime + 1)
+        clock.advance(by: Park.restoreTime + 1)
         reopen()
 
         XCTAssertEqual(model.searchText, "")
@@ -85,7 +85,7 @@ final class PanelSessionTests: PanelCase {
         model.search("ban")
 
         clickOutside()
-        clock.advance(by: PanelSession.restoreTime - 1)
+        clock.advance(by: Park.restoreTime - 1)
         reopen()
 
         XCTAssertEqual(model.searchText, "ban")
@@ -215,7 +215,7 @@ final class PanelSessionTests: PanelCase {
         clickOutside()
 
         model.press(GlobalKey(spot: "ping", command: "ping", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+p"))))
-        clock.advance(by: PanelSession.restoreTime + 1)
+        clock.advance(by: Park.restoreTime + 1)
         reopen()
 
         XCTAssertEqual(model.searchText, "")
@@ -271,7 +271,7 @@ final class PanelSessionTests: PanelCase {
         clickOutside()
         XCTAssertNotNil(model.sheets["parts"]?.panel)
 
-        clock.advance(by: PanelSession.restoreTime + 1)
+        clock.advance(by: Park.restoreTime + 1)
         reopen()
 
         XCTAssertNil(model.openSheetID)

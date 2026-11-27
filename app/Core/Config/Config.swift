@@ -128,10 +128,10 @@ public struct Config: Equatable, Sendable {
         kept.set("theme", to: .string(theme))
     }
 
-    public static let restoreTimes: [(name: String, seconds: TimeInterval)] = [("30 seconds", 30), ("90 seconds", PanelSession.restoreTime), ("5 minutes", 300), ("1 hour", 3600)]
+    public static let restoreTimes: [(name: String, seconds: TimeInterval)] = [("30 seconds", 30), ("90 seconds", Park.restoreTime), ("5 minutes", 300), ("1 hour", 3600)]
 
     public var restoreTime: TimeInterval {
-        Self.restoreTimes.first { $0.name == restoreWithin }?.seconds ?? PanelSession.restoreTime
+        Self.restoreTimes.first { $0.name == restoreWithin }?.seconds ?? Park.restoreTime
     }
 
     public mutating func set(restoreWithin name: String) {

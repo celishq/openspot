@@ -9,7 +9,7 @@ extension SpotsModel {
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard entry(page.spot) != nil else { return false }
-        leaveParkedSession()
+        endPark()
         afterShowing({ host.show() }) { [weak self] in
             guard let self else { return }
             endFlow()
@@ -127,8 +127,8 @@ extension SpotsModel {
 
     func handleFlowKey(_ key: ActionKey) -> Bool? {
         switch FlowKey(key) {
-        case .back: _ = back() || backVisit()
-        case .forward: _ = forward() || forwardVisit()
+        case .back: _ = back() || backSession()
+        case .forward: _ = forward() || forwardSession()
         case .grid: closeSheet(moving: isShown)
         case nil: return nil
         }

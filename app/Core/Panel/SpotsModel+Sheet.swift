@@ -169,7 +169,7 @@ extension SpotsModel {
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.triggers.search != nil { sheets[entry.id]?.answer("") }
-        runs.panelClosed(keepsAnswers: session.parked != nil)
+        runs.panelClosed(keepsAnswers: park.isParked)
         if isFirstLaunch, !isWarming { isFirstLaunch = false }
         endReview()
         if let heldLayout { lay(heldLayout) }

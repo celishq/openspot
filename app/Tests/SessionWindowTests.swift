@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SessionTrailTests: PanelCase {
+final class SessionWindowTests: PanelCase {
     private var clock = FakeClock()
     private let close = ActionKey(name: "w", isCommand: true)
 

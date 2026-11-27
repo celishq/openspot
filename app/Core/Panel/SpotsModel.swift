@@ -148,12 +148,13 @@ public final class SpotsModel {
             noteFlow(from: oldValue)
         }
     }
-    @ObservationIgnored var session = PanelSession()
+    @ObservationIgnored var park = Park()
+    @ObservationIgnored var session: Session?
     @ObservationIgnored var window = SessionWindow()
     @ObservationIgnored var isReadingSessions = false
     @ObservationIgnored var waitsBack = false
-    @ObservationIgnored var restoreTime = PanelSession.restoreTime
-    @ObservationIgnored var isRestoringVisit = false
+    @ObservationIgnored var restoreTime = Park.restoreTime
+    @ObservationIgnored var isRestoringSession = false
     public internal(set) var textSelections = 0
     public internal(set) var flowEdges = FlowEdges()
     public internal(set) var closingSheet: ClosingSheet?
@@ -495,7 +496,7 @@ public final class SpotsModel {
         form = nil
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
-        leaveParkedSession()
+        endPark()
         host.show()
         takeQuery(visible.contains { $0.id == id } ? "" : entry.state.title)
         selected = visible.firstIndex { $0.id == id } ?? 0
@@ -575,7 +576,7 @@ public final class SpotsModel {
             readWaiting()
             settingsBook.readRows()
             finishPick()
-            resumeSession()
+            resumePark()
             selected = 0
             openAttachment()
             askAnswers()
@@ -588,7 +589,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
-            parkSession()
+            parkPanel()
             dropPeekNow()
             holdCommand(false)
             endSpread()
