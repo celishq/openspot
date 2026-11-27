@@ -5,12 +5,12 @@ import OpenspotCore
 final class SpotBackdropMask {
     private static let keptLimit = 2
     private var kept: [(fade: SpotBackdropFade, image: CGImage?)] = []
-    private var tallest: (fade: SpotBackdropFade, picture: CGContext?)?
-    private var moved: (tall: SpotBackdropFade, stretch: BackdropFade.Stretch, image: CGImage)?
+    private var reference: (fade: SpotBackdropFade, picture: CGContext)?
+    private var moved: (slices: BackdropFade.Slices, image: CGImage)?
 
     func image(of fade: SpotBackdropFade, isMoving: Bool) -> CGImage? {
         if let shown = kept.first(where: { $0.fade == fade }) { return shown.image }
-        if isMoving { return stretched(to: fade) ?? fade.image() }
+        if isMoving { return built(to: fade) ?? fade.image() }
         let image = fade.image()
         kept = Array((kept + [(fade, image)]).suffix(Self.keptLimit))
         trim()
@@ -18,42 +18,31 @@ final class SpotBackdropMask {
     }
 
     private var bytes: Int {
-        let tall = tallest?.picture.map { $0.bytesPerRow * $0.height } ?? 0
-        return kept.reduce(tall) { $0 + ($1.image.map { $0.bytesPerRow * $0.height } ?? 0) }
+        let drawn = reference.map { $0.picture.bytesPerRow * $0.picture.height } ?? 0
+        return kept.reduce(drawn) { $0 + ($1.image.map { $0.bytesPerRow * $0.height } ?? 0) }
     }
 
     private func trim() {
         while bytes > SpotTokens.backdropMaskBytes, !kept.isEmpty { kept.removeFirst() }
-        if bytes > SpotTokens.backdropMaskBytes { tallest = nil }
+        if bytes > SpotTokens.backdropMaskBytes {
+            reference = nil
+            moved = nil
+        }
     }
 
-    private func stretched(to fade: SpotBackdropFade) -> CGImage? {
+    private func built(to fade: SpotBackdropFade) -> CGImage? {
         guard let area = fade.area else { return nil }
-        let tallArea = CGRect(x: area.minX, y: area.minY, width: area.width, height: fade.size.height - area.minY)
-        let tall = SpotBackdropFade(fade: fade.fade, area: tallArea, size: fade.size)
-        var drawn = tallest?.picture
-        if tallest?.fade != tall {
-            drawn = tall.drawn()
-            tallest = (tall, drawn)
-            trim()
+        if let reference, reference.fade.fade == fade.fade, reference.fade.size == fade.size, let drawn = reference.fade.area,
+           let slices = fade.fade.slices(from: drawn, to: area, size: fade.size, scale: SpotTokens.backdropMaskScale) {
+            if let moved, moved.slices == slices { return moved.image }
+            guard let image = BackdropFade.image(of: reference.picture, slices: slices) else { return nil }
+            moved = (slices, image)
+            return image
         }
-        guard let picture = drawn, let source = picture.data, let space = picture.colorSpace,
-              let stretch = fade.fade.stretch(from: tallArea, to: area, height: fade.size.height, scale: SpotTokens.backdropMaskScale) else { return nil }
-        if let moved, moved.tall == tall, moved.stretch == stretch { return moved.image }
-        let row = picture.bytesPerRow
-        let rows = picture.height
-        let below = max(rows - stretch.split - stretch.shift, 0)
-        var pixels = Data(count: rows * row)
-        pixels.withUnsafeMutableBytes { target in
-            guard let start = target.baseAddress else { return }
-            start.copyMemory(from: source, byteCount: min(stretch.split, rows) * row)
-            if below > 0 { (start + stretch.split * row).copyMemory(from: source + (stretch.split + stretch.shift) * row, byteCount: below * row) }
-        }
-        guard let provider = CGDataProvider(data: pixels as CFData), let image = CGImage(
-            width: picture.width, height: rows, bitsPerComponent: picture.bitsPerComponent, bitsPerPixel: picture.bitsPerPixel, bytesPerRow: row,
-            space: space, bitmapInfo: picture.bitmapInfo, provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent
-        ) else { return nil }
-        moved = (tall, stretch, image)
-        return image
+        guard let picture = fade.drawn() else { return nil }
+        reference = (fade, picture)
+        moved = nil
+        trim()
+        return picture.makeImage()
     }
 }

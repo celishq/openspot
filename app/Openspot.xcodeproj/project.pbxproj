@@ -291,6 +291,7 @@
 		3601F7842CC0F23A732A06C8 /* ViewTree+Height.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7D78E3CFF4CAD1062DA6DF /* ViewTree+Height.swift */; };
 		360DD355FBEF9D7341EB426E /* SpotDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */; };
 		3614025BE8F71C19092A9B6A /* BlockKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824573AD4BE599CF9601E0C1 /* BlockKind.swift */; };
+		36271EBAB07D71C4D6967F99 /* BackdropFadePictureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E061337EA6C76FB3B8247976 /* BackdropFadePictureTests.swift */; };
 		3630136FDF31B7109594B5BF /* MacTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00DA644C79932F84A7B7FFE /* MacTranslation.swift */; };
 		368B134E51DC38B853C46F0E /* ActionKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B544E30E1DA9391508F10DD2 /* ActionKeyTests.swift */; };
 		369092A85027F83D75E844FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAABCE3C6AA83E514226EA47 /* Message.swift */; };
@@ -1245,6 +1246,7 @@
 		F18B1F36AE81553A8565299C /* StoreTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2A40EEFD1337FD70E751A9 /* StoreTile.swift */; };
 		F1BCB0D3F983EACEC34DC7B8 /* SpotItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A837A74FD59A8CBDD6CF7A34 /* SpotItemTests.swift */; };
 		F1D26F5CD6E998E438A73ED1 /* AccountKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB75ADB73E5F9963AEBAC8E /* AccountKey.swift */; };
+		F1FAAE3861D933EFABF5AA9A /* BackdropFade+Picture.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA350CB8DD7F7CBFBB647562 /* BackdropFade+Picture.swift */; };
 		F21EFEBFB6FA9BC04AA9472A /* StoreGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC14C902E128EAA08A66B0B2 /* StoreGroup.swift */; };
 		F253211191C09B5429E12197 /* SpotLiveSelectionRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4039E8E60D4AE498C34C8E3 /* SpotLiveSelectionRing.swift */; };
 		F2648C910BC82A1D7238337F /* Theme+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2621499D9B901193E9DD8BF5 /* Theme+Layout.swift */; };
@@ -2541,6 +2543,7 @@
 		DFA63D8D2AC6C9CEA447D4F6 /* SpotPlaygroundFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundFile.swift; sourceTree = "<group>"; };
 		DFF472D0670906376236AEF8 /* SpotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotState.swift; sourceTree = "<group>"; };
 		E01B2D24D06C55E9B25CBEFD /* CardFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFocus.swift; sourceTree = "<group>"; };
+		E061337EA6C76FB3B8247976 /* BackdropFadePictureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackdropFadePictureTests.swift; sourceTree = "<group>"; };
 		E0954917F36E916E72EDBABC /* SpotPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPicture.swift; sourceTree = "<group>"; };
 		E0AA513B49DF49F30739FBFA /* SpotsWatchPathsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsWatchPathsTests.swift; sourceTree = "<group>"; };
 		E0B87D3D102FAE184B447819 /* CapabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityTests.swift; sourceTree = "<group>"; };
@@ -2588,6 +2591,7 @@
 		EA10B9CEF953CABFA0F1BE07 /* SpotFolderPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFolderPick.swift; sourceTree = "<group>"; };
 		EA1A579B29B6D804B33A7783 /* SpotsModel+Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Toast.swift"; sourceTree = "<group>"; };
 		EA209D9AD4FD095679CB5F54 /* InlineCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineCall.swift; sourceTree = "<group>"; };
+		EA350CB8DD7F7CBFBB647562 /* BackdropFade+Picture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BackdropFade+Picture.swift"; sourceTree = "<group>"; };
 		EA5BC0434C9402119869A138 /* GlyphBookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphBookTests.swift; sourceTree = "<group>"; };
 		EA902C077268E8ECD4CA7EC8 /* SpotsModel+Recording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Recording.swift"; sourceTree = "<group>"; };
 		EB160BC4C30BBFD00FB5FDC6 /* SpotsModel+Pointer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Pointer.swift"; sourceTree = "<group>"; };
@@ -3153,6 +3157,7 @@
 			isa = PBXGroup;
 			children = (
 				C8B441AB6747B042324BB2CD /* BackdropFade.swift */,
+				EA350CB8DD7F7CBFBB647562 /* BackdropFade+Picture.swift */,
 				33CC933B5DBF73563F3DDB53 /* ListedTheme.swift */,
 				0175D569E5CAC0641A87D16B /* MotionTokens.swift */,
 				8F5A90D4CD855B63E40BB0F1 /* SpotTokens.swift */,
@@ -3535,6 +3540,7 @@
 				CE097EA158500A7B91FFB3F5 /* AttachmentSourceTests.swift */,
 				2E278308C71086BA32950212 /* AttachmentSpreadTests.swift */,
 				BF9EBEAA17402BE40C7EB787 /* AttachmentStateTests.swift */,
+				E061337EA6C76FB3B8247976 /* BackdropFadePictureTests.swift */,
 				76CF114A9F6DD16386C0B30F /* BackdropFadeTests.swift */,
 				54721534E4A59D8BE9117831 /* BigPasteTests.swift */,
 				EDD03376B36B8E902F1A2559 /* BindingEdgesTests.swift */,
@@ -5282,6 +5288,7 @@
 				FC45395B43BBEB726E6FAF0A /* AttachmentValue+Fields.swift in Sources */,
 				258AA317DEE9DCAFB8AADCF7 /* AttachmentValue+Row.swift in Sources */,
 				EC4064F9E5BF29D450B1F0E3 /* AttachmentValue.swift in Sources */,
+				F1FAAE3861D933EFABF5AA9A /* BackdropFade+Picture.swift in Sources */,
 				F502B27DDCB188A01D72A6BB /* BackdropFade.swift in Sources */,
 				1B64B138AC661AED8EE34F0D /* BatchCall.swift in Sources */,
 				7C63F8511BD2774CF463CA26 /* BatchCalls.swift in Sources */,
@@ -6209,6 +6216,7 @@
 				FA63B3F34C904522FD7B3D6F /* AttachmentSourceTests.swift in Sources */,
 				CDF4BC682544B2662732DEBB /* AttachmentSpreadTests.swift in Sources */,
 				105720E96CB1441D57F54B7A /* AttachmentStateTests.swift in Sources */,
+				36271EBAB07D71C4D6967F99 /* BackdropFadePictureTests.swift in Sources */,
 				5B8275AADE0CDAA172303298 /* BackdropFadeTests.swift in Sources */,
 				F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */,
 				D2F8C48037284F93B6DEB772 /* BindingEdgesTests.swift in Sources */,
