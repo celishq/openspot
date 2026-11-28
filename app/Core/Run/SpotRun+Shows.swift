@@ -51,7 +51,6 @@ extension SpotRun {
     }
 
     public func take(query text: String) {
-        if spot.triggers.searchesSheet { list.take(search: .script) }
         guard list.search(text, narrows: false) else { return }
         answered = nil
     }
