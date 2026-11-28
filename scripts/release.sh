@@ -70,6 +70,10 @@ if [ "$stage" = publish ]; then
   sh scripts/appcast.sh "$version" "$build" "$url" "$("$tools/sign_update" --account "$account" "$dmg")" >"$out/appcast.xml"
   gh release create "v$version" "$dmg" "$out/appcast.xml" --draft --target "$(git rev-parse HEAD)" --title "$version" --generate-notes
   gh release edit "v$version" --draft=false --latest
+  gh repo clone celishq/homebrew-tap "$out/tap" -- -q
+  sh scripts/cask.sh "$version" "$(shasum -a 256 "$dmg" | cut -d' ' -f1)" >"$out/tap/Casks/openspot.rb"
+  git -C "$out/tap" commit -qam "openspot $version"
+  git -C "$out/tap" push -q
 fi
 
 echo "$dmg"
