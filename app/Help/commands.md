@@ -70,6 +70,13 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot session open <id>`                       | Opens again a session of the timeline as it was: its pages, its page and its text. It runs no action. |
 | `openspot session back [<steps>]`                  | Goes to the session before, as `⇧⌘[` does.                                                      |
 | `openspot session forward [<steps>]`               | Goes to the session after, as `⇧⌘]` does.                                                        |
+| `openspot panel open`                              | Opens the panel, as its key does.                                                                |
+| `openspot panel close`                             | Closes the panel.                                                                                |
+| `openspot panel type <text> [--pace <ms>] [--clear]` | Types the text into the field one character at a time, `--pace` milliseconds apart (80 by default), after the text the field holds, or in place of it with `--clear`. |
+| `openspot panel key <key>...`                      | Presses each key as the keyboard does, such as `return`, `escape`, `tab`, `up`, `down`, `cmd+k` or `shift+cmd+[`. |
+| `openspot panel press <part>`                      | Presses a part of the open sheet by its id, such as a button.                                    |
+| `openspot panel state [--json]`                    | Prints what the panel shows: `open=`, `text=`, `sheet=`, `route=`, `selected=`, `menu=`, `chips=` and `moving=`. |
+| `openspot panel wait <key>=<value>... [--within <age>]` | Waits until `panel state` shows each fact, for 10 s or the age of `--within`, and fails with the first fact it missed. |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot edit <id>`                          | Opens the Edit sheet of a spot, as Edit in its ⌘K menu does, or a file that doesn't load in the text editor. |
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot. A spot that comes with Openspot refuses it, and `spot edit`, `spot delete`, `spot remove` and `prompt change` too. |

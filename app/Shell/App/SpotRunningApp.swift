@@ -67,6 +67,14 @@ struct SpotRunningApp: RunningApp {
         await all ? model.pop(in: id, all: true) : model.pop(in: id)
     }
 
+    func take(_ act: PanelAct) async -> Bool {
+        await model.take(act)
+    }
+
+    func panelState() async -> PanelState {
+        await model.panelState
+    }
+
     func openSession(_ id: String) async -> Bool {
         await model.openSession(id)
     }

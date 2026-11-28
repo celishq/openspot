@@ -33,6 +33,8 @@ public protocol RunningApp: Sendable {
     func endGrant() async
     func restart() async -> Bool
     func openSettings(at place: SettingsPlace?) async
+    func take(_ act: PanelAct) async -> Bool
+    func panelState() async -> PanelState
 }
 
 extension RunningApp {
@@ -75,6 +77,14 @@ extension RunningApp {
 
     public func restart() async -> Bool {
         false
+    }
+
+    public func take(_ act: PanelAct) async -> Bool {
+        false
+    }
+
+    public func panelState() async -> PanelState {
+        PanelState()
     }
 
     public func openSettings(at place: SettingsPlace?) async {}

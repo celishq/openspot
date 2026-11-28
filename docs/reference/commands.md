@@ -54,6 +54,12 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timeline forget <id>`                     | Takes an entry out of the timeline.                                      |
 | `openspot session open <id>`                        | Opens again the session of a timeline entry, as it was: its pages, the page it showed and its text. It asks the spot again and runs no action. |
 | `openspot session back [<steps>]`, `forward [<steps>]` | Goes to the session before or after, as `⇧⌘[` and `⇧⌘]` do, and past the newest one to the grid. |
+| `openspot panel open`, `close`                      | Opens the panel, as its key does, or closes it. |
+| `openspot panel type <text> [--pace <ms>] [--clear]` | Types the text into the field one character at a time, `--pace` milliseconds apart (80 by default), after the text the field holds, or in place of it with `--clear`. |
+| `openspot panel key <key>...`                       | Presses each key as the keyboard does, such as `return`, `escape`, `tab`, `up`, `down`, `cmd+k` or `shift+cmd+[`. |
+| `openspot panel press <part>`                       | Presses a part of the open sheet by its id, such as a button. |
+| `openspot panel state [--json]`                     | Prints what the panel shows: `open=`, `text=`, `sheet=`, `route=`, `selected=`, `menu=`, `chips=` and `moving=`. |
+| `openspot panel wait <key>=<value>... [--within <age>]` | Waits until `panel state` shows each fact, for 10 s or the age of `--within`, and fails with the first fact it missed. Each other `panel` call returns once its change is applied, so a script needs no pause between them. |
 | `openspot timeline restore <id>`                    | Brings back an entry forgotten in the last 10 minutes.                   |
 | `openspot timeline keep <days>`, `pause <age>`, `resume` | Sets how many days every timeline keeps, adds nothing for the age, or ends the pause. Only you and Openspot's own spots can. |
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot you bind, and prints its values. |
