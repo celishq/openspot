@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ClockExampleTests: SampleSpotsCase {
+final class ClockExampleTests: RepoSpotsCase {
     func testItShowsTheTimeOfItsZoneAndPrintsItAgainAtTheNextMinute() async throws {
         let folder = try temporaryFolder()
         try """

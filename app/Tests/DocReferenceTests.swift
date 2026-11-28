@@ -1,7 +1,7 @@
 import XCTest
 
 final class DocReferenceTests: XCTestCase {
-    private let repo = RepoDoc.repo
+    private let repo = Repo.root
 
     private func exists(_ path: String, in folder: URL) -> Bool {
         FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path)

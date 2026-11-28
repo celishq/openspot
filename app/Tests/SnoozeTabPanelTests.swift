@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class SnoozeTabPanelTests: PanelCase {
     private var repo: URL {
-        RepoDoc.repo
+        Repo.root
     }
 
     private var tools: URL {

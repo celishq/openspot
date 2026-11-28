@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ReposSpotTests: SampleSpotsCase {
+final class ReposSpotTests: RepoSpotsCase {
     private var repos: Spot {
         get throws {
             try spot(named: "Repos")

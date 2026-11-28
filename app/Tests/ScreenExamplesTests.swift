@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ScreenExamplesTests: SampleSpotsCase {
+final class ScreenExamplesTests: RepoSpotsCase {
     private func fakeScreen(in folder: URL) throws {
         let path = folder.path
         try """

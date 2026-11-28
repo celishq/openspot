@@ -28,7 +28,7 @@ class BuiltInCase: XCTestCase {
     }
 
     var repoSpots: URL {
-        RepoDoc.repo.appendingPathComponent("spots")
+        Repo.root.appendingPathComponent("spots")
     }
 
     var guide: URL {

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class UsageSpotTests: SampleSpotsCase {
+final class UsageSpotTests: RepoSpotsCase {
     func testOpenOnThePageOfASpotOpensThatSpot() async throws {
         let usage = try XCTUnwrap(try scan.spots.first { $0.name == "Usage" })
         try await withPrivateHome { folder in

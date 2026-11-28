@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SampleSpotsTests: SampleSpotsCase {
+final class SampleSpotsTests: RepoSpotsCase {
     func testACopyAsksForTheCopiedToast() throws {
-        let spots = RepoDoc.repo.appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
@@ -36,7 +36,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
-        let spots = RepoDoc.repo.appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
@@ -47,10 +47,10 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testNoCoreStoreOrExampleSpotSharesAnId() throws {
-        let root = RepoDoc.repo
+        let root = Repo.root
         let names = { (folder: String) in Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".spot") }) }
 
-        let folders = try RepoDoc.spotFolders.map { (name: $0, spots: try names($0)) }
+        let folders = try Repo.spotFolders.map { (name: $0, spots: try names($0)) }
 
         for (index, folder) in folders.enumerated() {
             for other in folders.dropFirst(index + 1) {
@@ -84,7 +84,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
-        let root = RepoDoc.repo
+        let root = Repo.root
         let port = try freePort()
         try await withPrivateHome { folder in
             let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
@@ -170,7 +170,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
-        let spots = RepoDoc.repo.appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         let images = folder.appendingPathComponent("images")

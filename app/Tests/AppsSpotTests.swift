@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class AppsSpotTests: SampleSpotsCase {
+final class AppsSpotTests: RepoSpotsCase {
     private func apps() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
     }

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class CalculatorSpotTests: SampleSpotsCase {
+final class CalculatorSpotTests: RepoSpotsCase {
     private var calculator: Spot {
         get throws { try XCTUnwrap(try scan.spots.first { $0.name == "Calculator" }) }
     }

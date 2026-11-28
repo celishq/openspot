@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-class SampleSpotsCase: XCTestCase {
+class RepoSpotsCase: XCTestCase {
     var examples: URL {
-        RepoDoc.repo.appendingPathComponent("examples")
+        Repo.root.appendingPathComponent("examples")
     }
 
     var store: URL {

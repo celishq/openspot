@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class TranslateSpotTests: SampleSpotsCase {
+final class TranslateSpotTests: RepoSpotsCase {
     func testTranslateShowsItsPartsBeforeItKnowsItsLanguages() async throws {
         try await withPrivateHome { folder in
             _ = try self.fakeTranslate(in: folder)

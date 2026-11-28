@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class PenExampleTests: SampleSpotsCase {
+final class PenExampleTests: RepoSpotsCase {
     private func standIn(_ folder: URL) -> [String: String] {
         ["overlay.swift": """
         import Foundation

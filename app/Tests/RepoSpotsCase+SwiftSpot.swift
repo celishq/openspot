@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-extension SampleSpotsCase {
+extension RepoSpotsCase {
     func swiftSpot(_ name: String, in folder: URL, standIns: [String: String] = [:]) async throws -> URL {
         let spot = source(of: name)
         let built = folder.appendingPathComponent("built")

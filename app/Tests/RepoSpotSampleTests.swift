@@ -2,11 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class ExampleSampleTests: XCTestCase {
+final class RepoSpotSampleTests: XCTestCase {
     private let runs = SpotRuns()
 
     private var folders: [URL] {
-        let root = RepoDoc.repo
+        let root = Repo.root
         return ["store", "examples"].map { root.appendingPathComponent($0) }
     }
 

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class DoomExampleTests: SampleSpotsCase {
+final class DoomExampleTests: RepoSpotsCase {
     private func engineCommit() throws -> String {
         let script = try String(contentsOf: examples.appendingPathComponent("doom.spot/doom.sh"), encoding: .utf8)
         let line = try XCTUnwrap(script.split(separator: "\n").first { $0.hasPrefix("engine_commit=") })

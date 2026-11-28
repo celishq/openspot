@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ShortcutsSpotTests: SampleSpotsCase {
+final class ShortcutsSpotTests: RepoSpotsCase {
     private func shortcuts() throws -> Spot {
         try XCTUnwrap(try scan.spots.first { $0.name == "Shortcuts" })
     }

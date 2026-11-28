@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ConfettiSpotTests: SampleSpotsCase {
+final class ConfettiSpotTests: RepoSpotsCase {
     private var spotFolder: URL {
         examples.deletingLastPathComponent().appendingPathComponent("spots/confetti.spot")
     }

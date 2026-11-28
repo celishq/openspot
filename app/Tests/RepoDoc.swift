@@ -6,19 +6,17 @@ struct RepoDoc {
         let text: String
     }
 
-    static let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    static let spotFolders = ["spots", "store", "examples"]
 
     let path: String
     let text: String
 
     init(_ path: String) throws {
         self.path = path
-        text = try String(contentsOf: Self.repo.appendingPathComponent(path), encoding: .utf8)
+        text = try String(contentsOf: Repo.root.appendingPathComponent(path), encoding: .utf8)
     }
 
     static func all() throws -> [RepoDoc] {
-        let help = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("app/Help").path)
+        let help = try FileManager.default.contentsOfDirectory(atPath: Repo.root.appendingPathComponent("app/Help").path)
             .filter { $0.hasSuffix(".md") }.sorted().map { "app/Help/" + $0 }
         return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "PROTOCOL.md", "README.md", "TRUST.md", "MANUAL.md", "spots/AGENTS.md"] + help)
             .map(RepoDoc.init) + pages()
@@ -33,7 +31,7 @@ struct RepoDoc {
     }
 
     var folder: URL {
-        Self.repo.appendingPathComponent(path).deletingLastPathComponent()
+        Repo.root.appendingPathComponent(path).deletingLastPathComponent()
     }
 
     var prose: String {

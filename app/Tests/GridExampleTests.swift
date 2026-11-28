@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class GridExampleTests: SampleSpotsCase {
+final class GridExampleTests: RepoSpotsCase {
     private static let link = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
 
     private func standIn(_ folder: URL) -> [String: String] {

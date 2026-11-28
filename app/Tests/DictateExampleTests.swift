@@ -2,10 +2,10 @@ import AppKit
 import XCTest
 @testable import OpenspotCore
 
-final class DictateExampleTests: SampleSpotsCase {
+final class DictateExampleTests: RepoSpotsCase {
     private static let model = "ggml-large-v3-turbo.bin"
     private static let program = Task { () throws -> URL in
-        let spot = RepoDoc.repo.appendingPathComponent("store/dictate.spot")
+        let spot = Repo.root.appendingPathComponent("store/dictate.spot")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-dictate-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let main = folder.appendingPathComponent("main.swift")
@@ -23,7 +23,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
     private func tools(in folder: URL) throws -> URL {
         let tools = folder.appendingPathComponent("tools")
-        try "#!/bin/sh\n\(SampleSpotsCase.fakeOpenspot(in: folder))\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\n\(RepoSpotsCase.fakeOpenspot(in: folder))\n".writeScript(to: tools.appendingPathComponent("openspot"))
         try "#!/bin/sh\n".writeScript(to: tools.appendingPathComponent("whisper-server"))
         try """
         #!/bin/sh

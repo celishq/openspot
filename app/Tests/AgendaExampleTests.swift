@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class AgendaExampleTests: SampleSpotsCase {
+final class AgendaExampleTests: RepoSpotsCase {
     private let now = Date()
 
     private func iso(_ seconds: TimeInterval) -> String {
