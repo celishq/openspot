@@ -10,6 +10,7 @@ final class OpenCall {
     var hasAnswer = false
     var answered: TimeInterval?
     var showedPicture = false
+    var closedPanel = false
     var lastHead: Frame?
     var pushed: Frame?
     var selected: String?

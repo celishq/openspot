@@ -17,6 +17,9 @@ final class NewSpotTests: BuiltInCase {
         try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
         try fake("openspot", "[ \"$1 $2\" = 'clipboard copy' ] && exec cat > '\(root.path)/clipboard'\nexec '\(real.path)' \"$@\"")
         try fake("open", "echo \"$@\" > '\(root.path)/opened'")
+        try fake("claude", "exit 0")
+        try fake("mdfind", "exit 0")
+        _ = try await newSpot().answer("describe", timeout: 60)
         effects = try recordEffects()
     }
 
@@ -39,20 +42,316 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(SpotChoices().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
-    func testTheSheetIsOneFieldToDescribeTheSpotAndACopyPromptButton() async throws {
+    func testTheSheetIsOnlyAFieldToDescribeTheSpotThenTheAgentWhereItWorksCopyPromptAndMake() async throws {
         let output = try await newSpot().items(timeout: 60)
 
-        XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
+        XCTAssertEqual(output.parts.map(\.id), ["describe", "agent", "place", "make-0", "copy"])
+        XCTAssertNotNil(output.tree.height(in: SpotTokens.partsWidth), "the sheet takes the height of its form")
         XCTAssertEqual(output.items, [])
         let field = try XCTUnwrap(output.parts.first)
-        XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
+        XCTAssertEqual(output.fields.first?.block.value("type"), "multiline")
         XCTAssertEqual(field.control, .text("", placeholder: "Describe what you want to build", isReadOnly: false))
-        let copy = try XCTUnwrap(output.parts.last)
+        let copy = try XCTUnwrap(output.parts.first { $0.id == "copy" })
         XCTAssertEqual(copy.title, "Copy prompt")
-        XCTAssertEqual(output.tree.look(of: copy.id), .strong)
-        XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true))
-        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
-        XCTAssertEqual(SheetParts(output: output).hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
+        XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true, isShift: true))
+        let make = try XCTUnwrap(output.parts.first { $0.id == "make-0" })
+        XCTAssertEqual(make.title, "Build")
+        XCTAssertFalse(make.closes)
+        XCTAssertEqual(output.tree.look(of: make.id), .strong)
+        XCTAssertEqual(make.key, ActionKey(name: "return", isCommand: true))
+        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Builds", "Open spots folder"])
+    }
+
+    func testAnAgentWhoseAppHasAnotherNameAndShipsItsCommandInsideWorksInOpenspotAndInItsApp() async throws {
+        let app = try fakeApp("ChatGPT", id: "com.openai.codex")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: app.appendingPathComponent("Contents/Resources/codex-cli/bin/codex"))
+        try fake("mdfind", "echo '\(app.path)'")
+        try fake("defaults", "echo Dark")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", input: "setting.agent=codex\n", timeout: 60)
+
+        XCTAssertEqual(options(of: "agent", in: output.parts).map(\.title), ["Claude Code", "Codex"])
+        XCTAssertEqual(options(of: "agent", in: output.parts).map { $0.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") } }, ["dark/claude.png", "dark/codex.png"])
+        let places = options(of: "place", in: output.parts)
+        XCTAssertEqual(places.first?.title, "Openspot")
+        XCTAssertEqual(places.first { $0.id == "app-codex" }?.title, "ChatGPT", "\(places)")
+        XCTAssertEqual(places.first { $0.id == "app-codex" }?.icon, .file(app.path))
+    }
+
+    func testAnEditorWithClaudeCodeIsAnAppThatTheNextOpenFindsWhileTheSheetShowsTheKeptList() async throws {
+        let home = root.appendingPathComponent("home")
+        try FileManager.default.createDirectory(at: home.appendingPathComponent(".vscode/extensions/anthropic.claude-code-2.1.0"), withIntermediateDirectories: true)
+        let app = try fakeApp("Visual Studio Code", id: "com.microsoft.VSCode")
+        try fake("mdfind", "echo '\(app.path)'")
+
+        try await TestEnvironment.with(["HOME": home.path]) {
+            let runs = SpotRuns(environment: TestEnvironment.values)
+            defer { runs.quit() }
+            runs.panelOpened()
+            let sheet = runs.sheet(for: try newSpot())
+            sheet.open {}
+            let places = { self.options(of: "place", in: sheet.panel?.parts ?? []).map(\.title) }
+
+            try await wait("the kept list") { !places().isEmpty }
+            XCTAssertFalse(places().contains("VS Code"))
+            try await wait("VS Code among the apps") { places().last == "VS Code" }
+            XCTAssertEqual(sheet.panel?.parts.first { $0.id == "place" }?.title, "App")
+        }
+    }
+
+    func testBuildInTheClaudeAppOpensANewSessionWithThePromptAndNoFolderAndLeavesTheClipboard() async throws {
+        let app = try fakeApp("Claude", id: "com.anthropic.claudefordesktop")
+        try fake("mdfind", "echo '\(app.path)'")
+        let real = tools.appendingPathComponent("openspot-real")
+        try fake("openspot", """
+        case "$1 $2" in
+          'clipboard '*) echo "$@" >> '\(root.path)/clipboard' ;;
+          *) exec '\(real.path)' "$@" ;;
+        esac
+        """)
+        try forgetWays()
+        let places = options(of: "place", in: try await newSpot().answer("describe", timeout: 60).parts).map(\.id)
+        XCTAssertEqual(Array(places.prefix(2)), ["openspot", "app-claude"])
+        let rest = places.dropFirst(2)
+        XCTAssertFalse(zip(rest, rest.dropFirst()).contains { !$0.hasPrefix("term-") && $1.hasPrefix("term-") }, "\(places)")
+
+        let output = try await newSpot().answer("make-0", input: "input.describe=A timer\nsetting.place=app-claude\n", timeout: 60)
+
+        XCTAssertTrue(output.errors.isEmpty, "\(output.errors)")
+        let opened = try XCTUnwrap(URLComponents(string: try saved("opened").trimmingCharacters(in: .whitespacesAndNewlines)))
+        XCTAssertEqual(opened.scheme, "claude")
+        XCTAssertEqual(opened.path, "/new")
+        XCTAssertNil(opened.queryItems?.first { $0.name == "folder" })
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "q" }?.value?.contains("<request>\nA timer\n</request>"), true, "\(opened)")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
+    }
+
+    func testBuildInAnAppHidesThePanelAndBuildInOpenspotKeepsIt() async throws {
+        let app = try fakeApp("Claude", id: "com.anthropic.claudefordesktop")
+        try fake("mdfind", "echo '\(app.path)'")
+        try forgetWays()
+        let build = { (place: String) in try await self.newSpot().answer("describe", input: "setting.place=\(place)\n", timeout: 60).parts.first { $0.id.hasPrefix("make-") } }
+
+        let inApp = try await build("app-claude")
+        let here = try await build("openspot")
+
+        XCTAssertEqual(inApp?.closes, true)
+        XCTAssertEqual(here?.closes, false)
+    }
+
+    func testBuildInChatGPTOpensANewCodexThreadWithThePromptAndNoFolder() async throws {
+        let app = try fakeApp("ChatGPT", id: "com.openai.codex")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: app.appendingPathComponent("Contents/Resources/codex-cli/bin/codex"))
+        try fake("mdfind", "echo '\(app.path)'")
+        try forgetWays()
+
+        let output = try await newSpot().answer("make-0", input: "input.describe=A timer\nsetting.agent=codex\nsetting.place=app-codex\n", timeout: 60)
+
+        XCTAssertTrue(output.errors.isEmpty, "\(output.errors)")
+        let opened = try XCTUnwrap(URLComponents(string: try saved("opened").trimmingCharacters(in: .whitespacesAndNewlines)))
+        XCTAssertEqual(opened.scheme, "codex")
+        XCTAssertEqual(opened.host, "new")
+        XCTAssertNil(opened.queryItems?.first { $0.name == "path" })
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "prompt" }?.value?.contains("<request>\nA timer\n</request>"), true, "\(opened)")
+    }
+
+    func testABuildInOpenspotNamesTheFolderOfItsSpotBeforeTheAgentStarts() async throws {
+        try fake("claude", "cat > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.contains("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+    }
+
+    func testABuildInOpenspotStartsItsSpotAsADraft() async throws {
+        try fake("claude", "cat \"$PWD/log-run-distance.spot/spot.toml\" > '\(root.path)/seen'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let seen = try saved("seen")
+        XCTAssertTrue(seen.contains("state = \"draft\""), seen)
+    }
+
+    func testADoneBuildTakesTheDraftOffItsSpotAndPushesItToTheTopOfTheGrid() async throws {
+        try fake("claude", """
+        printf '#!/bin/sh\\necho hi\\n' > "$PWD/log-run-distance.spot/log-run-distance.sh"
+        chmod +x "$PWD/log-run-distance.spot/log-run-distance.sh"
+        echo Done
+        """)
+        let real = tools.appendingPathComponent("openspot-real")
+        try fake("openspot", """
+        echo "$@" >> '\(root.path)/calls'
+        case "$1 $2" in
+          'grid top' | 'toast '*) exit 0 ;;
+        esac
+        exec '\(real.path)' "$@"
+        """)
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let toml = try String(contentsOf: spots.appendingPathComponent("log-run-distance.spot/spot.toml"), encoding: .utf8)
+        XCTAssertFalse(toml.contains("state"), toml)
+        let calls = try saved("calls")
+        XCTAssertTrue(calls.contains("grid top log-run-distance"), calls)
+        XCTAssertTrue(calls.contains("toast --id build-"), calls)
+        XCTAssertTrue(calls.contains("toast --remove build-"), calls)
+    }
+
+    func testBuildingAgainFromAFailedNewBuildNamesTheSameFolder() async throws {
+        try fake("claude", "cat > '\(root.path)/asked'")
+        try forgetWays()
+        let settings = "setting.agent=claude\nsetting.place=openspot\n"
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\n" + settings, timeout: 60)
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let builds = root.appendingPathComponent(try XCTUnwrap(paths.first { $0.hasSuffix("/builds") }))
+        let job = try XCTUnwrap(try FileManager.default.contentsOfDirectory(atPath: builds.path).first)
+
+        _ = try? await newSpot().answer("make-0", input: "input.route=build/\(job)\ninput.describe=Try again\n" + settings, timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.contains("<request>\nTry again\n</request>"), asked)
+        XCTAssertTrue(asked.contains("Build the spot in the folder \(spots.path)/log-run-distance.spot."), asked)
+    }
+
+    func testTheFolderOfANewSpotIsNamedByTheLatinWordsOfItsNameOrElseSpot() async throws {
+        try fake("claude", "cat > '\(root.path)/asked'")
+        try forgetWays()
+        let settings = "setting.agent=claude\nsetting.place=openspot\n"
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Кава timer\n" + settings, timeout: 60)
+        let mixed = try saved("asked")
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Кава тиждень\n" + settings, timeout: 60)
+        let cyrillic = try saved("asked")
+
+        XCTAssertTrue(mixed.contains("Build the spot in the folder \(spots.path)/timer.spot."), mixed)
+        XCTAssertTrue(cyrillic.contains("Build the spot in the folder \(spots.path)/spot.spot."), cyrillic)
+    }
+
+    func testABuildInOpenspotTellsTheAgentHowToReportEachStep() async throws {
+        try fake("claude", "cat > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        let asked = try saved("asked")
+        XCTAssertTrue(asked.contains("spot run openspot/new step build=b"), asked)
+    }
+
+    func testAStepThatTheAgentReportsBecomesTheStepOfItsBuild() async throws {
+        _ = try await newSpot().answer("step", input: "input.build=b1\ninput.words=Writing view.html\n", timeout: 60)
+
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let step = try XCTUnwrap(paths.first { $0.hasSuffix("builds/b1/step") })
+        XCTAssertEqual(try saved(step), "Writing view.html")
+    }
+
+    func testAFailedAgentShowsItsLastLine() async throws {
+        try fake("claude", "echo 'Starting'\necho 'Not signed in. Run claude auth login.' >&2\nexit 1")
+        try forgetWays()
+
+        let failed = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude\nsetting.place=openspot\n", timeout: 60)
+
+        XCTAssertNil(failed)
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        let said = try XCTUnwrap(paths.first { $0.hasSuffix("/said") })
+        XCTAssertEqual(try saved(said), "Not signed in. Run claude auth login.")
+    }
+
+    func testABuildWithCodexGivesItThePromptOnStdinAndASandboxThatReachesOpenspot() async throws {
+        try fake("codex", "echo \"$@\" > '\(root.path)/args'\ncat > '\(root.path)/asked'")
+        try forgetWays()
+
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=codex\nsetting.place=openspot\n", timeout: 60)
+
+        let args = try saved("args")
+        XCTAssertTrue(args.hasPrefix("exec --skip-git-repo-check -s workspace-write -c sandbox_workspace_write.network_access=true"), args)
+        XCTAssertTrue(try saved("asked").contains("<request>\nLog my run distance\n</request>"))
+    }
+
+    func testAnAliasOfTheShellThatRunsClaudeIsAnAgentOfItsOwn() async throws {
+        let alias = "alias claude-personal='OPENSPOT_ACCOUNT=personal claude'\n"
+        for rc in [".zshrc", ".bashrc"] { try alias.write(to: root.appendingPathComponent("home/\(rc)"), atomically: true, encoding: .utf8) }
+        try fake("claude", "echo \"$OPENSPOT_ACCOUNT\" > '\(root.path)/account'")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", timeout: 60)
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.agent=claude-personal\nsetting.place=openspot\n", timeout: 60)
+
+        XCTAssertTrue(options(of: "agent", in: output.parts).map(\.id).contains("claude-personal"), "\(options(of: "agent", in: output.parts))")
+        XCTAssertEqual(try saved("account"), "personal\n")
+    }
+
+    func testWhileTheFirstOpenFindsTheAgentsTheWholeFormShowsWithItsChoicesLoading() async throws {
+        let go = root.appendingPathComponent("go")
+        try fake("mdfind", "while [ ! -e '\(go.path)' ]; do sleep 0.05; done")
+        try forgetWays()
+
+        try await TestEnvironment.with([:]) {
+            let runs = SpotRuns(environment: TestEnvironment.values)
+            defer { runs.quit() }
+            runs.panelOpened()
+            let sheet = runs.sheet(for: try newSpot())
+            sheet.open {}
+            let parts = { sheet.panel?.parts ?? [] }
+
+            try await wait("the form while it looks") { parts().contains { $0.id == "agent" } }
+            XCTAssertEqual(parts().map(\.id), ["describe", "agent", "place", "make-0", "copy"])
+            XCTAssertEqual(options(of: "agent", in: parts()), [])
+            XCTAssertEqual(options(of: "place", in: parts()), [])
+
+            FileManager.default.createFile(atPath: go.path, contents: Data())
+            try await wait("the agents") { !self.options(of: "agent", in: parts()).isEmpty }
+        }
+    }
+
+    func testAnAgentBeyondClaudeAndCodexShowsWithItsMarkWhenTheShellRunsIt() async throws {
+        try fake("pi", "exit 0")
+        try fake("defaults", "exit 1")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", timeout: 60)
+
+        let pi = options(of: "agent", in: output.parts).first { $0.id == "pi" }
+        XCTAssertEqual(pi?.title, "Pi", "\(options(of: "agent", in: output.parts))")
+        XCTAssertEqual(pi?.icon?.image.map { URL(fileURLWithPath: $0).pathComponents.suffix(2).joined(separator: "/") }, "light/pi.png")
+    }
+
+    func testACommandOfThePersonsOwnIsAnAgentThatWorksOnlyInATerminalUnlessItRunsClaude() async throws {
+        try forgetWays()
+
+        let own = try await newSpot().answer("describe", input: "setting.command=myagent --fast\nsetting.agent=custom\n", timeout: 60)
+
+        XCTAssertEqual(options(of: "agent", in: own.parts).first { $0.id == "custom" }?.title, "myagent")
+        XCTAssertFalse(options(of: "place", in: own.parts).contains { $0.id == "openspot" }, "\(options(of: "place", in: own.parts))")
+
+        try fake("claude", "echo \"$@\" > '\(root.path)/args'")
+        _ = try? await newSpot().answer("make-0", input: "input.describe=Log my run distance\nsetting.command=claude --model opus\nsetting.agent=custom\nsetting.place=openspot\n", timeout: 60)
+
+        let args = try saved("args")
+        XCTAssertTrue(args.hasPrefix("--model opus -p"), args)
+    }
+
+    private func fakeApp(_ name: String, id: String) throws -> URL {
+        let app = root.appendingPathComponent("\(name).app")
+        try FileManager.default.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: ["CFBundleIdentifier": id], format: .xml, options: 0)
+            .write(to: app.appendingPathComponent("Contents/Info.plist"))
+        return app
+    }
+
+    private func forgetWays() throws {
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        for path in paths where path.hasSuffix("/ways") { try FileManager.default.removeItem(at: root.appendingPathComponent(path)) }
+    }
+
+    private func options(of id: String, in parts: [SpotPart]) -> [SpotPart.Option] {
+        guard case .menu(let options, _) = parts.first(where: { $0.id == id })?.control else { return [] }
+        return options
     }
 
     func testTheFieldKeepsTheWordsThatThePersonTypesAcrossAReadAndACall() async throws {
@@ -104,7 +403,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(cleared.parts.first?.value ?? "", "")
         let again = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(again.parts.first?.value ?? "", "")
-        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
+        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Builds", "Open spots folder"])
     }
 
     func testCopyPromptWithWordsCopiesThePromptThatBuildsTheSpotToTheEnd() async throws {
@@ -134,6 +433,7 @@ final class NewSpotTests: BuiltInCase {
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
         let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
+        runs.panelOpened()
         let sheet = runs.sheet(for: try newSpot())
         sheet.open {}
         for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
@@ -141,19 +441,19 @@ final class NewSpotTests: BuiltInCase {
         sheet.set(try XCTUnwrap(panel.parts.first), to: "Show the weather here")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
 
-        sheet.press(try XCTUnwrap(panel.parts.last))
+        sheet.press(try XCTUnwrap(panel.parts.first { $0.id == "copy" }))
 
         for _ in 0..<6000 where (try? saved("clipboard"))?.hasSuffix("</request>") != true {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTAssertTrue(try saved("clipboard").hasSuffix("<request>\nShow the weather here\n</request>"))
-        for _ in 0..<6000 where sheet.panel?.parts.last?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertEqual(sheet.panel?.parts.last?.title, "✓ Copied")
-        XCTAssertEqual(sheet.panel?.tree.look(of: "copy"), .strong)
-        XCTAssertEqual(sheet.panel?.parts.last?.press, .line)
+        let copy = { sheet.panel?.parts.first { $0.id == "copy" } }
+        for _ in 0..<6000 where copy()?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(copy()?.title, "✓ Copied")
+        XCTAssertEqual(copy()?.press, .line)
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
-        for _ in 0..<6000 where sheet.panel?.parts.last?.title != "Copy prompt" { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertEqual(sheet.panel?.parts.last?.title, "Copy prompt")
+        for _ in 0..<6000 where copy()?.title != "Copy prompt" { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(copy()?.title, "Copy prompt")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
     }
 
@@ -174,16 +474,28 @@ final class NewSpotTests: BuiltInCase {
         let output = Frame(text: try await edit(sheet, ScriptEntry.show.name))
 
         XCTAssertEqual(sheet.name, "Edit Weather")
-        XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
-        XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
-        XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe what you want to change", isReadOnly: false))
-        XCTAssertEqual(output.parts.last?.title, "Copy prompt")
-        XCTAssertEqual(output.tree.look(of: "copy"), .strong)
-        XCTAssertEqual(output.parts.last?.key, ActionKey(name: "return", isCommand: true))
+        XCTAssertEqual(output.parts.prefix(3).map(\.id), ["describe", "agent", "place"])
+        XCTAssertEqual(output.fields.first?.block.value("type"), "multiline")
+        XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe a change to weather", isReadOnly: false))
+        XCTAssertEqual(output.parts.first { $0.id == "copy" }?.title, "Copy prompt")
+        let change = try XCTUnwrap(output.parts.first { $0.id.hasPrefix("change-") })
+        XCTAssertEqual(change.title, "Build")
+        XCTAssertEqual(output.tree.look(of: change.id), .strong)
+        XCTAssertEqual(change.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Open in editor", "Read the guide"])
 
         _ = try await edit(sheet, "editor")
         XCTAssertEqual(try saved("opened"), "-t \(spots.spotFile("weather").path)\n")
+    }
+
+    func testAChangeOnTheEditSheetKeepsTheChosenAgentWhenItsSheetDrawsAgain() async throws {
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
+        try fake("codex", "cat > /dev/null")
+        try forgetWays()
+
+        let output = Frame(text: try await edit(try editSheet(of: "weather"), "change-0", input: "input.describe=Add a refresh button\nsetting.agent=codex\nsetting.place=openspot\n"))
+
+        XCTAssertEqual(output.parts.first { $0.id == "agent" }?.value, "codex")
     }
 
     func testCopyPromptOnAnEditSheetCopiesTheChangeOfTheSpotsFileToTheEnd() async throws {

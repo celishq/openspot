@@ -28,7 +28,7 @@ public struct SpotLoad: Sendable {
                 return spot.builtIn()
             case .own, .core:
                 var own = added.map(spot.added(at:)) ?? spot
-                own.uses.remove(.account)
+                own.uses.subtract(SpotUse.appOnly)
                 return own
             }
         }

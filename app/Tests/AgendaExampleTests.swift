@@ -339,7 +339,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(agenda.settings.first?.icon, "calendar")
             XCTAssertEqual(choice.options.map(\.id), ["A8E2", "B1", "7D10"])
             XCTAssertEqual(choice.options.map(\.title), ["Work · iCloud", "Home · On My Mac", "Family · iCloud"])
-            XCTAssertEqual(choice.options.map(\.icon), ["calendar", "calendar", "list.bullet"])
+            XCTAssertEqual(choice.options.map(\.icon), [.symbol("calendar"), .symbol("calendar"), .symbol("list.bullet")])
             XCTAssertEqual(choice.picks, ["A8E2", "7D10"])
 
             let after = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: agenda, calendars, input: "input.calendars=7D10\n" + kept(), limit: 30)

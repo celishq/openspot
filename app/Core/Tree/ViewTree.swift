@@ -11,6 +11,7 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var places: Set<Style.Variant> = []
     public private(set) var listed: Set<String> = []
     public private(set) var holdsItems = false
+    public private(set) var holdsScroll = false
     private(set) var order: [String] = []
     private var rows: [String: Row] = [:]
 
@@ -164,6 +165,7 @@ public struct ViewTree: Equatable, Sendable {
             }
         }
         holdsItems = nodes.values.contains { $0.kind == .items }
+        holdsScroll = nodes.values.contains { $0.style.scrolls }
         let tree = nodes
         let holder = { (id: String?) in id.flatMap { tree[$0] } }
         listed = Set(nodes.values.filter { node in

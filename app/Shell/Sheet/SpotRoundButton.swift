@@ -13,16 +13,20 @@ struct SpotRoundButton: View {
     var look = Look.plain
     let action: () -> Void
 
+    private var side: CGFloat {
+        look == .bare ? min(size, SpotTokens.slotButton) : size
+    }
+
     var body: some View {
         Button(action: action) {
             Group {
                 if let act {
-                    SpotWorkMark(call: act, side: size, stops: true)
+                    SpotWorkMark(call: act, side: side, stops: true)
                 } else {
-                    NodeIcon(icon: icon, side: size / 2)
-                        .font(SpotType.roundSymbol(side: size))
+                    NodeIcon(icon: icon, side: side / 2)
+                        .font(SpotType.roundSymbol(side: side))
                         .modifier(SpotInk())
-                        .frame(width: size, height: size)
+                        .frame(width: side, height: side)
                 }
             }
                 .spotFill(isActive: act != nil || look == .strong, otherwise: fill, in: Circle())

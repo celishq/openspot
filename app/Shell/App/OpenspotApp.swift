@@ -13,6 +13,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()))
         #endif
         launch.apply(keepsCallData: true)
+        SearchPath.addInstalls()
         let environment = ProcessInfo.processInfo.environment
         if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable]) {
             SpotCommandLine.run(call, words: launch.words)

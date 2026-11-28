@@ -36,8 +36,14 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         part?.tone
     }
 
+    private var isBareRound: Bool {
+        guard case .round = part?.press else { return false }
+        return style.fill == .transparent
+    }
+
     public var naturalSize: CGSize {
-        switch kind {
+        if isBareRound { return CGSize(width: SpotTokens.slotButton, height: SpotTokens.slotButton) }
+        return switch kind {
         case .icon: CGSize(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
         case .picture: CGSize(width: SpotTokens.cell, height: SpotTokens.cell)
         default: CGSize(width: SpotTokens.cell, height: source == nil ? SpotTokens.listRow * CGFloat(lines) + SpotTokens.partGap * CGFloat(lines - 1) : SpotTokens.cell)

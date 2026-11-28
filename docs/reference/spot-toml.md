@@ -33,6 +33,7 @@ Each key of the top level, before the first table.
 | `pages`    | [text] | The routes the spot may show, where `*` stands for any text, such as `["photo/*"]`.        |
 | `answers`  | text   | Where its answers show in the panel's search: `"last"`, under the others, or `"card"`, as the card of the frame's value. First by default. It needs `search` in `[on]`. |
 | `stay`     | bool   | Whether the script keeps running and gets each word on stdin. Not for a `.js` spot.         |
+| `state`    | text   | `"draft"` while the spot is built: it loads for `openspot check`, `openspot render` and `openspot spot run`, but shows nowhere, runs nothing by itself, and `spot open` refuses it. Remove it when the spot works. |
 | `source`   | [text] | More Swift files or folders of a Swift spot.                                               |
 | `views`    | [text] | The SwiftUI files that draw its own kinds of block, such as `["week.swift"]`.              |
 

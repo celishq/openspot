@@ -26,7 +26,7 @@ extension SpotsModel {
     static let settingsKey = ActionKey(name: ",", isCommand: true)
 
     static func editsText(_ key: ActionKey) -> Bool {
-        key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
+        key.isCommand && !key.isShift && ["a", "c", "v", "x", "z"].contains(key.name)
     }
 
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
@@ -41,6 +41,8 @@ extension SpotsModel {
         case ActionKey(name: "up"), ActionKey(name: "down"):
             let moved = openSheet?.movePartLine(by: key.name == "up" ? -1 : 1) ?? false
             return moved || !part.isEditable
+        case ActionKey(name: "up", isCommand: true), ActionKey(name: "down", isCommand: true):
+            return openSheet?.focusPartEdge(last: key.name == "down") ?? false
         case ActionKey(name: "left"), ActionKey(name: "right"):
             guard !part.isEditable else { return false }
             let step = key.name == "left" ? -1 : 1
@@ -228,7 +230,15 @@ extension SpotsModel {
         self.form = nil
         if form.openedSheet {
             closeSheet(moving: true)
+        } else if form.route != nil, !popPage() {
+            closeSheet(moving: true)
         }
+    }
+
+    func showPageForm(_ form: ItemForm, of id: String) {
+        guard openSheetID == id, let entry = entry(id), let route = sheets[id]?.route, self.form?.route != route else { return }
+        let press = CommandAction(id: ScriptEntry.press.name, title: form.title)
+        self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: press, item: nil, openedSheet: false, route: route)
     }
 
     public func submitForm() {

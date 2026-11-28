@@ -11,6 +11,7 @@ public final class SpotsModel {
         public let action: CommandAction
         public let item: SpotItem?
         public let openedSheet: Bool
+        public var route: String? = nil
     }
 
     public typealias Target = (entry: Entry, item: SpotItem?)
@@ -371,8 +372,9 @@ public final class SpotsModel {
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
-        self.runs.partsArrival = { [weak self] id, bring in
+        self.runs.partsArrival = { [weak self] id, movesLayout, bring in
             guard let self else { return bring() }
+            if movesLayout, !(transition.id == id && transition.isOpen) { return change(isShown && openSheetID == id ? .layout : nil, bring) }
             bringParts(of: id, bring)
         }
         settingsBook.model = self
@@ -564,9 +566,13 @@ public final class SpotsModel {
         if next != entries { entries = next }
     }
 
+    public func pictured(_ id: String) -> Entry? {
+        entries.first { $0.id == id } ?? scanned.first { $0.id == id }.map { Entry(spot: $0, run: runs.sheets[$0.id]) }
+    }
+
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        return arrangement.ordered(defaultArrangement.ordered(sorted))
+        return arrangement.ordered(defaultArrangement.ordered(sorted)).filter { !$0.isDraft }
     }
 
     public func panelWillShow() {
@@ -661,6 +667,8 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
+        case .form(let form):
+            showPageForm(form, of: id)
         case .attachment(let value):
             takeAttachment(value, of: id)
         case .attachmentFailed(let text):

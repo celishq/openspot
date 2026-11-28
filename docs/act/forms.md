@@ -98,6 +98,10 @@ apart, check whether `input.name` is there.
 
 If a value is wrong, print `error=` and a message. The form stays open and shows it.
 
+The form takes the place of the list. To open it as a page of its own, which slides in, give the row a `route` (see
+[Open another list](../show/a-list.md#open-another-list)) and print the form when `input.route` is that page. Return
+runs `press` with each value and the route as `input.route`, and Esc goes back to the list.
+
 | Block                  | Is                                                         |
 | ---------------------- | ---------------------------------------------------------- |
 | `field`                | A line of text. `type=multiline` for more, `type=slider` with `min` and `max` for a number. |

@@ -77,16 +77,26 @@ public struct BoxLayout {
         }
     }
 
-    private static func flexed(_ basis: [CGFloat], _ children: [Child], free: CGFloat) -> [CGFloat] {
+    private static func flexed(_ basis: [CGFloat], _ children: [Child], free: CGFloat, floors: [CGFloat]? = nil) -> [CGFloat] {
         var sizes = basis
         if free > 0 {
             let growing = children.indices.filter { children[$0].style.grows == true }
             for index in growing { sizes[index] += free / CGFloat(growing.count) }
         } else if free < 0 {
-            let shrinking = children.indices.filter { children[$0].style.shrinks != false }
-            let total = shrinking.reduce(CGFloat(0)) { $0 + basis[$1] }
-            guard total > 0 else { return sizes }
-            for index in shrinking { sizes[index] = max(basis[index] + free * basis[index] / total, 0) }
+            let floors = floors ?? Array(repeating: 0, count: basis.count)
+            var owed = -free
+            var shrinking = children.indices.filter { children[$0].style.shrinks != false && sizes[$0] > floors[$0] }
+            while owed > 0.5, !shrinking.isEmpty {
+                let total = shrinking.reduce(CGFloat(0)) { $0 + sizes[$1] }
+                guard total > 0 else { break }
+                let share = owed / total
+                for index in shrinking {
+                    let next = max(sizes[index] - sizes[index] * share, floors[index])
+                    owed -= sizes[index] - next
+                    sizes[index] = next
+                }
+                shrinking = shrinking.filter { sizes[$0] > floors[$0] }
+            }
         }
         return sizes
     }
@@ -104,14 +114,16 @@ public struct BoxLayout {
             let fitted = fixed ?? (alignment(of: child) == .stretch ? room : min(natural[index].width, room))
             return Self.clamped(fitted, child.style, of: room)
         }
+        let floors = children.map { Self.points($0.style.minHeight, of: height) ?? 0 }
         let basis = children.indices.map { index in
             let child = children[index]
-            return Self.points(child.style.height, of: height)
+            let natural = Self.points(child.style.height, of: height)
                 ?? (child.style.isSquare ? widths[index] : child.measure(widths[index], nil).height)
+            return max(natural, floors[index])
         }
         let content = basis.reduce(0, +) + gaps
         let main = height ?? content
-        let heights = Self.flexed(basis, children, free: main - content)
+        let heights = Self.flexed(basis, children, free: main - content, floors: floors)
         let (lead, step) = spread(free: main - heights.reduce(0, +) - gaps, count: children.count, gap: gap)
         var y = lead
         var frames: [CGRect] = []

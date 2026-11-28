@@ -62,6 +62,11 @@ private struct ChoiceDrawing: View {
         case .list(let items, let value):
             list(items, value: value)
                 .overlay(alignment: .topTrailing) { mark.padding(SpotTokens.controlPadding) }
+        case .menu(let options, _) where options.isEmpty:
+            NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
+                SpotWorkMark(call: nil, side: SpotTokens.workMark)
+            }
+            .modifier(NodeTile(isOn: look == .tile))
         case .menu(let options, let value):
             NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
                 menu(options, value: value)
@@ -91,15 +96,15 @@ private struct ChoiceDrawing: View {
     }
 
     private func menu(_ options: [SpotPart.Option], value: String?) -> some View {
-        Menu {
-            Picker(part.title ?? part.id, selection: Binding(get: { value ?? "" }, set: { onSet($0) })) {
-                ForEach(options, id: \.id) { Text($0.title).tag($0.id) }
+        let chosen = options.first { $0.id == value } ?? options.first
+        return HStack(spacing: SpotTokens.partLineGap) {
+            if let icon = chosen?.icon {
+                SpotAttachmentCard(look: AttachmentChip.Look(icon))
+                    .scaleEffect(SpotTokens.choiceCardScale)
+                    .frame(width: SpotTokens.choiceCard, height: SpotTokens.choiceCard)
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
             HStack(spacing: SpotTokens.choiceChevronGap) {
-                Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
+                Text(chosen?.title ?? "")
                     .font(SpotType.detail)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
@@ -108,21 +113,29 @@ private struct ChoiceDrawing: View {
                     .modifier(SpotSecondaryText())
             }
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(.plain)
         .fixedSize()
-        .background {
+        .task(id: options) { await SpotChoiceMenu.prepare(options) }
+        .accessibilityHidden(true)
+        .overlay {
             GeometryReader { room in
-                Color.clear.onChange(of: menuOpening()) { _, opening in
-                    guard opening?.part == part.id else { return }
-                    let rect = room.frame(in: .global)
-                    DispatchQueue.main.async {
-                        SpotChoiceMenu.popUp(options: options, value: value, under: rect) { onSet($0) }
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { popUp(options, value: value, over: room.frame(in: .global)) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(part.label)
+                    .accessibilityValue(chosen?.title ?? "")
+                    .accessibilityAction { popUp(options, value: value, over: room.frame(in: .global)) }
+                    .onChange(of: menuOpening()) { _, opening in
+                        guard opening?.part == part.id else { return }
+                        let rect = room.frame(in: .global)
+                        DispatchQueue.main.async { popUp(options, value: value, over: rect) }
                     }
-                }
             }
         }
+    }
+
+    private func popUp(_ options: [SpotPart.Option], value: String?, over rect: CGRect) {
+        SpotChoiceMenu.popUp(options: options, value: value, over: rect) { onSet($0) }
     }
 
     private func swatches(_ colors: [String], value: String?) -> some View {

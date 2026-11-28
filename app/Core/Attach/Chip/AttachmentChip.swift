@@ -7,7 +7,7 @@ public struct AttachmentChip: Equatable, Sendable {
         case glyph(String)
         case color(String)
 
-        init(_ icon: Icon) {
+        public init(_ icon: Icon) {
             switch icon {
             case .symbol(let name): self = .symbol(name)
             case .image(let path): self = .file(.image(path))

@@ -1,7 +1,7 @@
 <div align="center">
   <img src="app/Shell/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png" width="160" alt="Openspot icon">
   <h1>Openspot</h1>
-  <p><strong>The macOS launcher that your coding agent extends.</strong></p>
+  <p><strong>The controls, widgets and shortcuts you wish your Mac had, written by your coding agent.</strong></p>
   <p>
     <a href="https://github.com/celishq/openspot/releases/latest">Download</a> ·
     <a href="PROTOCOL.md">Documentation</a> ·

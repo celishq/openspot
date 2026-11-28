@@ -1,6 +1,5 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
-export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 . "$OPENSPOT_SH"
 
 # Makes a jq value safe for one line of a text block, and gives the words and the tone of a state of checks.

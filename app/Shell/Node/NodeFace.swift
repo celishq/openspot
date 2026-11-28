@@ -36,7 +36,7 @@ struct NodeFace: View {
         switch node.kind {
         case .box: NodeBox(children: node.children, style: style, tree: tree)
         case .text, .item: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
-        case .icon: NodeIcon(icon: node.icon, side: node.naturalSize.width)
+        case .icon: NodeIcon(icon: node.icon, side: node.naturalSize.width, pulses: style.pulses)
         case .picture: NodePicture(icon: node.icon, size: node.naturalSize)
         case .button where !node.children.isEmpty: NodeButton(node: node, look: nil, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
         case .field where node.isSearch: NodeSearch()

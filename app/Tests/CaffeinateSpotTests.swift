@@ -135,8 +135,8 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the rows") { !sheet.list.all.isEmpty }
 
         XCTAssertEqual(sheet.shownState.subtitle, "Keep the Mac awake")
-        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "7200", "custom", "0", "display", "lid"])
-        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "2 hours", "Custom…", "Until turned off", "Keep the display on", "Work with the lid closed"])
+        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "7200", "custom", "0", "process", "display", "lid"])
+        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "2 hours", "Custom…", "Until turned off", "While a process runs…", "Keep the display on", "Work with the lid closed"])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.pin), [.bottom, .bottom])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isOn), [true, false])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isToggle), [true, true])
@@ -167,19 +167,125 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertNil(sheet.list.all.first { $0.title == "30 minutes" }?.subtitle)
     }
 
-    func testTheCustomRowAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
+    func testTheCustomRowOpensAPageThatAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
         let sheet = try sheet()
+        var forms: [ItemForm] = []
+        sheet.onReport = { if case .form(let form) = $0 { forms.append(form) } }
         try await wait("the custom row") { self.row("custom", in: sheet) != nil }
         let item = try XCTUnwrap(row("custom", in: sheet))
+        guard case .push(_, let route?, _, _)? = item.move else { return XCTFail("Custom… opens no page") }
 
-        guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("Custom… asked with no form") }
-        try await wait("the end of the call that asked") { sheet.calls.isEmpty }
-        var draft = FormDraft(form: form)
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
+        try await wait("the form of the page") { !forms.isEmpty }
+        XCTAssertEqual(forms.first?.fields.map(\.label), ["Minutes"])
+        var draft = FormDraft(form: try XCTUnwrap(forms.first))
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(CommandAction(id: ScriptEntry.press.name, title: item.title), item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: ScriptEntry.press.name, title: item.title), item: nil, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
+    }
+
+    private func runProcesses(git: Bool = true) throws {
+        let me = getuid()
+        try fake("ps", """
+            case "$*" in
+              *comm=*4242*) echo /usr/local/bin/claude; exit 0 ;;
+              *comm=*) exit 1 ;;
+            esac
+            printf '%s\\n' \\
+              '   50     1 \(me) ??     3-00:00:00 /Applications/Ghostty.app/Contents/MacOS/ghostty' \\
+              '  100    50 \(me) ttys001    02:00:00 -zsh' \\
+              ' 4242   100 \(me) ttys001    01:02:03 claude --resume abc' \\
+              ' 4300  4242 \(me) ttys001       05:00 /usr/bin/sourcekit-lsp' \\
+              '   60     1 \(me) ??     3-00:00:00 /System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal' \\
+              '  190    60     0 ttys002       10:00 login -pfl me /bin/bash' \\
+              '  200   190 \(me) ttys002       10:00 -zsh' \\
+              ' 7000   200 \(me) ttys002 03-04:05:06 /opt/homebrew/bin/node /very/long/path/to/some/project/scripts/build-and-watch-everything.js --flag' \\
+              ' 5151   200 \(me) ttys002       00:42 make verify' \\
+              ' 8000     1     0 ttys003       00:10 /usr/sbin/root-tool' \\
+              ' 6161     1 \(me) ??     1-00:00:00 /usr/libexec/helper'
+            """)
+        try fake("lsof", """
+            printf 'p4242\\nfcwd\\nn/work/openspot\\np5151\\nfcwd\\nn/work/other\\n'
+            """)
+        try fake("xcode-select", "exit 1")
+        if git {
+            try fake("git", """
+                [ "$2" = /work/openspot ] && [ "$3 $4" = 'branch --show-current' ] || exit 128
+                echo fix-caffeinate
+                """)
+        }
+    }
+
+    private func processRows(in sheet: SpotRun) async throws -> [SpotItem] {
+        try await wait("the process row") { self.row("process", in: sheet) != nil }
+        guard case .push(_, let route?, _, _)? = try XCTUnwrap(row("process", in: sheet)).move else { throw XCTSkip("the process row opens no page") }
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: route))
+        try await wait("the processes") { sheet.list.all.count == 3 }
+        return sheet.list.all
+    }
+
+    func testTheProcessPageGroupsWhatEachTerminalAppStartedWithItsRunTime() async throws {
+        try runProcesses()
+        let rows = try await processRows(in: try sheet())
+
+        XCTAssertEqual(rows.map(\.title), ["claude · 1h 2m", "make · 42s", "node · 3d 4h"])
+        XCTAssertEqual(rows.map(\.section), ["Ghostty", "Terminal", "Terminal"])
+    }
+
+    func testARowShowsItsFolderAndItsBranchAndIsFoundByItsCommand() async throws {
+        try runProcesses()
+        let rows = try await processRows(in: try sheet())
+
+        XCTAssertEqual(rows.prefix(2).map(\.subtitle), ["openspot · fix-caffeinate", "other"])
+        XCTAssertEqual(rows.first?.keywords, ["claude --resume abc"])
+    }
+
+    func testWithNoGitARowShowsItsFolderAlone() async throws {
+        try runProcesses(git: false)
+        let rows = try await processRows(in: try sheet())
+
+        XCTAssertEqual(rows.first?.subtitle, "openspot")
+    }
+
+    func testARowWithNoFolderShowsItsCommandWithItsStartAndItsEnd() async throws {
+        try runProcesses()
+        let rows = try await processRows(in: try sheet())
+
+        let detail = try XCTUnwrap(rows.last?.subtitle)
+        XCTAssertTrue(detail.hasPrefix("node /very/lo"), detail)
+        XCTAssertTrue(detail.hasSuffix(".js --flag"), detail)
+        XCTAssertTrue(detail.contains("…"), detail)
+        XCTAssertLessThanOrEqual(detail.count, 30, detail)
+    }
+
+    func testAPickOfAProcessKeepsTheMacAwakeUntilItEnds() async throws {
+        try runProcesses()
+        let sheet = try sheet()
+        try await wait("the process row") { self.row("process", in: sheet) != nil }
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
+        try await wait("the processes") { sheet.list.all.count == 3 }
+
+        sheet.pick(try XCTUnwrap(sheet.list.all.first))
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(flags(), ["-di -w 4242"])
+        try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on until claude ends" }
+        try await wait("the card") { sheet.shownState.subtitle == "Until claude ends" }
+    }
+
+    func testAPickOfAProcessThatHasEndedKeepsCaffeinateOffAndSaysSo() async throws {
+        try runProcesses()
+        let sheet = try sheet()
+        try await wait("the process row") { self.row("process", in: sheet) != nil }
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "processes"))
+        try await wait("the processes") { sheet.list.all.count == 3 }
+
+        sheet.pick(try XCTUnwrap(sheet.list.all.first { $0.run == "pid.5151" }))
+
+        try await wait("the toast") { self.lines("toasts").last == "That process has ended. Pick one that still runs." }
+        XCTAssertTrue(running().isEmpty)
     }
 
     func testTheCardOfALidHoldSaysTheLidCanClose() async throws {

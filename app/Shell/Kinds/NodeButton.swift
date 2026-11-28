@@ -53,12 +53,12 @@ private struct ButtonDrawing: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .help(part.title ?? part.id.capitalized)
+            .help(part.label)
         case .round(let icon):
-            NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
+            NodeLine(part: part, size: size, call: call, keepsIconColumn: look != .bare && keepsIconColumn) {
                 SpotRoundButton(
                     icon: icon,
-                    label: part.title ?? part.id.capitalized,
+                    label: part.label,
                     act: call,
                     size: min(size.width, size.height, SpotTokens.partMaxRound),
                     look: look == .strong ? .strong : look == .bare ? .bare : .plain,
@@ -68,7 +68,7 @@ private struct ButtonDrawing: View {
             .modifier(NodeTile(isOn: look == .tile))
         case .line where isCard:
             Button(action: onPress) {
-                Text(part.title ?? part.id.capitalized)
+                Text(part.label)
                     .font(SpotType.action)
                     .foregroundStyle(ink)
                     .padding(.horizontal, SpotTokens.slotChipPaddingX)
@@ -97,7 +97,7 @@ private struct ButtonDrawing: View {
     private var sheetLabel: some View {
         switch look {
         case .chip:
-            words(part.title ?? part.id, font: SpotType.action)
+            words(part.label, font: SpotType.action)
                 .padding(.horizontal, SpotTokens.padding)
                 .padding(.vertical, SpotTokens.chipPaddingY)
                 .fixedSize()
@@ -126,7 +126,9 @@ private struct ButtonDrawing: View {
 
     @ViewBuilder
     private func words(_ words: String, font: Font) -> some View {
-        if let call {
+        if let call, let title = call.title {
+            SpotShine(words: title, font: font)
+        } else if let call {
             HStack(spacing: SpotTokens.placeGap / 2) {
                 SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)
@@ -142,12 +144,28 @@ private struct ButtonDrawing: View {
         }
     }
 
-    private func centered(isActive: Bool) -> some View {
-        words(part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
-            .frame(maxWidth: .infinity)
-            .overlay(alignment: .trailing) {
-                if let key = part.key { SpotButtonKey(label: key.label) }
+    @ViewBuilder
+    private func keyed(_ title: some View) -> some View {
+        if let key = part.key {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: SpotTokens.placeGap / 2) {
+                    SpotButtonKey(label: key.label).hidden()
+                    title.frame(maxWidth: .infinity)
+                    SpotButtonKey(label: key.label)
+                }
+                HStack(spacing: SpotTokens.placeGap / 2) {
+                    title.frame(maxWidth: .infinity)
+                    SpotButtonKey(label: key.label)
+                }
+                title.frame(maxWidth: .infinity)
             }
+        } else {
+            title.frame(maxWidth: .infinity)
+        }
+    }
+
+    private func centered(isActive: Bool) -> some View {
+        keyed(words(part.label, font: SpotType.body.weight(.medium)))
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)

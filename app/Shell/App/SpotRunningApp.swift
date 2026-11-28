@@ -101,6 +101,10 @@ struct SpotRunningApp: RunningApp {
         await model.pin(id)
     }
 
+    func putOnTop(_ id: String) async -> GridTop {
+        await model.putOnTop(id)
+    }
+
     func openStore(_ id: String?, search: String?) async -> Bool {
         await StoreWindow.show(model: model, id: id, search: search)
     }

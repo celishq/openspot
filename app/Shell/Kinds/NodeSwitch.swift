@@ -34,7 +34,7 @@ private struct SwitchDrawing: View {
                     SpotTick(isOn: isOn, words: EmptyView(), onPress: set)
                         .fixedSize()
                 } else {
-                    Toggle(part.title ?? part.id, isOn: Binding(get: { isOn }, set: set))
+                    Toggle(part.label, isOn: Binding(get: { isOn }, set: set))
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .labelsHidden()

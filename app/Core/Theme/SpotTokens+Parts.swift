@@ -172,6 +172,10 @@ extension SpotTokens {
     public static let nodeBorder: CGFloat = 1
     public static let chipPaddingY: CGFloat = 5
     public static let choiceChevronGap: CGFloat = 4
+    public static let choiceCardScale: CGFloat = 0.64
+    public static var choiceCard: CGFloat { attachmentCard * choiceCardScale }
+    public static let choiceMenuIcon: CGFloat = 16
+    public static var choiceMenuPixels: Int { Int((choiceMenuIcon / IconBody.share * pictureScale).rounded(.up)) }
     public static let colorBarWidth: CGFloat = 4
     public static let colorBarGap: CGFloat = 8
 

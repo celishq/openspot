@@ -8,7 +8,7 @@ extension ScriptProcess {
             url: program, name: spot.url.path, arguments: message.map { [$0.handler] } ?? [], mode: message.map { .once(input: $0.text) } ?? .stays,
             limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging([CallWords.spotVariable: spot.id]) { given, _ in given },
             withheld: spot.isBuiltIn ? [] : Self.appVariables,
-            errorLimit: errorLimit, sandbox: spot.uses, base: base, folder: folder, clock: clock, build: swift.build(of: spot)
+            errorLimit: errorLimit, sandbox: spot.fence, base: base, folder: folder, clock: clock, build: swift.build(of: spot)
         )
     }
 }
