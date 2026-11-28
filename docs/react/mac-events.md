@@ -84,11 +84,17 @@ Openspot runs `<script> drop` once, with one `input.file=` line for each file.
 | `screen.wake`      | none                            | When the screen wakes.                                 |
 | `disk.mount`       | its path                        | When a disk mounts.                                    |
 | `device.connect`   | its name                        | When a USB device connects.                            |
+| `calendar.change`  | none                            | When an event of your calendars, from yesterday to a year ahead, changes. |
+| `reminders.change` | none                            | When a reminder changes.                               |
 | `system.load`      | `cpu=<percent> memory=<percent>` | Every 5 seconds.                                       |
 
 macOS tells no app when the clipboard changes, so Openspot looks for a new copy: each half second while the panel shows,
 each second while you use the Mac, and each 10 seconds after half a minute with no key or click. It looks at once when
 another app comes to the front, and not at all while the screen sleeps or is locked.
+
+`calendar.change` and `reminders.change` come once after a burst of changes, such as a sync, and only once the person has
+allowed Openspot to read Calendar or Reminders. They say only that something changed: read what you need with
+`openspot calendar events` or `openspot reminders due`, as [its guide](../../app/Help/calendar.md) shows.
 
 ## Next
 

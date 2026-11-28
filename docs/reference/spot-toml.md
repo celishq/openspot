@@ -169,6 +169,8 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 | `power.change`     | itself  | `ac`, `battery` or `ups`         | When the power source or the battery's percent changes.   |
 | `disk.mount`       | itself  | its path                         | When a disk mounts.                                       |
 | `device.connect`   | itself  | its name                         | When a USB device connects.                               |
+| `calendar.change`  | itself  | none                             | When an event of your calendars, from yesterday to a year ahead, changes. |
+| `reminders.change` | itself  | none                             | When a reminder changes.                                  |
 
 An event reaches your spot only while it shows, except `app.launch` and `app.update`.
 
