@@ -270,6 +270,24 @@ final class TimelineTests: PanelCase {
         XCTAssertNotEqual(wrong.code, 0)
     }
 
+    func testTheWordsOfASearchPickTheSpotTheAgeAndTheOrder() async throws {
+        _ = try await add(["text=tea old"])
+        clock.advance(by: 2 * 86_400)
+        _ = try await add(["text=tea one"])
+        _ = try await add(["text=tea elsewhere"], of: "other")
+        clock.advance(by: 1)
+        _ = try await add(["text=tea two"])
+
+        let found = try await listed(["--all", "--search", "spot:notes since:1d sort:oldest tea"], of: "reader")
+        let sort = try await call(["list", "--search", "sort:best"])
+        let since = try await call(["list", "--search", "since:soon"])
+
+        XCTAssertEqual(found.map { $0.value("text") }, ["tea one", "tea two"])
+        XCTAssertEqual(sort.errors, "sort: takes newest or oldest.\n")
+        XCTAssertEqual(since.errors, "since: takes an age, such as 30m, 2h or 7d, or today.\n")
+        XCTAssertEqual(sort.code, 2)
+    }
+
     func testTheEntriesLastThroughARelaunch() throws {
         let now = Date()
         _ = try Timeline(folder: store).add(Timeline.Draft(kind: .text, values: ["kept"]), of: "notes", at: now)

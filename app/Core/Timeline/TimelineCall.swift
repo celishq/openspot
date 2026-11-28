@@ -22,7 +22,7 @@ enum TimelineCall: NounCall {
         ) { Self.add($0.rest) },
         CommandVerb(
             "list", listForm,
-            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at`, its `kind` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`; --about keeps, of those, the entries of a spot and the visits that open it. --within keeps the entries of the age, such as 1d; --search the ones that hold each word, the best match first inside each day; --order newest or oldest lists them by time, also with --search; --after the ones after the entry of that id, for the next page; --limit the first n.",
+            "Prints each entry of the calling spot's timeline, newest first, as an item with `spot`, `at`, its `kind` and its value. --spot names another spot's timeline and --all prints every timeline, which need `read`; --about keeps, of those, the entries of a spot and the visits that open it. --within keeps the entries of the age, such as 1d; --search the ones that hold each word, the best match first inside each day, where the words spot:<id>, since:<age> or since:today, and sort:newest or sort:oldest stand for --about, --within and --order; --order newest or oldest lists them by time, also with --search; --after the ones after the entry of that id, for the next page; --limit the first n.",
             rule: CallRule(use: .timeline, used: "read its timeline")
         ) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }
@@ -95,7 +95,14 @@ enum TimelineCall: NounCall {
             let reader = caller?.id
             return { [query] in
                 if let reader { timeline.note(reader: reader, of: spots) }
-                guard let entries = timeline.list(query, at: runs.clock.now()) else {
+                let now = runs.clock.now()
+                let searched: Timeline.Query
+                do throws(TimelineSearch.Fault) {
+                    searched = try TimelineSearch(text: query.text ?? "").query(from: query, at: now)
+                } catch {
+                    return CommandAnswer(errors: error.message + "\n", code: 2)
+                }
+                guard let entries = timeline.list(searched, at: now) else {
                     return CommandAnswer(errors: "The timeline has no entry `\(query.after ?? "")` to list after. Start again with no --after.\n", code: 1)
                 }
                 return CommandAnswer(output: entries.map { entry in

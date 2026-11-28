@@ -180,7 +180,7 @@ final class TimelineSpotTests: BuiltInCase {
 
         let found = try await timeline.answer("sheet.text", input: "input.value=zebra\n", timeout: 60).items
 
-        XCTAssertEqual(found.map(\.title), ["Nothing you copied holds “zebra”."])
+        XCTAssertEqual(found.map(\.title), ["Nothing in the timeline matches “zebra”."])
     }
 
     func testTheWordsOfTheSearchPickTheSpotTheAgeAndTheOrder() async throws {

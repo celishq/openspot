@@ -107,48 +107,12 @@ function row(entry, day) {
   return lines.join("\n")
 }
 
-/** The filters of a search text, `spot`, `since` and `sort`, as the words of `timeline list`, and the words left to
- * search by. */
-function filters(text) {
-  const found = { words: [], flags: [], about: "" }
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    const at = word.indexOf(":")
-    const key = at > 0 ? word.slice(0, at).toLowerCase() : ""
-    const value = word.slice(at + 1)
-    if (key && !value && ["spot", "since", "sort"].includes(key)) continue
-    if (key === "spot") found.about = value
-    else if (key === "since") found.flags.push("--within", age(value))
-    else if (key === "sort") found.flags.push("--order", order(value))
-    else found.words.push(word)
-  }
-  return found
-}
-
-/** The age of `since:`, such as `7d`, or the minutes since midnight for `today`. */
-function age(value) {
-  if (value.toLowerCase() === "today") {
-    const now = new Date()
-    return `${Math.max(1, Math.ceil((now - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 60000))}m`
-  }
-  if (/^[0-9]+[smhd]$/.test(value)) return value
-  throw new Error("since: takes an age, such as 30m, 2h or 7d, or today.")
-}
-
-/** The order of `sort:`. */
-function order(value) {
-  if (value === "newest" || value === "oldest") return value
-  throw new Error("sort: takes newest or oldest.")
-}
-
-/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page, as
- * the filter words of the text pick. */
+/** The frame of the entries that `timeline list` finds for the text, its words and its filter words, or the newest
+ * ones, after the entry of `after` for a next page. */
 function list(text, count, after) {
-  const picked = filters(text)
-  const words = picked.words.join(" ")
-  const search = words ? ["--search", words] : []
+  const search = text.trim() ? ["--search", text] : []
   const next = after ? ["--after", after] : []
-  const only = picked.about ? ["--about", picked.about] : []
-  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...only, ...picked.flags, ...search, ...next])
+  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...search, ...next])
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
   let last = ""
@@ -169,8 +133,7 @@ function list(text, count, after) {
   }
   if (!last && after) return ""
   if (!last) {
-    const said = !picked.flags.length && !picked.about ? `Nothing you copied holds “${words}”.` : `Nothing in the timeline matches “${text.trim()}”.`
-    blocks.push(text.trim() ? `item=empty\ntitle=${said}\nicon=magnifyingglass\nhides=copy\nhides=forget` : "item=empty\ntitle=Copy something, and it shows here.\nicon=doc.on.clipboard\nhides=copy\nhides=forget")
+    blocks.push(text.trim() ? `item=empty\ntitle=Nothing in the timeline matches “${text.trim()}”.\nicon=magnifyingglass\nhides=copy\nhides=forget` : "item=empty\ntitle=Copy something, and it shows here.\nicon=doc.on.clipboard\nhides=copy\nhides=forget")
   }
   return blocks.join("\n\n") + "\n"
 }
