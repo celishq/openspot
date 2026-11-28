@@ -28,14 +28,14 @@ public struct AttachmentLayout: Equatable, Sendable {
             layer = -Double(depth)
         }
 
-        init(chip: AttachmentChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
+        init(chip: AttachmentChip, slot: Int, depth: Int, spreadCount: Int, fit: Int, isOnTop: Bool = false) {
             self.chip = chip
             self.depth = depth
             scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.attachmentShrink
             let front = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * SpotTokens.attachmentPitch
             x = Self.centre(trailing: front + (depth == 0 ? 0 : SpotTokens.attachmentStep), scale: scale)
             opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.attachmentCardFade : MotionTokens.hiddenOpacity
-            layer = -Double(slot) - Double(depth * fit)
+            layer = isOnTop ? 1 : -Double(slot) - Double(depth * fit)
         }
 
         private static func centre(trailing: CGFloat, scale: CGFloat) -> CGFloat {
@@ -68,6 +68,7 @@ public struct AttachmentLayout: Equatable, Sendable {
         let start = isSpread ? previous.start(of: order.firstIndex { $0 == selection } ?? 0, count: order.count, fit: fit) : 0
         let byID = Dictionary(chips.map { ($0.source, $0) }, uniquingKeysWith: { first, _ in first })
         let spreadCount = isSpread ? min(order.count, fit) : 0
+        let front = previous.isSpread ? nil : previous.places.first?.chip.source
         places = order.enumerated().compactMap { index, source in
             guard let chip = byID[source] else { return nil }
             guard isSpread else {
@@ -75,7 +76,7 @@ public struct AttachmentLayout: Equatable, Sendable {
             }
             let slot = index - start
             return (0..<fit).contains(slot)
-                ? Place(chip: chip, slot: slot, depth: 0, spreadCount: spreadCount, fit: fit)
+                ? Place(chip: chip, slot: slot, depth: 0, spreadCount: spreadCount, fit: fit, isOnTop: source == front)
                 : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - fit + 1, spreadCount: spreadCount, fit: fit)
         }
         self.selection = selection

@@ -304,7 +304,22 @@ final class AttachmentSpreadTests: AttachmentCase {
         for (place, x) in zip(stack.layout.places, row) { XCTAssertEqual(place.x, x, accuracy: 0.001) }
         XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.attachmentShrink, 1 - SpotTokens.attachmentShrink])
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.attachmentCardFade, MotionTokens.hiddenOpacity])
-        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -6])
+        XCTAssertEqual(stack.layout.places.map(\.layer), [1, -1, -2, -3, -6])
+    }
+
+    func testAStackThatSpreadsKeepsItsFrontCardOverTheCardThatLeavesFromBehindIt() {
+        var stack = AttachmentStack(fit: 3)
+        stack.open(over: nil, unread: ["a", "b"].map { ($0, .symbol("doc")) })
+        stack.select("b")
+        stack.leave()
+        stack.place()
+
+        stack.select("a")
+        stack.spread()
+        stack.place()
+
+        let layer = Dictionary(uniqueKeysWithValues: stack.layout.places.map { ($0.chip.source, $0.layer) })
+        XCTAssertGreaterThan(layer["b"]!, layer["a"]!)
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
