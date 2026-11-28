@@ -16,6 +16,11 @@ class SampleSpotsCase: XCTestCase {
         }
     }
 
+    func source(of name: String) -> URL {
+        let shipped = store.appendingPathComponent("\(name).spot")
+        return FileManager.default.fileExists(atPath: shipped.path) ? shipped : examples.appendingPathComponent("\(name).spot")
+    }
+
     func example(_ name: String) throws -> Spot {
         try XCTUnwrap(try (storeScan.spots + SpotsFolder(url: examples).scan().spots).first { $0.name == name })
     }
@@ -24,7 +29,7 @@ class SampleSpotsCase: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let program = folder.appendingPathComponent(name)
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, store.appendingPathComponent("\(name).spot/\(name).swift").path], base: TestEnvironment.values)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, source(of: name).appendingPathComponent("\(name).swift").path], base: TestEnvironment.values)
         return (folder, program)
     }
 
