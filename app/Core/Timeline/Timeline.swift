@@ -24,6 +24,7 @@ final class Timeline: Sendable {
         var key: String?
         var at: Date?
         var peek: [TextBlock]
+        var session: SessionPlace?
 
         init(kind: AttachmentValue.Kind, values: [String], title: String? = nil, app: String? = nil, icon: String? = nil, detail: String? = nil, key: String? = nil, at: Date? = nil, peek: [TextBlock] = []) {
             self.kind = kind
@@ -44,8 +45,10 @@ final class Timeline: Sendable {
         var text: String?
         var after: String?
         var limit: Int?
+        var about: String?
 
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil) {
+        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil) {
+            self.about = about
             self.spots = spots
             self.within = within
             self.text = text
@@ -151,6 +154,7 @@ final class Timeline: Sendable {
             let found = kept.entries.filter { entry in
                 entry.forgotten == nil
                     && query.spots.map { $0.contains(entry.spot) } != false
+                    && query.about.map { about in entry.spot == about || entry.session?.flow.pages.contains { $0.spot == about } == true } != false
                     && since.map { entry.at >= $0 } != false
             }
             var sorted = found.sorted { $0.at > $1.at }
@@ -176,6 +180,23 @@ final class Timeline: Sendable {
             read(&kept)
             return kept.entries.first { $0.id == id }
         }
+    }
+
+    func sessions(of spot: String, before: Date?, limit: Int) -> [TimelineEntry] {
+        let place = folder.appendingPathComponent(Self.folderName(of: spot), isDirectory: true)
+        let files = ((try? FileManager.default.contentsOfDirectory(at: place, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.pathExtension == "jsonl" }
+            .sorted { $0.lastPathComponent > $1.lastPathComponent }
+        let last = before.map { day(of: $0) }
+        let decoder = JSONDecoder()
+        var found: [TimelineEntry] = []
+        for file in files where last.map({ file.deletingPathExtension().lastPathComponent <= $0 }) ?? true {
+            guard let data = try? Data(contentsOf: file) else { continue }
+            let entries = data.split(separator: UInt8(ascii: "\n")).compactMap { try? decoder.decode(TimelineEntry.self, from: $0) }
+            found += entries.filter { entry in entry.session != nil && entry.forgotten == nil && (before.map { entry.at < $0 } ?? true) }.sorted { $0.at > $1.at }
+            if found.count >= limit { break }
+        }
+        return Array(found.prefix(limit))
     }
 
     func forget(_ id: String, at now: Date) -> TimelineEntry? {
@@ -246,7 +267,7 @@ final class Timeline: Sendable {
         }
         return TimelineEntry(
             id: id, spot: spot, at: at, kind: draft.kind, value: value, textFile: textFile, files: files, title: draft.title ?? Self.title(of: draft),
-            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, bytes: bytes, peekFile: peekFile, forgotten: nil
+            app: draft.app, icon: draft.icon, detail: draft.detail, key: draft.key, session: draft.session, bytes: bytes, peekFile: peekFile, forgotten: nil
         )
     }
 

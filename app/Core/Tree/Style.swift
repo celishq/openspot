@@ -38,7 +38,7 @@ public struct Style: Equatable, Sendable {
     }
 
     public enum Font: Equatable, Sendable {
-        case title, detail, metric, value, section
+        case title, detail, metric, value, section, heading, lead
     }
 
     public enum Weight: Equatable, Sendable {

@@ -62,7 +62,7 @@ final class WelcomeLaunchTests: XCTestCase {
 
     private func launch() async throws {
         await model.beginFirstLaunch()
-        try await wait("the welcome") { self.model.openSheetID == Self.welcome && self.model.openParts?.parts.first { $0.id == "head" }?.title == "Everything is a disposable spot" }
+        try await wait("the welcome") { self.model.openSheetID == Self.welcome && self.model.openParts?.parts.first { $0.id == "title" }?.title == "Everything is a disposable spot" }
         try await wait("the focus on continue") { self.focus == "next" }
     }
 
@@ -77,7 +77,7 @@ final class WelcomeLaunchTests: XCTestCase {
     }
 
     private func recordOptionSpace() async throws {
-        XCTAssertTrue(press("escape"))
+        XCTAssertTrue(press("backspace"))
         try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 49, modifiers: .option)
         try await wait("the kept key") { self.hasEnded && self.keyField?.value == "option+space" }
@@ -87,7 +87,7 @@ final class WelcomeLaunchTests: XCTestCase {
         model.handleKey(ActionKey(name: name))
     }
 
-    func testThreeReturnsWalkThePagesToTheGridAndKeepTheKey() async throws {
+    func testThreeReturnsOnTheFocusedButtonsWalkThePagesToTheGridAndKeepTheKey() async throws {
         try await launch()
         try await toKeyPage()
         try await toLastPage()
@@ -109,19 +109,34 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
-    func testEscRecordsAndEscAgainStopsWithTheKeyKept() async throws {
+    func testBackspaceRecordsAndEscStopsItAndGoesBackToTheFirstPageWithTheKeyKept() async throws {
         try await launch()
         try await toKeyPage()
 
-        XCTAssertTrue(press("escape"))
+        XCTAssertTrue(press("backspace"))
         try await wait("the recording") { self.model.recording == "key" }
         XCTAssertEqual(model.hint, "Esc Cancel")
         XCTAssertTrue(press("escape"))
 
         XCTAssertNil(model.recording)
+        try await wait("the first page") { self.model.flow.index == 0 && self.model.openParts?.parts.contains { $0.id == "next" } == true }
+        XCTAssertEqual(model.files.config.read().panelKey, .standard)
+
+        try await toKeyPage()
+        XCTAssertNil(model.recording)
+        XCTAssertFalse(keyField?.asksToRecord == true)
+    }
+
+    func testEscAfterAClickOnTheKeyFieldOnlyStopsTheRecording() async throws {
+        try await launch()
+        try await toKeyPage()
+        model.toggleRecording(try XCTUnwrap(keyField))
+
+        XCTAssertTrue(press("escape"))
+
+        XCTAssertNil(model.recording)
         XCTAssertEqual(model.flow.index, 1)
         XCTAssertEqual(keyField?.value, "ctrl+space")
-        XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
     func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {

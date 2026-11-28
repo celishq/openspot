@@ -23,12 +23,13 @@ final class CommandLineCallTests: XCTestCase {
 
     func testTimelineAddsListsForgetsAndRestores() {
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "add", "text=a"])?.value as? TimelineCall, .add(["text=a"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list"])?.value as? TimelineCall, .list(spot: nil, all: false, within: nil, search: nil, after: nil, limit: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list"])?.value as? TimelineCall, .list(spot: nil, all: false, within: nil, search: nil, after: nil, limit: nil, about: nil))
         XCTAssertEqual(
             CommandLineCall(arguments: ["timeline", "list", "--all", "--within", "1d", "--search", "cafe", "--after", "ab12", "--limit", "5"])?.value as? TimelineCall,
-            .list(spot: nil, all: true, within: 86_400, search: "cafe", after: "ab12", limit: 5)
+            .list(spot: nil, all: true, within: 86_400, search: "cafe", after: "ab12", limit: 5, about: nil)
         )
-        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, search: nil, after: nil, limit: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--spot", "clipboard"])?.value as? TimelineCall, .list(spot: "clipboard", all: false, within: nil, search: nil, after: nil, limit: nil, about: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--all", "--about", "notes"])?.value as? TimelineCall, .list(spot: nil, all: true, within: nil, search: nil, after: nil, limit: nil, about: "notes"))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--limit", "0"])?.value as? CallFault, .unknown(["timeline", "list", "--limit", "0"]))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "list", "--text", "cafe"])?.value as? CallFault, .unknown(["timeline", "list", "--text", "cafe"]))
         XCTAssertEqual(CommandLineCall(arguments: ["timeline", "get", "ab12"])?.value as? TimelineCall, .get("ab12"))

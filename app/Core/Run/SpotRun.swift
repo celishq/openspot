@@ -16,6 +16,7 @@ public final class SpotRun {
         case move(FlowMove)
         case refused(String?)
         case done
+        case form(ItemForm)
         case attachment(AttachmentValue)
         case attachmentFailed(String)
     }
@@ -245,6 +246,7 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: Frame?
+    @ObservationIgnored var isParked = false
     @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var shownEvent: ShowEvent?
     @ObservationIgnored var finishesShow = false

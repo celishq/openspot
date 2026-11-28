@@ -57,6 +57,8 @@ extension Style {
         case "font-metric": font = .metric
         case "font-value": font = .value
         case "font-section": font = .section
+        case "font-heading": font = .heading
+        case "font-lead": font = .lead
         case "font-medium": weight = .medium
         case "font-semibold": weight = .semibold
         case "font-bold": weight = .bold

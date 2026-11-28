@@ -45,7 +45,13 @@ extension SpotsModel {
     private var recordingRows: [KeyRow] {
         let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
             let field = recordsField ? recording : nil
+            let wasAsked = openParts?.parts.contains { $0.id == recording && $0.asksToRecord } == true
+            let left = flow.current
             stopRecording()
+            if wasAsked, flow.behind != nil, popPage() {
+                if let left { sheets[left.spot]?.forget(route: left.route) }
+                return true
+            }
             if let field { focusAfterRecording(field) }
             return true
         }
@@ -176,8 +182,15 @@ extension SpotsModel {
             if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
                 run(action, on: target)
             } else if !stepBack() {
-                host.dismiss()
+                endSession()
             }
+            return true
+        }
+    }
+
+    var closeRow: KeyRow {
+        KeyRow("w", command: true) { [self] _ in
+            endSession()
             return true
         }
     }
@@ -191,7 +204,7 @@ extension SpotsModel {
 
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
-            .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
+            .any { [self] key in handleStepKey(key) },
             settingsRow,
         ]
         let parts = openParts
@@ -216,9 +229,10 @@ extension SpotsModel {
                     return menu != nil
                 },
                 KeyRow("escape") { [self] _ in
-                    if !stepBack() { host.dismiss() }
+                    if !stepBack() { endSession() }
                     return true
                 },
+                closeRow,
                 KeyRow("up", act: scroll(-1)),
                 KeyRow("down", act: scroll(1)),
                 .any { [self] key in
@@ -249,6 +263,7 @@ extension SpotsModel {
             .any { [self] key in target.flatMap { runAction(with: key, on: $0) } },
             peekRow,
             .any { [self] key in openSheet(on: key) ? true : nil },
+            closeRow,
         ]
         return rows
     }

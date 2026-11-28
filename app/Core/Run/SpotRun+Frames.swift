@@ -71,7 +71,7 @@ extension SpotRun {
     }
 
     func scriptEnded() {
-        answered = nil
+        if !isParked { answered = nil }
         list.stopLoading()
     }
 
@@ -105,6 +105,7 @@ extension SpotRun {
         switch ask {
         case .show(let generation, _, let query, _):
             if answers { answered = runs.now() }
+            if route != nil, let form = ItemForm(output: lines) { return onReport(.form(form)) }
             if spot.showsState { takeState(lines) }
             takeValue(lines)
             let kept = selecting

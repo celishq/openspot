@@ -21,7 +21,7 @@ public struct CommandNoun: Sendable {
         GuideCall.noun, HelpCall.noun, SpotCall.noun, ToastCall.noun, AttachmentCall.noun, SelectCall.noun, RouteCall.noun, GridCall.noun, StoreCall.noun, CheckCall.noun, RenderCall.noun,
         PlaygroundCommand.noun, ColorCall.noun, FolderCall.noun, SettingCall.noun, PromptCall.noun, AppCall.noun, ThemeCall.noun, BatchCall.noun,
         UpdateCall.noun, VersionCall.noun, AccountCall.noun, ClipboardCall.noun, BrowserCall.noun, SelectionCall.noun, FrontCall.noun, AccessCall.noun, TranslateCall.noun, DateCall.noun, EmojiCall.noun,
-        SymbolsCall.noun, WindowCall.noun, ScreenCall.noun, CalendarCall.noun, RemindersCall.noun, PowerCall.noun, HelperCall.noun, TimerCall.noun, SchemaCall.noun, RunCall.noun, EmitCall.noun, TypesCall.noun, CacheCall.noun, TimelineCall.noun
+        SymbolsCall.noun, WindowCall.noun, ScreenCall.noun, CalendarCall.noun, RemindersCall.noun, PowerCall.noun, HelperCall.noun, TimerCall.noun, SchemaCall.noun, RunCall.noun, EmitCall.noun, TypesCall.noun, CacheCall.noun, TimelineCall.noun, SessionCall.noun
     ]
 
     func verb(of rest: [String]) -> CommandVerb? {

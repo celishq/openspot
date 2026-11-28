@@ -2,6 +2,7 @@ import Foundation
 
 extension SpotRun {
     public func open(need: ShowNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
+        isParked = false
         runs.willOpen(self)
         acted()
         settle()
@@ -90,19 +91,31 @@ extension SpotRun {
         runs.updateClock()
     }
 
-    func leftPlace() {
-        if !isInView, script.keepsState {
+    func leftPlace(keepsAnswer: Bool = false) {
+        let keepsState = script.keepsState
+        if !isInView, panel?.holdsParts == true || keepsState {
             let wasOpen = isOpen
+            isParked = keepsAnswer && wasOpen
             close()
-            panel = nil
-            answered = nil
-            if wasOpen { onReport(.closed) }
-        } else if !isInView, !isOpen, panel?.parts.contains(where: \.isEditable) == true {
-            panel = nil
-            answered = nil
+            if !isParked {
+                if keepsState || panel?.parts.contains(where: \.isEditable) == true {
+                    panel = nil
+                    answered = nil
+                }
+                if wasOpen { onReport(.closed) }
+            }
         }
         stopUnwantedShow()
         link.settle()
+    }
+
+    func dropParked() {
+        guard isParked else { return }
+        isParked = false
+        if script.keepsState || panel?.parts.contains(where: \.isEditable) == true {
+            panel = nil
+            answered = nil
+        }
     }
 
     func panelOpened() {

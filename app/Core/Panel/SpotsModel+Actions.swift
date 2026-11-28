@@ -96,6 +96,7 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
+        noteRun()
         if action == .peek {
             togglePeek()
         } else if case .act(let act, _) = action.kind {
@@ -118,7 +119,9 @@ extension SpotsModel {
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
-        } else if action == .open || action == .history {
+        } else if action == .history {
+            showTimeline(about: target.entry.id)
+        } else if action == .open {
             presentSheet(of: target.entry.id)
         } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
             show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
@@ -227,7 +230,15 @@ extension SpotsModel {
         self.form = nil
         if form.openedSheet {
             closeSheet(moving: true)
+        } else if form.route != nil, !popPage() {
+            closeSheet(moving: true)
         }
+    }
+
+    func showPageForm(_ form: ItemForm, of id: String) {
+        guard openSheetID == id, let entry = entry(id), let route = sheets[id]?.route, self.form?.route != route else { return }
+        let press = CommandAction(id: ScriptEntry.press.name, title: form.title)
+        self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: press, item: nil, openedSheet: false, route: route)
     }
 
     public func submitForm() {

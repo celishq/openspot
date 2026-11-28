@@ -95,8 +95,7 @@ extension SettingsView {
         let words = themeWish
         act { book in
             guard let prompt = await book.themePrompt(words: words) else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(prompt, forType: .string)
+            try? SpotClipboard().copy(text: prompt)
             isThemeCopied = true
         }
     }

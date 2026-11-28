@@ -1,20 +1,10 @@
 import SwiftUI
 
-/// The top of a Welcome page: its words in large type, a drawing between them or a note under them, then the cards of
-/// things to try. Each drawing shows only its shape, in the accent colour. The place keeps the height of its grid lines,
-/// so the content sits at its top, at most `lead` below it.
+/// One piece of a Welcome page: a hand-drawn note of the heading, when the block names a `drawing`, or one thing to try,
+/// drawn like a spot's card. A drawing shows only its shape, in the accent colour, as tall as its block.
 struct SpotView: View {
     let spot: SpotInput
 
-    private static let lead: CGFloat = 12
-    private static let side: CGFloat = 6
-    private static let titleSize: CGFloat = 24
-    private static let detailSize: CGFloat = 15
-    private static let gap: CGFloat = 6
-    private static let picture: CGFloat = 38
-    private static let pictureGap: CGFloat = 12
-    private static let note: CGFloat = 41
-    private static let noteGap: CGFloat = 4
     private static let cardNote = CGSize(width: 10, height: 13)
     private static let cardNoteOffset = CGSize(width: 30, height: 5)
     private static let glyph = Font.system(size: 17, weight: .semibold)
@@ -23,60 +13,33 @@ struct SpotView: View {
     private var secondary: Color { theme.color.ink.opacity(theme.color.secondary) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(maxHeight: Self.lead).layoutPriority(1)
-            heading.padding(.horizontal, Self.side)
-            let titles = spot.all("card.title")
-            ForEach(titles.indices, id: \.self) { index in
-                card(index).padding(.top, index == 0 ? Self.noteGap : Self.gap)
+        Group {
+            if let drawing = spot["drawing"] {
+                Drawing(path: drawing, color: theme.color.accent)
+            } else {
+                card
             }
-            Spacer(minLength: 0)
         }
         .frame(width: spot.size.width, height: spot.size.height, alignment: .topLeading)
     }
 
-    private var heading: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let title = spot["title"] {
-                Text(title).font(.system(size: Self.titleSize, weight: .bold)).foregroundStyle(theme.color.ink)
-            }
-            if let icon = spot["icon"] {
-                Drawing(path: icon, color: theme.color.accent)
-                    .frame(height: Self.picture)
-                    .padding(.vertical, Self.pictureGap)
-            }
-            if let detail = spot["detail"] {
-                Text(detail).font(.system(size: Self.detailSize)).foregroundStyle(secondary)
-                    .padding(.top, spot["icon"] == nil ? Self.gap : 0)
-            }
-            if let note = spot["note"] {
-                Drawing(path: note, color: theme.color.accent)
-                    .frame(height: Self.note)
-                    .padding(.top, Self.noteGap)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func card(_ index: Int) -> some View {
-        let value = { (key: String) in spot.all(key).indices.contains(index) ? spot.all(key)[index] : nil }
-        return HStack(spacing: theme.space.padding - 5) {
-            Image(systemName: value("card.icon") ?? "square.dashed")
+    private var card: some View {
+        HStack(spacing: theme.space.padding - 5) {
+            Image(systemName: spot["icon"] ?? "square.dashed")
                 .font(Self.glyph)
                 .foregroundStyle(theme.color.ink)
                 .frame(width: theme.space.glyph, height: theme.space.glyph)
                 .background(theme.color.ink.opacity(theme.color.track), in: Circle())
                 .overlay(alignment: .topLeading) {
-                    if let note = value("card.note") {
+                    if let note = spot["note"] {
                         Drawing(path: note, color: theme.color.accent)
                             .frame(width: Self.cardNote.width, height: Self.cardNote.height)
                             .offset(Self.cardNoteOffset)
                     }
                 }
             VStack(alignment: .leading, spacing: 1) {
-                Text(value("card.title") ?? "").font(theme.font.title).foregroundStyle(theme.color.ink).lineLimit(1)
-                if let detail = value("card.detail") {
+                Text(spot["title"] ?? "").font(theme.font.title).foregroundStyle(theme.color.ink).lineLimit(1)
+                if let detail = spot["detail"] {
                     Text(detail).font(theme.font.detail).foregroundStyle(secondary).lineLimit(1)
                 }
             }

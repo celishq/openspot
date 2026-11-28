@@ -760,6 +760,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNotNil(model.openParts)
     }
 
+    func testAPanelThatEndsItsSessionCutsASheetOfPartsAndItsRun() async throws {
+        try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.pushFirst("parts", moving: true)
+        try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
+
+        host.motions = []
+        model.endSession()
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertNil(model.runs.openID)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+        XCTAssertFalse(host.motions.isEmpty)
+    }
 
     func testASizeInAReadLeavesTheCardAtItsDefaultSize() async throws {
         try script("grow", toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ndetail=Read\\nsize=large\\n'")

@@ -69,6 +69,8 @@ extension ViewTree {
         let face: Double? = switch style.font {
         case .title, .section: type.title
         case .detail: type.detail
+        case .heading: SpotTokens.headingFace
+        case .lead: SpotTokens.leadFace
         case .metric, .value: nil
         case nil: type.body
         }
@@ -76,7 +78,12 @@ extension ViewTree {
         let room = width.map { node.icon?.symbol == nil ? $0 : $0 - SpotTokens.listIconSize - SpotTokens.partLineGap }
         let limit = style.truncates ? 1 : style.lineLimit
         let titleLines = (node.title ?? node.value).map { Self.lines(of: $0, face: face, room: room, limit: limit) } ?? 1
-        let title = CGFloat(titleLines) * (CGFloat(face) + SpotTokens.textLeading)
+        let leading: CGFloat = switch style.font {
+        case .heading: SpotTokens.headingLeading
+        case .lead: SpotTokens.leadLeading
+        default: SpotTokens.textLeading
+        }
+        let title = CGFloat(titleLines) * (CGFloat(face) + leading)
         guard let detail = node.detail else { return title }
         let detailLines = Self.lines(of: detail, face: type.detail, room: room, limit: limit)
         return title + SpotTokens.textLineGap + CGFloat(detailLines) * (CGFloat(type.detail) + SpotTokens.textLeading)
