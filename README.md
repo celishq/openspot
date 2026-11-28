@@ -47,6 +47,12 @@ big config. Openspot sits somewhere in between.
 2. Open the disk image and drag Openspot to Applications.
 3. Open it and hit `⌃Space`. That's it.
 
+Or install it with Homebrew:
+
+```text
+brew install --cask celishq/tap/openspot
+```
+
 ## Your first spot
 
 A spot is just a script that prints a few lines, and Openspot draws them. Here's a small one that lists whatever is
