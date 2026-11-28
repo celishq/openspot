@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-extension SampleSpotsCase {
+extension RepoSpotsCase {
     func swiftSpot(_ name: String, in folder: URL, standIns: [String: String] = [:]) async throws -> URL {
-        let spot = examples.appendingPathComponent("\(name).spot")
+        let spot = source(of: name)
         let built = folder.appendingPathComponent("built")
         try FileManager.default.createDirectory(at: built, withIntermediateDirectories: true)
         let main = built.appendingPathComponent("main.swift")
@@ -25,7 +25,7 @@ extension SampleSpotsCase {
     }
 
     func typechecks(_ name: String) async throws {
-        let spot = examples.appendingPathComponent("\(name).spot")
+        let spot = source(of: name)
         let folder = try temporaryFolder()
         let main = folder.appendingPathComponent("main.swift")
         try FileManager.default.copyItem(at: spot.appendingPathComponent("\(name).swift"), to: main)
@@ -34,7 +34,7 @@ extension SampleSpotsCase {
     }
 
     func staying(_ program: URL, as name: String, home: URL, variables: [String: String] = [:]) -> ScriptProcess {
-        ScriptProcess(url: program, name: examples.appendingPathComponent("\(name).spot/\(name).swift").path, mode: .stays, variables: variables, base: ["PATH": "\(home.appendingPathComponent("tools").path):/usr/bin:/bin", "HOME": home.path])
+        ScriptProcess(url: program, name: source(of: name).appendingPathComponent("\(name).swift").path, mode: .stays, variables: variables, base: ["PATH": "\(home.appendingPathComponent("tools").path):/usr/bin:/bin", "HOME": home.path])
     }
 
     func notes(in folder: URL) -> String {

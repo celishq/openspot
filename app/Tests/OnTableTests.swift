@@ -40,11 +40,18 @@ final class OnTableTests: XCTestCase {
     }
 
     func testEachEventOfTheEventsTableIsAKeyOfItsOwn() throws {
-        for event in EventName.declarable {
+        for event in SpotEvent.all.map(\.name) {
             let loaded = try load("[on]\n\"\(event)\" = true")
 
             let spot = try XCTUnwrap(loaded.spot, "\(event): \(loaded.refused.joined())")
             XCTAssertEqual(spot.triggers.events, [event])
+        }
+    }
+
+    func testACalendarOrAReminderChangeTakesNoValue() throws {
+        for event in ["calendar.change", "reminders.change"] {
+            XCTAssertEqual(try load("[on]\n\"\(event)\" = true").spot?.triggers.events, [event], event)
+            XCTAssertNil(try load("[on]\n\"\(event)\" = \"^a$\"").spot, event)
         }
     }
 

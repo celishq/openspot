@@ -1,6 +1,8 @@
 export LC_ALL=C
 cd "${1:-$(dirname "$0")/..}" || exit 1
 
+spot_folders="spots store examples"
+
 need() {
   for folder; do
     [ -d "$folder" ] || { echo "$(basename "$0"): $(pwd)/$folder is missing." >&2; exit 1; }

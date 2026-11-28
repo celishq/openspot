@@ -1,12 +1,11 @@
 import EventKit
 import OpenspotCore
 
-final class SpotReminderStore: ReminderStore {
+final class SpotReminderStore: ReminderStore, @unchecked Sendable {
     private let store = EKEventStore()
 
-
     func access() -> CalendarAccess {
-        SpotEventStore.access(to: .reminder)
+        CalendarAccess(of: .reminder)
     }
 
     func ask() async -> CalendarAccess {
@@ -51,6 +50,17 @@ final class SpotReminderStore: ReminderStore {
         }
         try store.save(new, commit: true)
         return Reminder(id: new.calendarItemIdentifier, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: SpotEventStore.list(new.calendar), doneAt: nil)
+    }
+
+    func sample() async -> CalendarSample? {
+        guard access() == .allowed else { return nil }
+        let predicate = store.predicateForReminders(in: nil)
+        let edits = await withCheckedContinuation { answer in
+            store.fetchReminders(matching: predicate) { reminders in
+                answer.resume(returning: (reminders ?? []).map(\.lastModifiedDate))
+            }
+        }
+        return CalendarSample(edits: edits)
     }
 
     private func fetch(_ predicate: NSPredicate) async -> [Reminder] {

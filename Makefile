@@ -1,4 +1,4 @@
-.PHONY: verify test perf memory film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
+.PHONY: verify test perf memory film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch store examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -70,9 +70,9 @@ first-launch:
 	pkill -f '/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly' || true
 	$(MAKE) dev-state EMPTY=1
 
-examples:
+store examples:
 	mkdir -p .temp/openspot/spots
-	cp -R examples/. .temp/openspot/spots/
+	cp -R $@/. .temp/openspot/spots/
 
 release:
 	sh scripts/release.sh publish "$(V)"

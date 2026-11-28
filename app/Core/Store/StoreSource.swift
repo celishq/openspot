@@ -73,8 +73,8 @@ public enum StoreSource: Hashable, Sendable {
     }
 
     public static func builtIn(environment: [String: String]) -> StoreSource? {
-        let url = environment["OPENSPOT_EXAMPLES"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
-            ?? Bundle.main.resourceURL?.appendingPathComponent("examples", isDirectory: true)
+        let url = environment["OPENSPOT_STORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+            ?? Bundle.main.resourceURL?.appendingPathComponent("store", isDirectory: true)
         return url.map { .builtIn(standard($0)) }
     }
 

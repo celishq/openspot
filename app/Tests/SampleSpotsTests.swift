@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SampleSpotsTests: SampleSpotsCase {
+final class SampleSpotsTests: RepoSpotsCase {
     func testACopyAsksForTheCopiedToast() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
@@ -36,7 +36,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
@@ -46,11 +46,17 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertEqual(placements.count, shown.count)
     }
 
-    func testNoExampleTakesTheIdOfACoreSpot() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    func testNoCoreStoreOrExampleSpotSharesAnId() throws {
+        let root = Repo.root
         let names = { (folder: String) in Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".spot") }) }
 
-        XCTAssertEqual(try names("spots").intersection(names("examples")), [])
+        let folders = try Repo.spotFolders.map { (name: $0, spots: try names($0)) }
+
+        for (index, folder) in folders.enumerated() {
+            for other in folders.dropFirst(index + 1) {
+                XCTAssertEqual(folder.spots.intersection(other.spots), [], "\(folder.name) and \(other.name)")
+            }
+        }
     }
 
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
@@ -62,6 +68,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let shipped = Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("spots").path).map { ($0 as NSString).deletingPathExtension })
             let places = [
                 "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots")),
+                "store": SpotsFolder(url: root.appendingPathComponent("store")),
                 "examples": SpotsFolder(url: root.appendingPathComponent("examples"))
             ]
             let found = await withTaskGroup(of: (String, [String]).self) { group in
@@ -77,7 +84,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let root = Repo.root
         let port = try freePort()
         try await withPrivateHome { folder in
             let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
@@ -163,7 +170,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = Repo.root.appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         let images = folder.appendingPathComponent("images")
@@ -211,7 +218,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
-        let scan = try exampleScan
+        let scan = try SpotsFolder(url: examples).scan()
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.spots.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
@@ -236,7 +243,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testPullRequestsHideWhenThereAreNone() async throws {
-        let metric = try XCTUnwrap(try exampleScan.metrics.first { $0.id == "pulls" })
+        let metric = try XCTUnwrap(try SpotsFolder(url: examples).scan().metrics.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 

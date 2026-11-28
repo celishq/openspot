@@ -1,10 +1,10 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ShelfExampleTests: SampleSpotsCase {
+final class ShelfExampleTests: RepoSpotsCase {
     private var shelf: Spot {
         get throws {
-            try example("Shelf")
+            try spot(named: "Shelf")
         }
     }
 

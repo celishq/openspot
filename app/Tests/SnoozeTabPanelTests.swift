@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class SnoozeTabPanelTests: PanelCase {
     private var repo: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        Repo.root
     }
 
     private var tools: URL {
@@ -13,7 +13,7 @@ final class SnoozeTabPanelTests: PanelCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        try FileManager.default.copyItem(at: repo.appendingPathComponent("examples/snooze-tab.spot"), to: spots.appendingPathComponent("snooze-tab.spot"))
+        try FileManager.default.copyItem(at: repo.appendingPathComponent("store/snooze-tab.spot"), to: spots.appendingPathComponent("snooze-tab.spot"))
         let app = core.appendingPathComponent("openspot.spot")
         try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: repo.appendingPathComponent("spots/openspot.spot/snooze.js"), to: app.appendingPathComponent("snooze.js"))

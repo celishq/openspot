@@ -2,10 +2,10 @@ import AppKit
 import XCTest
 @testable import OpenspotCore
 
-final class DictateExampleTests: SampleSpotsCase {
+final class DictateExampleTests: RepoSpotsCase {
     private static let model = "ggml-large-v3-turbo.bin"
     private static let program = Task { () throws -> URL in
-        let spot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples/dictate.spot")
+        let spot = Repo.root.appendingPathComponent("store/dictate.spot")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-dictate-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let main = folder.appendingPathComponent("main.swift")
@@ -18,12 +18,13 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     private var spotFile: URL {
-        examples.appendingPathComponent("dictate.spot/dictate.swift")
+        store.appendingPathComponent("dictate.spot/dictate.swift")
     }
 
     private func tools(in folder: URL) throws -> URL {
         let tools = folder.appendingPathComponent("tools")
-        try "#!/bin/sh\n\(SampleSpotsCase.fakeOpenspot(in: folder))\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\n\(RepoSpotsCase.fakeOpenspot(in: folder))\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\n".writeScript(to: tools.appendingPathComponent("whisper-server"))
         try """
         #!/bin/sh
         echo "$*" >> '\(folder.path)/curl-calls'
@@ -77,8 +78,8 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testItIsAStayingSwiftSpotWithNoClockAndNoBuildOfItsOwn() throws {
-        let spot = try example("Dictate")
-        let files = try FileManager.default.contentsOfDirectory(atPath: examples.appendingPathComponent("dictate.spot").path)
+        let spot = try spot(named: "Dictate")
+        let files = try FileManager.default.contentsOfDirectory(atPath: store.appendingPathComponent("dictate.spot").path)
 
         XCTAssertEqual(spot.mode, .stay)
         XCTAssertEqual(spot.sources, ["dictate"])
@@ -104,6 +105,23 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
         XCTAssertEqual(try read("forgotten", in: folder), "b\n")
+    }
+
+    func testWithNoEngineTheSheetOffersToCopyItsInstallCommandFirst() async throws {
+        let folder = try temporaryFolder()
+        let script = try await staying(in: folder)
+        defer { script.stop() }
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("tools/whisper-server"))
+
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=engine\n\n", until: ["1", "2"])
+        let offer = rows(Array(frames.prefix(2))).first
+
+        XCTAssertEqual(offer?.run, "engine")
+        XCTAssertEqual(offer?.title, "Install speech engine")
+        XCTAssertEqual(offer?.subtitle, "brew install whisper-cpp")
+        XCTAssertEqual(offer?.pin, .top)
+        XCTAssertEqual(try read("clipboard", in: folder), "brew install whisper-cpp")
+        XCTAssertEqual(toasts(in: folder), ["Copied. Paste it in Terminal to install the speech engine."])
     }
 
     func testWithNoModelTheSheetOffersTheDownloadWhichLandsWholeWithItsProgressOnTheCard() async throws {

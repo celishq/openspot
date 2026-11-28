@@ -18,7 +18,7 @@ final class SpotUpdateTests: XCTestCase {
         return AppPlaces(
             environment: [
                 "OPENSPOT_CONFIG": root.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": root.appendingPathComponent("core").path,
-                "OPENSPOT_EXAMPLES": builtIn.path
+                "OPENSPOT_STORE": builtIn.path
             ],
             home: root,
             defaults: UserDefaults(suiteName: "openspot-update-\(UUID().uuidString)") ?? .standard,
@@ -80,9 +80,9 @@ final class SpotUpdateTests: XCTestCase {
         XCTAssertEqual(row?.value("updated"), "25 Nov 2031")
     }
 
-    func testACopyOfTheBuiltInStoreUpdatesAfterTheAppsExamplesFolderMoves() async throws {
+    func testACopyOfTheBuiltInStoreUpdatesAfterTheAppsStoreFolderMoves() async throws {
         try await installed("clock")
-        let moved = root.appendingPathComponent("Other.app/examples", isDirectory: true)
+        let moved = root.appendingPathComponent("Other.app/store", isDirectory: true)
         try FileManager.default.createDirectory(at: moved.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.moveItem(at: source, to: moved)
         places = places(builtIn: moved)

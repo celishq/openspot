@@ -28,7 +28,7 @@ class BuiltInCase: XCTestCase {
     }
 
     var repoSpots: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        Repo.root.appendingPathComponent("spots")
     }
 
     var guide: URL {
@@ -82,7 +82,7 @@ class BuiltInCase: XCTestCase {
             "OPENSPOT_CONFIG": root.path,
             "OPENSPOT_SPOTS": root.appendingPathComponent("spots").path,
             "OPENSPOT_CORE": root.appendingPathComponent("core").path,
-            "OPENSPOT_EXAMPLES": root.appendingPathComponent("examples").path
+            "OPENSPOT_STORE": root.appendingPathComponent("store").path
         ]) { _, new in new }
         TestEnvironment.$values.withValue(environment) { TestEnvironment.$callers.withValue(SpotCallers()) { super.invokeTest() } }
     }

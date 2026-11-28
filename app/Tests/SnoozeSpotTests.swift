@@ -6,7 +6,7 @@ final class SnoozeSpotTests: XCTestCase {
     private let defaults = "{ morning: [8, 0], evening: [19, 0], later: 3, weekend: 6 }"
 
     private func times(at now: String, choices: String? = nil) throws -> [String: String] {
-        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
+        let file = Repo.root.appendingPathComponent("spots/openspot.spot/snooze.js")
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
         let script = """
@@ -23,7 +23,7 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     private func frame(_ call: String) throws -> [TextBlock] {
-        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
+        let file = Repo.root.appendingPathComponent("spots/openspot.spot/snooze.js")
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript("var written = (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n'")
         context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
@@ -48,7 +48,7 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     func testAPressOfATileGivesItsMomentAsUntilAndPickTitlesTheSheet() throws {
-        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
+        let file = Repo.root.appendingPathComponent("spots/openspot.spot/snooze.js")
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript("var written = (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n'")
         context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
@@ -66,8 +66,8 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     func testReturnOnSnoozeTabOpensItsListAndItsKeysSnoozeOrOpenAll() throws {
-        let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-        let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
+        let store = Repo.root.appendingPathComponent("store")
+        let spot = try XCTUnwrap(try SpotsFolder(url: store).scan().spots.first { $0.id == "snooze-tab" })
 
         XCTAssertEqual(spot.mainAct, .sheet)
         XCTAssertEqual(spot.commands.map(\.id), ["snooze", "wake"])

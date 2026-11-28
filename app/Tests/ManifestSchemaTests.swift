@@ -19,7 +19,7 @@ final class ManifestSchemaTests: XCTestCase {
     }
 
     func testTheRepoCopyOfTheSchemaIsTheOneThatOpenspotSchemaPrints() async throws {
-        let copy = try String(contentsOf: RepoDoc.repo.appendingPathComponent(ManifestSchema.repoPath), encoding: .utf8)
+        let copy = try String(contentsOf: Repo.root.appendingPathComponent(ManifestSchema.repoPath), encoding: .utf8)
 
         let printed = try await answer(["schema"])
 

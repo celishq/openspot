@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SnippetsSpotTests: SampleSpotsCase {
+final class SnippetsSpotTests: RepoSpotsCase {
     func testAConfigPathHoldsTheDataOfASpot() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { folder in

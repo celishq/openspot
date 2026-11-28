@@ -13,6 +13,8 @@ import AppKit
 let data = URL(fileURLWithPath: ProcessInfo.processInfo.environment["OPENSPOT_DATA"] ?? FileManager.default.currentDirectoryPath)
 let model = data.appendingPathComponent("ggml-large-v3-turbo.bin")
 let whisper = Whisper(model: model.path)
+/// The command that installs the speech engine.
+let install = "brew install whisper-cpp"
 var dictation: Dictation?
 var download: Download?
 /// The call that holds the dictation or the download that runs.
@@ -64,6 +66,9 @@ func sheet(downloading share: Double? = nil) -> String {
     }
     var blocks = past.isEmpty ? ["items=items"] : []
     let place = past.isEmpty ? "parent=items\n" : ""
+    if Tool.path(of: "whisper-server") == nil {
+        blocks.append("item=engine\n\(place)title=Install speech engine\ndetail=\(install)\nicon=terminal\nopen.title=Copy\nclose=false\nhides=delete\npin=top")
+    }
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
             blocks.append("item=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
@@ -126,7 +131,7 @@ func dictate(_ id: String) {
         return answer(id)
     }
     guard Tool.path(of: "whisper-server") != nil else {
-        return toast("Openspot cannot find the speech engine. Install it with `brew install whisper-cpp`.") { answer(id) }
+        return toast("Openspot cannot find the speech engine. Install it with `\(install)`.") { answer(id) }
     }
     guard FileManager.default.fileExists(atPath: model.path) else {
         guard let download else { return fetch(in: id, saying: "Dictate is downloading its speech model of 1.6 GB.") }
@@ -148,8 +153,13 @@ func answer(_ id: String, _ frame: String? = nil) {
 /// Copies a past text.
 func copy(_ item: String, in id: String) {
     guard let text = past.first(where: { $0.id == item })?.text else { return answer(id) }
+    copy(text: text, saying: "Copied", in: id)
+}
+
+/// Copies a text, then shows the toast, or why the copy failed.
+func copy(text: String, saying words: String, in id: String) {
     Tool.run(["openspot", "clipboard", "copy"], input: Link.plain(text)) { code, _, fault in
-        toast(code == 0 ? "Copied" : fault.trimmingCharacters(in: .whitespacesAndNewlines)) { answer(id) }
+        toast(code == 0 ? words : fault.trimmingCharacters(in: .whitespacesAndNewlines)) { answer(id) }
     }
 }
 
@@ -174,6 +184,8 @@ func serve() {
         case "press" where row == "whisper" && download != nil:
             download?.stop()
             answer(call.id)
+        case "press" where row == "engine":
+            copy(text: install, saying: "Copied. Paste it in Terminal to install the speech engine.", in: call.id)
         case "press" where row != "whisper":
             copy(row, in: call.id)
         case "delete":

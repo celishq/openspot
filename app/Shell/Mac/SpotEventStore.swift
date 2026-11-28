@@ -1,12 +1,11 @@
 import EventKit
 import OpenspotCore
 
-final class SpotEventStore: EventStore {
+final class SpotEventStore: EventStore, @unchecked Sendable {
     private let store = EKEventStore()
 
-
     func access() -> CalendarAccess {
-        Self.access(to: .event)
+        CalendarAccess(of: .event)
     }
 
     func ask() async -> CalendarAccess {
@@ -54,12 +53,11 @@ final class SpotEventStore: EventStore {
         )
     }
 
-    static func access(to entity: EKEntityType) -> CalendarAccess {
-        switch EKEventStore.authorizationStatus(for: entity) {
-        case .fullAccess: .allowed
-        case .notDetermined: .unasked
-        default: .denied
-        }
+    func sample() -> CalendarSample? {
+        guard access() == .allowed else { return nil }
+        let start = Calendar.current.startOfDay(for: Date()).addingTimeInterval(-86_400)
+        let predicate = store.predicateForEvents(withStart: start, end: start.addingTimeInterval(366 * 86_400), calendars: nil)
+        return CalendarSample(edits: store.events(matching: predicate).map(\.lastModifiedDate))
     }
 
     static func list(_ calendar: EKCalendar?) -> CalendarList {

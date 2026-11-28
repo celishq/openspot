@@ -12,7 +12,7 @@ public struct SpotPrompt: Equatable, Sendable {
     }
 
     public init(places: AppPlaces) {
-        self.init(folder: places.spots.url, references: [places.spots.core, places.examples?.url].compactMap { $0 }, app: Self.command())
+        self.init(folder: places.spots.url, references: [places.spots.core, places.builtInStore?.url].compactMap { $0 }, app: Self.command())
     }
 
     public static func command(of app: String = Bundle.main.executablePath ?? "openspot") -> String {

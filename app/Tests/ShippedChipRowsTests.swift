@@ -4,11 +4,11 @@ import XCTest
 @MainActor
 final class ShippedChipRowsTests: AttachmentCase {
     private var repo: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        Repo.root
     }
 
     private func rows(of words: String) async throws -> [String] {
-        for path in ["spots/links.spot", "spots/snippets.spot", "examples/snooze-tab.spot"] {
+        for path in ["spots/links.spot", "spots/snippets.spot", "store/snooze-tab.spot"] {
             try FileManager.default.copyItem(at: repo.appendingPathComponent(path), to: spots.appendingPathComponent(URL(fileURLWithPath: path).lastPathComponent))
         }
         try source(adds: words)

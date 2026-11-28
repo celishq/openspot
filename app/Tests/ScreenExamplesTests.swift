@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ScreenExamplesTests: SampleSpotsCase {
+final class ScreenExamplesTests: RepoSpotsCase {
     private func fakeScreen(in folder: URL) throws {
         let path = folder.path
         try """
@@ -30,7 +30,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
     }
 
     func testRecordStartsWithTheInputsOfItsSettingAndTheNextRunStopsAndCopiesTheVideo() async throws {
-        let record = try example("Record")
+        let record = try spot(named: "Record")
         try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
@@ -46,7 +46,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
     }
 
     func testRecordStopsARecordingThatMacOSEndedCopiesItsVideoAndSaysWhy() async throws {
-        let record = try example("Record")
+        let record = try spot(named: "Record")
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: Data())
@@ -64,7 +64,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
     }
 
     func testTheInputsSettingListsTheSoundMicsAndCamerasWithTheKeptOnesOn() async throws {
-        let record = try example("Record")
+        let record = try spot(named: "Record")
         try await withPrivateHome(settings: ["inputs": "mic:B2 camera:C3"]) { folder in
             try self.fakeScreen(in: folder)
 
@@ -77,7 +77,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
     }
 
     func testAPickTurnsAnInputOnOrOffAndReplacesTheOtherOfItsKind() async throws {
-        let record = try example("Record")
+        let record = try spot(named: "Record")
         let inputs = "inputs"
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
@@ -127,7 +127,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
     }
 
     func testShotIsAStayingSwiftSpotThatUsesTheScreenAndTheClipboard() throws {
-        let shot = try example("Shot")
+        let shot = try spot(named: "Shot")
 
         XCTAssertEqual(shot.mode, .stay)
         XCTAssertFalse(shot.triggers.shows)

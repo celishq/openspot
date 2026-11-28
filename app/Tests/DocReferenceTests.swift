@@ -1,7 +1,7 @@
 import XCTest
 
 final class DocReferenceTests: XCTestCase {
-    private let repo = RepoDoc.repo
+    private let repo = Repo.root
 
     private func exists(_ path: String, in folder: URL) -> Bool {
         FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path)
@@ -63,7 +63,7 @@ final class DocReferenceTests: XCTestCase {
 
     func testEachMakeTargetThatADocNamesIsInTheMakefile() throws {
         let makefile = try String(contentsOf: repo.appendingPathComponent("Makefile"), encoding: .utf8)
-        let targets = Set(RepoDoc.matches(#"(?m)^([a-z][a-z-]*):"#, in: makefile).map { $0[1] })
+        let targets = Set(RepoDoc.matches(#"(?m)^([a-z][a-z -]*):"#, in: makefile).flatMap { $0[1].split(separator: " ").map(String.init) })
         for doc in try RepoDoc.all() {
             let named = RepoDoc.matches(#"`make ([a-z][a-z-]*)"#, in: doc.prose) + doc.fences.flatMap { RepoDoc.matches(#"(?m)^make ([a-z][a-z-]*)"#, in: $0.text) }
             for target in named.map({ $0[1] }) {

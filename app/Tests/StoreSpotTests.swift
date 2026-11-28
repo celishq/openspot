@@ -10,7 +10,7 @@ final class StoreSpotTests: BuiltInCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/clock.spot/clock.sh"), toml: "title = 'Clock'")
+        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("store/clock.spot/clock.sh"), toml: "title = 'Clock'")
     }
 
     func testItsCardOpensTheStoreWindowOfTheApp() async throws {

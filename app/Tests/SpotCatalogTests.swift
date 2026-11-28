@@ -43,7 +43,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
         let examples = folder.appendingPathComponent("examples", isDirectory: true)
-        let builtIn = try XCTUnwrap(StoreSource.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        let builtIn = try XCTUnwrap(StoreSource.builtIn(environment: ["OPENSPOT_STORE": examples.path]))
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
 
         XCTAssertEqual(builtIn.name, "Openspot")

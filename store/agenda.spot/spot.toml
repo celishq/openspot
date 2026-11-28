@@ -6,7 +6,8 @@ uses = ["calendar"]
 [on]
 "panel.open" = true
 "sheet.text" = true
-every = 60
+"calendar.change" = true
+"reminders.change" = true
 
 [settings]
 calendars = { type = "text", icon = "calendar" }

@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class DocExampleTests: SampleSpotsCase {
+final class DocExampleTests: RepoSpotsCase {
     private let runnable: Set<String> = ["sh", "js", "swift"]
 
     private func docs() throws -> [RepoDoc] {

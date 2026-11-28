@@ -9,6 +9,7 @@ final class SpotMac: MacEvents {
     private var lockObservers: [NSObjectProtocol] = []
     private var isLocked = false
     private let system = SpotSystemEvents()
+    private let calendars = SpotCalendarEvents()
 
     nonisolated var mac: Mac {
         Mac(
@@ -43,6 +44,7 @@ final class SpotMac: MacEvents {
 
     func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
         system.listen(heard)
+        calendars.listen(heard)
         let center = NSWorkspace.shared.notificationCenter
         let screens = DistributedNotificationCenter.default()
         observers.forEach(center.removeObserver)

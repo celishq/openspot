@@ -43,16 +43,17 @@ final class CheckScriptTests: XCTestCase {
         ("tools", "app/project.yml", "targets:\n  A:\n    configs:\n      Release:\n        SWIFT_ACTIVE_COMPILATION_CONDITIONS: OPENSPOT_" + "TOOLS\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/spot.toml", "title = \"Weather\"\n\n[on]\nevery = 5\n"),
+        ("spots", "store/weather.spot/spot.toml", "title = \"Weather\"\n\n[on]\nevery = 5\n"),
         ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
     ]
 
     private var scripts: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("scripts")
+        Repo.root.appendingPathComponent("scripts")
     }
 
     private func cleanTree() throws -> URL {
         let root = try temporaryFolder()
-        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks", "spots", "examples"] {
+        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks"] + Repo.spotFolders {
             try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
         }
         for list in Self.lists {

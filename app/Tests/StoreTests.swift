@@ -16,7 +16,7 @@ final class StoreTests: XCTestCase {
         places = AppPlaces(
             environment: [
                 "OPENSPOT_CONFIG": root.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path, "OPENSPOT_CORE": core.path,
-                "OPENSPOT_EXAMPLES": examples.path
+                "OPENSPOT_STORE": examples.path
             ],
             home: root,
             defaults: UserDefaults(suiteName: "openspot-store-\(UUID().uuidString)") ?? .standard,
