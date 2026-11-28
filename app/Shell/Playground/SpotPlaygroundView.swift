@@ -108,7 +108,7 @@ struct SpotPlaygroundView: View {
         }
     }
 
-    private func color(of line: String) -> Color {
+    private func color(of line: String) -> SpotColor {
         switch line.first {
         case "$", "=": SpotTheme.ink
         case "!": SpotTheme.warn
@@ -116,7 +116,7 @@ struct SpotPlaygroundView: View {
         }
     }
 
-    private func lines(_ lines: [String], color: Color) -> some View {
+    private func lines(_ lines: [String], color: SpotColor) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line)

@@ -84,7 +84,7 @@ struct NodeLook: ViewModifier {
         }
     }
 
-    @MainActor private static func colour(_ fill: Style.Fill, onSolid: Bool) -> Color {
+    @MainActor private static func colour(_ fill: Style.Fill, onSolid: Bool) -> SpotColor {
         switch fill {
         case .tile: SpotTheme.ink(onSolid: onSolid).opacity(SpotTheme.fill)
         case .accent: SpotTheme.accent

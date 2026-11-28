@@ -84,7 +84,7 @@ struct SpotKeycaps: View {
 
     private static func words(_ message: String) -> some View {
         KeyFill.text(message)
-            .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
+            .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track).color))
             .font(SpotType.detail)
             .modifier(SpotSecondaryText())
             .multilineTextAlignment(.center)

@@ -363,6 +363,9 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private func rows<Offsets: Collection<Int>>(of found: Offsets) -> Shown {
+        if pinnedAbove.isEmpty, pinnedBelow.isEmpty, found.count == all.count, found.elementsEqual(all.indices) {
+            return Shown(items: all, hasFiles: holdsFiles)
+        }
         var rows = pinnedAbove
         rows.reserveCapacity(pinnedAbove.count + found.count + pinnedBelow.count)
         for offset in found where all[offset].pin == nil { rows.append(all[offset]) }

@@ -4,12 +4,13 @@ import SwiftUI
 struct SpotFlowEdges: View {
     let model: SpotsModel
     let rect: CGRect
+    let isOn: Bool
     @State private var resting: FlowSheet?
     @State private var named: FlowSheet?
     @State private var pause: Task<Void, Never>?
 
     var body: some View {
-        let edges = model.flowEdges.edges
+        let edges = isOn ? model.flowEdges.edges : []
         ZStack(alignment: .topLeading) {
             ForEach(edges.filter { !$0.isFading && $0.place.side != nil }) { edge in
                 target(edge)
@@ -19,6 +20,10 @@ struct SpotFlowEdges: View {
             }
         }
         .onChange(of: model.flowEdges.shown) { _, _ in
+            resting = nil
+            named = nil
+        }
+        .onChange(of: isOn) { _, _ in
             resting = nil
             named = nil
         }

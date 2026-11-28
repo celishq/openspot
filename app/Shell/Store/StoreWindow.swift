@@ -27,6 +27,7 @@ enum StoreWindow {
         let store = Store(places: model.files, changed: { await model.spotsChanged() }, toast: { model.toast($0) })
         model.store = store
         let window = SpotSheetWindow.make(pages: "Store", name: "store-window", content: StoreView(store: store, model: model))
+        window.closed = { kept = nil }
         window.takesEscape = {
             if store.page != nil {
                 store.closePage()

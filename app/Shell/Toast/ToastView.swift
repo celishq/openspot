@@ -28,7 +28,7 @@ struct ToastView: View {
                         .foregroundStyle(SpotTheme.ink)
                 }
                 KeyFill.text(toast.words)
-                    .textRenderer(KeyFill(fill: SpotTheme.highlight.opacity(SpotTheme.track)))
+                    .textRenderer(KeyFill(fill: SpotTheme.highlight.opacity(SpotTheme.track).color))
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(3)

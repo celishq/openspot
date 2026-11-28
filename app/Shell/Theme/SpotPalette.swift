@@ -5,27 +5,27 @@ import SwiftUI
 final class SpotPalette: Sendable {
     let dark: Theme.Appearance
     let light: Theme.Appearance
-    let ink: Color
-    let solid: Color
-    let onSolid: Color
-    let glyphOnSolid: Color
-    let glass: Color
-    let glassTint: Color
-    let cornerFill: Color
-    let window: Color
-    let confirm: Color
-    let onConfirm: Color
-    let backdropTint: Color
-    let cardShadow: Color
-    let attachmentFace: Color
-    let attachmentTileTop: Color
-    let attachmentTileBottom: Color
-    let attachmentTileInk: Color
-    let highlight: Color
-    let accent: Color
-    let good: Color
-    let warn: Color
-    let bad: Color
+    let ink: SpotColor
+    let solid: SpotColor
+    let onSolid: SpotColor
+    let glyphOnSolid: SpotColor
+    let glass: SpotColor
+    let glassTint: SpotColor
+    let cornerFill: SpotColor
+    let window: SpotColor
+    let confirm: SpotColor
+    let onConfirm: SpotColor
+    let backdropTint: SpotColor
+    let cardShadow: SpotColor
+    let attachmentFace: SpotColor
+    let attachmentTileTop: SpotColor
+    let attachmentTileBottom: SpotColor
+    let attachmentTileInk: SpotColor
+    let highlight: SpotColor
+    let accent: SpotColor
+    let good: SpotColor
+    let warn: SpotColor
+    let bad: SpotColor
     let glassInk: AnyShapeStyle
     let glassSecondary: AnyShapeStyle
     let glassVariant: Theme.Glass
@@ -64,25 +64,26 @@ final class SpotPalette: Sendable {
         glassVariant = colours.glass
     }
 
-    func ink(onSolid: Bool) -> Color {
+    func ink(onSolid: Bool) -> SpotColor {
         Theme.Appearance.inkKey(onSolid: onSolid) == \.onSolid ? self.onSolid : ink
     }
 
     func color(_ part: KeyPath<Theme.Appearance, ThemeColor>) -> Color {
-        Self.color(part, dark: dark, light: light)
+        Self.color(part, dark: dark, light: light).color
+    }
+
+
+    private static func color(_ part: KeyPath<Theme.Appearance, ThemeColor>, dark: Theme.Appearance, light: Theme.Appearance) -> SpotColor {
+        let (one, other) = (dark[keyPath: part], light[keyPath: part])
+        if one == other, tones.contains(part) { return SpotColor(system: one.color) }
+        return SpotColor(dark: one.nsColor, light: other.nsColor)
     }
 
     private static var tones: [KeyPath<Theme.Appearance, ThemeColor>] {
         [\.accent, \.good, \.warn, \.bad]
     }
 
-    private static func color(_ part: KeyPath<Theme.Appearance, ThemeColor>, dark: Theme.Appearance, light: Theme.Appearance) -> Color {
-        let (one, other) = (dark[keyPath: part], light[keyPath: part])
-        if one == other, tones.contains(part) { return one.color }
-        return color(one.nsColor, other.nsColor)
-    }
-
-    private static func color(_ dark: NSColor, _ light: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? dark : light })
+    static func color(_ dark: NSColor, _ light: NSColor) -> SpotColor {
+        SpotColor(dark: dark, light: light)
     }
 }

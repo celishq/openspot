@@ -38,6 +38,8 @@ public protocol SpotsHost: AnyObject {
     func prepareCards(glyphs: [String])
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void)
+    func snap(_ body: () -> Void)
+    func join(_ body: () -> Void)
     func nextFrame(_ body: @escaping @MainActor () -> Void)
     func allows(_ reason: String) async -> Bool
     func openStore(file: URL)
@@ -59,6 +61,14 @@ extension SpotsHost {
             completion()
             removal()
         }
+    }
+
+    public func snap(_ body: () -> Void) {
+        change(nil, body, completion: {})
+    }
+
+    public func join(_ body: () -> Void) {
+        snap(body)
     }
 
     public var frontApp: FrontApp? {

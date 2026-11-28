@@ -105,7 +105,7 @@ extension StoreView {
                             }
                         } else {
                             KeyFill.text(line.words.joined(separator: "\n"))
-                                .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
+                                .textRenderer(KeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track).color))
                                 .fixedSize(horizontal: false, vertical: true)
                                 .textSelection(.enabled)
                         }

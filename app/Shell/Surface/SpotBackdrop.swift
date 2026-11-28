@@ -9,7 +9,7 @@ struct SpotBackdrop: View {
 
     var body: some View {
         if drawsGlass, SpotTokens.backdrop.reach == .tiles, !model.isArranging {
-            BackdropShape(rect: model.backdrop, foot: model.panelFoot, motion: motion, style: SpotTokens.backdrop.style)
+            BackdropShape(rect: model.backdrop, foot: model.panelFoot, motion: motion, rest: (model.backdrop, model.panelFoot), style: SpotTokens.backdrop.style)
                 .modifier(PanelSpan(grid: model.grid))
                 .modifier(SpotShownFade(isShown: isShown))
                 .allowsHitTesting(false)
@@ -21,6 +21,7 @@ private struct BackdropShape: View, @preconcurrency Animatable {
     var rect: CGRect
     var foot: PanelFoot
     var motion: SheetMotion
+    let rest: (rect: CGRect, foot: PanelFoot)
     let style: Theme.Backdrop.Style
 
     var animatableData: AnimatablePair<CGRect.AnimatableData, AnimatablePair<PanelFoot.AnimatableData, Double>> {
@@ -33,18 +34,18 @@ private struct BackdropShape: View, @preconcurrency Animatable {
     }
 
     var body: some View {
+        let isMoving = motion.progress != 0 && motion.progress != 1 || rect != rest.rect || foot != rest.foot
         var rect = rect
         rect.size.height = motion.place(of: foot)
-        let isMoving = motion.progress != 0 && motion.progress != 1
         return ZStack(alignment: .topLeading) {
             switch style {
             case .blur:
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
             case .tint:
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
+                SpotBackdropTint(color: SpotTheme.backdropTint.color, fadingIn: rect, isMoving: isMoving)
             case .veil:
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect, isMoving: isMoving)
-                SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect, isMoving: isMoving)
+                SpotBackdropTint(color: SpotTheme.backdropTint.color, fadingIn: rect, isMoving: isMoving)
             }
         }
     }

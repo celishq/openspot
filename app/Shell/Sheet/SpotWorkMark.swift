@@ -12,7 +12,7 @@ struct SpotWorkMark: View {
         side >= SpotTokens.glyph
     }
 
-    private var colour: Color {
+    private var colour: SpotColor {
         isOnSolid ? SpotTheme.glyphOnSolid : SpotTheme.ink
     }
 
@@ -22,8 +22,8 @@ struct SpotWorkMark: View {
                 SpotRing(
                     fill: fill,
                     line: isLarge ? SpotTokens.workThickLine : SpotTokens.workThinLine,
-                    colour: colour,
-                    track: (isOnSolid ? SpotTheme.onSolid : SpotTheme.ink).opacity(SpotTheme.track)
+                    colour: colour.color,
+                    track: (isOnSolid ? SpotTheme.onSolid : SpotTheme.ink).opacity(SpotTheme.track).color
                 )
             } else {
                 ProgressView()

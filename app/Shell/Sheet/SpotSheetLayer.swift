@@ -109,8 +109,8 @@ struct SpotSheetLayer: View {
         isOpen ? 1 : 0
     }
 
-    private var contentOpacity: (Double) -> Double {
-        if card?.look == nil { return { _ in 1 } }
+    private var contentOpacity: ((Double) -> Double)? {
+        if card?.look == nil { return nil }
         return { [isOpen] in SheetMorph.contentOpacity(at: $0, isOpen: isOpen) }
     }
 

@@ -279,6 +279,7 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var hintTakes = 0
     @ObservationIgnored var hintIsStale = false
     @ObservationIgnored var pressDepth = 0
+    @ObservationIgnored var pressJoins = false
     public var form: FormSession? {
         didSet {
             let rect = form.map { SpotTokens.formRect($0.draft.form) }

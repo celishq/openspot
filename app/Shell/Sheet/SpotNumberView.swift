@@ -15,7 +15,7 @@ struct SpotNumberView: View {
     }
 
     private var colour: Color {
-        SpotToneWords.colour(of: part.tone) ?? SpotTheme.ink(onSolid: isOnSolid)
+        (SpotToneWords.colour(of: part.tone) ?? SpotTheme.ink(onSolid: isOnSolid)).color
     }
 
     var body: some View {

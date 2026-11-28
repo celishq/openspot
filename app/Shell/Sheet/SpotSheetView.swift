@@ -165,8 +165,8 @@ private struct SheetContentView: View {
         morph.source == .card && !hasCardLook && cardSize != .small
     }
 
-    private var sheetWordsOpacity: (Double) -> Double {
-        if hasCardLook { return { _ in 1 } }
+    private var sheetWordsOpacity: ((Double) -> Double)? {
+        if hasCardLook { return nil }
         return { [isOpen] in SheetMorph.contentOpacity(at: $0, isOpen: isOpen) }
     }
 

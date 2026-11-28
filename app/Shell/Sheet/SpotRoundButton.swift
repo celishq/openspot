@@ -36,7 +36,7 @@ struct SpotRoundButton: View {
         .accessibilityLabel(act == nil ? label : "Stop")
     }
 
-    private var fill: Color {
+    private var fill: SpotColor {
         switch look {
         case .plain: SpotTheme.ink.opacity(SpotTheme.control)
         case .strong, .bare: .clear

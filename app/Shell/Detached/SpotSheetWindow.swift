@@ -7,6 +7,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var id = ""
     private var isPresent = false
     var takesEscape: () -> Bool = { false }
+    var closed: () -> Void = {}
     private var declared: CGSize?
     private var book: SettingsBook?
     private var sidebar: CGFloat?
@@ -31,7 +32,14 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         return book.record(key: name, modifiers: Shortcut.Modifiers.all.filter { modifiers.contains($0) }.compactMap(\.word))
     }
 
+    #if OPENSPOT_TOOLS
+    static var showsQuietly = false
+    #endif
+
     func show() {
+        #if OPENSPOT_TOOLS
+        if Self.showsQuietly { return showQuietly() }
+        #endif
         let opens = !isPresent
         if opens {
             isPresent = true
@@ -49,6 +57,17 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         makeKeyAndOrderFront(nil)
     }
 
+    #if OPENSPOT_TOOLS
+    private func showQuietly() {
+        isPresent = true
+        if let declared { setContentSize(declared) }
+        setFrameOrigin(SpotTokens.offScreen)
+        ignoresMouseEvents = true
+        contentView?.layoutSubtreeIfNeeded()
+        orderFrontRegardless()
+    }
+    #endif
+
     func focus() {
         guard isPresent else { return }
         NSApp.activate(ignoringOtherApps: true)
@@ -65,6 +84,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         AppPresence.close()
         book?.closed()
         if model?.runs.floating.contains(id) == true { model?.land(id) }
+        closed()
     }
 
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
@@ -93,7 +113,6 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         )
         window.declared = SpotTokens.settingsWindowSize
         window.sidebar = SpotTokens.settingsSidebarIdeal
-        window.toolbarStyle = .unified
         window.isOpaque = true
         window.backgroundColor = .windowBackgroundColor
         window.isMovableByWindowBackground = false
@@ -120,7 +139,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         if remembers { window.setFrameAutosaveName(name) }
         let host = NSHostingController(rootView: content)
         host.sizingOptions = []
-        if bridges { host.sceneBridgingOptions = .all }
+        if bridges {
+            host.sceneBridgingOptions = .all
+            window.toolbarStyle = .unified
+            window.toolbar = NSToolbar()
+        }
         window.contentViewController = host
         window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }

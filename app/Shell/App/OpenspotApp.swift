@@ -1,6 +1,7 @@
 import AppKit
 import OpenspotCore
 import os
+import SwiftUI
 
 @main
 @MainActor
@@ -36,6 +37,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
     let frame = NextFrame()
+    var lastChange = Transaction()
     private(set) var toast: ToastPanel?
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(
@@ -48,6 +50,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var submenu: SpotSubmenuWindow?
     #if OPENSPOT_TOOLS
     private var motionProbe: SpotMotionProbe?
+    private var memoryProbe: SpotMemoryProbe?
     #endif
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
@@ -55,6 +58,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var appearanceWatch: NSKeyValueObservation?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
+    private static let launchSettles: TimeInterval = 10
     private var isLaunched = false
     private var showsAtLaunch = false
     private var openedAtLaunch: [URL] = []
@@ -90,7 +94,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel = SpotsPanel.make(model: model)
         menuBar = SpotMenuBar(model: model, openspotItem: item)
         #if OPENSPOT_TOOLS
-        if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
+        if let probe = SpotMemoryProbe(model: model) {
+            memoryProbe = probe
+            probe.run()
+        } else if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
         }
@@ -127,12 +134,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.runs.launched()
         panel?.warm { [weak self] in
             guard let self else { return }
-            SpotSheetWarmth.draw()
             update?.start()
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSettles) { malloc_zone_pressure_relief(nil, 0) }
             if isFirstLaunch {
                 Task { await self.model.beginFirstLaunch() }
-            } else {
-                model.toast(ToastNote(words: model.entryKey.openHint))
             }
         }
         isLaunched = true

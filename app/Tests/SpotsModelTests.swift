@@ -1764,17 +1764,34 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
     }
 
-    func testACutSheetWritesTheHintOnceWithNoMotion() async throws {
+    func testACutSheetWritesTheHintInTheCutsOwnTransaction() async throws {
         try await openList()
         model.followHint()
         await hopsEnd()
         model.fieldDrop = SpotDrop(paths: [folder.path], folder: folder)
         let writes = host.hintWrites.count
+        let joined = host.joinedHints.count
 
         model.closeSheet(moving: false)
 
         XCTAssertNil(model.openSheetID)
         XCTAssertEqual(host.hintWrites.count, writes)
+        XCTAssertEqual(Array(host.joinedHints.dropFirst(joined)), [nil])
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testAMovingCloseWritesTheHintInTheClosesOwnTransaction() async throws {
+        try await openList()
+        model.followHint()
+        await hopsEnd()
+        let writes = host.hintWrites.count
+        let joined = host.joinedHints.count
+
+        model.closeSheet(moving: true)
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(host.hintWrites.count, writes)
+        XCTAssertEqual(Array(host.joinedHints.dropFirst(joined)), [.sheet(isOpen: false)])
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
     }
 

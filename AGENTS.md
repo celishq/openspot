@@ -79,7 +79,8 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   `Core/Theme/SpotTokens.swift`, formulas over them in `Core/Theme/SpotTokens+Derived.swift`, sizes of single parts in
   `Core/Theme/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
   new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
-  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
+  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. A colour of the theme is a `SpotColor`,
+  a style that picks its value from the colour scheme without AppKit; take its `.color` only where an API needs a `Color`. The defaults of the rules
   mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
   such as a colour of one card, is a constant in a token file. `make verify` runs `scripts/check-tokens.sh`, which fails
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
@@ -92,7 +93,8 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
 - Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, keys and Dock presence, and
-  the system material, not glass, so the glass of what it shows stands out. A window with a hint ends with `SpotWindowFooter`, its hint and Done; Settings ends at its content, as System Settings does. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+  the system material, not glass, so the glass of what it shows stands out. A window whose SwiftUI content brings a toolbar has an empty one before its content, so the toolbar's arrival does not grow
+  the window and lay out its whole content again. A window with a hint ends with `SpotWindowFooter`, its hint and Done; Settings ends at its content, as System Settings does. `make verify` runs `scripts/check-windows.sh`, which fails on a window
   that `Shell/` makes elsewhere, except the panel and its parts, the screen backdrop under it, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
@@ -102,7 +104,8 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
 - The soft backdrop of the panel is one fade around the content, `BackdropFade` in Core: none at the outer edge of the
   halo, full at the content, and the blur full under it by `halo-inset`, so text fades out at the edge of the tiles. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
   (`SpotBackdropTint`), both masked by the same small picture of the fade (`SpotBackdropFade`), drawn again only when
-  the backdrop's resting shape changes. While a sheet moves the foot, each frame's picture is the rows of one tall picture (`BackdropFade.stretch`). The backdrop hides by opacity alone.
+  the backdrop's resting shape changes. While its area moves, each frame's picture is cut from slices of one drawn picture (`BackdropFade.slices`), and drawn afresh only when the area has no straight band. The backdrop hides by opacity alone. A blur that covers the screen, such as the cover of Edit Spots, samples the screen at `SpotTokens.backdropCoverScale`, since the
+  system blurs it again in each frame in which anything under it changes.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Picture` that draws one another way.
 
@@ -119,6 +122,10 @@ below is one a reviewer can check in a diff.
 - The main thread never waits on a spot. The one exception: the answers to a key share one wait of 2 ms at most.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
+- SwiftUI applies the pending update at once when a write comes in a transaction of another kind, and a transaction with a
+  completion is of a kind of its own. So a cut (`snap`) carries no completion, and the hint of a press that made a change is
+  written in that change's own transaction (`SpotsHost.join`), since only the same transaction value joins it, so the press stays
+  one update. The hint then crossfades on the press's motion.
 - Each entry point of a person's act runs in `asOnePress`. A source of the hint only marks it stale. The outermost press works the
   hint out once and writes it as its last change, so no setter writes the hint, and the observation's hop works it out only for a
   change that no press made. A setter must not write through `change`, since `withTransaction` can flush the pending update, and
@@ -182,6 +189,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
 - Grow a surface with an animated shape that clips its content and shapes its glass. Do not scale a surface that has corners,
   a rim or words.
+- Draw a fill or a ring of a moving shape as a colour that the shape clips (`SpotColor.ring(of:width:)`), not as a shape view: a
+  shape view is a leaf of layout, and a new shape on each frame lays out the stack that holds it. A clip does not bound the pointer,
+  so such a colour takes `contentShape` of the same shape, or no hit testing.
 - A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
@@ -189,8 +199,8 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   corner, and the system draws it once. A glass of any other shape, such as a path built by `subtracting`, is drawn again on each
   frame of a motion.
 - An animatable modifier's output is constant while its view is hidden, since each frame that moves a glass works out its whole
-  subtree again, and `visualEffect` does not spare that. A pushed grid card holds still once its fade has hidden it
-  (`SheetPush.pose`), and takes no click.
+  subtree again, and `visualEffect` does not spare that. A pushed grid card composites before its fade and scale, so its glass sees no
+  opacity change, holds still once its fade has hidden it (`SheetPush.pose`), and takes no click.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
   [Drawing](#drawing)).
@@ -300,6 +310,7 @@ interaction.
 make verify                # the checks in scripts/check-*.sh, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
+make memory N=3           # reads the footprint of a Release app at idle, and with Settings, the Store and the Playground open and closed, 3 runs; fails when the last close is over BUDGET MB (75)
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before

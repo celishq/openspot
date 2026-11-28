@@ -13,6 +13,12 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var holdsItems = false
     public private(set) var holdsScroll = false
     private(set) var order: [String] = []
+    private var rows: [String: Row] = [:]
+
+    private struct Row: Equatable, Sendable {
+        let parent: String?
+        let style: StyleCache.Kept
+    }
 
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
@@ -27,7 +33,7 @@ public struct ViewTree: Equatable, Sendable {
     }
 
     func group(of id: String) -> String? {
-        guard let box = nodes[id]?.parent.flatMap({ nodes[$0] }), box.kind == .box, listed.contains(box.id) else { return nil }
+        guard let box = (nodes[id]?.parent ?? rows[id]?.parent).flatMap({ nodes[$0] }), box.kind == .box, listed.contains(box.id) else { return nil }
         return box.block.value("title")
     }
 
@@ -65,6 +71,7 @@ public struct ViewTree: Equatable, Sendable {
         var shown: [String] = []
         var next = Array(children.reversed())
         while let id = next.popLast() {
+            if let row = rows[id], row.style.style.resolved(for: active).isHidden != true { shown.append(id) }
             guard let node = nodes[id], node.style.resolved(for: active).isHidden != true else { continue }
             shown.append(id)
             next += node.children.reversed()
@@ -129,14 +136,33 @@ public struct ViewTree: Equatable, Sendable {
         for id in order {
             if let parent = parents[id] { held[parent, default: []].append(id) } else { children.append(id) }
         }
+        let word = { (id: String?) in id.flatMap { found[$0]?.fields.first?.key } }
+        var rowIDs: [(id: String, block: TextBlock, style: Style, classes: String?, partKind: BlockKind?)] = []
         for id in order {
-            guard let block = found[id], let word = block.fields.first?.key else { continue }
+            guard let block = found[id], let first = block.fields.first?.key else { continue }
             let partKind = BlockKind.of(block, in: kinds)
-            guard let kind = partKind ?? BlockKind.lists.first(where: { $0.word == word }) ?? kinds.first(where: { $0.name == word }) else { continue }
-            let style = block.value(ViewNode.classKey).map(styles.style(of:)) ?? Style()
+            guard let kind = partKind ?? BlockKind.lists.first(where: { $0.word == first }) ?? kinds.first(where: { $0.name == first }) else { continue }
+            let classes = block.value(ViewNode.classKey)
+            let style = classes.map(styles.style(of:)) ?? Style()
             faults += style.unknown.map { "the part \(id) has an unknown class: \($0)" }
-            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], partKind: partKind)
             places.formUnion(style.named)
+            let parent = parents[id]
+            let isListed = word(parent) == BlockKind.items.word || word(parent) == BlockKind.box.word && word(parent.flatMap { parents[$0] }) == BlockKind.items.word
+            if kind == .item, held[id] == nil, isListed || written == nil && !isWritten && parent == nil {
+                rowIDs.append((id, block, style, classes, partKind))
+                continue
+            }
+            nodes[id] = ViewNode(id: id, kind: kind, parent: parent, block: block, style: style, classes: classes, styles: styles, children: held[id] ?? [], partKind: partKind)
+        }
+        let drawsRows = !isWritten && !places.union(style.named).isEmpty
+        var rowsListed: Set<String> = []
+        for row in rowIDs {
+            if drawsRows {
+                nodes[row.id] = ViewNode(id: row.id, kind: .item, parent: parents[row.id], block: row.block, style: row.style, classes: row.classes, styles: styles, children: [], partKind: row.partKind)
+            } else {
+                rows[row.id] = Row(parent: parents[row.id], style: styles.kept(row.style, classes: row.classes, grows: row.style.grows))
+                if parents[row.id] != nil { rowsListed.insert(row.id) }
+            }
         }
         holdsItems = nodes.values.contains { $0.kind == .items }
         holdsScroll = nodes.values.contains { $0.style.scrolls }
@@ -145,18 +171,19 @@ public struct ViewTree: Equatable, Sendable {
         listed = Set(nodes.values.filter { node in
             guard let parent = holder(node.parent) else { return false }
             return parent.kind == .items || parent.kind == .box && holder(parent.parent)?.kind == .items
-        }.map(\.id))
-        let rows = isWritten ? listed : written == nil ? Set(nodes.keys) : []
-        faults += order.filter { rows.contains($0) && nodes[$0]?.kind == .text }.map(BlockKind.rowFault(of:))
-        faults += order.filter { !rows.contains($0) && nodes[$0]?.kind == .item }.map(BlockKind.placedItemFault(of:))
+        }.map(\.id)).union(rowsListed)
+        let listedRows = isWritten ? listed : written == nil ? Set(nodes.keys).union(rowIDs.map(\.id)) : []
+        faults += order.filter { listedRows.contains($0) && nodes[$0]?.kind == .text }.map(BlockKind.rowFault(of:))
+        faults += order.filter { !listedRows.contains($0) && nodes[$0]?.kind == .item }.map(BlockKind.placedItemFault(of:))
         for (id, node) in nodes where node.isSearch || node.part?.isPressable == true && (!isWritten || listed.contains(id)) {
             nodes[id]?.part = nil
         }
         for id in order {
-            guard let node = nodes[id], let parent = node.parent, let container = nodes[parent] else { continue }
-            if node.kind == .box, container.kind == .box, listed.contains(id) {
+            guard let node = nodes[id], let parent = node.parent, nodes[parent] != nil || rows[parent] != nil else { continue }
+            let container = nodes[parent]
+            if node.kind == .box, container?.kind == .box, listed.contains(id) {
                 faults.append("the box \(id) sits inside the group \(parent), so it and the blocks inside it do not show. A group is one level deep")
-            } else if listed.contains(parent), container.kind != .box {
+            } else if listed.contains(parent), container?.kind != .box {
                 faults.append("the block \(id) sits inside the item \(parent), so it does not show. An item is one block")
             }
         }

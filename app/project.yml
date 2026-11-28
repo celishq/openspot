@@ -279,6 +279,10 @@ schemes:
         OpenspotCore: all
     run:
       config: Debug
+    profile:
+      config: Release
+      commandLineArguments:
+        "--config $(SRCROOT)/../.temp/openspot": true
     test:
       environmentVariables:
         OPENSPOT_SH: $(SRCROOT)/Shell/openspot.sh

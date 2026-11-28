@@ -33,12 +33,14 @@ final class DetachedWindows {
 
     func window(_ entry: SpotsModel.Entry) {
         let window = windows[entry.id] ?? SpotSheetWindow.make(model: model, entry: entry)
+        window.closed = { [weak self] in self?.windows[entry.id] = nil }
         windows[entry.id] = window
         window.show()
     }
 
     func openSettings() {
         let window = settings ?? SpotSheetWindow.make(settings: model, content: SettingsView(model: model))
+        window.closed = { [weak self] in self?.settings = nil }
         settings = window
         window.show()
     }

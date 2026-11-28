@@ -27,7 +27,7 @@ struct SpotFieldView: View {
                 promptLayer
                     .modifier(SpotFaded())
                     .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
-                editHeader
+                SpotEditHeader(model: model)
                     .modifier(SpotFaded())
                     .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
                     .allowsHitTesting(model.isEditing)
@@ -56,8 +56,10 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
+            SpotTheme.highlight.opacity(SpotTheme.fill)
+                .clipShape(SpotSurfaceShape(rect: place, radius: fieldRadius))
+                .contentShape(SpotSurfaceShape(rect: place, radius: fieldRadius))
+                .opacity(isInSheet ? 1 : MotionTokens.hiddenOpacity)
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 SpotFieldPrompt.glyph
@@ -101,27 +103,6 @@ struct SpotFieldView: View {
         .modifier(FieldPlace(isShown: model.isShown))
     }
 
-    private var editHeader: some View {
-        HStack {
-            Text(model.isArranging ? "Arranging spots" : "Edit Spots")
-                .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink)
-            Spacer()
-            Picker("Columns", selection: Binding(get: { model.grid.columns }, set: { model.set(columns: $0) })) {
-                ForEach(OpenspotCore.GridLayout.widths, id: \.self) { Text("\($0)").tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            SpotRoundButton(icon: .symbol("checkmark"), label: "Done", look: .strong) { model.endEditing() }
-        }
-        .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
-        .padding(.trailing, SpotTokens.padding)
-        .frame(width: Self.rect.width, height: Self.rect.height)
-        .offset(x: Self.rect.minX, y: Self.rect.minY)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-    }
-
     static func sheetRow(top: SheetTop) -> CGRect {
         CGRect(
             x: SpotTokens.halo + SpotTokens.padding,
@@ -150,13 +131,22 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyph + SpotTokens.fieldTextGap
     }
 
+    private static let enter = KeyEquivalent("\u{3}")
+
+    private static var isComposing: Bool {
+        (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
+    }
+
     private var searchText: some View {
             SpotSearchText(model: model, sheetWord: isOpen ? sheetWord : nil)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
-                .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
+                .onKeyPress(keys: [.return, Self.enter]) { press in
+                    guard press.modifiers.isDisjoint(with: [.command, .option, .control]), !Self.isComposing else { return .ignored }
+                    return model.handleSearchKey(ActionKey(name: "return", isShift: press.modifiers.contains(.shift))) ? .handled : .ignored
+                }
                 .onKeyPress(keys: [.downArrow, .upArrow, .leftArrow, .rightArrow]) { press in
-                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true { return .ignored }
+                    if Self.isComposing { return .ignored }
                     let name = press.key == .downArrow ? "down" : press.key == .upArrow ? "up" : press.key == .leftArrow ? "left" : "right"
                     return model.handleSearchKey(ActionKey(name: name, isCommand: press.modifiers.contains(.command))) ? .handled : .ignored
                 }
@@ -194,8 +184,8 @@ struct SpotFieldView: View {
         isOpen ? 1 : 0
     }
 
-    private var crossing: (Double) -> Double {
-        guard let morph = sheet?.morph else { return { _ in 1 } }
+    private var crossing: ((Double) -> Double)? {
+        guard let morph = sheet?.morph else { return nil }
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
         let field = gridPlace
@@ -211,8 +201,8 @@ struct SpotFieldView: View {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.cardRadius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
-    private var glassLook: (Double) -> Double {
-        guard let morph = sheet?.morph else { return { _ in 1 } }
+    private var glassLook: ((Double) -> Double)? {
+        guard let morph = sheet?.morph else { return nil }
         let rest = gridPlace
         let row = Self.sheetRow(top: model.fieldTop)
         return { progress in

@@ -85,7 +85,7 @@ private struct ButtonDrawing: View {
         }
     }
 
-    private var ink: Color {
+    private var ink: SpotColor {
         SpotTheme.ink(onSolid: isOnSolid)
     }
 

@@ -26,6 +26,15 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case shortcut(String)
     }
 
+    public var title: String? {
+        if case .round = press { return nil }
+        return words
+    }
+
+    public var label: String {
+        words ?? id.capitalized
+    }
+
     public enum Press: Equatable, Sendable {
         case none
         case line
@@ -49,8 +58,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public let id: String
     public let kind: String
-    public let title: String?
-    public let label: String
+    private let words: String?
     public let detail: String?
     public internal(set) var icon: Icon?
     public let tone: MetricValue.Tone?
@@ -88,9 +96,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         color = kind.takesColor ? block.value("color").flatMap { BlockKind.isColor($0) ? $0 : nil } : nil
         let words = block.value("title")
+        self.words = words
         let round = kind.presses && (words == nil || style.hidesWords) && style.corner == .full ? icon : nil
-        title = round == nil ? words : nil
-        label = words ?? id.capitalized
         self.icon = round == nil ? icon : nil
         press = kind.presses ? round.map(Press.round) ?? .line : .none
         control = kind.control(block)

@@ -283,11 +283,13 @@ extension SpotsModel {
     }
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
+        pressJoins = pressDepth > 0
         host.change(motion, body, completion: completion)
     }
 
     func snap(_ body: () -> Void) {
-        host.change(nil, body, completion: {})
+        pressJoins = pressDepth > 0
+        host.snap(body)
     }
 
     public func moveItemToEdge(last: Bool) {
