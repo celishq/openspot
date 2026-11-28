@@ -297,7 +297,7 @@ public final class SpotRuns {
     }
 
     private func isInMenuBar(_ spot: Spot) -> Bool {
-        menuBar.contains(spot.id) && spot.canShowInMenuBar && !spot.isDraft
+        menuBar.contains(spot.id) && spot.canShowInMenuBar
     }
 
     func showActs() {

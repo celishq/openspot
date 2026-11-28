@@ -284,7 +284,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var canShowInMenuBar: Bool {
-        self.host == nil
+        self.host == nil && !self.isDraft
     }
 
     public var takesFiles: Bool {
