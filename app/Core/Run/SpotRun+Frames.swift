@@ -241,7 +241,7 @@ extension SpotRun {
             rows()
             var took = false
             let bring = { took = self.panel?.take(lines, answering: generation ?? current, keeping: keeping) == true }
-            if lines.tree.style.animatesLayout, panel?.tree.shape != lines.tree.shape { partsArrival(true, bring) } else { bring() }
+            if lines.tree.style.animatesLayout, panel?.tree.order != lines.tree.order { partsArrival(true, bring) } else { bring() }
             guard took else { return }
             partsAnswers += 1
             onReport(.parts)

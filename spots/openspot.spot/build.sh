@@ -50,7 +50,7 @@ has_script() {
 publish() {
   made=$(get "$1" spot)
   is_draft "$made" || return 0
-  sed -i '' -E "/^state *= *[\"']draft[\"']/d" "$folder/$made.spot/spot.toml"
+  sed -i '' -E "/$draft_line/d" "$folder/$made.spot/spot.toml"
   openspot grid top "$made" > /dev/null 2>&1 || true
 }
 
@@ -133,15 +133,9 @@ run() {
   put "$build" state ready
   moved "$build"
   publish "$build"
-  shown "$build" "$name"
+  openspot toast --remove "build-$build" > /dev/null 2>&1 || true
+  openspot toast "$name is ready." > /dev/null 2>&1 || true
   [ -z "${OPENSPOT_EDIT-}" ] || sheet ''
-}
-
-# Says that the spot $2 of the build $1 is ready. It waits at the top of the grid, marked New, and opens only when people
-# open it, so that nothing takes the panel.
-shown() {
-  openspot toast --remove "build-$1" > /dev/null 2>&1 || true
-  openspot toast "$2 is ready." > /dev/null 2>&1 || true
 }
 
 # Stops the run of the build $1: its group when the run leads one, or else the run and its children.

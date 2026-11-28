@@ -14,10 +14,6 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var holdsScroll = false
     private(set) var order: [String] = []
 
-    public var shape: [String] {
-        order
-    }
-
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
     }

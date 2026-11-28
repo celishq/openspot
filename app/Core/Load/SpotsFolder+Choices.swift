@@ -8,5 +8,4 @@ extension SpotsFolder {
     public func scanOwn() throws -> ScanResult {
         try KeptScan.shared.load(SpotsFolder(url: url)).result()
     }
-
 }

@@ -18,8 +18,8 @@ if [ "$1" = press ]; then
   exit 0
 fi
 
-# Each build is a folder in `builds`, with the words last sent, the spot it made, its state (running, ready, failed, stopped, done or
-# deleted), the step it is on, the agent's last words and its session. Builds run side by side, each in its own call, and
+# Each build is a folder in `builds`, with the words last sent, the spot it made, its state (running, ready, failed or
+# stopped), the step it is on, the agent's last words and its session. Builds run side by side, each in its own call, and
 # each shows on its own page, build/<id>. The first sheet starts a new one. The Edit sheet of a spot shows its last build.
 route=$(value route)
 build=
@@ -45,10 +45,12 @@ if [ "$1" = step ]; then
   exit 0
 fi
 
-# Says whether the spot $1 is a draft: its folder is there and its spot.toml says state = "draft". A draft is a spot
-# that a build began and has not made yet.
+# The line of a spot.toml that marks a draft: a spot that a build began and has not made yet.
+draft_line="^state *= *[\"']draft[\"']"
+
+# Says whether the spot $1 is a draft: its folder is there and its spot.toml holds the draft line.
 is_draft() {
-  grep -qE "^state *= *[\"']draft[\"']" "$folder/$1.spot/spot.toml" 2>/dev/null
+  grep -qE "$draft_line" "$folder/$1.spot/spot.toml" 2>/dev/null
 }
 
 # Prints the name a build goes by: the title of its spot once the agent has chosen it, so that people meet the spot by
