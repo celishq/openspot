@@ -156,7 +156,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `OPENSPOT_ID`     | The id of your spot.                                               |
 | `OPENSPOT_DATA`   | The folder where your spot keeps what lasts.                       |
 | `OPENSPOT_SH`     | The path of the shell helper.                                      |
-| `PATH`            | The folder of the `openspot` command, then the `PATH` Openspot started with, then `/opt/homebrew/bin`, `/usr/local/bin` and the folders in your home where installers put a command, such as `~/.local/bin`, then `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Your login shell's paths aren't on it. |
+| `PATH`            | The folder of the `openspot` command, then the `PATH` Openspot started with, then `/opt/homebrew/bin` and `/usr/local/bin`, then `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Your login shell's paths aren't on it. |
 | `LC_ALL`          | `en_US.UTF-8`.                                                     |
 
 ## The shell helper
