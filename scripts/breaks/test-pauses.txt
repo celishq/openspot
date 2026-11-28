@@ -20,8 +20,8 @@ app/Tests/NewSpotTests.swift	Task.sleep
 app/Tests/NewSpotTests.swift	Task.sleep
 app/Tests/PictureFileTests.swift	Task.sleep
 app/Tests/PictureFileTests.swift	Task.sleep
-app/Tests/SampleSpotsCase.swift	Task.sleep
-app/Tests/SampleSpotsCase.swift	Task.sleep
+app/Tests/RepoSpotsCase.swift	Task.sleep
+app/Tests/RepoSpotsCase.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
 app/Tests/ScriptProcessTests.swift	Task.sleep
