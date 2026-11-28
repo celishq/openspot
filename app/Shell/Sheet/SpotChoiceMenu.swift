@@ -20,6 +20,16 @@ enum SpotChoiceMenu {
         choose(id)
     }
 
+    static func prepare(_ options: [SpotPart.Option]) async {
+        for icon in options.compactMap(\.icon) {
+            switch icon {
+            case .file(let path): _ = await SpotIconStore.shared.native(path, pixels: SpotTokens.choiceMenuPixels)
+            case .image(let path): _ = await SpotIconStore.shared.image(.image(path))
+            default: break
+            }
+        }
+    }
+
     private static func image(of icon: Icon?) -> NSImage? {
         switch icon {
         case .file(let path): SpotIconStore.shared.cachedNative(path, pixels: SpotTokens.choiceMenuPixels).map(bodied)

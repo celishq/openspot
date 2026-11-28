@@ -114,15 +114,7 @@ private struct ChoiceDrawing: View {
             }
         }
         .fixedSize()
-        .task(id: options) {
-            for icon in options.compactMap(\.icon) {
-                switch icon {
-                case .file(let path): _ = await SpotIconStore.shared.native(path, pixels: SpotTokens.choiceMenuPixels)
-                case .image(let path): _ = await SpotIconStore.shared.image(.image(path))
-                default: break
-                }
-            }
-        }
+        .task(id: options) { await SpotChoiceMenu.prepare(options) }
         .accessibilityHidden(true)
         .overlay {
             GeometryReader { room in
