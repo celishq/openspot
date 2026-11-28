@@ -45,6 +45,21 @@ final class SheetMoreTests: SpotRunsCase {
         try await wait("the next searched page") { sheet.list.shown.map(\.title) == ["A x", "B", "C", "D x", "E"] }
     }
 
+    func testASheetThatOpensWithTextAsksItsSearchForTheTextAlone() async throws {
+        try script(toml: "[on]\n\"sheet.open\" = true\n\"sheet.text\" = true", """
+        words=$(sed -n 's/^input.value=//p')
+        printf 'item=a\\ntitle=A %s\\n' "$words"
+        """)
+        let sheet = try sheet()
+
+        sheet.take(query: "x")
+        sheet.show(event: .sheet)
+
+        try await wait("the searched rows") { sheet.list.shown.map(\.title) == ["A x"] && !sheet.isShowing }
+        XCTAssertEqual(sheet.query, "x")
+        XCTAssertEqual(log(), ["sheet.text"])
+    }
+
     func testASpotThatDoesNotDeclareSheetMoreIsNeverAsked() async throws {
         try script(toml: "[on]\n\"sheet.open\" = true", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()

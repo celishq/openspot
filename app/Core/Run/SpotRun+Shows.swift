@@ -22,7 +22,7 @@ extension SpotRun {
             return
         }
         let query = list.search == .script && !script.keepsState ? list.query : ""
-        let typed = query.isEmpty ? typed ?? "" : query
+        let typed = query.isEmpty && event != .sheet ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         var message = event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search)
         let isSent = send(Call(
@@ -47,6 +47,11 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         if isInline { return ask() }
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
+    }
+
+    public func take(query text: String) {
+        guard list.search(text, narrows: false) else { return }
+        answered = nil
     }
 
     private func find(_ text: String) {

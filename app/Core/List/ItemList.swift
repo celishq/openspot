@@ -168,8 +168,13 @@ public struct ItemList: Equatable, Sendable {
 
     public mutating func answer(_ items: [SpotItem], to text: String) {
         guard text == query else { return }
-        isWaiting = false
+        land(text)
         replace(items)
+    }
+
+    public mutating func land(_ text: String) {
+        guard text == query else { return }
+        isWaiting = false
         if awaitsLanding { landedSearches += 1 }
         awaitsLanding = false
     }

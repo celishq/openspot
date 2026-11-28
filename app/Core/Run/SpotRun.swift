@@ -276,7 +276,7 @@ public final class SpotRun {
         self.runs = runs
         self.prepare = prepare
         link = Self.link(for: spot, runs: runs)
-        rows = ItemList(recent: recent)
+        rows = ItemList(recent: recent, search: Self.search(of: nil, in: spot))
         keptState = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
         isOn = spot.headerState.active == true

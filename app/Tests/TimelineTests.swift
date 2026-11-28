@@ -241,6 +241,53 @@ final class TimelineTests: PanelCase {
         XCTAssertEqual(reversed.map(\.title), ["Meeting Notes"])
     }
 
+    func testTheTextQueryRanksTheMatchesInsideEachDayAndKeepsTheDaysNewestFirst() throws {
+        let timeline = Timeline(folder: store)
+        let now = Date()
+        _ = try timeline.add(Timeline.Draft(kind: .text, values: ["agenda"], title: "Meeting Notes"), of: "notes", at: now.addingTimeInterval(-2 * 86_400))
+        _ = try timeline.add(Timeline.Draft(kind: .text, values: ["the meeting moved"], title: "Mail"), of: "notes", at: now.addingTimeInterval(-1))
+        _ = try timeline.add(Timeline.Draft(kind: .text, values: ["lunch"], title: "Meeting"), of: "notes", at: now.addingTimeInterval(-2))
+
+        let found = timeline.list(Timeline.Query(text: "meeting"), at: now) ?? []
+
+        XCTAssertEqual(found.map(\.title), ["Meeting", "Mail", "Meeting Notes"])
+    }
+
+    func testAnOrderListsByTimeAlsoWithASearch() async throws {
+        for word in ["tea one", "coffee", "tea two"] {
+            _ = try await add(["text=\(word)"])
+            clock.advance(by: 1)
+        }
+
+        let oldest = try await listed(["--order", "oldest"])
+        let searched = try await listed(["--search", "tea", "--order", "oldest"])
+        let newest = try await listed(["--search", "tea", "--order", "newest"])
+        let wrong = try await call(["list", "--order", "best"])
+
+        XCTAssertEqual(oldest.map { $0.value("text") }, ["tea one", "coffee", "tea two"])
+        XCTAssertEqual(searched.map { $0.value("text") }, ["tea one", "tea two"])
+        XCTAssertEqual(newest.map { $0.value("text") }, ["tea two", "tea one"])
+        XCTAssertNotEqual(wrong.code, 0)
+    }
+
+    func testTheWordsOfASearchPickTheSpotTheAgeAndTheOrder() async throws {
+        _ = try await add(["text=tea old"])
+        clock.advance(by: 2 * 86_400)
+        _ = try await add(["text=tea one"])
+        _ = try await add(["text=tea elsewhere"], of: "other")
+        clock.advance(by: 1)
+        _ = try await add(["text=tea two"])
+
+        let found = try await listed(["--all", "--search", "spot:notes since:1d sort:oldest tea"], of: "reader")
+        let sort = try await call(["list", "--search", "sort:best"])
+        let since = try await call(["list", "--search", "since:soon"])
+
+        XCTAssertEqual(found.map { $0.value("text") }, ["tea one", "tea two"])
+        XCTAssertEqual(sort.errors, "sort: takes newest or oldest.\n")
+        XCTAssertEqual(since.errors, "since: takes an age, such as 30m, 2h or 7d, or today.\n")
+        XCTAssertEqual(sort.code, 2)
+    }
+
     func testTheEntriesLastThroughARelaunch() throws {
         let now = Date()
         _ = try Timeline(folder: store).add(Timeline.Draft(kind: .text, values: ["kept"]), of: "notes", at: now)

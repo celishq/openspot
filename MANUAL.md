@@ -11,7 +11,7 @@ Every spot answers the same keys, so you learn them once.
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
-| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your sessions in it. |
+| `⌘Y`       | Opens the Timeline with `spot:<id>` typed: what the spot kept and your sessions in it. Delete the word to see every spot. |
 | `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 
@@ -175,7 +175,13 @@ browser that Openspot already reads changes its family.
 
 Type `/timeline`, or search for Timeline, and press Return. It lists what you copied, newest first, under a heading
 for each day. It keeps each entry for as long as Keep for in its Settings says, 30 days by default. Type to find an
-entry by its words.
+entry by its words, the best match first inside each day.
+
+| Word                         | Keeps                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| `spot:notes`                 | The entries of one spot, and your sessions in it.              |
+| `since:2h`                   | The entries of the age, such as `30m`, `2h` or `7d`, or today.  |
+| `sort:oldest`, `sort:newest` | Every entry, listed by time in that order, also as you search. |
 
 | Key        | Does                                                                  |
 | ---------- | --------------------------------------------------------------------- |

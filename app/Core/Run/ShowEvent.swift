@@ -36,8 +36,10 @@ public enum ShowEvent: Equatable, Sendable {
 
     func message(after given: [TextBlock.Field] = [], search: SearchQuery? = nil) -> Message {
         switch self {
-        case .clock:
-            guard let search, !search.text.isEmpty else { return ScriptEntry.every.message(after: given) }
+        case .clock, .sheet:
+            guard let search, !search.text.isEmpty else {
+                return self == .clock ? ScriptEntry.every.message(after: given) : ScriptEntry.show.message([name], after: given)
+            }
             return ScriptEntry.sheetText.message([search.text], search.forms, after: given)
         case .typed(let text, let inSheet):
             return (inSheet ? ScriptEntry.sheetText : ScriptEntry.search).message([text], search?.forms ?? [], after: given)

@@ -180,7 +180,38 @@ final class TimelineSpotTests: BuiltInCase {
 
         let found = try await timeline.answer("sheet.text", input: "input.value=zebra\n", timeout: 60).items
 
-        XCTAssertEqual(found.map(\.title), ["Nothing you copied holds “zebra”."])
+        XCTAssertEqual(found.map(\.title), ["Nothing in the timeline matches “zebra”."])
+    }
+
+    func testTheWordsOfTheSearchPickTheSpotTheAgeAndTheOrder() async throws {
+        let now = Date()
+        try add(.text, "old tea", at: now.addingTimeInterval(-3 * 86_400))
+        try add(.text, "tea", at: now.addingTimeInterval(-1))
+        try add(.text, "coffee", at: now)
+        try session(of: "weather")
+
+        let spot = try await timeline.answer("sheet.text", input: "input.value=spot:weather\n", timeout: 60).items
+        let since = try await timeline.answer("sheet.text", input: "input.value=since:1d tea\n", timeout: 60).items
+        let today = try await timeline.answer("sheet.text", input: "input.value=since:today sort:oldest\n", timeout: 60).items
+        let oldest = try await timeline.answer("sheet.text", input: "input.value=tea sort:oldest\n", timeout: 60).items
+        let none = try await timeline.answer("sheet.text", input: "input.value=spot:nothing\n", timeout: 60).items
+
+        XCTAssertEqual(spot.map(\.title), ["Weather"])
+        XCTAssertEqual(since.map(\.title), ["tea"])
+        XCTAssertEqual(today.map(\.title).filter { $0 != "Weather" }, ["tea", "coffee"])
+        XCTAssertEqual(oldest.map(\.title), ["old tea", "tea"])
+        XCTAssertEqual(none.map(\.title), ["Nothing in the timeline matches “spot:nothing”."])
+    }
+
+    func testAWordWithAValueItDoesNotTakeSaysTheValuesItTakes() async throws {
+        for (text, said) in [("sort:best", "sort: takes newest or oldest."), ("since:soon", "since: takes an age, such as 30m, 2h or 7d, or today.")] {
+            do {
+                _ = try await timeline.answer("sheet.text", input: "input.value=\(text)\n", timeout: 60)
+                XCTFail("expected a failure for \(text)")
+            } catch let error as SpotError {
+                XCTAssertEqual(error.reason, said)
+            }
+        }
     }
 
     func testARowHoldsOnlyTheStartOfALongText() async throws {
@@ -237,15 +268,6 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertTrue(row.subtitle?.hasSuffix(" · Session") == true, row.subtitle ?? "")
         XCTAssertEqual(row.move, .session(id))
         XCTAssertEqual(row.hides, ["paste"])
-    }
-
-    func testThePageAboutASpotListsOnlyItsEntriesAndItsSessions() async throws {
-        try add(.text, "copied")
-        try session(of: "weather")
-
-        let listed = try await rows(keptDays + "input.route=about/weather\n")
-
-        XCTAssertEqual(listed.map(\.title), ["Weather"])
     }
 
     func testForgetTakesTheEntryOutAndTheToastPutsItBack() async throws {

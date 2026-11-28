@@ -111,15 +111,15 @@ extension SpotsModel {
         }
     }
 
-    public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil) {
+    public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil, query: String? = nil) {
         if let spot = sheets[id]?.spot, spot.opensToKeys {
             openSettings(at: .spotOf(id))
             return
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
-        let page = FlowSheet(spot: id, title: title, source: source)
-        flow.push(page)
+        let page = FlowSheet(spot: id, title: title, source: source, query: query)
+        flow.push(page.kept)
         sheets[id]?.show(page)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)

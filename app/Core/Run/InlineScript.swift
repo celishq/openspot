@@ -303,7 +303,7 @@ final class InlineScript: @unchecked Sendable {
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
             let text = input.isUndefined || input.isNull ? nil : input.toString()
             let answer = self?.ask(arguments, input: text) ?? CommandAnswer(code: 1)
-            return ["stdout": answer.output, "code": answer.code]
+            return ["stdout": answer.output, "stderr": answer.errors, "code": answer.code]
         }
         let asked: @convention(block) (JSValue, JSValue) -> JSValue? = { [weak self] token, argv in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }

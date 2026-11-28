@@ -5,12 +5,18 @@ public struct FlowSheet: Codable, Hashable, Sendable {
     public let route: String?
     public let title: String?
     public let source: String?
+    public let query: String?
 
-    public init(spot: String, route: String? = nil, title: String? = nil, source: String? = nil) {
+    public init(spot: String, route: String? = nil, title: String? = nil, source: String? = nil, query: String? = nil) {
         self.spot = spot
         self.route = route
         self.title = title
         self.source = source
+        self.query = query
+    }
+
+    public var kept: FlowSheet {
+        FlowSheet(spot: spot, route: route, title: title, source: source)
     }
 
     public static func == (left: FlowSheet, right: FlowSheet) -> Bool {

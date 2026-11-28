@@ -61,7 +61,7 @@ text=good
 key=2026-11-26-good
 ```
 
-`--within 1d` keeps the entries of the last day, `--search cafe` the ones that hold each word, best match first, `--after <id>` the ones after that entry, for a next page, and `--limit 5` the first
+`--within 1d` keeps the entries of the last day, `--search cafe` the ones that hold each word, the best match first inside each day, where `spot:notes`, `since:7d` or `since:today`, and `sort:oldest` stand for `--about`, `--within` and `--order`, `--order oldest` lists them by time, oldest first, also with a search, `--after <id>` the ones after that entry, for a next page, and `--limit 5` the first
 five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole text sits in the file of
 `text.file=`.
 

@@ -52,7 +52,7 @@ The second, `env`, runs `openspot` commands. `env.toast("Copied")` is `openspot 
 printed, and throws when the command fails. A command needs its use in `uses`, as in a script.
 
 `openspot.call(words, stdin)` runs a command too, but it answers before the function goes on, with
-`{ stdout, code }`. Use it when you need the answer in the same keystroke, or when the command reads stdin, as
+`{ stdout, stderr, code }`. Use it when you need the answer in the same keystroke, or when the command reads stdin, as
 `clipboard copy` does.
 
 ## What a function returns

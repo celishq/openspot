@@ -46,15 +46,12 @@ final class Timeline: Sendable {
         var after: String?
         var limit: Int?
         var about: String?
+        var order: Order?
+    }
 
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil) {
-            self.about = about
-            self.spots = spots
-            self.within = within
-            self.text = text
-            self.after = after
-            self.limit = limit
-        }
+    enum Order: String, Sendable {
+        case newest
+        case oldest
     }
 
     struct Choices: Codable, Equatable, Sendable {
@@ -157,7 +154,7 @@ final class Timeline: Sendable {
                     && query.about.map { about in entry.spot == about || entry.session?.flow.pages.contains { $0.spot == about } == true } != false
                     && since.map { entry.at >= $0 } != false
             }
-            var sorted = found.sorted { $0.at > $1.at }
+            var sorted = found.sorted { query.order == .oldest ? $0.at < $1.at : $0.at > $1.at }
             let text = SearchQuery(text: query.text ?? "")
             if !text.text.isEmpty {
                 let search = kept.search ?? SearchList(kept.entries.sorted { $0.at > $1.at }) {
@@ -165,7 +162,15 @@ final class Timeline: Sendable {
                 }
                 kept.search = search
                 let byID = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })
-                sorted = search.matching(text).compactMap { byID[$0.id] }
+                let matched = search.matching(text).compactMap { byID[$0.id] }
+                if query.order != nil {
+                    let ids = Set(matched.map(\.id))
+                    sorted = sorted.filter { ids.contains($0.id) }
+                } else {
+                    sorted = matched.enumerated().map { (Self.shownDay(of: $0.element.at), $0.offset, $0.element) }
+                        .sorted { $0.0 != $1.0 ? $0.0 > $1.0 : $0.1 < $1.1 }
+                        .map(\.2)
+                }
             }
             if let after = query.after {
                 guard let at = sorted.firstIndex(where: { $0.id == after }) else { return nil }
@@ -187,7 +192,7 @@ final class Timeline: Sendable {
         let files = ((try? FileManager.default.contentsOfDirectory(at: place, includingPropertiesForKeys: nil)) ?? [])
             .filter { $0.pathExtension == "jsonl" }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
-        let last = before.map { day(of: $0) }
+        let last = before.map { fileDay(of: $0) }
         let decoder = JSONDecoder()
         var found: [TimelineEntry] = []
         for file in files where last.map({ file.deletingPathExtension().lastPathComponent <= $0 }) ?? true {
@@ -225,13 +230,13 @@ final class Timeline: Sendable {
             guard let index = kept.entries.firstIndex(where: { $0.id == id }), (kept.entries[index].forgotten == nil) == (forgotten != nil) else { return nil }
             kept.entries[index].forgotten = forgotten
             let entry = kept.entries[index]
-            write(day: day(of: entry.at), of: entry.spot, kept.entries)
+            write(day: fileDay(of: entry.at), of: entry.spot, kept.entries)
             return entry
         }
     }
 
     private func make(_ draft: Draft, id: String, spot: String, at: Date) throws -> TimelineEntry {
-        let place = blobs(of: spot, day: day(of: at)).appendingPathComponent(id, isDirectory: true)
+        let place = blobs(of: spot, day: fileDay(of: at)).appendingPathComponent(id, isDirectory: true)
         var value = ""
         var textFile: String?
         var files: [TimelineEntry.File] = []
@@ -349,16 +354,16 @@ final class Timeline: Sendable {
         kept.entries.removeAll { ids.contains($0.id) }
         kept.search = nil
         for entry in gone {
-            try? FileManager.default.removeItem(at: blobs(of: entry.spot, day: day(of: entry.at)).appendingPathComponent(entry.id, isDirectory: true))
+            try? FileManager.default.removeItem(at: blobs(of: entry.spot, day: fileDay(of: entry.at)).appendingPathComponent(entry.id, isDirectory: true))
         }
         var days: Set<[String]> = []
-        for entry in gone where days.insert([entry.spot, day(of: entry.at)]).inserted {
-            write(day: day(of: entry.at), of: entry.spot, kept.entries)
+        for entry in gone where days.insert([entry.spot, fileDay(of: entry.at)]).inserted {
+            write(day: fileDay(of: entry.at), of: entry.spot, kept.entries)
         }
     }
 
     private func append(_ entry: TimelineEntry) {
-        let file = file(of: entry.spot, day: day(of: entry.at))
+        let file = file(of: entry.spot, day: fileDay(of: entry.at))
         guard let line = try? JSONEncoder().encode(entry) else { return }
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard let handle = FileHandle(forWritingAtPath: file.path) else {
@@ -372,7 +377,7 @@ final class Timeline: Sendable {
 
     private func write(day: String, of spot: String, _ entries: [TimelineEntry]) {
         let file = file(of: spot, day: day)
-        let lines = entries.filter { $0.spot == spot && self.day(of: $0.at) == day }.compactMap { try? JSONEncoder().encode($0) }
+        let lines = entries.filter { $0.spot == spot && self.fileDay(of: $0.at) == day }.compactMap { try? JSONEncoder().encode($0) }
         guard !lines.isEmpty else {
             try? FileManager.default.removeItem(at: file)
             try? FileManager.default.removeItem(at: blobs(of: spot, day: day))
@@ -390,9 +395,13 @@ final class Timeline: Sendable {
         folder.appendingPathComponent(Self.folderName(of: spot), isDirectory: true).appendingPathComponent(day, isDirectory: true)
     }
 
-    private func day(of date: Date) -> String {
+    private func fileDay(of date: Date) -> String {
         let parts = Self.calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private static func shownDay(of date: Date) -> Date {
+        Calendar.current.startOfDay(for: date)
     }
 
     private static func end(of date: Date, days: Int) -> Date {

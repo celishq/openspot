@@ -75,8 +75,8 @@ extension SpotRun {
         list.stopLoading()
     }
 
-    static func search(of lines: Frame, in spot: Spot) -> ItemSearch {
-        spot.triggers.searchesSheet ? .script : lines.search
+    static func search(of lines: Frame?, in spot: Spot) -> ItemSearch {
+        spot.triggers.searchesSheet ? .script : lines?.search ?? .local
     }
 
     func takes(search text: String, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) -> Bool {
@@ -115,6 +115,7 @@ extension SpotRun {
                 self.changeList {
                     $0.take(search: search)
                     $0.take(perLine: lines.columns)
+                    if !query.isEmpty { $0.land(query) }
                     if let next { $0.replace(next) }
                     if let kept { $0.select(run: kept) }
                 }

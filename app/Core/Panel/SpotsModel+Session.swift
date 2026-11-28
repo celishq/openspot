@@ -5,7 +5,7 @@ extension SpotsModel {
     public static let timelineSpot = "openspot/timeline"
 
     func showTimeline(about id: String) {
-        present(FlowSheet(spot: Self.timelineSpot, route: "about/\(id)", title: entry(id)?.spot.name))
+        present(FlowSheet(spot: Self.timelineSpot, query: "spot:\(id) "))
     }
 
     public func endSession() {
