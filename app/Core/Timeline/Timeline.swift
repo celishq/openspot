@@ -47,16 +47,6 @@ final class Timeline: Sendable {
         var limit: Int?
         var about: String?
         var order: Order?
-
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil, order: Order? = nil) {
-            self.about = about
-            self.order = order
-            self.spots = spots
-            self.within = within
-            self.text = text
-            self.after = after
-            self.limit = limit
-        }
     }
 
     enum Order: String, Sendable {

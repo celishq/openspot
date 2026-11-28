@@ -2,7 +2,7 @@ import Foundation
 
 enum TimelineCall: NounCall {
     case add([String])
-    case list(spot: String?, all: Bool, within: TimeInterval?, search: String?, after: String?, limit: Int?, about: String?, order: Timeline.Order?)
+    case list(spot: String?, all: Bool, query: Timeline.Query)
     case get(String)
     case forget(String)
     case restore(String)
@@ -29,7 +29,8 @@ enum TimelineCall: NounCall {
             let within = fit.value("--within").map { Manifest.Triggers.age(orSeconds: $0).flatMap { $0 > 0 ? $0 : nil } }
             let order = fit.value("--order").map { Timeline.Order(rawValue: $0) }
             guard within != .some(nil), order != .some(nil), fit.value("--limit").map({ Int($0).map { $0 > 0 } == true }) != false else { return nil }
-            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), within: within ?? nil, search: fit.value("--search"), after: fit.value("--after"), limit: fit.value("--limit").flatMap { Int($0) }, about: fit.value("--about"), order: order ?? nil)
+            let query = Timeline.Query(within: within ?? nil, text: fit.value("--search"), after: fit.value("--after"), limit: fit.value("--limit").flatMap { Int($0) }, about: fit.value("--about"), order: order ?? nil)
+            return Self.list(spot: fit.value(CallWords.spotWord), all: fit.has("--all"), query: query)
         },
         CommandVerb("get", "<id>", "Prints the whole value of the entry: its text, its link, or the path of each file on a line. Pipe it into `clipboard copy` to copy a text or a link.", rule: CallRule(use: .timeline, used: "read an entry")) { $0.one.map(Self.get) },
         CommandVerb("forget", "<id>", "Takes the entry out of the timeline. `openspot timeline restore` brings it back for 10 minutes.", rule: CallRule(use: .timeline, used: "forgot an entry")) { $0.one.map(Self.forget) },
@@ -46,8 +47,8 @@ enum TimelineCall: NounCall {
         var rule = rule
         switch self {
         case .add(let words) where words.isEmpty: rule.flags.insert(.readsInput)
-        case .list(let other?, _, _, _, _, _, _, _) where other != spot: rule.use = .read
-        case .list(_, true, _, _, _, _, _, _): rule.use = .read
+        case .list(let other?, _, _) where other != spot: rule.use = .read
+        case .list(_, true, _): rule.use = .read
         default: break
         }
         return rule
@@ -88,14 +89,14 @@ enum TimelineCall: NounCall {
                 guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
                 return await Self.add(fields, of: spot, to: runs, peek: Self.peek(in: blocks.dropFirst()))()
             }
-        case .list(let other, let all, let within, let search, let after, let limit, let about, let order):
+        case .list(let other, let all, var query):
             let spots: Set<String>? = all ? nil : other.map { [$0] } ?? caller.map { [$0.id] }
+            query.spots = spots
             let reader = caller?.id
-            return {
+            return { [query] in
                 if let reader { timeline.note(reader: reader, of: spots) }
-                let now = runs.clock.now()
-                guard let entries = timeline.list(Timeline.Query(spots: spots, within: within ?? nil, text: search, after: after, limit: limit, about: about, order: order), at: now) else {
-                    return CommandAnswer(errors: "The timeline has no entry `\(after ?? "")` to list after. Start again with no --after.\n", code: 1)
+                guard let entries = timeline.list(query, at: runs.clock.now()) else {
+                    return CommandAnswer(errors: "The timeline has no entry `\(query.after ?? "")` to list after. Start again with no --after.\n", code: 1)
                 }
                 return CommandAnswer(output: entries.map { entry in
                     let peek = entry.peekFile.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) }
