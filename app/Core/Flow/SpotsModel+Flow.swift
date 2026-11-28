@@ -22,7 +22,7 @@ extension SpotsModel {
         if caller != nil, page.route == nil, place(ofSheet: page.spot) == .window, !runs.floating.contains(page.spot) { askedWindows.insert(page.spot) }
         guard isShown, openSheetID != nil else {
             let row = isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil
-            return open(FlowSheet(spot: page.spot, route: page.route, title: page.title, source: row))
+            return open(FlowSheet(spot: page.spot, route: page.route, title: page.title, source: row, query: page.query))
         }
         return push(page, replace: replace)
     }
@@ -46,7 +46,7 @@ extension SpotsModel {
         if !moves { showPanel() }
         endEditing(moving: false)
         guard let route = sheet.route else {
-            pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source)
+            pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source, query: sheet.query)
             return true
         }
         if openSheetID == nil { endFlow() }

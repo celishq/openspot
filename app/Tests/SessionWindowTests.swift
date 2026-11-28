@@ -120,7 +120,7 @@ final class SessionWindowTests: PanelCase {
         XCTAssertEqual(visits.map { $0.session?.flow.current?.spot }, ["other"])
     }
 
-    func testCommandYOnACardOpensTheTimelinePageAboutThatSpot() async throws {
+    func testCommandYOnACardOpensTheTimelineWithTheWordOfThatSpotTyped() async throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -130,7 +130,7 @@ final class SessionWindowTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))
 
-        try await wait("the timeline page") { self.model.flow.current == FlowSheet(spot: SpotsModel.timelineSpot, route: "about/other") }
+        try await wait("the timeline of other") { self.model.flow.current == FlowSheet(spot: SpotsModel.timelineSpot) && self.model.searchText == "spot:other " }
     }
 
     func testTimeOnTheGridAfterAQuickLookDoesNotKeepIt() async throws {

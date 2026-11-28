@@ -11,7 +11,7 @@ Every spot answers the same keys, so you learn them once.
 | ---------- | ----------------------------------------------------------------------------- |
 | Return     | Runs the spot's one action with a title, or opens its sheet.                  |
 | `⌘` Return | Opens Settings at the spot: its uses, its keys, each setting and its places.  |
-| `⌘Y`       | Opens the Timeline of the selected spot: what it kept and your sessions in it. |
+| `⌘Y`       | Opens the Timeline with `spot:<id>` typed: what the spot kept and your sessions in it. Delete the word to see every spot. |
 | `⌘P`       | Peeks at the selected row of a sheet: its whole text, picture, file or link.  |
 | `⌘K`       | Opens the menu of all actions.                                                |
 

@@ -115,6 +115,7 @@ extension SpotRun {
                 self.changeList {
                     $0.take(search: search)
                     $0.take(perLine: lines.columns)
+                    if !query.isEmpty { $0.land(query) }
                     if let next { $0.replace(next) }
                     if let kept { $0.select(run: kept) }
                 }
