@@ -67,16 +67,19 @@ public struct AttachmentStack: Equatable, Sendable {
         settle()
     }
 
-    mutating func turn(by step: Int) {
+    @discardableResult
+    mutating func turn(by step: Int) -> Bool {
         let order = chips.map(\.source)
-        guard !order.isEmpty else { return }
+        guard !order.isEmpty else { return false }
         if let selected, let index = order.firstIndex(of: selected) {
             self.selected = order[(index + step % order.count + order.count) % order.count]
         } else {
             let front = (step < 0 ? layout.places.last : layout.places.first)?.chip.source
             self.selected = front.flatMap { order.contains($0) ? $0 : nil } ?? order[0]
         }
+        let start = lead
         reveal(forward: step > 0)
+        return lead != start
     }
 
     mutating func select(_ source: String) {
@@ -112,10 +115,10 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     private mutating func reveal(forward: Bool) {
-        var order = chips.map(\.source)
-        if let lead, let index = order.firstIndex(of: lead) { order = Array(order[index...] + order[..<index]) }
-        guard let selected, let rank = order.firstIndex(of: selected), rank >= fit else { return }
-        lead = forward ? order[rank - fit + 1] : selected
+        guard let selected, let index = chips.firstIndex(where: { $0.source == selected }) else { return }
+        let start = lead.flatMap { lead in chips.firstIndex { $0.source == lead } } ?? 0
+        guard (index - start + chips.count) % chips.count >= fit else { return }
+        lead = forward ? chips[(index - fit + 1 + chips.count) % chips.count].source : selected
     }
 
     private mutating func settle() {
