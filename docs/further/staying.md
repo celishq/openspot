@@ -56,7 +56,9 @@ openspot spot run cpu-trend show
 ## When it runs
 
 Your script runs while your spot shows: while the panel is open with its card, or while it's in the menu bar. When
-nothing shows it, Openspot closes its stdin. End your script then, with each program it started. With
+nothing shows it, Openspot closes its stdin. End your script then, with each program it started. When the person clicks
+outside the panel and opens it again soon, the sheet shows your last answer at once, and Openspot starts your script and
+asks it again. With
 `"app.launch" = true` in `[on]`, it runs from when Openspot starts until it quits.
 
 ## Without the helper

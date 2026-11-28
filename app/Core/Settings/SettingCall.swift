@@ -14,6 +14,7 @@ public enum SettingCall: NounCall {
     case link(Bool)
     case slow(Bool)
     case theme(String)
+    case restore(String)
 
     static let noun = CommandNoun("setting", group: .app, verbs: [
         CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing. A secret prints as •••, except to a run of its own spot.") { words in
@@ -93,6 +94,11 @@ public enum SettingCall: NounCall {
         case .panelKey, .fixKey:
             guard let value else { return CallFault.refused("`\(key)` needs a key, such as `openspot setting set --spot openspot \(key) ctrl+space`.") }
             return changing(.appKey(name: key, key: value), "sets a key of your Mac")
+        case .restore:
+            guard let value, Config.restoreTimes.contains(where: { $0.name == value }) else {
+                return CallFault.refused("`restore-within` takes \(Config.restoreTimes.map { "`\($0.name)`" }.joined(separator: ", ")), such as `openspot setting set --spot openspot restore-within \"5 minutes\"`.")
+            }
+            return changing(.restore(value), "changes how the panel opens")
         case .login: return on("changes your Mac", Self.login)
         case .link: return on("changes your Mac", Self.link)
         case .slow: return on("changes how fast the panel moves", Self.slow)
@@ -147,6 +153,10 @@ public enum SettingCall: NounCall {
         case .link(let isOn): apps.link(isOn)
         case .slow(let isOn): apps.slow(isOn)
         case .theme(let name): ThemeCall.use(name).work(in: context)
+        case .restore(let name): CommandAnswer.work { [places = context.places] in
+            _ = try places.config.change { $0.set(restoreWithin: name) }
+            return ""
+        }
         }
     }
 }

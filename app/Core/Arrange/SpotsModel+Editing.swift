@@ -30,7 +30,7 @@ extension SpotsModel {
 
     public func editGrid() {
         if openSheetID != nil { closeSheet(moving: false) }
-        host.show()
+        showPanel()
         beginEditing()
     }
 

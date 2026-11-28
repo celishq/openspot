@@ -71,7 +71,7 @@ extension SpotRun {
     }
 
     func scriptEnded() {
-        answered = nil
+        if !isParked { answered = nil }
         list.stopLoading()
     }
 

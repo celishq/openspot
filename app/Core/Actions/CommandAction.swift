@@ -23,7 +23,7 @@ public struct CommandAction: Equatable, Sendable {
         case option(String)
     }
 
-    public static let history = CommandAction(kind: .history, title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
+    public static let history = CommandAction(kind: .history, title: "Timeline", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
 
     public static let peek = CommandAction(kind: .peek, title: "Peek", key: ActionKey(text: "cmd+p"), scope: .item, after: .stay)
 

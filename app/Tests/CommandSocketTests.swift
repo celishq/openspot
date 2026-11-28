@@ -17,6 +17,8 @@ final class CommandSocketTests: XCTestCase {
         func open(_ id: String) async -> Bool { true }
         func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { true }
         func pop(_ id: String, all: Bool) async -> Bool { true }
+        func openSession(_ id: String) async -> Bool { true }
+        func stepSession(by steps: Int) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
         func act(_ act: CardAct, on id: String) async -> Bool { true }
         func choose(for id: String) async -> Bool { true }

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct FlowSheet: Hashable, Sendable {
+public struct FlowSheet: Codable, Hashable, Sendable {
     public let spot: String
     public let route: String?
     public let title: String?

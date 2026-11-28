@@ -1,3 +1,4 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
@@ -15,6 +16,11 @@ struct SpotFieldFocus: View {
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn) {
                     if model.isShown, model.showsSearch, !model.isOpenForDrag { isFocused.wrappedValue = true }
+                }
+            }
+            .onChange(of: model.textSelections) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeIn) {
+                    if model.isShown, isFocused.wrappedValue { NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil) }
                 }
             }
             .onChange(of: model.showsSearch) { _, shows in

@@ -12,7 +12,7 @@ extension SpotsModel {
             toast(.failure("\(entry.state.title) comes with Openspot, so it cannot be edited. Make a spot of your own with New spot."))
         case .edit:
             if openEdit(of: entry) {
-                if !isShown { host.show() }
+                if !isShown { showPanel() }
             } else {
                 if isShown { host.dismiss() }
                 edit(entry)

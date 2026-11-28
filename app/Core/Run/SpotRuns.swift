@@ -209,6 +209,7 @@ public final class SpotRuns {
     func willOpen(_ sheet: SpotRun) {
         let id = sheet.spot.id
         if let open = openID, open != id { sheets[open]?.close() }
+        for other in sheets.values where other !== sheet { other.dropParked() }
         openID = id
     }
 
@@ -247,6 +248,7 @@ public final class SpotRuns {
 
     public func closeOpen() {
         openID.flatMap { sheets[$0] }?.close()
+        sheets.values.forEach { $0.dropParked() }
     }
 
     public var firstLaunchSheet: String? {
@@ -257,9 +259,9 @@ public final class SpotRuns {
         sheets.values.contains(where: \.isShowing)
     }
 
-    public func panelClosed() {
+    public func panelClosed(keepsAnswers: Bool = false) {
         isPanelOpen = false
-        sheets.values.forEach { $0.leftPlace() }
+        sheets.values.forEach { $0.leftPlace(keepsAnswer: keepsAnswers) }
         sheets.values.filter(\.spot.isAttachmentSource).forEach { $0.stopShows() }
         updateClock()
     }

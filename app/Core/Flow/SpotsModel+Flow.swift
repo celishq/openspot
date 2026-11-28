@@ -9,7 +9,7 @@ extension SpotsModel {
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard entry(page.spot) != nil else { return false }
-        afterShowing({ host.show() }) { [weak self] in
+        afterShowing({ showPanel() }) { [weak self] in
             guard let self else { return }
             endFlow()
             push(page)
@@ -43,7 +43,7 @@ extension SpotsModel {
             return true
         }
         let moves = isShown
-        if !moves { host.show() }
+        if !moves { showPanel() }
         endEditing(moving: false)
         guard let route = sheet.route else {
             pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source)
@@ -116,6 +116,7 @@ extension SpotsModel {
         case .pop: pop(in: id)
         case .close: close(in: id)
         case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, route: page, title: title), replace: replace)
+        case .session(let session): Task { await openSession(session) }
         }
     }
 
@@ -123,14 +124,25 @@ extension SpotsModel {
         entry(id)?.kind.opensSheet == true
     }
 
-    func handleFlowKey(_ key: ActionKey) -> Bool? {
+    func handleStepKey(_ key: ActionKey) -> Bool? {
+        let inSheet = openSheetID != nil
         switch FlowKey(key) {
-        case .back: back()
-        case .forward: forward()
-        case .grid: closeSheet(moving: isShown)
+        case .back:
+            guard inSheet else { return nil }
+            _ = back()
+            return true
+        case .forward:
+            guard inSheet else { return nil }
+            _ = forward()
+            return true
+        case .previousSession: return stepSession(by: -1) || inSheet
+        case .nextSession: return stepSession(by: 1) || inSheet
+        case .grid:
+            guard inSheet else { return nil }
+            closeSheet(moving: isShown)
+            return true
         case nil: return nil
         }
-        return true
     }
 
     func show(_ page: FlowSheet, moving: Bool) {

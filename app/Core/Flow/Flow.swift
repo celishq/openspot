@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Flow: Equatable, Sendable {
+public struct Flow: Codable, Equatable, Sendable {
     public static let limit = 20
 
     public private(set) var pages: [FlowSheet] = []

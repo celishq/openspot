@@ -65,6 +65,11 @@ key=2026-11-26-good
 five. A text of more than 16 KB prints its first 16 KB in `text=`, and the whole text sits in the file of
 `text.file=`.
 
+Openspot writes each session you keep under the spot `openspot`, which `--all` prints. A session carries
+`session=`, its id, `session.spot` and `session.route`, the page it showed, `session.steps`, the pages of its flow,
+and `session.text`, the text you typed. A row with `session=<id>` opens it again on a press, as
+`openspot session open <id>` does.
+
 ## What lasts
 
 Openspot keeps each entry for as long as Keep for in the Settings of Timeline says, 30 days by default, then drops it

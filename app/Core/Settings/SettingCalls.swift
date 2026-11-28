@@ -56,6 +56,7 @@ struct SettingCalls {
             rows += AppSetting.rows(flags.compactMapValues { $0.map(String.init) }.merging([
                 .panelKey: (config.panelKey ?? .standard).text,
                 .fixKey: (config.fixKey ?? .fix).text,
+                .restore: config.restoreWithin,
                 .theme: ThemeFolder(config: places.config, builtIn: mac.theme).readInUse()
             ]) { flag, _ in flag })
         }

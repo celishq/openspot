@@ -146,7 +146,7 @@ extension SpotsModel {
                 run(entry)
                 return
             }
-            presentSheet(of: id) { host.show() }
+            presentSheet(of: id) { showPanel() }
         }
     }
 
@@ -236,7 +236,7 @@ extension SpotsModel {
             return true
         }
         closeSheet(moving: isShown)
-        host.show()
+        showPanel()
         if let spot = spot() { selected = spot }
         return true
     }

@@ -20,17 +20,25 @@ struct Transcript: Equatable {
     }
 }
 
-/// The texts that the person dictated, one line each as `<milliseconds>\t<text>`, oldest first. It keeps the last `limit`.
-struct History {
+/// A text that the person dictated, as the timeline keeps it: its id, its text as a value, and when it came.
+struct Past {
     static let limit = 10
-    let file: URL
+    let id: String
+    let text: String
+    let at: Date
 
-    /// Adds a text with the time it came, and drops the oldest past the limit.
-    func add(_ text: String, at date: Date = Date()) {
-        let old = (try? String(contentsOf: file, encoding: .utf8))?.split(separator: "\n").map(String.init) ?? []
-        let line = "\(Int(date.timeIntervalSince1970 * 1000))\t\(text.replacingOccurrences(of: "\t", with: " "))"
-        let kept = (old + [line]).suffix(Self.limit)
-        try? (kept.joined(separator: "\n") + "\n").write(to: file, atomically: true, encoding: .utf8)
+    /// The texts of what `openspot timeline list` prints, in its order.
+    static func entries(in listed: String) -> [Past] {
+        listed.components(separatedBy: "\n\n").compactMap { block in
+            var fields: [String: String] = [:]
+            for line in block.split(separator: "\n") {
+                guard let equals = line.firstIndex(of: "=") else { continue }
+                let key = String(line[..<equals])
+                if fields[key] == nil { fields[key] = String(line[line.index(after: equals)...]) }
+            }
+            guard let id = fields["item"], let text = fields["text"] else { return nil }
+            return Past(id: id, text: text, at: fields["at"].flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date())
+        }
     }
 }
 
@@ -225,7 +233,7 @@ final class Dictation {
     private(set) var phase = Phase.idle
     private let recording = Recording()
     private let whisper: Whisper
-    private let history: History
+    private let heard: (String) -> Void
     private let ended: () -> Void
     private var pill: Pill!
     private var escape: EscapeKey!
@@ -237,10 +245,10 @@ final class Dictation {
     /// The time that the pill shows a message for.
     private let pause: TimeInterval = 2.5
 
-    init(whisper: Whisper, folder: URL, ended: @escaping () -> Void) {
+    init(whisper: Whisper, folder: URL, heard: @escaping (String) -> Void, ended: @escaping () -> Void) {
         self.whisper = whisper
+        self.heard = heard
         self.ended = ended
-        history = History(file: folder.appendingPathComponent("history"))
         pill = Pill(folder: folder, discard: { [weak self] in self?.discard() }, finish: { [weak self] in self?.finish() })
         escape = EscapeKey { [weak self] in
             guard let self else { return }
@@ -373,7 +381,7 @@ final class Dictation {
             guard !text.isEmpty else {
                 return rest(saying: "No words heard")
             }
-            history.add(text)
+            self.heard(text)
             pill.hide()
             Self.paste(text) { fault in
                 guard let fault else { return self.rest() }

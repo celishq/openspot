@@ -83,6 +83,21 @@ final class TimelineTests: PanelCase {
         XCTAssertTrue(unknown.errors.contains("colour=red"), unknown.errors)
     }
 
+    func testAboutKeepsTheEntriesOfOneSpotAndTheVisitsThatOpenIt() async throws {
+        _ = try await add(["text=note"])
+        _ = try await add(["text=elsewhere"], of: "other")
+        var visit = Timeline.Draft(kind: .text, values: ["Notes"], title: "Notes")
+        var flow = Flow()
+        flow.push(FlowSheet(spot: "notes"))
+        visit.session = SessionPlace(flow: flow, query: "")
+        _ = try model.runs.timeline.add(visit, of: SpotsModel.sessionsSpot, at: clock.time.addingTimeInterval(1))
+
+        let blocks = try await listed(["--all", "--about", "notes"], of: "reader")
+
+        XCTAssertEqual(blocks.map { $0.value("title") }, ["Notes", "note"])
+        XCTAssertEqual(blocks.first?.value("session.spot"), "notes")
+    }
+
     func testAnEntryOfTheSameKeyMovesTheOldOneToTheTop() async throws {
         _ = try await add(["text=a", "key=k"])
         clock.advance(by: 1)

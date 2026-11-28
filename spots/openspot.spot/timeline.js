@@ -1,5 +1,6 @@
 /** The timeline of every spot, newest first, under a heading for each day, a page of 60 entries at a time: the newest
- * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, ⌘Return pastes it
+ * ones, or the best that hold each word typed in the sheet, as Openspot's search ranks them. Return copies an entry, or opens
+ * again a session that Openspot kept, ⌘Return pastes it
  * into the front app, ⌘⌫ forgets it, with a toast that puts it back, and Tab hands it to a spot that takes it. A row
  * holds at most the start of a long text, so a copy pipes the whole value that `timeline get` prints into
  * `clipboard copy`. */
@@ -82,6 +83,12 @@ function start(value) {
   return cut.endsWith("\\") && !cut.endsWith("\\\\") ? cut.slice(0, -1) : cut
 }
 
+/** The lines of the row of a session that Openspot kept, whose Return opens the place again. */
+function session(entry, day) {
+  const time = (entry.at || "").slice(11, 16)
+  return [`item=${entry.item}`, `parent=day-${day}`, `title=${entry.title}`, `detail=${time} · Session`, `icon=${entry.icon || "clock"}`, `session=${entry.session}`, "hides=paste", "open.title=Open"].join("\n")
+}
+
 /** The lines of one row. */
 function row(entry, day) {
   const kind = entry.kind
@@ -100,11 +107,18 @@ function row(entry, day) {
   return lines.join("\n")
 }
 
-/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page. */
-function list(words, count, after) {
+/** The spot that a page `about/<id>` names, whose entries and visits alone the page lists. */
+function aboutOf(input) {
+  return String(input.route || "").startsWith("about/") ? input.route.slice(6) : ""
+}
+
+/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page, of
+ * the spot `about` alone when it names one. */
+function list(words, count, after, about) {
   const search = words ? ["--search", words] : []
   const next = after ? ["--after", after] : []
-  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...search, ...next])
+  const only = about ? ["--about", about] : []
+  const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...only, ...search, ...next])
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
   let last = ""
@@ -121,7 +135,7 @@ function list(words, count, after) {
       blocks.push(`box=day-${day}\nparent=list\ntitle=${dayTitle(day, now)}`)
       last = day
     }
-    blocks.push(row(entry, day), ...entry.peek)
+    blocks.push(entry.session ? session(entry, day) : row(entry, day), ...entry.peek)
   }
   if (!last && after) return ""
   if (!last) {
@@ -148,13 +162,13 @@ export default {
   show(input, env) {
     const days = String(env.settings.keep ?? "").replace(/[^0-9]/g, "")
     if (days) run(["timeline", "keep", days])
-    return list("")
+    return list("", limit, "", aboutOf(input))
   },
-  "sheet.text"({ value = "", limit: count }) {
-    return list(value, count)
+  "sheet.text"(input) {
+    return list(input.value || "", input.limit, "", aboutOf(input))
   },
-  "sheet.more"({ after, value = "" }) {
-    return list(value, limit, after)
+  "sheet.more"(input) {
+    return list(input.value || "", limit, input.after, aboutOf(input))
   },
   command() {
     run(["spot", "open", "openspot/timeline"])

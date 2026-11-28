@@ -338,5 +338,9 @@ extension SpotTokens {
     public static let storeMarkGap: CGFloat = 2
     public static let storeMarkPadding: CGFloat = 6
     public static let storeTrustTitleWidth: CGFloat = 110
+    public static let headingFace = 24.0
+    public static let leadFace = 15.0
+    public static let headingLeading: CGFloat = 5
+    public static let leadLeading: CGFloat = 3.5
     public static let storeMediaHeight: CGFloat = 240
 }

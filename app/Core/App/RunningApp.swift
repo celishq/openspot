@@ -13,6 +13,8 @@ public protocol RunningApp: Sendable {
     func leave(_ id: String) async -> Bool
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool
     func pop(_ id: String, all: Bool) async -> Bool
+    func openSession(_ id: String) async -> Bool
+    func stepSession(by steps: Int) async -> Bool
     func review(_ id: String) async -> Bool
     func act(_ act: CardAct, on id: String) async -> Bool
     func choose(for id: String) async -> Bool
