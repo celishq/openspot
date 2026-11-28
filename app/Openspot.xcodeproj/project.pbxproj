@@ -4910,7 +4910,7 @@
 				0F08555BC4F4539D8F830FE4 /* Copy the power helper and its launch daemon */,
 				6144067ABA4293EBA92F2C53 /* Join the docs, and copy the guides of the nouns */,
 				483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */,
-				D7A266F99E3D08C32CBFE197 /* Build the views of the core spots and the examples */,
+				7B98562D75F85F4F99E3297E /* Build the views of the core spots and the store */,
 				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 				E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */,
@@ -5190,7 +5190,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\nrm -rf \"$core\"/*.spot/tests\nexamples=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/examples\"\nrm -rf \"$examples\"\ncp -RL \"$SRCROOT/../examples\" \"$examples\"\nrm -rf \"$examples\"/*.spot/tests\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
+			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\nrm -rf \"$core\"/*.spot/tests\nstore=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/store\"\nrm -rf \"$store\"\ncp -RL \"$SRCROOT/../store\" \"$store\"\nrm -rf \"$store\"/*.spot/tests\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
 		};
 		6144067ABA4293EBA92F2C53 /* Join the docs, and copy the guides of the nouns */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5210,6 +5210,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "sh \"$SRCROOT/../scripts/guide.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/DOCS.md\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\ncp -R \"$SRCROOT/Help\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\ncp -R \"$SRCROOT/Themes\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\n";
+		};
+		7B98562D75F85F4F99E3297E /* Build the views of the core spots and the store */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build the views of the core spots and the store";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n[ \"$CONFIGURATION\" = Release ] || exit 0\nlist=\"$DERIVED_FILE_DIR/views.txt\"\nmkdir -p \"$DERIVED_FILE_DIR\"\nresources=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n{ \"$BUILT_PRODUCTS_DIR/openspot-views\" \"$resources/spots\"; \"$BUILT_PRODUCTS_DIR/openspot-views\" \"$resources/store\"; } > \"$list\"\nwhile IFS= read -r library; do\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" -o runtime $OTHER_CODE_SIGN_FLAGS \"$library\"\ndone < \"$list\"\n";
 		};
 		9086F9D8FC997F4EEA3460DC /* Copy the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5248,25 +5267,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "keywords=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Keywords\"\nrm -rf \"$keywords\"\ncp -R \"$SRCROOT/Keywords\" \"$keywords\"\n";
-		};
-		D7A266F99E3D08C32CBFE197 /* Build the views of the core spots and the examples */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Build the views of the core spots and the examples";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n[ \"$CONFIGURATION\" = Release ] || exit 0\nlist=\"$DERIVED_FILE_DIR/views.txt\"\nmkdir -p \"$DERIVED_FILE_DIR\"\nresources=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n{ \"$BUILT_PRODUCTS_DIR/openspot-views\" \"$resources/spots\"; \"$BUILT_PRODUCTS_DIR/openspot-views\" \"$resources/examples\"; } > \"$list\"\nwhile IFS= read -r library; do\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" -o runtime $OTHER_CODE_SIGN_FLAGS \"$library\"\ndone < \"$list\"\n";
 		};
 		E7D762305E01C1962B81C6F8 /* Strip Sparkle's localizations */ = {
 			isa = PBXShellScriptBuildPhase;

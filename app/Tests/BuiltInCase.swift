@@ -82,7 +82,7 @@ class BuiltInCase: XCTestCase {
             "OPENSPOT_CONFIG": root.path,
             "OPENSPOT_SPOTS": root.appendingPathComponent("spots").path,
             "OPENSPOT_CORE": root.appendingPathComponent("core").path,
-            "OPENSPOT_EXAMPLES": root.appendingPathComponent("examples").path
+            "OPENSPOT_STORE": root.appendingPathComponent("store").path
         ]) { _, new in new }
         TestEnvironment.$values.withValue(environment) { TestEnvironment.$callers.withValue(SpotCallers()) { super.invokeTest() } }
     }

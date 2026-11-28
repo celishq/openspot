@@ -84,7 +84,7 @@ struct StoreCalls {
         return CommandAnswer.work { [places] in
             if let id {
                 let config = places.config.read()
-                let sources = StoreSource.all(builtIn: places.examples, config: config)
+                let sources = StoreSource.all(builtIn: places.store, config: config)
                 let known = Self.catalog(in: places).item(id) != nil || sources.contains { $0.fetch(id) != nil }
                 guard known else { throw SpotError.failed(1, "`\(id)` is not a spot of the Store. Run `openspot store list` to see each one.") }
             }

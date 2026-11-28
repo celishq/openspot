@@ -66,8 +66,8 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     func testReturnOnSnoozeTabOpensItsListAndItsKeysSnoozeOrOpenAll() throws {
-        let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-        let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
+        let store = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("store")
+        let spot = try XCTUnwrap(try SpotsFolder(url: store).scan().spots.first { $0.id == "snooze-tab" })
 
         XCTAssertEqual(spot.mainAct, .sheet)
         XCTAssertEqual(spot.commands.map(\.id), ["snooze", "wake"])

@@ -6,21 +6,25 @@ class SampleSpotsCase: XCTestCase {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
     }
 
-    var exampleScan: ScanResult {
+    var store: URL {
+        examples.deletingLastPathComponent().appendingPathComponent("store")
+    }
+
+    var storeScan: ScanResult {
         get throws {
-            try SpotsFolder(url: examples).scan()
+            try SpotsFolder(url: store).scan()
         }
     }
 
     func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
+        try XCTUnwrap(try (storeScan.spots + SpotsFolder(url: examples).scan().spots).first { $0.name == name })
     }
 
     func built(_ name: String) async throws -> (folder: URL, program: URL) {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let program = folder.appendingPathComponent(name)
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, examples.appendingPathComponent("\(name).spot/\(name).swift").path], base: TestEnvironment.values)
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", program.path, store.appendingPathComponent("\(name).spot/\(name).swift").path], base: TestEnvironment.values)
         return (folder, program)
     }
 

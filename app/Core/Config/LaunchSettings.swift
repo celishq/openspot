@@ -1,7 +1,7 @@
 import Foundation
 
 public struct LaunchSettings: Equatable, Sendable {
-    public static let valued = ["--config": "OPENSPOT_CONFIG", "--spots": "OPENSPOT_SPOTS", "--core": "OPENSPOT_CORE", "--examples": "OPENSPOT_EXAMPLES", "--motion-slow": "OPENSPOT_MOTION_SLOW"]
+    public static let valued = ["--config": "OPENSPOT_CONFIG", "--spots": "OPENSPOT_SPOTS", "--core": "OPENSPOT_CORE", "--store": "OPENSPOT_STORE", "--motion-slow": "OPENSPOT_MOTION_SLOW"]
     public static let switches = ["--picture-on-screen": "OPENSPOT_PICTURE_ON_SCREEN"]
     private static let prefix = "OPENSPOT_"
 

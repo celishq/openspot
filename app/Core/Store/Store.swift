@@ -293,9 +293,9 @@ public final class Store {
     }
 
     private nonisolated static func name(ofSource entry: SpotLock.Entry, in places: AppPlaces, config: Config) -> String {
-        if places.lock.origin(of: entry).isBuiltIn, let builtIn = places.examples { return builtIn.name }
+        if places.lock.origin(of: entry).isBuiltIn, let builtIn = places.store { return builtIn.name }
         let folder = URL(fileURLWithPath: entry.source).standardizedFileURL.deletingLastPathComponent()
-        return StoreSource.all(builtIn: places.examples, config: config).first { $0.url.path == folder.path }?.name ?? folder.lastPathComponent
+        return StoreSource.all(builtIn: places.store, config: config).first { $0.url.path == folder.path }?.name ?? folder.lastPathComponent
     }
 
     @concurrent

@@ -100,7 +100,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot store add <folder>` | Adds a folder of spot folders as a store, named like the folder, so that the Store lists its spots. |
 | `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
 | `openspot store open [<id>] [--search <text>]` | Opens the Store, at the page of a spot when given its id, or with the words of `--search` in its search. |
-| `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
+| `openspot store folders [--json]`                  | Prints the built-in store Openspot, then each store that `store add` added, with its name and whether its folder is found. |
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
 | `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
