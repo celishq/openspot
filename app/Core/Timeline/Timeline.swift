@@ -46,15 +46,22 @@ final class Timeline: Sendable {
         var after: String?
         var limit: Int?
         var about: String?
+        var order: Order?
 
-        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil) {
+        init(spots: Set<String>? = nil, within: TimeInterval? = nil, text: String? = nil, after: String? = nil, limit: Int? = nil, about: String? = nil, order: Order? = nil) {
             self.about = about
+            self.order = order
             self.spots = spots
             self.within = within
             self.text = text
             self.after = after
             self.limit = limit
         }
+    }
+
+    enum Order: String, Sendable {
+        case newest
+        case oldest
     }
 
     struct Choices: Codable, Equatable, Sendable {
@@ -157,7 +164,7 @@ final class Timeline: Sendable {
                     && query.about.map { about in entry.spot == about || entry.session?.flow.pages.contains { $0.spot == about } == true } != false
                     && since.map { entry.at >= $0 } != false
             }
-            var sorted = found.sorted { $0.at > $1.at }
+            var sorted = found.sorted { query.order == .oldest ? $0.at < $1.at : $0.at > $1.at }
             let text = SearchQuery(text: query.text ?? "")
             if !text.text.isEmpty {
                 let search = kept.search ?? SearchList(kept.entries.sorted { $0.at > $1.at }) {
@@ -165,7 +172,15 @@ final class Timeline: Sendable {
                 }
                 kept.search = search
                 let byID = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })
-                sorted = search.matching(text).compactMap { byID[$0.id] }
+                let matched = search.matching(text).compactMap { byID[$0.id] }
+                if query.order != nil {
+                    let ids = Set(matched.map(\.id))
+                    sorted = sorted.filter { ids.contains($0.id) }
+                } else {
+                    sorted = matched.enumerated().map { (Self.localDay(of: $0.element.at), $0.offset, $0.element) }
+                        .sorted { $0.0 != $1.0 ? $0.0 > $1.0 : $0.1 < $1.1 }
+                        .map(\.2)
+                }
             }
             if let after = query.after {
                 guard let at = sorted.firstIndex(where: { $0.id == after }) else { return nil }
@@ -393,6 +408,10 @@ final class Timeline: Sendable {
     private func day(of date: Date) -> String {
         let parts = Self.calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private static func localDay(of date: Date) -> Date {
+        Calendar.current.startOfDay(for: date)
     }
 
     private static func end(of date: Date, days: Int) -> Date {
