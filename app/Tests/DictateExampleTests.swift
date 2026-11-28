@@ -24,6 +24,7 @@ final class DictateExampleTests: SampleSpotsCase {
     private func tools(in folder: URL) throws -> URL {
         let tools = folder.appendingPathComponent("tools")
         try "#!/bin/sh\n\(SampleSpotsCase.fakeOpenspot(in: folder))\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\n".writeScript(to: tools.appendingPathComponent("whisper-server"))
         try """
         #!/bin/sh
         echo "$*" >> '\(folder.path)/curl-calls'
@@ -104,6 +105,23 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
         XCTAssertEqual(try read("forgotten", in: folder), "b\n")
+    }
+
+    func testWithNoEngineTheSheetOffersToCopyItsInstallCommandFirst() async throws {
+        let folder = try temporaryFolder()
+        let script = try await staying(in: folder)
+        defer { script.stop() }
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("tools/whisper-server"))
+
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=engine\n\n", until: ["1", "2"])
+        let offer = rows(Array(frames.prefix(2))).first
+
+        XCTAssertEqual(offer?.run, "engine")
+        XCTAssertEqual(offer?.title, "Install speech engine")
+        XCTAssertEqual(offer?.subtitle, "brew install whisper-cpp")
+        XCTAssertEqual(offer?.pin, .top)
+        XCTAssertEqual(try read("clipboard", in: folder), "brew install whisper-cpp")
+        XCTAssertEqual(toasts(in: folder), ["Copied. Paste it in Terminal to install the speech engine."])
     }
 
     func testWithNoModelTheSheetOffersTheDownloadWhichLandsWholeWithItsProgressOnTheCard() async throws {
