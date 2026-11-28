@@ -73,10 +73,10 @@ extension SpotsModel {
         spreadAttachment()
         var next = attachments
         next.spread()
-        next.turn(by: step)
+        let isStill = !next.turn(by: step) && isCycling
         let read = next.selectedChip.flatMap { !$0.isRead && entry($0.source)?.spot.triggers.pick != nil ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
-        settle(next, motion: isCycling ? nil : .edit)
+        settle(next, motion: isStill ? nil : .edit)
         guard let read else { return }
         runs.pickAttachment(read.source, over: read.app) { [weak self] end in self?.endAttachment(of: read.source, end) }
     }

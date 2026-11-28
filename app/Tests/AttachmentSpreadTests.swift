@@ -61,7 +61,7 @@ final class AttachmentSpreadTests: AttachmentCase {
             stack.turn(by: 1)
             stack.spread()
             stack.place()
-            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), ["b"] + late + ["a"])
         }
     }
 
@@ -150,7 +150,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertEqual(spread.places.first?.opacity, 1)
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(model.attachments.selected, second)
-        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
+        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source).reversed())
     }
 
     func testAClosedPanelStopsThePauseAndTheNextOpenFoldsTheRow() async throws {
@@ -198,7 +198,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertFalse(model.isFieldCovered)
     }
 
-    func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
+    func testARowNarrowerThanTheChipsShiftsOnlyWhenTheRingLeavesIt() {
         let sources = ["a", "b", "c", "d", "e"]
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
@@ -217,7 +217,7 @@ final class AttachmentSpreadTests: AttachmentCase {
             stack.spread()
             stack.place()
         }
-        XCTAssertEqual(row(), ["a", "b", "c"])
+        XCTAssertEqual(row(), ["d", "e", "a"])
     }
 
     func testAStackWithNoChoiceShowsOnlyItsFrontIconQuietly() {
@@ -288,7 +288,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3])
     }
 
-    func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
+    func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsLast() {
         let sources = ["a", "b", "c", "d", "e"]
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
@@ -298,13 +298,50 @@ final class AttachmentSpreadTests: AttachmentCase {
         let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
         let step = SpotTokens.attachmentStep
 
-        let back = (-2 * pitch).rounded() + step + SpotTokens.attachmentCard * SpotTokens.attachmentShrink / 2
+        let back = step + SpotTokens.attachmentCard * SpotTokens.attachmentShrink / 2
         let row = [(-2 * pitch).rounded(), (-pitch).rounded(), 0, back, back]
         XCTAssertEqual(stack.layout.places.count, row.count)
         for (place, x) in zip(stack.layout.places, row) { XCTAssertEqual(place.x, x, accuracy: 0.001) }
         XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.attachmentShrink, 1 - SpotTokens.attachmentShrink])
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.attachmentCardFade, MotionTokens.hiddenOpacity])
-        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -6])
+        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -4])
+    }
+
+    func testTabMovesOnlyTheRingAndTheFoldBringsTheChosenChipToTheFront() {
+        var stack = AttachmentStack(fit: 6)
+        stack.open(over: nil, unread: ["a", "b", "c", "d"].map { ($0, .symbol("doc")) })
+        let row = { stack.layout.places.sorted { $0.x < $1.x }.map(\.chip.source) }
+        let press = { (step: Int) in
+            stack.turn(by: step)
+            stack.spread()
+            stack.place()
+        }
+
+        press(1)
+        XCTAssertEqual(stack.selected, "a")
+        press(1)
+        XCTAssertEqual(stack.selected, "b")
+        XCTAssertEqual(row(), ["a", "b", "c", "d"])
+
+        stack.leave()
+        stack.place()
+        XCTAssertEqual(stack.layout.places.map(\.chip.source), ["b", "c", "d", "a"])
+        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3])
+
+        press(1)
+        XCTAssertEqual(stack.selected, "b")
+        XCTAssertEqual(row(), ["b", "c", "d", "a"])
+        press(1)
+        press(1)
+        press(-1)
+        XCTAssertEqual(stack.selected, "c")
+        XCTAssertEqual(row(), ["b", "c", "d", "a"])
+
+        stack.fold()
+        stack.place()
+        XCTAssertEqual(stack.layout.places.map(\.chip.source), ["c", "d", "a", "b"])
+        press(1)
+        XCTAssertEqual(row(), ["c", "d", "a", "b"])
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
