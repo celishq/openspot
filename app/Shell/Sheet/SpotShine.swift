@@ -1,16 +1,16 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotShine<Content: View>: View {
-    let content: Content
+struct SpotShine: View {
+    let words: String
+    let font: Font
     @State private var band = MotionTokens.shineStart
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
+    @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotMoves) private var moves
 
     var body: some View {
-        content
+        Text(words)
+            .font(font)
             .mask {
                 LinearGradient(
                     stops: [
@@ -22,12 +22,12 @@ struct SpotShine<Content: View>: View {
                     endPoint: UnitPoint(x: band + MotionTokens.shineHalf, y: MotionTokens.shineHalf)
                 )
             }
-            .task { withAnimation(SpotMotion.shine) { band = MotionTokens.shineEnd } }
-    }
-}
-
-extension SpotShine where Content == Text {
-    init(words: String, font: Font) {
-        self.init { Text(words).font(font) }
+            .task(id: isShown && moves) {
+                if isShown && moves {
+                    withAnimation(SpotMotion.shine) { band = MotionTokens.shineEnd }
+                } else {
+                    withTransaction(Transaction(animation: nil)) { band = MotionTokens.shineStart }
+                }
+            }
     }
 }
