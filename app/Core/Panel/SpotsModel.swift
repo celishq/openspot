@@ -361,14 +361,10 @@ public final class SpotsModel {
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
-        self.runs.partsArrival = { [weak self] id, bring in
+        self.runs.partsArrival = { [weak self] id, movesLayout, bring in
             guard let self else { return bring() }
+            if movesLayout, !(transition.id == id && transition.isOpen) { return change(isShown && openSheetID == id ? .layout : nil, bring) }
             bringParts(of: id, bring)
-        }
-        self.runs.layoutMoves = { [weak self] id, bring in
-            guard let self else { return bring() }
-            if transition.id == id && transition.isOpen { return bringParts(of: id, bring) }
-            change(isShown && openSheetID == id ? .layout : nil, bring)
         }
         settingsBook.model = self
     }

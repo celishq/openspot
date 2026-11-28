@@ -21,8 +21,7 @@ public final class SpotRuns {
     }
     private var dragTakers: Set<String> = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
-    @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
-    @ObservationIgnored public var layoutMoves: (String, () -> Void) -> Void = { _, bring in bring() }
+    @ObservationIgnored public var partsArrival: (_ id: String, _ movesLayout: Bool, _ bring: () -> Void) -> Void = { _, _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
     let attachLimit: TimeInterval
@@ -186,13 +185,9 @@ public final class SpotRuns {
         let id = spot.id
         let sheet = SpotRun(spot: spot, runs: self, recent: recent(id), prepare: prepare)
         sheet.onReport = { [weak self] in self?.onReport(id, $0) }
-        sheet.partsArrival = { [weak self] bring in
+        sheet.partsArrival = { [weak self] movesLayout, bring in
             guard let self else { return bring() }
-            partsArrival(id, bring)
-        }
-        sheet.layoutMoves = { [weak self] bring in
-            guard let self else { return bring() }
-            layoutMoves(id, bring)
+            partsArrival(id, movesLayout, bring)
         }
         sheets[id] = sheet
         return sheet

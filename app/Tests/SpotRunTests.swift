@@ -273,7 +273,7 @@ final class SpotRunTests: XCTestCase {
     func testOnlyTheFirstPartsOfASheetArriveThroughTheArrival() async throws {
         let sheet = try holding("printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'\nsleep 0.1\nprintf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=B\\n---\\n'", pause: 0.02)
         var arrivals = 0
-        runs.last?.partsArrival = { _, bring in
+        runs.last?.partsArrival = { _, _, bring in
             arrivals += 1
             bring()
         }
@@ -289,7 +289,7 @@ final class SpotRunTests: XCTestCase {
     func testTheFirstRowsOfASheetArriveWithItsParts() async throws {
         let sheet = try holding("sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\nchoice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nitems=list\\n\\nitem=x\\nparent=list\\ntitle=X\\n\\n'", pause: 0.02)
         var rowsBeforeParts: Int?
-        runs.last?.partsArrival = { _, bring in
+        runs.last?.partsArrival = { _, _, bring in
             rowsBeforeParts = sheet.list.shown.count
             bring()
         }

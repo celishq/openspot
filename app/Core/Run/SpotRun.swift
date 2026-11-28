@@ -236,8 +236,7 @@ public final class SpotRun {
         didSet { if acts.first?.detail != oldValue.first?.detail { settle() } }
     }
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
-    @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
-    @ObservationIgnored public var layoutMoves: (() -> Void) -> Void = { $0() }
+    @ObservationIgnored public var partsArrival: (_ movesLayout: Bool, _ bring: () -> Void) -> Void = { $1() }
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
