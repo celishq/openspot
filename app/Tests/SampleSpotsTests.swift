@@ -7,8 +7,8 @@ final class SampleSpotsTests: SampleSpotsCase {
         let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
-        let store = spots.deletingLastPathComponent().appendingPathComponent("store")
-        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy"], "input.item=x\n"), (store.spotFile("pulls"), ["copy"], "input.item=x\n")] {
+        let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
+        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy"], "input.item=x\n"), (examples.spotFile("pulls"), ["copy"], "input.item=x\n")] {
             let process = Process()
             let out = Pipe()
             let stdin = Pipe()
@@ -216,7 +216,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
-        let scan = try storeScan
+        let scan = try SpotsFolder(url: examples).scan()
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.spots.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
@@ -241,7 +241,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testPullRequestsHideWhenThereAreNone() async throws {
-        let metric = try XCTUnwrap(try storeScan.metrics.first { $0.id == "pulls" })
+        let metric = try XCTUnwrap(try SpotsFolder(url: examples).scan().metrics.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 
