@@ -98,7 +98,7 @@ private struct FieldDrawing: View {
                     .lineLimit(1)
                     .textSelection(.enabled)
             } else {
-                SpotTextLine(label: part.title ?? part.id, text: text) { onSet($0) }
+                SpotTextLine(label: part.label, text: text) { onSet($0) }
                     .modifier(FieldFocus(focus: focus, id: part.id))
             }
             if text.isEmpty, let placeholder {

@@ -122,8 +122,8 @@ private struct ChoiceDrawing: View {
                     .contentShape(Rectangle())
                     .onTapGesture { popUp(options, value: value, over: room.frame(in: .global)) }
                     .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel(part.title ?? part.id)
-                    .accessibilityValue(options.first { $0.id == value }?.title ?? "")
+                    .accessibilityLabel(part.label)
+                    .accessibilityValue(chosen?.title ?? "")
                     .accessibilityAction { popUp(options, value: value, over: room.frame(in: .global)) }
                     .onChange(of: menuOpening()) { _, opening in
                         guard opening?.part == part.id else { return }

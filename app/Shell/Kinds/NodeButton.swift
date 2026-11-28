@@ -97,7 +97,7 @@ private struct ButtonDrawing: View {
     private var sheetLabel: some View {
         switch look {
         case .chip:
-            words(part.title ?? part.id, font: SpotType.action)
+            words(part.label, font: SpotType.action)
                 .padding(.horizontal, SpotTokens.padding)
                 .padding(.vertical, SpotTokens.chipPaddingY)
                 .fixedSize()
