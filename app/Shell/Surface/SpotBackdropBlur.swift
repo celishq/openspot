@@ -10,14 +10,16 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private static let kind = "variableBlur"
         private let filter: NSObject?
         private var radius: CGFloat
+        private let scale: CGFloat
         private var area: CGRect?
         private var isMoving = false
         private let mask = SpotBackdropMask()
         private var drawn: (radius: CGFloat, fade: SpotBackdropFade, isMoving: Bool)?
         private var shownMask: CGImage?
 
-        init(radius: CGFloat, area: CGRect?) {
+        init(radius: CGFloat, scale: CGFloat, area: CGRect?) {
             self.radius = radius
+            self.scale = scale
             self.area = area
             let make = NSSelectorFromString("filterWithType:")
             if let type = NSClassFromString("CAFilter") as? NSObject.Type, type.responds(to: make),
@@ -81,7 +83,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
             for part in parts { part.isHidden = part.name != "backdrop" }
             if backdrop.filters?.count != 1 || (backdrop.filters?.first as? NSObject) !== filter {
                 backdrop.filters = [filter]
-                backdrop.setValue(1, forKey: "scale")
+                backdrop.setValue(scale, forKey: "scale")
                 drawn = nil
                 shownMask = nil
             }
@@ -107,17 +109,20 @@ struct SpotBackdropBlur: NSViewRepresentable {
     }
 
     let radius: CGFloat
+    let scale: CGFloat
     let area: CGRect?
     let isMoving: Bool
 
     init(radius: CGFloat) {
         self.radius = radius
+        scale = SpotTokens.backdropCoverScale
         area = nil
         isMoving = false
     }
 
     init(radius: CGFloat, fadingIn area: CGRect, isMoving: Bool) {
         self.radius = radius
+        scale = 1
         self.area = area
         self.isMoving = isMoving
     }
@@ -127,7 +132,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> Surface {
-        let surface = Surface(radius: radius, area: area)
+        let surface = Surface(radius: radius, scale: scale, area: area)
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)

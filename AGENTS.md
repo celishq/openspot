@@ -103,7 +103,8 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
 - The soft backdrop of the panel is one fade around the content, `BackdropFade` in Core: none at the outer edge of the
   halo, full at the content, and the blur full under it by `halo-inset`, so text fades out at the edge of the tiles. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
   (`SpotBackdropTint`), both masked by the same small picture of the fade (`SpotBackdropFade`), drawn again only when
-  the backdrop's resting shape changes. While its area moves, each frame's picture is cut from slices of one drawn picture (`BackdropFade.slices`), and drawn afresh only when the area has no straight band. The backdrop hides by opacity alone.
+  the backdrop's resting shape changes. While its area moves, each frame's picture is cut from slices of one drawn picture (`BackdropFade.slices`), and drawn afresh only when the area has no straight band. The backdrop hides by opacity alone. A blur that covers the screen, such as the cover of Edit Spots, samples the screen at `SpotTokens.backdropCoverScale`, since the
+  system blurs it again in each frame in which anything under it changes.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Picture` that draws one another way.
 
