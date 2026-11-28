@@ -48,6 +48,13 @@ final class OnTableTests: XCTestCase {
         }
     }
 
+    func testACalendarOrAReminderChangeTakesNoValue() throws {
+        for event in ["calendar.change", "reminders.change"] {
+            XCTAssertEqual(try load("[on]\n\"\(event)\" = true").spot?.triggers.events, [event], event)
+            XCTAssertNil(try load("[on]\n\"\(event)\" = \"^a$\"").spot, event)
+        }
+    }
+
     func testAnEventWithAValueTakesARegularExpressionOfIt() throws {
         let spot = try XCTUnwrap(try load("[on]\n\"power.change\" = \"^ac$\"").spot)
 

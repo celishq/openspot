@@ -143,7 +143,8 @@ public struct ReviewSpot: Equatable, Sendable {
         EventName.panelOpen: "when the panel opens", EventName.appLaunch: "when Openspot starts", EventName.appUpdate: "when Openspot downloads an update",
         EventName.clipboard: "when you copy", EventName.frontApp: "when you switch apps", EventName.screenWake: "when the screen wakes",
         EventName.systemLoad: "every 5 seconds while it shows", EventName.powerChange: "when the power changes", EventName.diskMount: "when a disk mounts",
-        EventName.deviceConnect: "when a USB device connects", EventName.spotWant: "when it first shows"
+        EventName.deviceConnect: "when a USB device connects", EventName.spotWant: "when it first shows",
+        EventName.calendarChange: "when an event of your calendars changes", EventName.remindersChange: "when a reminder changes"
     ]
 
     private static func bindings(in scan: ScanResult, folder: URL, core: URL?) -> [(binding: Manifest.Binding, shown: String)] {
