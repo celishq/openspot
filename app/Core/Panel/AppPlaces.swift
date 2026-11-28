@@ -12,7 +12,7 @@ public struct AppPlaces: Sendable {
     public let config: ConfigFile
     public let systemKeys: SystemKeys
     public let spots: SpotsFolder
-    public let store: StoreSource?
+    public let builtInStore: StoreSource?
     public let lock: SpotLock
     let configFolder: URL
 
@@ -38,7 +38,7 @@ public struct AppPlaces: Sendable {
         systemKeys = .standard(home: home)
         config = .standard(in: configFolder, disk: disk)
         spots = .standard(environment: environment, home: home)
-        store = StoreSource.builtIn(environment: environment)
+        builtInStore = StoreSource.builtIn(environment: environment)
         lock = .standard(environment: environment, home: home)
     }
 
@@ -92,6 +92,6 @@ public struct AppPlaces: Sendable {
     }
 
     public func foundStores(in config: Config) -> [StoreSource] {
-        StoreSource.all(builtIn: store, config: config).filter { !$0.isBuiltIn || $0.exists() }
+        StoreSource.all(builtIn: builtInStore, config: config).filter { !$0.isBuiltIn || $0.exists() }
     }
 }
