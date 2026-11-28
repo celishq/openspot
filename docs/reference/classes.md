@@ -29,6 +29,7 @@ people's theme. A class that isn't here, such as `w-[120px]`, is skipped, and `o
 | `gap-part`, `gap-group`, `p-part`, `p-group`              | none         | The gaps of Openspot's own sheets: between parts, and between groups. |
 | `w-<z>`, `h-<z>`, `size-<z>`                              | the same     | The width, the height, or both.                        |
 | `min-w-<z>`, `max-w-<z>`                                  | the same     | The least and the most width.                          |
+| `min-h-<z>`                                               | the same     | The least height, which it keeps when its box runs out of room. |
 
 - `<s>` is a step of Tailwind's scale, each 4 points: `0`, `0.5`, `1`, `1.5`, `2`, `2.5`, `3`, `3.5`, `4` to `12`, then
   `14`, `16`, `20` and on by 4 to `64`, then `72`, `80` and `96`.
@@ -45,6 +46,8 @@ people's theme. A class that isn't here, such as `w-[120px]`, is skipped, and `o
 | `truncate`                                                | the same     | Words cut at one line.                                 |
 | `line-clamp-<n>`                                          | the same     | Words cut at `<n>` lines.                              |
 | `tabular-nums`                                            | the same     | Digits of one width.                                   |
+| `animate-pulse`                                           | none         | An icon breathes, layer by layer, as a loader, while the spot shows. |
+| `animate-layout`                                          | none         | On the frame: when a new frame adds or drops blocks, they fade in and out, and the rest slide to their new places. |
 | `sr-only`                                                 | the same     | Words that don't show, but VoiceOver reads.            |
 | `text-ink`, `text-secondary`                              | none         | The colour of words, and of a second line.             |
 | `text-accent`, `text-good`, `text-warn`, `text-bad`       | none         | The accent, and the colour of each tone.               |
@@ -61,6 +64,7 @@ people's theme. A class that isn't here, such as `w-[120px]`, is skipped, and `o
 | `opacity-<p>`                                             | the same     | An opacity, `<p>` a percent from 0 to 100 in steps of 5. |
 | `border`                                                  | the same     | A line around the block.                               |
 | `overflow-hidden`                                         | the same     | Cuts what reaches past its edge.                       |
+| `overflow-y-auto`                                         | the same     | On a box: its blocks scroll up and down when its box gives it less height than they need. |
 | `rounded-card`, `rounded-inner`                           | none         | The corner of a card, and of a part inside it.         |
 | `rounded-full`, `rounded-none`                            | the same     | A round end, and a square corner.                      |
 

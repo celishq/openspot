@@ -120,7 +120,7 @@ extension Theme {
             card = corner
             window = exact("window-corner") ?? corner * 16 / Self.openspotCorner
             media = exact("media-corner") ?? corner * 8 / Self.openspotCorner
-            cornerMark = exact("mark-corner") ?? corner * 6 / Self.openspotCorner
+            cornerMark = exact("mark-corner") ?? corner * 10 / Self.openspotCorner
         }
     }
 

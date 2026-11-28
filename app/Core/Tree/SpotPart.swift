@@ -4,12 +4,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public struct Option: Equatable, Sendable {
         public let id: String
         public let title: String
-        public let icon: String?
+        public let icon: Icon?
 
         public init(id: String, title: String, icon: String? = nil) {
             self.id = id
             self.title = title
-            self.icon = icon
+            self.icon = Icon(text: icon)
         }
     }
 
@@ -50,6 +50,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let id: String
     public let kind: String
     public let title: String?
+    public let label: String
     public let detail: String?
     public internal(set) var icon: Icon?
     public let tone: MetricValue.Tone?
@@ -76,7 +77,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard let id = block.value(kind.word) else { return nil }
         self.id = id
         self.kind = kind.name
-        title = block.value("title")
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
@@ -87,7 +87,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         let icon = Icon(text: block.value("icon"))
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         color = kind.takesColor ? block.value("color").flatMap { BlockKind.isColor($0) ? $0 : nil } : nil
-        let round = kind.presses && title == nil && style.corner == .full ? icon : nil
+        let words = block.value("title")
+        let round = kind.presses && (words == nil || style.hidesWords) && style.corner == .full ? icon : nil
+        title = round == nil ? words : nil
+        label = words ?? id.capitalized
         self.icon = round == nil ? icon : nil
         press = kind.presses ? round.map(Press.round) ?? .line : .none
         control = kind.control(block)

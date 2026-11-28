@@ -25,6 +25,7 @@ public enum ManifestSchema {
         var properties: [String: Any] = [:]
         for key in Manifest.keys { properties[key] = reference("texts") }
         properties["stay"] = ["type": "boolean"]
+        properties["state"] = ["enum": [SpotFile.draft]]
         properties[Manifest.Triggers.table] = reference("on")
         properties[Manifest.Setting.table] = table(["anyOf": [reference("type"), reference("setting")]])
         properties[Manifest.Action.table] = table(reference("action"))

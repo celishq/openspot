@@ -582,14 +582,14 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(output, "sleep=0.3|code=0")
     }
 
-    func testEachSpotRunsWithAUTF8LocaleAndTheCommonPaths() async throws {
+    func testEachSpotRunsWithAUTF8LocaleAndTheSystemPaths() async throws {
         let url = try script("printf '%s|%s|' \"$LC_ALL\" \"$PATH\"\nprintf 'ÅÄö' | /usr/bin/tr '[:upper:]' '[:lower:]'")
 
         let output = try await ScriptProcess.output(url: url, limit: 10, base: ["HOME": folder.path, "PATH": "/usr/bin:/mine", "LC_ALL": "C", "OPENSPOT_SH": try XCTUnwrap(ProcessInfo.processInfo.environment["OPENSPOT_SH"])])
 
         let parts = output.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
         XCTAssertEqual(parts.first, "en_US.UTF-8")
-        XCTAssertEqual(parts.dropFirst().first?.split(separator: ":").dropFirst().map(String.init), ["/usr/bin", "/mine", "/opt/homebrew/bin", "/usr/local/bin", "/bin", "/usr/sbin", "/sbin"])
+        XCTAssertEqual(parts.dropFirst().first?.split(separator: ":").dropFirst().map(String.init), ["/usr/bin", "/mine", "/bin", "/usr/sbin", "/sbin"])
         XCTAssertEqual(parts.last, "åäö")
     }
 

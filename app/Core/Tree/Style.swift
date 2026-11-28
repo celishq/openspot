@@ -85,6 +85,7 @@ public struct Style: Equatable, Sendable {
     public var height: Length?
     public var minWidth: Length?
     public var maxWidth: Length?
+    public var minHeight: Length?
     public var grows: Bool?
     public var shrinks: Bool?
     public var isSquare = false
@@ -95,6 +96,9 @@ public struct Style: Equatable, Sendable {
     public var hidesWords = false
     public var lineLimit: Int?
     public var tabularNumbers = false
+    public var pulses = false
+    public var animatesLayout = false
+    public var scrolls = false
     public var ink: Ink?
     public var fill: Fill?
     public var blursBackdrop = false

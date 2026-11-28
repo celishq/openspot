@@ -3,7 +3,7 @@ import Foundation
 public struct Manifest: Equatable, Sendable {
     public static let fileName = "spot.toml"
     public static let keys: Set<String> = [
-        "title", "icon", "detail", "keywords", "edits", "starts", "views", "source", "uses", "pages", "answers", "stay"
+        "title", "icon", "detail", "keywords", "edits", "starts", "views", "source", "uses", "pages", "answers", "stay", "state"
     ]
     public static let tables: Set<String> = [Setting.table, Action.table, Binding.table, Event.table, Triggers.table]
     static let appKeys: Set<String> = ["edits", "starts"]
@@ -44,6 +44,7 @@ public struct Manifest: Equatable, Sendable {
     public let uses: [String]
     public let pages: [String]
     public let answers: String?
+    public let state: String?
     public let settings: [Setting]
     public let actions: [Action]
     public let bindings: [Binding]
@@ -98,6 +99,7 @@ public struct Manifest: Equatable, Sendable {
         uses = list("uses").flatMap(Self.words)
         pages = list("pages")
         answers = text("answers")
+        state = text("state")
         settings = script.settings
         actions = script.actions
         bindings = script.bindings

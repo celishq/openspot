@@ -18,8 +18,8 @@ struct SettingsPlacePicture: View {
         .frame(width: SpotTokens.settingsPlaceWidth, height: SpotTokens.settingsPlaceHeight)
     }
 
-    private var chip: AttachmentChip {
-        AttachmentChip(source: spot.id, app: nil, look: spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol), state: .unread)
+    private var look: AttachmentChip.Look {
+        spot.attachmentLook ?? .symbol(AttachmentChip.loadingSymbol)
     }
 
     private var shown: Double {
@@ -30,7 +30,7 @@ struct SettingsPlacePicture: View {
         HStack(spacing: 0) {
             SpotFieldPrompt.glyph
             Spacer(minLength: 0)
-            SpotAttachmentCard(chip: chip, showsBadge: false, isQuiet: false)
+            SpotAttachmentCard(look: look)
                 .opacity(shown)
         }
         .padding(.horizontal, SpotTokens.attachmentReach)

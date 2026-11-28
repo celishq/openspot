@@ -36,6 +36,7 @@ it declares.
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `account new`, `account sign-out` and `account sync`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account). |
+| `agent`     | No call. The spot and the agent it starts run outside the sandbox, so the agent reaches its own account, the network and your files, and can open a terminal. Only a spot of `spots/openspot.spot` can have it: New spot. |
 
 - A call that needs a use the manifest doesn't name fails. Openspot tells you once a day for each spot and use, and the
   spot shows as Needs review in Settings until you allow the use; see [Let a spot use what it was refused](#let-a-spot-use-what-it-was-refused).

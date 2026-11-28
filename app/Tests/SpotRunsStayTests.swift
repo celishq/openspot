@@ -984,7 +984,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try staying(toml: "stay = true", frame: "frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         var arrivals = 0
-        runs.partsArrival = { _, bring in
+        runs.partsArrival = { _, _, bring in
             arrivals += 1
             bring()
         }

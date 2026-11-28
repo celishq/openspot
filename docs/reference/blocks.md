@@ -78,7 +78,7 @@ A block's first line is its kind and its id, such as `item=4120`.
 | `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press; in a peek, `action`, an `openspot` command, once for each one it runs in order. |
 | `field`   | A text people type.                    | `value`; `type`, `multiline`, `slider`, `search` or `hotkey`; `placeholder`; `required`; `readonly`; `min` and `max` of a slider, 0 and 100 by default; `recording`, while a `hotkey` records. |
 | `switch`  | On or off.                             | `value`, `true` or `false`; `type`, `tick` for a round tick.         |
-| `choice`  | A menu of the `option` blocks after it. | `value`, the chosen id; `type`, `list`, `swatches` or `multiple`; `color`, one colour of `swatches`. |
+| `choice`  | A menu of the `option` blocks after it. With none yet, it spins. | `value`, the chosen id; `type`, `list`, `swatches` or `multiple`; `color`, one colour of `swatches`. |
 | `option`  | One choice of a `choice`.              | `title`, its id by default; `icon`.                                  |
 | A view    | A block your SwiftUI file draws, named by the file, such as `week=`. | Any key; see [Draw your own view](../further/views.md). |
 
@@ -157,7 +157,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `OPENSPOT_ID`     | The id of your spot.                                               |
 | `OPENSPOT_DATA`   | The folder where your spot keeps what lasts.                       |
 | `OPENSPOT_SH`     | The path of the shell helper.                                      |
-| `PATH`            | The folder of the `openspot` command, then the `PATH` Openspot started with, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Your login shell's paths aren't on it. |
+| `PATH`            | The folder of the `openspot` command, then the `PATH` Openspot started with, then `/opt/homebrew/bin` and `/usr/local/bin`, then `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Your login shell's paths aren't on it. |
 | `LC_ALL`          | `en_US.UTF-8`.                                                     |
 
 ## The shell helper

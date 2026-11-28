@@ -240,11 +240,14 @@ extension SpotRun {
             panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
         } else if let current = panel?.generation, panel?.holdsParts == true {
             rows()
-            guard panel?.take(lines, answering: generation ?? current, keeping: keeping) == true else { return }
+            var took = false
+            let bring = { took = self.panel?.take(lines, answering: generation ?? current, keeping: keeping) == true }
+            if lines.tree.style.animatesLayout, panel?.tree.order != lines.tree.order { partsArrival(true, bring) } else { bring() }
+            guard took else { return }
             partsAnswers += 1
             onReport(.parts)
         } else {
-            partsArrival {
+            partsArrival(false) {
                 panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
                 rows()
             }

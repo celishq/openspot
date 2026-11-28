@@ -39,6 +39,11 @@ public enum MotionTokens {
     public static let answerPause = 0.15
 
     public static let cardShare = 0.5
+
+    public static var shine: Double { 1.6 * slow }
+    public static let shineStart = -0.5
+    public static let shineEnd = 1.5
+    public static let shineHalf = 0.5
     public static let contentStart = 0.2
     public static let contentSoftness = 4.0
 

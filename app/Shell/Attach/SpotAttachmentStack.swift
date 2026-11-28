@@ -8,7 +8,7 @@ struct SpotAttachmentStack: View {
         let attachments = model.attachments
         ZStack(alignment: .trailing) {
             ForEach(attachments.layout.places, id: \.chip.source) { place in
-                SpotAttachmentCard(chip: place.chip, showsBadge: !attachments.layout.isQuiet && place.chip.showsKind && (attachments.layout.isSpread || place.depth == 0), isQuiet: attachments.layout.isQuiet)
+                SpotAttachmentCard(look: place.chip.look, badge: !attachments.layout.isQuiet && place.chip.showsKind && (attachments.layout.isSpread || place.depth == 0) ? place.chip.value?.kind.badge : nil, isQuiet: attachments.layout.isQuiet)
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotAttachmentDot(isOn: attachments.isOn && place.chip.source == attachments.selected)

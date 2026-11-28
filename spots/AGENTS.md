@@ -22,7 +22,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 
 The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
 other spot gets. In any other spot, `edits`, `starts`, `shown` and the keys of an action below are unknown keys, except `offers = ["attachments"]`,
-`account` is removed from its uses, and the variables are absent. `builtin` names these spots to the others.
+`account` and `agent` are removed from its uses, and the variables are absent. `builtin` names these spots to the others.
 
 ```toml
 title = "New spot"

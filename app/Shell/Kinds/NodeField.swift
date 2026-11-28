@@ -98,7 +98,7 @@ private struct FieldDrawing: View {
                     .lineLimit(1)
                     .textSelection(.enabled)
             } else {
-                SpotTextLine(label: part.title ?? part.id, text: text) { onSet($0) }
+                SpotTextLine(label: part.label, text: text) { onSet($0) }
                     .modifier(FieldFocus(focus: focus, id: part.id))
             }
             if text.isEmpty, let placeholder {
@@ -131,8 +131,7 @@ private struct FieldDrawing: View {
                 }
                 .clipShape(shape)
             } else {
-                TextEditor(text: Binding(get: { text }, set: { onSet($0) }))
-                    .scrollContentBackground(.hidden)
+                SpotTextArea(text: text, onSet: onSet)
                     .modifier(FieldFocus(focus: focus, id: part.id))
                     .padding(.horizontal, -SpotTokens.editorInset)
                     .padding(space)

@@ -44,12 +44,15 @@ enum SpotMotion {
         Animation(SpotSpring(duration: duration, bounce: bounce))
     }
 
+    static let shine = Animation.linear(duration: MotionTokens.shine).repeatForever(autoreverses: false)
+
     static func animation(_ motion: PanelMotion) -> Animation {
         switch motion {
         case .sheet(let isOpen): grow(isOpen: isOpen)
         case .edit: move
         case .flow: grow(isOpen: true)
         case .fade: fade(isShown: true)
+        case .layout: move
         }
     }
 }

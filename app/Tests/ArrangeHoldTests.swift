@@ -7,6 +7,10 @@ final class ArrangeHoldTests: PanelCase {
         model.visible.map(\.id)
     }
 
+    private var reading: [String] {
+        zip(model.visible, model.placements).sorted { ($0.1.cell.row, $0.1.cell.column) < ($1.1.cell.row, $1.1.cell.column) }.map(\.0.id)
+    }
+
     private func holdOverTheGrid() {
         model.hold([.command])
         model.point(at: .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY)))
@@ -49,5 +53,37 @@ final class ArrangeHoldTests: PanelCase {
         XCTAssertEqual(again.errors, "C is on the grid already.\n")
         let gone = try await call(["grid", "pin", "nope"])
         XCTAssertEqual(gone.code, 1)
+    }
+
+    func testGridTopPutsASpotFirstAndTheOthersMoveAlong() async throws {
+        try await spots(["a", "b", "c"], off: ["d"])
+        takeCalls()
+
+        let onGrid = try await call(["grid", "top", "c"])
+        XCTAssertEqual(onGrid.output, "C is at the top of the grid.\n", onGrid.errors)
+        XCTAssertEqual(reading, ["c", "a", "b"])
+
+        let offGrid = try await call(["grid", "top", "d"])
+        XCTAssertEqual(offGrid.code, 0, offGrid.errors)
+        XCTAssertEqual(reading, ["d", "c", "a", "b"])
+
+        let gone = try await call(["grid", "top", "nope"])
+        XCTAssertEqual(gone.code, 1)
+        XCTAssertEqual(gone.errors, "You have no spot `nope` to put on top. Run `openspot grid list` to see each one.\n")
+    }
+
+    func testGridTopOnAFullGridMovesTheLastSpotsOffIt() async throws {
+        try await spots((0..<40).map { "s\($0)" }, off: ["z"])
+        takeCalls()
+        let full = model.visible.map(\.id)
+
+        let topped = try await call(["grid", "top", "z"])
+
+        XCTAssertEqual(topped.code, 0, topped.errors)
+        XCTAssertEqual(reading.first, "z")
+        let gone = full.filter { !self.model.visible.map(\.id).contains($0) }
+        XCTAssertFalse(gone.isEmpty)
+        XCTAssertTrue(topped.output.hasPrefix("Z is at the top of the grid. Moved "), topped.output)
+        XCTAssertTrue(gone.allSatisfy { topped.output.contains($0.capitalized) }, topped.output)
     }
 }

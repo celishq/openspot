@@ -85,6 +85,18 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertTrue(isFolder.boolValue)
     }
 
+    func testASpotsPathHoldsTheGivenFoldersAndOnlyTheSystemsBeside() {
+        let environment = ScriptProcess.environment(base: ["PATH": "/given:/usr/bin", "HOME": folder.path], app: "/A/Openspot.app/Contents/MacOS/Openspot")
+
+        XCTAssertEqual(environment["PATH"], "/A/Openspot.app/Contents/Helpers:/given:/usr/bin:/bin:/usr/sbin:/sbin")
+    }
+
+    func testTheLaunchAddsTheFoldersWhereInstallersPutACommandAfterThePathItWasGiven() {
+        let path = SearchPath.adding(SearchPath.installs, to: "/usr/local/bin:/usr/bin")
+
+        XCTAssertEqual(path, "/usr/local/bin:/usr/bin:/opt/homebrew/bin")
+    }
+
     func testTheDataFolderIsInTheHomeOfTheRunWithNoConfigPath() {
         let environment = ScriptProcess.environment(base: ["HOME": folder.path], app: "")
 

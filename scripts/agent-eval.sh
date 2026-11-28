@@ -16,6 +16,17 @@ if [ "$1" = "--run" ]; then
     [ ! -d "$tasks/$task/seed" ] || cp -R "$tasks/$task/seed/." "$place/spots/"
     eval "set -- $(cat "$tasks/$task/ask")"
     prompt=$("$real" --config "$place" prompt "$@" </dev/null | sed "s|\"$real\"|openspot|g")
+    if [ -f "$tasks/$task/build" ]; then
+      . "$root/spots/openspot.spot/build.sh"
+      made=$(cat "$tasks/$task/build")
+      mkdir -p "$place/spots/$made.spot"
+      printf 'state = "draft"\n' >"$place/spots/$made.spot/spot.toml"
+      prompt="$prompt
+
+$(draft_words "$place/spots/$made.spot")
+
+$(step_words b1 openspot)"
+    fi
   else
     prompt="You have the \`openspot\` command of the Openspot Mac app on your PATH. $(cat "$tasks/$task/prompt")"
   fi

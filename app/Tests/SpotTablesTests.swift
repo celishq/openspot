@@ -145,4 +145,10 @@ final class SpotTablesTests: XCTestCase {
 
         XCTAssertEqual(faults, ["Mine has account in its uses, which only a spot of Openspot takes. Remove it"])
     }
+
+    func testTheAgentUseOnASpotThatDoesNotShipInOpenspotIsReportedByACheck() async throws {
+        let faults = try await findings("#!/bin/sh\n", toml: "title = 'Mine'\nuses = ['agent']")
+
+        XCTAssertEqual(faults, ["Mine has agent in its uses, which only a spot of Openspot takes. Remove it"])
+    }
 }

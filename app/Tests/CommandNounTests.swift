@@ -125,7 +125,7 @@ final class CommandNounTests: XCTestCase {
     func testEachVerbOfTheTableIsInTheUsageAndParsesItsOwnForm() {
         for noun in CommandNoun.all {
             for verb in noun.verbs where !verb.about.isEmpty {
-                let form = verb.form.replacingOccurrences(of: "<size>", with: "wide").replacingOccurrences(of: #"\[[^\]]*\]"#, with: "", options: .regularExpression)
+                let form = verb.form.replacingOccurrences(of: "<size>", with: "wide").replacingOccurrences(of: "<mark>", with: "new").replacingOccurrences(of: #"\[[^\]]*\]"#, with: "", options: .regularExpression)
                     .replacingOccurrences(of: #"<[^>]*>"#, with: "x", options: .regularExpression)
                     .replacingOccurrences(of: "...", with: "")
                     .replacingOccurrences(of: "on|off", with: "on")

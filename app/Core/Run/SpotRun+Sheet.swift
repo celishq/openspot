@@ -39,6 +39,7 @@ extension SpotRun {
         }
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
+        if menuOpening != nil { menuOpening = nil }
         runs.opening.dropMotion(of: spot.id)
         heardRows = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
@@ -59,6 +60,10 @@ extension SpotRun {
 
     public func movePartLine(by lines: Int) -> Bool {
         panel?.moveLine(by: lines) ?? false
+    }
+
+    public func focusPartEdge(last: Bool) -> Bool {
+        panel?.focusEdge(last: last) ?? false
     }
 
     public func leaveRows(upward: Bool = false) -> Bool {
@@ -114,7 +119,12 @@ extension SpotRun {
     }
 
     func panelOpened() {
-        if isOpen { show() }
+        if isOpen, isShowCut {
+            show(need: .change)
+        } else if isOpen, panel?.holdsParts != true {
+            show()
+        }
+        isShowCut = false
         link.settle()
     }
 
@@ -162,7 +172,10 @@ extension SpotRun {
 
     private func stopUnwantedShow() {
         guard !isWanted else { return }
-        if let show = running(Self.showKey), !finishesShow, !keepsEventRun { stop(show) }
+        if let show = running(Self.showKey), !finishesShow, !keepsEventRun {
+            stop(show)
+            isShowCut = isOpen
+        }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

@@ -77,12 +77,25 @@ title = "New spot"
 icon = "plus"
 detail = "Make your own"
 answers = "last"
-uses = ["clipboard"]
+uses = ["clipboard", "spots", "agent"]
 edits = "spots"
+pages = ["build/*", "builds"]
 
 [scripts.new.on]
 "sheet.open" = true
 search = "\\S"
+"new.step" = true
+
+[scripts.new.bindings]
+new = { spot = "openspot/new" }
+
+[scripts.new.events.step]
+build = { type = "text", required = true, description = "The build that moved" }
+
+[scripts.new.settings]
+agent = { type = "text", title = "Agent", icon = "sparkles", description = "The agent that Make sends the prompt to" }
+place = { type = "text", title = "App", icon = "macwindow", description = "The app the agent works in: Openspot, a terminal or an editor" }
+command = { type = "text", title = "Your agent", icon = "terminal", description = "A command of your own, such as myagent --fast, that runs in your terminals with the prompt as its last word" }
 
 [scripts.playground]
 title = "Playground"

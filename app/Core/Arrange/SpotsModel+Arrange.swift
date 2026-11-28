@@ -24,6 +24,25 @@ extension SpotsModel {
         return spots.filter { !placed.contains($0.id) }.map(listed) + spots.filter { placed.contains($0.id) }.map(listed)
     }
 
+    public func putOnTop(_ id: String) -> GridTop {
+        asOnePress {
+            guard let entry = card(id: id), arranges(entry) else { return .unknown }
+            let top = GridCell(row: 0, column: 0)
+            let others = laidGrid().spots.filter { $0.id != id }
+            let size = grid.size(of: entry.size, at: top, among: [], choices: sizes(of: entry))
+            let spots = others.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) } + [GridSpot(size: size, cell: top)]
+            let laid = grid.place(spots, first: others.count)
+            guard laid.contains(where: { $0.index == others.count }) else { return .tooLarge }
+            let placed = Set(laid.map(\.index))
+            let off = others.indices.filter { !placed.contains($0) }.map { others[$0] }
+            saveLayout(laid, of: others + [entry], selecting: id, also: { choices in
+                choices.set(isOnGrid: true, of: id)
+                for spot in off { choices.set(isOnGrid: false, of: spot.id) }
+            })
+            return .placed(off: off.map(\.spot.name))
+        }
+    }
+
     private func laidGrid() -> (spots: [Entry], placements: [SpotPlacement]) {
         let shown = cards.filter(\.isOnGrid)
         let laid = grid.place(shown.map { GridSpot(size: $0.size, cell: $0.cell(in: grid)) })

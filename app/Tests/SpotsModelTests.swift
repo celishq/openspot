@@ -742,6 +742,24 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
+    func testAPanelThatHidesKeepsASheetOfPartsAndShowsItAgainWhenItOpens() async throws {
+        try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=a\\ntitle=A\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.pushFirst("parts", moving: true)
+        try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
+
+        model.panelWillHide()
+        model.panelDidHide()
+        XCTAssertEqual(model.openSheetID, "parts")
+        XCTAssertNotNil(model.openParts)
+
+        model.panelWillShow()
+        XCTAssertEqual(model.openSheetID, "parts")
+        XCTAssertNotNil(model.openParts)
+    }
+
     func testAPanelThatEndsItsSessionCutsASheetOfPartsAndItsRun() async throws {
         try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         await model.reload()
@@ -1143,6 +1161,16 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
 
         try await wait("the press of play") { self.calls(in: calls) == ["play"] }
+    }
+
+    func testAMenuThatAKeyOpenedIsForgottenWhenTheSheetCloses() async throws {
+        _ = try await openParts("frame=\nclass=gap-part\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.sheets["parts"]?.menuOpening?.part, "look")
+
+        model.closeSheet(moving: false)
+
+        XCTAssertNil(model.sheets["parts"]?.menuOpening)
     }
 
     func testAKeyPressedWhileTheShortcutRowOnlyHasTheFocusIsNotRecorded() async throws {
