@@ -49,6 +49,12 @@ final class AttachmentDetailsTests: XCTestCase {
         XCTAssertNil(node("picture", of: AttachmentDetails(AttachmentValue(text: "words"))))
     }
 
+    func testAPictureStaysInsideItsTile() {
+        let details = AttachmentDetails(AttachmentValue(files: FileKinds(["/a/talk.mp4"])))
+
+        XCTAssertEqual(node("picture", of: details)?.style.clips, true)
+    }
+
     func testAPictureKeepsTheHeightOfAPreviewWithoutOne() {
         let picture = AttachmentDetails(AttachmentValue(files: FileKinds(["/a/shot.png"])))
         let words = AttachmentDetails(AttachmentValue(text: "shot.png"))

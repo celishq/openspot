@@ -88,7 +88,7 @@ public struct AttachmentDetails: Hashable, Sendable {
             TextBlock(fields: [.init(key: kind, value: id)] + fields.map { .init(key: $0.0, value: $0.1) }, firstLine: "\(kind)=\(id)")
         }
         var blocks = [block("frame", "", [("class", "flex-row items-start gap-2")])]
-        if let picture { blocks.append(block("picture", "picture", [("icon", picture), ("class", "size-8 shrink-0 rounded-inner bg-tile")])) }
+        if let picture { blocks.append(block("picture", "picture", [("icon", picture), ("class", "size-8 shrink-0 rounded-inner bg-tile overflow-hidden")])) }
         blocks.append(block("box", "lines", [("class", "flex-col grow")]))
         blocks.append(block("text", "caption", [("title", caption), ("icon", symbol), ("class", "font-detail text-secondary truncate"), ("parent", "lines")]))
         if !text.isEmpty { blocks.append(block("text", "words", [("title", text), ("class", "line-clamp-2"), ("parent", "lines")])) }
