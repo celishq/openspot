@@ -210,7 +210,7 @@ await_front() {
 }
 
 # Starts a new session of the agent in the app at $2, the place $1, in the spots folder, and sends it the words $3. The
-# Claude, Codex and an editor with Claude Code open the session by a link; another app opens a new chat with ⌘N.
+# Claude, Codex and an editor with Claude Code open the session by a link.
 in_app() {
   mkdir -p "$folder"
   name=$(basename "$2" .app)
@@ -222,8 +222,7 @@ in_app() {
   case $1 in
     app-claude) open "claude://code/new?q=$prompt" ;;
     app-codex) open "codex://new?prompt=$prompt" ;;
-    app-vscode | app-cursor | app-windsurf) open -a "$2" "$folder" && open "${1#app-}://anthropic.claude-code/open?prompt=$prompt" ;;
-    *) false ;;
+    app-*) open -a "$2" "$folder" && open "${1#app-}://anthropic.claude-code/open?prompt=$prompt" ;;
   esac || { echo "Openspot cannot open $name." >&2; exit 1; }
   openspot toast "Press Return in $name to start."
 }

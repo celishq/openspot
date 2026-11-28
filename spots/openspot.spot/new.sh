@@ -104,13 +104,14 @@ else
 fi
 copied="$draft.copied"
 
-# The apps that New spot knows, each a bundle id and a name. Codex ships as ChatGPT.app, so New spot shows the name
-# of the app on the Mac, the one people know.
-known_apps='com.anthropic.claudefordesktop	Claude
-com.openai.codex	Codex
-com.todesktop.230313mzl4w4u92	Cursor
-com.exafunction.windsurf	Windsurf
-com.microsoft.VSCode	VS Code'
+# The apps that New spot knows, each a bundle id, a name, and for an editor where Claude Code works through its
+# extension, its link scheme and its folder of extensions; a link opens a new Claude Code session there with the prompt.
+# Codex ships as ChatGPT.app, so New spot shows the name of the app on the Mac, the one people know.
+known_apps='com.anthropic.claudefordesktop|Claude||
+com.openai.codex|Codex||
+com.todesktop.230313mzl4w4u92|Cursor|cursor|.cursor
+com.exafunction.windsurf|Windsurf|windsurf|.windsurf
+com.microsoft.VSCode|VS Code|vscode|.vscode'
 
 # The agents that New spot knows, each a key, the name people know it by, its command, the app it ships as, and the
 # agent it runs as: claude or codex, which Openspot can run with no window.
@@ -176,23 +177,17 @@ agent_ways() {
   done
 }
 
-# The editors where Claude Code works through its extension, each the editor, its link scheme and its folder of
-# extensions. A link opens a new Claude Code session there with the prompt.
-editors='VS Code|vscode|.vscode
-Cursor|cursor|.cursor
-Windsurf|windsurf|.windsurf'
-
 # Prints each known app on this Mac as its name and its path, found by its bundle id wherever it is, or else by its
 # name in an Applications folder.
 installed_apps() {
-  query=$(printf '%s\n' "$known_apps" | awk -F '\t' '{ printf "%s kMDItemCFBundleIdentifier == \"%s\"", (NR > 1 ? " ||" : ""), $1 }')
+  query=$(printf '%s\n' "$known_apps" | awk -F '|' '{ printf "%s kMDItemCFBundleIdentifier == \"%s\"", (NR > 1 ? " ||" : ""), $1 }')
   found=$(mdfind "$query" 2>/dev/null | grep '\.app$' | grep -v '/Library/')
-  printf '%s\n' "$known_apps" | while IFS='	' read -r id name; do
+  printf '%s\n' "$known_apps" | while IFS='|' read -r id name scheme extensions; do
     path=$(printf '%s\n' "$found" | while IFS= read -r app; do
       [ "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist" 2>/dev/null)" = "$id" ] && { printf '%s' "$app"; break; }
     done)
     [ -n "$path" ] || path=$(app_path "$name") || path=$(app_path "$name (Beta)") || continue
-    printf '%s\t%s\n' "$name" "$path"
+    printf '%s|%s|%s|%s\n' "$name" "$path" "$scheme" "$extensions"
   done
 }
 
@@ -203,11 +198,9 @@ app_path() {
   return 1
 }
 
-apps=
-
-# Prints the path of the known app $1, or fails.
+# Prints the path of the known app $1 among the apps that ways found, or fails.
 app_of() {
-  printf '%s\n' "${apps:-$(installed_apps)}" | awk -F '\t' -v name="$1" '$1 == name { print $2; found = 1; exit } END { exit !found }'
+  printf '%s\n' "$apps" | awk -F '|' -v name="$1" '$1 == name { print $2; found = 1; exit } END { exit !found }'
 }
 
 # Prints the word that runs the command $1 of an agent in the person's shell, as the look $2 found it: the command
@@ -259,8 +252,8 @@ ways() {
       continue
     fi
     [ "$key" = claude ] || continue
-    printf '%s\n' "$editors" | while IFS='|' read -r editor scheme extensions; do
-      ls -d "$HOME/$extensions/extensions"/anthropic.claude-code-* > /dev/null 2>&1 && path=$(app_of "$editor") &&
+    printf '%s\n' "$apps" | while IFS='|' read -r editor path scheme extensions; do
+      [ -n "$extensions" ] && ls -d "$HOME/$extensions/extensions"/anthropic.claude-code-* > /dev/null 2>&1 &&
         printf '%s|%s|app-%s|%s|%s\n' "$key" "$name" "$scheme" "$editor" "$path"
     done
   done
