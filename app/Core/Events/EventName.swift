@@ -21,8 +21,6 @@ public enum EventName {
     public static let sheetText = "sheet.text"
     public static let sheetMore = "sheet.more"
     public static let attachmentPick = "attachment.pick"
-    public static let declarable = [sheetOpen, panelOpen, sheetText, sheetMore, spotWant, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect, calendarChange, remindersChange]
-    public static let valueless = [sheetOpen, sheetText, sheetMore, spotWant, clipboard, screenWake, appLaunch, calendarChange, remindersChange]
 
     public static func isName(_ word: String) -> Bool {
         let parts = word.split(separator: ".", omittingEmptySubsequences: false)

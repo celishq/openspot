@@ -40,7 +40,7 @@ final class OnTableTests: XCTestCase {
     }
 
     func testEachEventOfTheEventsTableIsAKeyOfItsOwn() throws {
-        for event in EventName.declarable {
+        for event in SpotEvent.all.map(\.name) {
             let loaded = try load("[on]\n\"\(event)\" = true")
 
             let spot = try XCTUnwrap(loaded.spot, "\(event): \(loaded.refused.joined())")

@@ -10,10 +10,10 @@ extension Manifest {
         static let drop = ScriptEntry.drop.name
         static let pick = EventName.attachmentPick
         static let keys = [command, search, schedule, every, drop, pick]
-        static let events = EventName.declarable
+        static let events = SpotEvent.all.map(\.name)
         private static let named = [ScriptEntry.show, .press, .drag]
         static let cache = "cache"
-        private static let spaces = Set(EventName.declarable.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer", cache])
+        private static let spaces = Set(events.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer", cache])
         private static let ages: [Character: TimeInterval] = ["s": 1, "m": 60, "h": 3_600, "d": 86_400]
 
         public let commands: [String]
@@ -105,7 +105,7 @@ extension Manifest {
                     case .boolean(let isOn)?:
                         if isOn { events.append(event) }
                     case .string(let text)?:
-                        guard !EventName.valueless.contains(event) else { throw fault(name, "has no value to match, so it takes only true.") }
+                        guard SpotEvent.named(event)?.takesValue == true else { throw fault(name, "has no value to match, so it takes only true.") }
                         guard let pattern = AnswerPattern(text) else { throw fault(name, "is not a regular expression: \(text).") }
                         events.append(event)
                         filters[event] = pattern

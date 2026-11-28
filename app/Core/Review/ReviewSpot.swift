@@ -128,7 +128,7 @@ public struct ReviewSpot: Equatable, Sendable {
             }
             for event in script.triggers.events where event != EventName.sheetOpen && event != EventName.sheetText {
                 if event == EventName.appLaunch, script.mode == .stay, script.showsAtLaunch { continue }
-                moments.append(eventWords[event] ?? "on \(event)")
+                moments.append(SpotEvent.named(event)?.words ?? "on \(event)")
             }
             if let every = script.triggers.every { moments.append("every \(every) seconds") }
             return moments.isEmpty ? nil : (script.name, moments)
@@ -138,14 +138,6 @@ public struct ReviewSpot: Equatable, Sendable {
             return runs.count > 1 ? "\(run.name): \(said)" : said.prefix(1).uppercased() + said.dropFirst()
         }
     }
-
-    private static let eventWords = [
-        EventName.panelOpen: "when the panel opens", EventName.appLaunch: "when Openspot starts", EventName.appUpdate: "when Openspot downloads an update",
-        EventName.clipboard: "when you copy", EventName.frontApp: "when you switch apps", EventName.screenWake: "when the screen wakes",
-        EventName.systemLoad: "every 5 seconds while it shows", EventName.powerChange: "when the power changes", EventName.diskMount: "when a disk mounts",
-        EventName.deviceConnect: "when a USB device connects", EventName.spotWant: "when it first shows",
-        EventName.calendarChange: "when an event of your calendars changes", EventName.remindersChange: "when a reminder changes"
-    ]
 
     private static func bindings(in scan: ScanResult, folder: URL, core: URL?) -> [(binding: Manifest.Binding, shown: String)] {
         let own = Set(scan.scripts.map(\.id))
