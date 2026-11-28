@@ -70,13 +70,9 @@ first-launch:
 	pkill -f '/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly' || true
 	$(MAKE) dev-state EMPTY=1
 
-store:
+store examples:
 	mkdir -p .temp/openspot/spots
-	cp -R store/. .temp/openspot/spots/
-
-examples:
-	mkdir -p .temp/openspot/spots
-	cp -R examples/. .temp/openspot/spots/
+	cp -R $@/. .temp/openspot/spots/
 
 release:
 	sh scripts/release.sh publish "$(V)"
