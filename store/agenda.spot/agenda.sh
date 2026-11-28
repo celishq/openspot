@@ -154,7 +154,7 @@ allow() {
 }
 
 case "$1" in
-  show | sheet.text | every)
+  show | sheet.text | calendar.change | reminders.change)
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card

@@ -144,6 +144,21 @@ final class AgendaExampleTests: SampleSpotsCase {
         }
     }
 
+    func testACalendarOrAReminderChangeShowsTheCardAgainAndNoClockRunsIt() async throws {
+        let agenda = try example("Agenda")
+        XCTAssertNil(agenda.triggers.every)
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+            for event in [EventName.calendarChange, EventName.remindersChange] {
+                XCTAssertTrue(agenda.triggers.events.contains(event), event)
+
+                let output = try await Self.answer(of: agenda, event, input: "")
+
+                XCTAssertEqual(output.face.parts.first { $0.id == "next" }?.title, "Standup", event)
+            }
+        }
+    }
+
     func testTheStripCardOffersToJoinACallThatStartsWithinTenMinutes() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
