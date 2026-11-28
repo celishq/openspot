@@ -60,7 +60,7 @@ public struct AttachmentLayout: Equatable, Sendable {
     init(chips: [AttachmentChip], selection: String?, lead: String?, spreads: Bool, fit: Int) {
         let isSpread = spreads && selection != nil
         var order = chips.map(\.source)
-        if let first = selection ?? lead, let index = order.firstIndex(of: first) {
+        if let first = isSpread ? lead : selection ?? lead, let index = order.firstIndex(of: first) {
             order = Array(order[index...] + order[..<index])
         }
         let byID = Dictionary(chips.map { ($0.source, $0) }, uniquingKeysWith: { first, _ in first })

@@ -70,17 +70,19 @@ public struct AttachmentStack: Equatable, Sendable {
     mutating func turn(by step: Int) {
         let order = chips.map(\.source)
         guard !order.isEmpty else { return }
-        guard let selected, let index = order.firstIndex(of: selected) else {
+        if let selected, let index = order.firstIndex(of: selected) {
+            self.selected = order[(index + step % order.count + order.count) % order.count]
+        } else {
             let front = (step < 0 ? layout.places.last : layout.places.first)?.chip.source
             self.selected = front.flatMap { order.contains($0) ? $0 : nil } ?? order[0]
-            return
         }
-        self.selected = order[(index + step % order.count + order.count) % order.count]
+        reveal(forward: step > 0)
     }
 
     mutating func select(_ source: String) {
         guard chips.contains(where: { $0.source == source }) else { return }
         selected = source
+        reveal(forward: false)
     }
 
     mutating func leave() {
@@ -94,6 +96,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     mutating func fold() {
+        lead = selected ?? lead
         spreads = false
     }
 
@@ -106,6 +109,13 @@ public struct AttachmentStack: Equatable, Sendable {
         if let own, !own.isSymbol { return own }
         if app != nil, app == front?.bundleID, let path = front?.path { return .file(FileIcon(path: path)) }
         return own ?? .symbol(value?.kind.symbol ?? AttachmentChip.loadingSymbol)
+    }
+
+    private mutating func reveal(forward: Bool) {
+        var order = chips.map(\.source)
+        if let lead, let index = order.firstIndex(of: lead) { order = Array(order[index...] + order[..<index]) }
+        guard let selected, let rank = order.firstIndex(of: selected), rank >= fit else { return }
+        lead = forward ? order[rank - fit + 1] : selected
     }
 
     private mutating func settle() {
