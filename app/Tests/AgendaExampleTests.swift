@@ -108,7 +108,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTheCardShowsTheNextTimedEventOverTheRemindersThatEachSizeHasRoomFor() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -145,7 +145,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testACalendarOrAReminderChangeShowsTheCardAgainAndNoClockRunsIt() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         XCTAssertNil(agenda.triggers.every)
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -160,7 +160,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTheStripCardOffersToJoinACallThatStartsWithinTenMinutes() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             let far = try await agenda.items(timeout: 30)
@@ -179,7 +179,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTheRowsShowEachReminderAsItIsAndGiveEachRowTheActionsThatFitIt() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -199,7 +199,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testATypedTextOffersToAddItAndKeepsTheRowsThatMatch() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -217,7 +217,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testATypedTextFindsEachRowThatShowsItAndAnyFormOfIt() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -230,7 +230,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testEachFormMatchesAsAWholeLine() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -241,7 +241,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTextTypedInTheOpenSheetShowsTheRowsThatMatch() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -264,7 +264,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testPickingAnAddRowAddsTheTextOfTheFieldAndSaysSo() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -276,7 +276,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTheTickActionOfARowOrATickOnTheCardMarksTheReminderWhoseIdTheListPrinted() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             let output = try await agenda.items(timeout: 30)
@@ -295,7 +295,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testEnterOpensAnEventInCalendarAndAReminderInRemindersAndJoinOpensTheCall() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
@@ -311,7 +311,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testWithNoLeaveTheSheetOffersToAskAndAPickAsksOutsideARead() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             for name in ["events", "reminders"] {
@@ -328,7 +328,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testAgendaHidesTheCalendarsAndListsOfItsCalendarsSetting() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             _ = try await agenda.items(input: "setting.calendars=A8E2 7D10\n", timeout: 30)
@@ -340,7 +340,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testTheCalendarsSettingPicksEachShownCalendarAndListAndAPickHidesOrShowsOne() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             try "B1".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
@@ -368,7 +368,7 @@ final class AgendaExampleTests: SampleSpotsCase {
     }
 
     func testSelectAllInTheCalendarsSettingShowsEachCalendarAndList() async throws {
-        let agenda = try example("Agenda")
+        let agenda = try spot(named: "Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             try "B1 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)

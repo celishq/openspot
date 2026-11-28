@@ -3,7 +3,7 @@ import XCTest
 
 class SampleSpotsCase: XCTestCase {
     var examples: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
+        RepoDoc.repo.appendingPathComponent("examples")
     }
 
     var store: URL {
@@ -21,7 +21,7 @@ class SampleSpotsCase: XCTestCase {
         return FileManager.default.fileExists(atPath: shipped.path) ? shipped : examples.appendingPathComponent("\(name).spot")
     }
 
-    func example(_ name: String) throws -> Spot {
+    func spot(named name: String) throws -> Spot {
         try XCTUnwrap(try (storeScan.spots + SpotsFolder(url: examples).scan().spots).first { $0.name == name })
     }
 

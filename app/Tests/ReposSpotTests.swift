@@ -4,7 +4,7 @@ import XCTest
 final class ReposSpotTests: SampleSpotsCase {
     private var repos: Spot {
         get throws {
-            try example("Repos")
+            try spot(named: "Repos")
         }
     }
 

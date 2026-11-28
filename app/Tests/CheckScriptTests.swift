@@ -47,12 +47,12 @@ final class CheckScriptTests: XCTestCase {
     ]
 
     private var scripts: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("scripts")
+        RepoDoc.repo.appendingPathComponent("scripts")
     }
 
     private func cleanTree() throws -> URL {
         let root = try temporaryFolder()
-        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks", "spots", "store", "examples"] {
+        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks"] + RepoDoc.spotFolders {
             try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
         }
         for list in Self.lists {

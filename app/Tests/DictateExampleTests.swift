@@ -5,7 +5,7 @@ import XCTest
 final class DictateExampleTests: SampleSpotsCase {
     private static let model = "ggml-large-v3-turbo.bin"
     private static let program = Task { () throws -> URL in
-        let spot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("store/dictate.spot")
+        let spot = RepoDoc.repo.appendingPathComponent("store/dictate.spot")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-dictate-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let main = folder.appendingPathComponent("main.swift")
@@ -78,7 +78,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     func testItIsAStayingSwiftSpotWithNoClockAndNoBuildOfItsOwn() throws {
-        let spot = try example("Dictate")
+        let spot = try spot(named: "Dictate")
         let files = try FileManager.default.contentsOfDirectory(atPath: store.appendingPathComponent("dictate.spot").path)
 
         XCTAssertEqual(spot.mode, .stay)

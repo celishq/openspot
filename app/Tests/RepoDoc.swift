@@ -7,6 +7,7 @@ struct RepoDoc {
     }
 
     static let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    static let spotFolders = ["spots", "store", "examples"]
 
     let path: String
     let text: String

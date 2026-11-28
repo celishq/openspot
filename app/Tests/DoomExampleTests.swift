@@ -145,7 +145,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testARunWithTheEngineAndTheGameDownloadsNothingAndPlaysFromTheDataFolder() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -165,7 +165,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testAnEngineOlderThanItsWindowLayerIsBuiltAgainAndThenPlays() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -186,7 +186,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testAnEngineThatAnotherCommitBuiltIsBuiltAgainForThePinnedOne() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -202,7 +202,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testAnEngineDownloadThatIsNotTheExpectedFileFailsAndLeavesNothing() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -218,7 +218,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testTheGameComesFromTheSecondAddressWhenTheFirstFailsAndIsCheckedThere() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -239,7 +239,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testAGameThatNoAddressGivesFailsWithTheStepThatFixesIt() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -254,7 +254,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testABuildWithNoCommandLineToolsFailsWithTheCommandThatInstallsThem() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -272,7 +272,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testADownloadShowsTheShareOfItsFileThatIsOnTheDisk() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -288,7 +288,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testABuildShowsTheShareOfItsFilesThatAreCompiled() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
@@ -334,7 +334,7 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     func testThePlayButtonOfTheSheetStartsTheGameAsAPressOfTheCardDoes() async throws {
-        let doom = try example("Doom")
+        let doom = try spot(named: "Doom")
         try await withPrivateHome { folder in
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)

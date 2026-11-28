@@ -43,7 +43,7 @@ final class GridExampleTests: SampleSpotsCase {
     }
 
     func testItIsAStayingSwiftSpotThatThePanelKeepsReady() throws {
-        let grid = try example("Grid")
+        let grid = try spot(named: "Grid")
 
         XCTAssertEqual(grid.mode, .stay)
         XCTAssertEqual(grid.triggers.events, [EventName.panelOpen])

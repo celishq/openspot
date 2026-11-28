@@ -28,7 +28,7 @@ class BuiltInCase: XCTestCase {
     }
 
     var repoSpots: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        RepoDoc.repo.appendingPathComponent("spots")
     }
 
     var guide: URL {

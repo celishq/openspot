@@ -29,7 +29,7 @@ final class PenExampleTests: SampleSpotsCase {
     }
 
     func testItIsAStayingSwiftSpotWhoseDrawIsACommandAndNoEventStartsIt() throws {
-        let pen = try example("Pen")
+        let pen = try spot(named: "Pen")
 
         XCTAssertEqual(pen.mode, .stay)
         XCTAssertFalse(pen.triggers.shows)

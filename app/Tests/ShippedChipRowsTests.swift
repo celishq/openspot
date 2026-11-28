@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class ShippedChipRowsTests: AttachmentCase {
     private var repo: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        RepoDoc.repo
     }
 
     private func rows(of words: String) async throws -> [String] {

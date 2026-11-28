@@ -4,7 +4,7 @@ import XCTest
 final class ShelfExampleTests: SampleSpotsCase {
     private var shelf: Spot {
         get throws {
-            try example("Shelf")
+            try spot(named: "Shelf")
         }
     }
 

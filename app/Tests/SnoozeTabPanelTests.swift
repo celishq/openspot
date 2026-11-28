@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class SnoozeTabPanelTests: PanelCase {
     private var repo: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        RepoDoc.repo
     }
 
     private var tools: URL {

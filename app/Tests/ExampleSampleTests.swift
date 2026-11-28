@@ -6,7 +6,7 @@ final class ExampleSampleTests: XCTestCase {
     private let runs = SpotRuns()
 
     private var folders: [URL] {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let root = RepoDoc.repo
         return ["store", "examples"].map { root.appendingPathComponent($0) }
     }
 

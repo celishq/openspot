@@ -11,7 +11,7 @@ final class ClockExampleTests: SampleSpotsCase {
           *) [ "$TZ" = Asia/Tokyo ] && echo 22:15 || echo 13:15 ;;
         esac
         """.writeScript(to: folder.appendingPathComponent("date"))
-        let clock = try example("World clock")
+        let clock = try spot(named: "World clock")
         let process = ScriptProcess(url: clock.url, mode: .stays, limit: 60, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
         defer { process.end() }
         var frames = process.start().makeAsyncIterator()

@@ -3,7 +3,7 @@ import XCTest
 
 final class SampleSpotsTests: SampleSpotsCase {
     func testACopyAsksForTheCopiedToast() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = RepoDoc.repo.appendingPathComponent("spots")
         let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
@@ -36,7 +36,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = RepoDoc.repo.appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
@@ -47,14 +47,16 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testNoCoreStoreOrExampleSpotSharesAnId() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let root = RepoDoc.repo
         let names = { (folder: String) in Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".spot") }) }
 
-        let (spots, store, examples) = (try names("spots"), try names("store"), try names("examples"))
+        let folders = try RepoDoc.spotFolders.map { (name: $0, spots: try names($0)) }
 
-        XCTAssertEqual(spots.intersection(store), [])
-        XCTAssertEqual(spots.intersection(examples), [])
-        XCTAssertEqual(store.intersection(examples), [])
+        for (index, folder) in folders.enumerated() {
+            for other in folders.dropFirst(index + 1) {
+                XCTAssertEqual(folder.spots.intersection(other.spots), [], "\(folder.name) and \(other.name)")
+            }
+        }
     }
 
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
@@ -82,7 +84,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let root = RepoDoc.repo
         let port = try freePort()
         try await withPrivateHome { folder in
             let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
@@ -168,7 +170,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
+        let spots = RepoDoc.repo.appendingPathComponent("spots")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         let images = folder.appendingPathComponent("images")
