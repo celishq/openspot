@@ -113,7 +113,6 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         )
         window.declared = SpotTokens.settingsWindowSize
         window.sidebar = SpotTokens.settingsSidebarIdeal
-        window.toolbarStyle = .unified
         window.isOpaque = true
         window.backgroundColor = .windowBackgroundColor
         window.isMovableByWindowBackground = false
@@ -140,7 +139,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         if remembers { window.setFrameAutosaveName(name) }
         let host = NSHostingController(rootView: content)
         host.sizingOptions = []
-        if bridges { host.sceneBridgingOptions = .all }
+        if bridges {
+            host.sceneBridgingOptions = .all
+            window.toolbarStyle = .unified
+            window.toolbar = NSToolbar()
+        }
         window.contentViewController = host
         window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }
