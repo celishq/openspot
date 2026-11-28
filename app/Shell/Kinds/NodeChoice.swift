@@ -99,7 +99,7 @@ private struct ChoiceDrawing: View {
         let chosen = options.first { $0.id == value } ?? options.first
         return HStack(spacing: SpotTokens.partLineGap) {
             if let icon = chosen?.icon {
-                SpotAttachmentCard(chip: AttachmentChip(source: part.id, app: nil, look: AttachmentChip.Look(icon), state: .unread), showsBadge: false, isQuiet: false)
+                SpotAttachmentCard(look: AttachmentChip.Look(icon))
                     .scaleEffect(SpotTokens.choiceCardScale)
                     .frame(width: SpotTokens.choiceCard, height: SpotTokens.choiceCard)
             }

@@ -2,15 +2,15 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotAttachmentCard: View, Equatable {
-    let chip: AttachmentChip
-    let showsBadge: Bool
-    let isQuiet: Bool
+    let look: AttachmentChip.Look
+    var badge: AttachmentValue.Kind.Badge? = nil
+    var isQuiet = false
 
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.attachmentCardRadius)
         ZStack {
             picture
-                .id(chip.look)
+                .id(look)
                 .transition(.opacity)
         }
         .frame(width: SpotTokens.attachmentCard, height: SpotTokens.attachmentCard)
@@ -21,12 +21,12 @@ struct SpotAttachmentCard: View, Equatable {
                 .opacity(isQuiet ? MotionTokens.hiddenOpacity : 1)
         }
         .overlay(SpotRoundShape(radius: SpotTokens.attachmentCardRadius + SpotTokens.attachmentBorder).strokeBorder(SpotTheme.attachmentRim, lineWidth: SpotTokens.attachmentBorder).padding(-SpotTokens.attachmentBorder).opacity(isQuiet ? MotionTokens.hiddenOpacity : 1))
-        .overlay(alignment: .bottomTrailing) { badge }
+        .overlay(alignment: .bottomTrailing) { kindMark }
     }
 
     @ViewBuilder
     private var picture: some View {
-        switch chip.look {
+        switch look {
         case .file(.file(let path)):
             SpotNativeIcon(path: path, size: SpotTokens.attachmentIcon / IconBody.share)
                 .frame(width: SpotTokens.attachmentCard, height: SpotTokens.attachmentCard)
@@ -64,10 +64,10 @@ struct SpotAttachmentCard: View, Equatable {
     }
 
     @ViewBuilder
-    private var badge: some View {
-        if showsBadge, let kind = chip.value?.kind {
+    private var kindMark: some View {
+        if let badge {
             let leaf = SpotLeafShape(radius: SpotTokens.attachmentIconRadius)
-            glyph(of: kind.badge)
+            glyph(of: badge)
                 .font(SpotType.attachmentBadge)
                 .modifier(SpotSecondaryText())
                 .offset(x: SpotTokens.attachmentBadgeNudge, y: SpotTokens.attachmentBadgeNudge)
