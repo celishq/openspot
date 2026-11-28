@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CalendarStamp: Equatable, Sendable {
+public struct CalendarSample: Equatable, Sendable {
     public let count: Int
     public let latest: Date?
 
@@ -9,7 +9,7 @@ public struct CalendarStamp: Equatable, Sendable {
         latest = edits.compactMap { $0 }.max()
     }
 
-    public func event(_ name: String, after earlier: CalendarStamp?) -> AppSignal? {
+    public func event(_ name: String, after earlier: CalendarSample?) -> AppSignal? {
         self == earlier ? nil : .named(name, value: nil)
     }
 }

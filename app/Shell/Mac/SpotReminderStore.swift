@@ -52,7 +52,7 @@ final class SpotReminderStore: ReminderStore, @unchecked Sendable {
         return Reminder(id: new.calendarItemIdentifier, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: SpotEventStore.list(new.calendar), doneAt: nil)
     }
 
-    func stamp() async -> CalendarStamp? {
+    func sample() async -> CalendarSample? {
         guard access() == .allowed else { return nil }
         let predicate = store.predicateForReminders(in: nil)
         let edits = await withCheckedContinuation { answer in
@@ -60,7 +60,7 @@ final class SpotReminderStore: ReminderStore, @unchecked Sendable {
                 answer.resume(returning: (reminders ?? []).map(\.lastModifiedDate))
             }
         }
-        return CalendarStamp(edits: edits)
+        return CalendarSample(edits: edits)
     }
 
     private func fetch(_ predicate: NSPredicate) async -> [Reminder] {

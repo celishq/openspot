@@ -6,7 +6,7 @@ final class SpotCalendarEvents {
     private let events = SpotEventStore()
     private let reminders = SpotReminderStore()
     private var observer: NSObjectProtocol?
-    private var stamps: [String: CalendarStamp] = [:]
+    private var samples: [String: CalendarSample] = [:]
     private var wait: Task<Void, Never>?
 
     func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
@@ -15,8 +15,8 @@ final class SpotCalendarEvents {
             MainActor.assumeIsolated { self?.changed(heard) }
         }
         wait = Task { [weak self, events, reminders] in
-            let first = await Self.stamps(events, reminders)
-            self?.stamps = first
+            let first = await Self.samples(events, reminders)
+            self?.samples = first
         }
     }
 
@@ -25,21 +25,21 @@ final class SpotCalendarEvents {
         wait = Task { [weak self, events, reminders] in
             try? await Task.sleep(for: .seconds(1), tolerance: .seconds(1))
             guard !Task.isCancelled else { return }
-            let next = await Self.stamps(events, reminders)
+            let next = await Self.samples(events, reminders)
             guard let self, !Task.isCancelled else { return }
-            for (name, stamp) in next.sorted(by: { $0.key < $1.key }) {
-                if let event = stamp.event(name, after: stamps[name]) { heard(event) }
+            for (name, sample) in next.sorted(by: { $0.key < $1.key }) {
+                if let event = sample.event(name, after: samples[name]) { heard(event) }
             }
-            stamps = next
+            samples = next
         }
     }
 
-    private nonisolated static func stamps(_ events: SpotEventStore, _ reminders: SpotReminderStore) async -> [String: CalendarStamp] {
+    private nonisolated static func samples(_ events: SpotEventStore, _ reminders: SpotReminderStore) async -> [String: CalendarSample] {
         await Task.detached {
-            var stamps: [String: CalendarStamp] = [:]
-            stamps[EventName.calendarChange] = events.stamp()
-            stamps[EventName.remindersChange] = await reminders.stamp()
-            return stamps
+            var samples: [String: CalendarSample] = [:]
+            samples[EventName.calendarChange] = events.sample()
+            samples[EventName.remindersChange] = await reminders.sample()
+            return samples
         }.value
     }
 

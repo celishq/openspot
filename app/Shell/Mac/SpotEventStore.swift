@@ -53,11 +53,11 @@ final class SpotEventStore: EventStore, @unchecked Sendable {
         )
     }
 
-    func stamp() -> CalendarStamp? {
+    func sample() -> CalendarSample? {
         guard access() == .allowed else { return nil }
         let start = Calendar.current.startOfDay(for: Date()).addingTimeInterval(-86_400)
         let predicate = store.predicateForEvents(withStart: start, end: start.addingTimeInterval(366 * 86_400), calendars: nil)
-        return CalendarStamp(edits: store.events(matching: predicate).map(\.lastModifiedDate))
+        return CalendarSample(edits: store.events(matching: predicate).map(\.lastModifiedDate))
     }
 
     static func list(_ calendar: EKCalendar?) -> CalendarList {
