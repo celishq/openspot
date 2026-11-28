@@ -9,8 +9,8 @@ These rules hold for the core spots in `spots/`, the spots of the built-in store
   A script holds no header.
 - A spot may hold comments.
 - A spot keeps its state in `OPENSPOT_DATA`. A folder from `mktemp` that the spot removes is not state.
-- A core spot does no work all day: it reads on an event, never on a clock. A store spot or an example may poll, and its
-  readme says so.
+- A core or store spot does no work all day: it reads on an event, never on a clock. An example may poll, and its readme
+  says so.
 - A spot's view moves only while `spot.isShown` is true, with SwiftUI's own motion or a moving piece that Openspot
   gives it, such as `spot.media`. [Drawing](../AGENTS.md#drawing) says what each frame may cost.
 - The action that adds to a spot's list is its first item, pinned to the top, with

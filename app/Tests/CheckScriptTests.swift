@@ -43,6 +43,7 @@ final class CheckScriptTests: XCTestCase {
         ("tools", "app/project.yml", "targets:\n  A:\n    configs:\n      Release:\n        SWIFT_ACTIVE_COMPILATION_CONDITIONS: OPENSPOT_" + "TOOLS\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
         ("spots", "spots/weather.spot/spot.toml", "title = \"Weather\"\n\n[on]\nevery = 5\n"),
+        ("spots", "store/weather.spot/spot.toml", "title = \"Weather\"\n\n[on]\nevery = 5\n"),
         ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
     ]
 
