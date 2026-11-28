@@ -270,15 +270,6 @@ final class TimelineSpotTests: BuiltInCase {
         XCTAssertEqual(row.hides, ["paste"])
     }
 
-    func testThePageAboutASpotListsOnlyItsEntriesAndItsSessions() async throws {
-        try add(.text, "copied")
-        try session(of: "weather")
-
-        let listed = try await rows(keptDays + "input.route=about/weather\n")
-
-        XCTAssertEqual(listed.map(\.title), ["Weather"])
-    }
-
     func testForgetTakesTheEntryOutAndTheToastPutsItBack() async throws {
         let id = try add(.text, "secret")
 

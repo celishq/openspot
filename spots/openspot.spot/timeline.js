@@ -107,11 +107,6 @@ function row(entry, day) {
   return lines.join("\n")
 }
 
-/** The spot that a page `about/<id>` names, whose entries and visits alone the page lists. */
-function aboutOf(input) {
-  return String(input.route || "").startsWith("about/") ? input.route.slice(6) : ""
-}
-
 /** The filters of a search text, `spot`, `since` and `sort`, as the words of `timeline list`, and the words left to
  * search by. */
 function filters(text) {
@@ -145,15 +140,14 @@ function order(value) {
   throw new Error("sort: takes newest or oldest.")
 }
 
-/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page, of
- * the spot `about` alone when it names one, and as the filter words of the text pick. */
-function list(text, count, after, about) {
+/** The frame of the entries that hold the words, or the newest ones, after the entry of `after` for a next page, as
+ * the filter words of the text pick. */
+function list(text, count, after) {
   const picked = filters(text)
   const words = picked.words.join(" ")
   const search = words ? ["--search", words] : []
   const next = after ? ["--after", after] : []
-  const spot = picked.about || about
-  const only = spot ? ["--about", spot] : []
+  const only = picked.about ? ["--about", picked.about] : []
   const listed = run(["timeline", "list", "--all", "--limit", String(count || limit), ...only, ...picked.flags, ...search, ...next])
   const now = new Date()
   const blocks = ["frame=\nrecents=false"]
@@ -196,16 +190,16 @@ function copy(input) {
 }
 
 export default {
-  show(input, env) {
+  show(_, env) {
     const days = String(env.settings.keep ?? "").replace(/[^0-9]/g, "")
     if (days) run(["timeline", "keep", days])
-    return list("", limit, "", aboutOf(input))
+    return list("", limit, "")
   },
   "sheet.text"(input) {
-    return list(input.value || "", input.limit, "", aboutOf(input))
+    return list(input.value || "", input.limit, "")
   },
   "sheet.more"(input) {
-    return list(input.value || "", limit, input.after, aboutOf(input))
+    return list(input.value || "", limit, input.after)
   },
   command() {
     run(["spot", "open", "openspot/timeline"])
