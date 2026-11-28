@@ -98,7 +98,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     mutating func place() {
-        layout = AttachmentLayout(chips: chips, after: layout, selection: selected, lead: lead, spreads: spreads, fit: fit)
+        layout = AttachmentLayout(chips: chips, selection: selected, lead: lead, spreads: spreads, fit: fit)
     }
 
     private func look(of app: String?, value: AttachmentValue?, own: AttachmentChip.Look?) -> AttachmentChip.Look {
