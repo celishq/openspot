@@ -68,9 +68,10 @@ final class SandboxTests: SpotRunsCase {
 
     func testAnOwnSpotOfOpenspotThatRunsAnAgentIsOutsideTheSandbox() async throws {
         _ = try trying(uses: "agent")
-        let spot = try XCTUnwrap(scanned().scripts.first { $0.id == "script" })
+        var spot = try XCTUnwrap(scanned().scripts.first { $0.id == "script" }).builtIn()
+        spot.uses.insert(.agent)
 
-        let result = try await result(of: runs.sheet(for: spot.builtIn()))
+        let result = try await result(of: runs.sheet(for: spot))
 
         XCTAssertEqual(result, "data temp files network cache screenshots read")
     }

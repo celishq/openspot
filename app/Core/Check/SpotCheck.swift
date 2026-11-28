@@ -104,7 +104,7 @@ public struct SpotCheck: Sendable {
         }
         for script in scan.scripts where !script.isBuiltIn {
             let uses = (try? Manifest(beside: script.url).script(script.url))?.uses ?? []
-            for use in [SpotUse.account, .agent] where uses.contains(use.rawValue) {
+            for use in SpotUse.allCases where SpotUse.appOnly.contains(use) && uses.contains(use.rawValue) {
                 let fault = "\(script.name) has \(use.rawValue) in its uses, which only a spot of Openspot takes. Remove it"
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }

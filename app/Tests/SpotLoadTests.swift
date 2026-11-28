@@ -23,6 +23,14 @@ final class SpotLoadTests: PanelCase {
         try script("own", toml: "title = 'Own'", ":")
     }
 
+    func testASpotOfYourOwnKeepsNoUseThatOnlyASpotOfOpenspotTakes() async throws {
+        try script("mine", toml: "title = 'Mine'\nuses = ['agent', 'account', 'clipboard']", ":")
+
+        await model.reload()
+
+        XCTAssertEqual(model.entries.first { $0.id == "mine" }?.spot.uses, [.clipboard])
+    }
+
     func testAReloadStatsNoFileOnTheMainThread() async throws {
         let work = ScanWork()
 

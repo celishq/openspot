@@ -4,6 +4,8 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
     case app, spots, screen, clipboard, calendar, power, network, files, timer, attachment, read, timeline
     case account, agent
 
+    static let appOnly: Set<SpotUse> = [.account, .agent]
+
     static func reachesAccountKey(_ uses: Set<SpotUse>, isBuiltIn: Bool) -> Bool {
         isBuiltIn && uses.contains(.account)
     }
@@ -16,7 +18,7 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
         var uses: Set<SpotUse> = []
         for word in words {
             guard let use = SpotUse(rawValue: word) else {
-                let known = allCases.filter { $0 != .account && $0 != .agent }.map(\.rawValue)
+                let known = allCases.filter { !appOnly.contains($0) }.map(\.rawValue)
                 throw SpotError.fault("\(name) has an unknown use in its uses: \(word). Use \(known.dropLast().joined(separator: ", ")) or \(known.last ?? "")")
             }
             uses.insert(use)
