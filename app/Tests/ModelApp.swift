@@ -19,6 +19,8 @@ struct ModelApp: RunningApp {
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }
     func pop(_ id: String, all: Bool) async -> Bool { await all ? model.pop(in: id, all: true) : model.pop(in: id) }
     func openSession(_ id: String) async -> Bool { await model.openSession(id) }
+    func take(_ act: PanelAct) async -> Bool { await model.take(act) }
+    func panelState() async -> PanelState { await model.panelState }
     func stepSession(by steps: Int) async -> Bool { await model.stepSession(by: steps) }
     func review(_ id: String) async -> Bool {
         if await model.review(spot: id) { return true }

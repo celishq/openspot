@@ -23,7 +23,7 @@ it declares.
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `app restart`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `window`, `open`, `float`, `key.<action>` or of the spot `openspot` |
+| `app`       | `app quit`, `app restart`, each call of `theme` but `theme list`, `update check`, `update install`, `setting set` of `menubar`, `window`, `open`, `float`, `key.<action>` or of the spot `openspot`, and each call of `panel` but `panel state` and `panel wait` |
 | `spots`     | `spot add`, `spot remove`, `spot allow`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `access grant`, `store list`, `store get`, `store update`, `store revert`, `store add`, `store remove`, `store folders`, `setting list`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
