@@ -175,7 +175,13 @@ browser that Openspot already reads changes its family.
 
 Type `/timeline`, or search for Timeline, and press Return. It lists what you copied, newest first, under a heading
 for each day. It keeps each entry for as long as Keep for in its Settings says, 30 days by default. Type to find an
-entry by its words.
+entry by its words, the best match first inside each day.
+
+| Word                         | Keeps                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| `spot:notes`                 | The entries of one spot, and your sessions in it.              |
+| `since:2h`                   | The entries of the age, such as `30m`, `2h` or `7d`, or today.  |
+| `sort:oldest`, `sort:newest` | Every entry, listed by time in that order, also as you search. |
 
 | Key        | Does                                                                  |
 | ---------- | --------------------------------------------------------------------- |
