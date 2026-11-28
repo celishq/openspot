@@ -50,8 +50,8 @@ extension SpotsModel {
             return true
         }
         if openSheetID == nil { endFlow() }
-        let next = FlowSheet(spot: sheet.spot, route: route, title: sheet.title ?? sheets[sheet.spot]?.list.all.first { $0.run == route }?.title)
-        if replace, flow.current != nil { flow.replaceCurrent(with: next) } else { flow.push(next) }
+        let next = FlowSheet(spot: sheet.spot, route: route, title: sheet.title ?? sheets[sheet.spot]?.list.all.first { $0.run == route }?.title, query: sheet.query)
+        if replace, flow.current != nil { flow.replaceCurrent(with: next.kept) } else { flow.push(next.kept) }
         show(next, moving: moves)
         return true
     }

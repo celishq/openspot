@@ -22,10 +22,9 @@ extension SpotRun {
             return
         }
         let query = list.search == .script && !script.keepsState ? list.query : ""
-        let typed = query.isEmpty ? typed ?? "" : query
+        let typed = query.isEmpty && event != .sheet ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
-        let asked = event == .sheet && spot.triggers.searchesSheet && !query.isEmpty ? ShowEvent.typed(query, inSheet: true) : event
-        var message = asked.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search)
+        var message = event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search)
         let isSent = send(Call(
             message: message,
             key: Self.showKey,

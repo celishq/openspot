@@ -118,10 +118,9 @@ extension SpotsModel {
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
-        let page = FlowSheet(spot: id, title: title, source: source)
-        flow.push(page)
+        let page = FlowSheet(spot: id, title: title, source: source, query: query)
+        flow.push(page.kept)
         sheets[id]?.show(page)
-        if let query { sheets[id]?.take(query: query) }
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }

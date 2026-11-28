@@ -131,6 +131,7 @@ final class SessionWindowTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "y", isCommand: true)))
 
         try await wait("the timeline of other") { self.model.flow.current == FlowSheet(spot: SpotsModel.timelineSpot) && self.model.searchText == "spot:other " }
+        XCTAssertNil(model.flow.current?.query)
     }
 
     func testTimeOnTheGridAfterAQuickLookDoesNotKeepIt() async throws {

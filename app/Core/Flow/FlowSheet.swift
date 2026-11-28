@@ -15,6 +15,10 @@ public struct FlowSheet: Codable, Hashable, Sendable {
         self.query = query
     }
 
+    public var kept: FlowSheet {
+        FlowSheet(spot: spot, route: route, title: title, source: source)
+    }
+
     public static func == (left: FlowSheet, right: FlowSheet) -> Bool {
         left.spot == right.spot && left.route == right.route
     }

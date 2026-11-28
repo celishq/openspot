@@ -11,7 +11,10 @@ extension SpotRun {
     public func show(_ next: FlowSheet) -> Bool {
         let shown = page
         if next.title != shown.title || next.source != shown.source { page = next }
-        guard next.route != shown.route else { return true }
+        guard next.route != shown.route else {
+            if let query = next.query { take(query: query) }
+            return true
+        }
         let route = shown.route
         forget(route: route)
         pageStates.append((route, PageState(state: state, rows: rows, panel: panel)))
@@ -23,6 +26,7 @@ extension SpotRun {
         state = kept?.state ?? spot.headerState
         list = kept?.rows ?? ItemList(recent: rows.recent, search: rows.search)
         panel = kept?.panel
+        if let query = next.query { take(query: query) }
         answered = nil
         lastAnswer = nil
         shownFrame = nil
